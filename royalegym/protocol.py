@@ -1,0 +1,934 @@
+"""The engine contract: everything the RL layer needs from a battle simulator.
+
+WHY A PROTOCOL
+    The Rust engine (the sibling repo, ../RoyaleSim/crates/royalesim) and this RL
+    layer are developed in parallel: the RL layer is built and tested against
+    ``MockEngine``, and the Rust engine satisfies the SAME ``Engine`` protocol.
+    Nothing in ``royalegym`` other than ``mock_engine.py`` knows which engine it is
+    driving, so a reward or observation experiment never needs a recompile.
+
+FRAMES AND UNITS
+    * Positions are integer SUBTILES in the ENGINE frame: Blue (team 0) defends
+      low y, Red (team 1) defends high y. 1 tile = ``Arena.subtile`` subtiles.
+    * The OWN frame of a team is the engine frame for Blue, and the engine frame
+      rotated 180 degrees for Red: ``x_own = W - x``, ``y_own = H - y`` where W and
+      H are the arena size in subtiles. A rotation (not a y-mirror) is used
+      because it is what the opponent literally sees across the table: "my left
+      princess tower" means the same thing to both players, so one policy can
+      play both seats. The shipped tilemap is exactly invariant under this
+      rotation with the LEFT/RIGHT lane bits swapped (tests check it).
+    * Tower slots (``TowerSlot``) are always named in the owner's own frame.
+    * Elixir is reported as integer thousandths (``elixir_milli``). Engines may
+      keep a finer internal fraction; affordability is ``elixir_milli >=
+      cost * 1000``, which is exact because ``cost * 1000`` is an integer.
+
+NO FLOATS
+    Nothing in the contract is a float. ``arena.json`` carries convenience float
+    fields (``center_x: 3.5``); this module reads only the integer half-cell
+    indices and derives subtile positions from them.
+
+WHAT IS NOT KNOWN
+    Several rules the mask and the engine must AGREE on are not in
+    calibration.json or arena.json yet (princess tower centre, the river band
+    closed to troops, buildings own-half only). They live in ``DeployRules`` /
+    ``Arena`` with an explicit ``*_status`` field, so the Rust engine reads the
+    same numbers the mask does rather than both sides inventing their own. See
+    ``DeployRules`` for each one. Troop territory is the shipped NoDeploySize rect
+    mechanic (``DeployRules``), read from data/derived/cards.json.
+"""
+
+from __future__ import annotations
+
+import csv
+import enum
+import json
+import os
+from collections.abc import Sequence
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Protocol, runtime_checkable
+
+import msgspec
+
+# --------------------------------------------------------------------------
+# Paths and data loading
+# --------------------------------------------------------------------------
+
+# The folder holding the sibling checkouts (RoyaleSim, RoyaleGym, RoyaleViser, RoyaleLive,
+# RoyaleLearn side by side; README.md "Setup"). Since 2026-09-21 each is its own repo, so this
+# is the workspace, not a repo root.
+WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
+# The engine's data lives with the engine (the sibling RoyaleSim checkout's data/:
+# calibration.json, raw/, derived/), never as a copy in this package.
+DEFAULT_DATA_DIR = WORKSPACE_ROOT / "RoyaleSim" / "data"
+DATA_DIR_ENV = "ROYALESIM_DATA_DIR"
+
+
+def data_dir() -> Path:
+    """RoyaleSim's ``data/`` directory (calibration.json, raw/, derived/).
+
+    ``ROYALESIM_DATA_DIR`` when set; otherwise the sibling checkout, ``../RoyaleSim/data``
+    from this repo, which is the documented workspace layout (the five repos cloned into
+    one folder). Raises FileNotFoundError naming both when neither is a directory, so a
+    missing sibling is reported once here rather than as a bare path from every loader.
+    """
+    override = os.environ.get(DATA_DIR_ENV)
+    p = Path(override) if override else DEFAULT_DATA_DIR
+    if not p.is_dir():
+        where = (
+            f"{DATA_DIR_ENV}={override}" if override else f"{DEFAULT_DATA_DIR} (no {DATA_DIR_ENV})"
+        )
+        raise FileNotFoundError(
+            f"RoyaleSim data directory not found at {where}: clone RoyaleSim next to this "
+            f"repo ({WORKSPACE_ROOT / 'RoyaleSim'}) or set {DATA_DIR_ENV} to its data/ folder"
+        )
+    return p
+
+
+class Calibration:
+    """Read-only view of data/calibration.json.
+
+    Every physics constant the RL layer or the mock uses is looked up here by
+    dotted key (``"time.TICK_MS"``). A missing key raises rather than defaulting,
+    because a silent default is exactly the hardcoded number invariant 3 forbids.
+    """
+
+    def __init__(self, raw: dict[str, Any]) -> None:
+        self.raw = raw
+
+    @classmethod
+    def load(cls, path: Path | None = None) -> Calibration:
+        p = path if path is not None else data_dir() / "calibration.json"
+        return cls(json.loads(p.read_text(encoding="utf-8")))
+
+    def entry(self, key: str) -> dict[str, Any]:
+        section, name = key.split(".", 1)
+        try:
+            e = self.raw[section][name]
+        except KeyError as exc:
+            raise KeyError(f"calibration.json has no {key!r}") from exc
+        if not isinstance(e, dict) or "value" not in e:
+            raise KeyError(f"calibration.json entry {key!r} has no 'value'")
+        return e
+
+    def value(self, key: str) -> Any:
+        return self.entry(key)["value"]
+
+    def int(self, key: str) -> int:
+        v = self.value(key)
+        if isinstance(v, bool) or not isinstance(v, int):
+            raise TypeError(f"calibration {key!r} is {v!r}, expected an integer")
+        return v
+
+    def bool(self, key: str) -> bool:
+        v = self.value(key)
+        if not isinstance(v, bool):
+            raise TypeError(f"calibration {key!r} is {v!r}, expected a boolean")
+        return v
+
+    def status(self, key: str) -> str:
+        return str(self.entry(key).get("status", "unknown"))
+
+    def with_override(self, key: str, value: Any) -> Calibration:
+        """A copy with one value replaced. Used by tests to prove a constant is read, not baked."""
+        raw = json.loads(json.dumps(self.raw))
+        section, name = key.split(".", 1)
+        raw[section][name]["value"] = value
+        return Calibration(raw)
+
+
+def load_globals_csv(path: Path | None = None) -> dict[str, tuple[int | None, bool | None]]:
+    """globals.csv as name -> (NumberValue, BooleanValue). Datamined, 2018 vintage."""
+    p = path or data_dir() / "raw" / "retroroyale-2018" / "csv_logic" / "globals.csv"
+    out: dict[str, tuple[int | None, bool | None]] = {}
+    with p.open(encoding="utf-8-sig") as fh:
+        rows = list(csv.reader(fh))
+    for r in rows[2:]:
+        if not r or not r[0].strip():
+            continue
+        num = int(r[1]) if len(r) > 1 and r[1].strip() else None
+        b = r[2].strip().lower() == "true" if len(r) > 2 and r[2].strip() else None
+        out[r[0].strip()] = (num, b)
+    return out
+
+
+# --------------------------------------------------------------------------
+# Enumerations (plain ints on the wire so a Rust engine can return u8/i32)
+# --------------------------------------------------------------------------
+
+BLUE = 0
+RED = 1
+TEAMS = (BLUE, RED)
+HAND_SIZE = 4
+DECK_SIZE = 8
+EMPTY_CARD = -1
+
+
+class Placement(enum.IntEnum):
+    """How a card may be placed. Derived from which CSV the card lives in.
+
+    TROOP     spells_characters.csv       outside every ALIVE enemy crown tower's
+                                          NoDeploySize rect, off the river band, not
+                                          water, not no-deploy, not inside a building
+                                          footprint (see ``DeployRules``)
+    BUILDING  spells_buildings.csv        own half only (never the opened ground), not
+                                          water, not no-deploy, footprint may not
+                                          overlap a building
+    SPELL     spells_other.csv            anywhere strictly inside the arena
+    ROLLING   spells_other.csv with       like TROOP but ignores building footprints
+              SpellAsDeploy=true          (Log also ships CanPlaceOnBuildings=TRUE)
+    SPELL_NOT_ON_WATER                    anywhere strictly inside the arena EXCEPT where
+              spells_other.csv, a spell   the TROOP water test refuses (the point touches
+              whose projectile spawns     a WATER half-cell, closed cells). No territory,
+              characters (Goblin Barrel)  no no-deploy cells (the king block is a legal
+                                          barrel target), no footprints. Only under
+                                          calibration spells.SPAWNING_SPELL_WATER_RULE =
+                                          refuse_touching_water; under "anywhere" such a
+                                          card is a plain SPELL.
+    The numbers are the Rust core's catalogue kind codes (py.rs ``kind_code``, from
+    state.rs ``deploy_rule``, the engine's one definition of a card's deploy rule).
+    """
+
+    TROOP = 0
+    BUILDING = 1
+    SPELL = 2
+    ROLLING = 3
+    SPELL_NOT_ON_WATER = 4
+
+
+class SpellMotion(enum.IntEnum):
+    """What a live spell object is doing (``SpellState.motion``; py.rs ``state_json``)."""
+
+    FLIGHT = 0  # a projectile travelling to ``aim`` (Fireball, Arrows, Goblin Barrel)
+    AIRBORNE = 1  # The Log before it lands and starts rolling
+    ROLLING = 2  # The Log rolling toward ``aim`` (the roll's end point)
+    AREA = 3  # an area effect sitting at its centre (Zap)
+
+
+class EntityKind(enum.IntEnum):
+    TROOP = 0
+    BUILDING = 1
+    KING_TOWER = 2
+    PRINCESS_TOWER = 3
+
+
+class TowerSlot(enum.IntEnum):
+    """Tower identity in the OWNER's own frame."""
+
+    KING = 0
+    LEFT = 1
+    RIGHT = 2
+
+
+class DeployStatus(enum.IntEnum):
+    """Why a deploy was accepted or rejected. 0 is the only success."""
+
+    OK = 0
+    BAD_TEAM = 1
+    BAD_SLOT = 2
+    EMPTY_SLOT = 3
+    NOT_ENOUGH_ELIXIR = 4
+    OUT_OF_ARENA = 5
+    WATER = 6
+    NO_DEPLOY = 7
+    OUT_OF_TERRITORY = 8
+    OCCUPIED = 9
+    GAME_OVER = 10
+    DUPLICATE_TEAM = 11
+
+
+class Winner(enum.IntEnum):
+    NONE = -1
+    BLUE = 0
+    RED = 1
+    DRAW = 2
+
+
+class ShuffleMode(enum.IntEnum):
+    NONE = 0  # decks are used in the given order
+    INDEPENDENT = 1  # each team shuffled from its own RNG stream
+    MIRRORED = 2  # both teams get the same permutation (symmetry tests, self-play)
+
+
+# --------------------------------------------------------------------------
+# Wire structs
+# --------------------------------------------------------------------------
+
+
+class CardInfo(msgspec.Struct, frozen=True):
+    card_id: int
+    name: str
+    elixir: int
+    placement: int  # Placement
+    count: int  # units summoned (0 for spells)
+    radius: int  # collision radius of one summoned unit / building, subtiles (0 for spells)
+    flying: bool
+    hitpoints: int  # per unit, 0 for spells
+
+
+class DeployCommand(msgspec.Struct, frozen=True):
+    team: int
+    hand_slot: int
+    x: int  # engine frame, subtiles
+    y: int
+
+
+class DeployResult(msgspec.Struct, frozen=True):
+    team: int
+    hand_slot: int
+    card_id: int  # EMPTY_CARD if the slot was bad
+    status: int  # DeployStatus
+    tick: int  # engine tick at which the command was evaluated
+
+
+class EntityState(msgspec.Struct, frozen=True, array_like=True):
+    uid: int  # unique for the whole battle, never reused
+    team: int
+    kind: int  # EntityKind
+    card_id: int  # EMPTY_CARD for crown towers
+    tower_slot: int  # TowerSlot for crown towers, -1 otherwise
+    x: int
+    y: int
+    hp: int
+    max_hp: int
+    radius: int
+    flying: bool
+    deploy_ticks: int  # >0 while still deploying
+    # Status timers, ticks remaining rounded up (py.rs ``state_json``). Trailing and
+    # defaulted, so an engine that models no status effect (MockEngine) and a trace
+    # recorded before status effects existed both decode with 0.
+    stun_ticks: int = 0  # >0 while stunned (Zap): no move, no attack
+    knockback_ticks: int = 0  # >0 while a knockback slide is in progress (0 when instant)
+
+
+class SpellState(msgspec.Struct, frozen=True, array_like=True):
+    """A live spell object: cast and not yet finished (Rust core, py.rs ``state_json``).
+
+    ENGINE frame, subtiles. ``aim`` is the landing point (FLIGHT, AIRBORNE), the roll's
+    END point (ROLLING) or the centre itself (AREA). A spell that resolves inside the
+    tick it materialises never appears here -- MockEngine's spells all do, so its
+    ``BattleState.spells`` is always empty (mock_engine.py WHAT IT IS NOT).
+    """
+
+    team: int
+    card_id: int  # catalogue id of the spell card
+    motion: int  # SpellMotion
+    x: int  # current centre
+    y: int
+    aim_x: int
+    aim_y: int
+    delay_ticks: int  # FLIGHT: ticks before it starts moving (0 otherwise)
+    travelled: int  # ROLLING: subtiles rolled so far (0 otherwise)
+    length: int  # ROLLING: total roll length in subtiles (0 otherwise)
+    hits: int  # ROLLING: units hit so far (0 otherwise)
+
+
+class PlayerState(msgspec.Struct, frozen=True):
+    team: int
+    elixir_milli: int
+    hand: list[int]  # HAND_SIZE card ids, EMPTY_CARD for an empty slot
+    next_card: int
+    crowns: int
+    tower_hp: list[int]  # indexed by TowerSlot; 0 = destroyed
+    tower_max_hp: list[int]
+    king_active: bool
+
+
+class BattleState(msgspec.Struct, frozen=True):
+    tick: int
+    tick_ms: int
+    regular_ticks: int  # length of regulation time in ticks
+    overtime_ticks: int  # length of overtime in ticks
+    elixir_rate: int  # 1 or 2 (the multiplier currently in force)
+    overtime: bool
+    players: list[PlayerState]  # indexed by team
+    entities: list[EntityState]  # includes crown towers
+    game_over: bool
+    winner: int  # Winner
+    spells: list[SpellState] = []  # live spell objects, engine order (not seat-canonical)
+
+
+class SpawnSpec(msgspec.Struct, frozen=True):
+    """A unit or building placed on the board at reset, bypassing hand and elixir.
+
+    Deploy zones (territory, no-deploy, footprints) do NOT apply: a state setter
+    may put a troop anywhere a unit could stand. What does apply is one POSITION
+    rule and one HP rule, ``spawn_violation``, and EVERY engine must refuse a spec
+    that breaks either with ``ValueError`` naming the reason. See that function.
+
+    THE ORDER OF ``MatchSetup.spawns`` DOES NOT MATTER. An engine spawns the specs
+    in the canonical order ``spawn_order_key`` -- per team, own-frame y, then
+    own-frame x, then card, then resolved hp -- so every per-team spawn ordinal
+    (Rust ``team_seq``, MockEngine ``_Ent.seq``), which both engines use as the last
+    word in tie-breaks, names the same own-frame unit for both seats. Specs with
+    equal keys are identical units, so their relative order cannot be observed.
+    The canonical order is not decoration. With list order as a hidden tie-break
+    input, a rotation-mirrored setup whose Red specs are listed in reverse desyncs
+    the two engines within a few ticks (stacked Knights of different hp).
+    """
+
+    team: int
+    card_id: int
+    x: int
+    y: int
+    hp: int = -1  # -1 = full; otherwise 1 <= hp <= the card's CardInfo.hitpoints
+
+
+class MatchSetup(msgspec.Struct, frozen=True):
+    """Everything needed to start a battle. StateSetters produce these.
+
+    WHAT IS REFUSED, WHAT IS CLAMPED (``setup_violation`` is the rule; every engine
+    raises ``ValueError`` with its reason and LEAVES THE RUNNING BATTLE UNTOUCHED):
+      decks          exactly two lists of DECK_SIZE catalogue ids -- refused otherwise.
+      shuffle        a ShuffleMode value (0, 1, 2) -- refused otherwise (Rust
+                     "unknown shuffle mode 7").
+      start_tick     0 <= start_tick <= 2**32 - 1 (the Rust core's u32) -- refused
+                     otherwise; -1 is refused, not clamped.
+      elixir_milli   None, or exactly two integers fitting i64 -- a list of any other
+                     length is refused (``[]`` is NOT "no override"). Each value is
+                     CLAMPED to [0, MAX_MANA * 1000]: -1 starts at 0, 99999 at the cap.
+      tower_hp       None, or [team][3] integers fitting i32 -- refused otherwise. A
+                     princess hp <= 0 starts destroyed; a king hp <= 0 is refused. A
+                     positive hp above the tower's max is accepted by both engines.
+      spawns         ``spawn_violation`` per spec; list order irrelevant (SpawnSpec).
+    Measured against the Rust core. ``RustEngine.reset`` runs ``validate_setup``
+    before the core or the adapter touches anything, so an out-of-range integer never
+    reaches PyO3: both engines refuse with this rule's ValueError and text
+    (tests/test_parity_hardening.py, with an adapter plant).
+    ``crowns_from_destroyed_towers=False`` is a documented RustEngine
+    NotImplementedError, not a rule. When one setup breaks several rules the FIRST
+    reason named may differ between engines; whether it is refused does not.
+    """
+
+    decks: list[list[int]]  # [blue 8 ids, red 8 ids]
+    shuffle: int = ShuffleMode.INDEPENDENT
+    start_tick: int = 0  # start mid-game on the clock
+    elixir_milli: list[int] | None = None  # override starting elixir per team
+    tower_hp: list[list[int]] | None = None  # [team][TowerSlot]; 0 = start destroyed
+    spawns: list[SpawnSpec] = []
+    crowns_from_destroyed_towers: bool = True
+
+
+# --------------------------------------------------------------------------
+# Arena geometry (integers only, derived from data/derived/arena.json)
+# --------------------------------------------------------------------------
+
+# Bits of the shipped tilemap. Duplicated from ../RoyaleSim/tools/extract_arena.py on
+# purpose:
+# Arena.load() asserts they match the "bits" block written into arena.json, so a
+# drift between the two fails loudly instead of silently misreading water.
+BIT_LANE_LEFT = 1
+BIT_LANE_RIGHT = 2
+BIT_NO_DEPLOY = 16
+BIT_WATER = 32
+
+
+class Arena(msgspec.Struct, frozen=True):
+    subtile: int  # subtiles per tile
+    half: int  # half-cells per tile (2)
+    tiles_x: int
+    tiles_y: int
+    grid: list[list[int]]  # [hy][hx] bitmask, hy in [0, tiles_y*half)
+    water_half_rows: tuple[int, int]  # inclusive
+    bridges_half_cols: list[tuple[int, int]]  # inclusive, sorted by x
+    king_centers: list[tuple[int, int]]  # [team] engine-frame subtiles
+    princess_centers: list[list[tuple[int, int]]]  # [team][slot-1] engine frame
+    princess_center_status: str
+
+    @property
+    def width(self) -> int:
+        return self.tiles_x * self.subtile
+
+    @property
+    def height(self) -> int:
+        return self.tiles_y * self.subtile
+
+    @property
+    def half_size(self) -> int:
+        return self.subtile // self.half
+
+    @property
+    def hx(self) -> int:
+        return self.tiles_x * self.half
+
+    @property
+    def hy(self) -> int:
+        return self.tiles_y * self.half
+
+    def bridge_centers_x(self) -> list[int]:
+        h = self.half_size
+        return [(a + b + 1) * h // 2 for a, b in self.bridges_half_cols]
+
+    @classmethod
+    def load(cls, calibration: Calibration, path: Path | None = None) -> Arena:
+        p = path or data_dir() / "derived" / "arena.json"
+        a = json.loads(p.read_text(encoding="utf-8"))
+        expected_bits = {
+            "LANE_LEFT": BIT_LANE_LEFT,
+            "LANE_RIGHT": BIT_LANE_RIGHT,
+            "NO_DEPLOY": BIT_NO_DEPLOY,
+            "WATER": BIT_WATER,
+        }
+        if a["bits"] != expected_bits:
+            raise ValueError(f"arena.json bits {a['bits']} != protocol bits {expected_bits}")
+        subtile = calibration.int("representation.SUBTILE_PER_TILE")
+        half = int(a["half_tiles_per_tile"])
+        if subtile % (2 * half) != 0:
+            # Half-cell centres must be integer subtiles, or the half-tile action
+            # parser would need rounding.
+            raise ValueError("SUBTILE_PER_TILE must be divisible by 2*half")
+        tiles_x, tiles_y = (int(v) for v in a["tiles"])
+        hs = subtile // half
+        kings = sorted(a["king_blocks"], key=lambda k: k["half_rows"][0])
+        if len(kings) != 2:
+            raise ValueError("arena.json must have exactly two king blocks")
+        king_centers = [
+            (
+                (k["half_cols"][0] + k["half_cols"][1] + 1) * hs // 2,
+                (k["half_rows"][0] + k["half_rows"][1] + 1) * hs // 2,
+            )
+            for k in kings
+        ]
+        bridges = sorted((int(b["half_cols"][0]), int(b["half_cols"][1])) for b in a["bridges"])
+        width, height = tiles_x * subtile, tiles_y * subtile
+        bridge_x = [(lo + hi + 1) * hs // 2 for lo, hi in bridges]
+        # PRINCESS TOWER CENTRES ARE NOT IN ANY DATA FILE. calibration.json says so
+        # ("Princess towers are NOT in the static map at all"). x is taken as the
+        # bridge centre line (a hypothesis: they visibly line up in the client);
+        # y is the community-quoted 6.5 tiles from the back edge, a GUESS.
+        # Interface demand: extract_arena.py / calibration.json should own this.
+        princess_y_own = MOCK_PRINCESS_CENTER_Y_HALF_CELLS * hs
+        left_x, right_x = bridge_x[0], bridge_x[-1]
+        blue = [(left_x, princess_y_own), (right_x, princess_y_own)]
+        # Red's own-left is the engine-right tower, by the 180-degree rotation.
+        red = [
+            (width - left_x, height - princess_y_own),
+            (width - right_x, height - princess_y_own),
+        ]
+        return cls(
+            subtile=subtile,
+            half=half,
+            tiles_x=tiles_x,
+            tiles_y=tiles_y,
+            grid=[list(map(int, row)) for row in a["grid"]],
+            water_half_rows=(int(a["water_half_rows"][0]), int(a["water_half_rows"][1])),
+            bridges_half_cols=bridges,
+            king_centers=king_centers,
+            princess_centers=[blue, red],
+            princess_center_status=(
+                "guess: x = bridge centre (hypothesis), y = 6.5 tiles (community)"
+            ),
+        )
+
+
+# 6.5 tiles expressed in half-cells so no float is needed. See Arena.load.
+MOCK_PRINCESS_CENTER_Y_HALF_CELLS = 13
+
+
+TERRITORY_MODELS = ("enemy_tower_no_deploy_rects",)
+KING_TOWER_NAME = "KingTower"
+PRINCESS_TOWER_NAME = "PrincessTower"
+
+
+def load_tower_no_deploy_sizes(path: Path | None = None) -> dict[str, tuple[int, int]]:
+    """``towers[].no_deploy_size_tiles`` from data/derived/cards.json, by tower name.
+
+    Reads ONE field of the derived card data, not the cards (MockEngine reads its
+    stats from the raw CSVs; the Rust engine owns the card loader, card.rs). The
+    numbers are never typed into Python: a regenerated cards.json moves the mask,
+    MockEngine and -- after a rebuild -- the Rust engine together, and RustEngine
+    refuses to start if its compiled rects differ from these
+    (the family's data gate: stop copying constants -- parse them).
+    """
+    p = path or data_dir() / "derived" / "cards.json"
+    if not p.exists():
+        raise FileNotFoundError(
+            f"{p} is absent: run tools/extract_cards.py in the sibling RoyaleSim checkout "
+            f"(data dir: {DATA_DIR_ENV} or {DEFAULT_DATA_DIR})"
+        )
+    raw = json.loads(p.read_text(encoding="utf-8"))
+    out: dict[str, tuple[int, int]] = {}
+    for t in raw.get("towers", []):
+        size = t.get("no_deploy_size_tiles")
+        if size is not None:
+            w, h = (int(v) for v in size)
+            out[str(t["name"])] = (w, h)
+    for name in (KING_TOWER_NAME, PRINCESS_TOWER_NAME):
+        if name not in out:
+            raise KeyError(
+                f"cards.json tower {name!r} has no no_deploy_size_tiles; troop territory "
+                f"cannot be decided (regenerate with ../RoyaleSim/tools/extract_cards.py)"
+            )
+    return out
+
+
+Rect = tuple[int, int, int, int]  # closed (x0, y0, x1, y1), engine frame subtiles
+
+
+class DeployRules(msgspec.Struct, frozen=True):
+    """Placement rules the action mask and the engine MUST share.
+
+    territory_model
+        calibration.json arena.TERRITORY_MODEL. Only "enemy_tower_no_deploy_rects"
+        is implemented; anything else raises, so a registry change cannot be
+        silently ignored by the mask.
+    king_no_deploy_size / princess_no_deploy_size
+        Full (width, height) in SUBTILES of each crown tower's NoDeploySize
+        rectangle, from data/derived/cards.json ``no_deploy_size_tiles`` (2018
+        buildings.csv NoDeploySizeW/H, read as tiles: 4/4 arena landmarks exact,
+        ../RoyaleSim/tools/check_data.py). THE TROOP RULE: a troop may not be placed at a point
+        inside the CLOSED rect, centred on the tower, of any ALIVE ENEMY crown
+        tower. With every enemy tower up that is the whole enemy side; when one
+        enemy princess falls, what opens on that side is the band between the far
+        river bank and the enemy king rect: 8 half-rows (4 tiles).
+        This mechanic replaced a rule both engines had invented: a fixed pocket of
+        12 half-rows past the far bank on the fallen tower's side. That rule had no
+        source and was 2 tiles deeper than the shipped rects allow. The shipped
+        mechanic is used as it stands rather than the pocket re-tuned to match it.
+    river_band_closed_to_troops (territory_status)
+        UNSOURCED, carried from the old rule in both engines: no troop on any
+        half-row of the river band, even a dry bridge cell whose lane's princess
+        has fallen (the rects alone would open it). calibration.json
+        arena.TERRITORY_MODEL open_question; a recording settles it.
+    Buildings
+        Own half only, even after a princess falls. UNSOURCED, unchanged.
+    footprint_model
+        calibration.json collision.BUILDING_FOOTPRINT_MODEL. Only
+        "collision_radius_circle" is implemented; anything else raises so a
+        calibration change cannot be silently ignored by the mask.
+    """
+
+    territory_model: str
+    territory_status: str
+    king_no_deploy_size: tuple[int, int]
+    princess_no_deploy_size: tuple[int, int]
+    footprint_model: str
+
+    @classmethod
+    def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
+        model = str(calibration.value("collision.BUILDING_FOOTPRINT_MODEL"))
+        if model != "collision_radius_circle":
+            raise NotImplementedError(
+                f"BUILDING_FOOTPRINT_MODEL={model!r}: only collision_radius_circle is implemented"
+            )
+        territory = str(calibration.value("arena.TERRITORY_MODEL"))
+        if territory not in TERRITORY_MODELS:
+            raise NotImplementedError(
+                f"TERRITORY_MODEL={territory!r}: only {TERRITORY_MODELS} is implemented"
+            )
+        subtile = calibration.int("representation.SUBTILE_PER_TILE")
+        sizes = load_tower_no_deploy_sizes(cards_path)
+
+        def in_subtiles(name: str) -> tuple[int, int]:
+            w, h = sizes[name]
+            if (w * subtile) % 2 or (h * subtile) % 2:
+                raise ValueError(f"{name} NoDeploySize half-extent is not an integer subtile")
+            return w * subtile, h * subtile
+
+        return cls(
+            territory_model=territory,
+            territory_status=(
+                f"{calibration.status('arena.TERRITORY_MODEL')}: rects from cards.json "
+                "no_deploy_size_tiles; river band closed to troops is a guess"
+            ),
+            king_no_deploy_size=in_subtiles(KING_TOWER_NAME),
+            princess_no_deploy_size=in_subtiles(PRINCESS_TOWER_NAME),
+            footprint_model=model,
+        )
+
+    def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:
+        """The closed NoDeploySize rect of a crown tower in ``slot`` centred at (cx, cy)."""
+        w, h = self.king_no_deploy_size if slot == TowerSlot.KING else self.princess_no_deploy_size
+        return cx - w // 2, cy - h // 2, cx + w // 2, cy + h // 2
+
+    def tower_rects(self, arena: Arena, owner: int) -> list[Rect]:
+        """[TowerSlot] -> the rect of ``owner``'s tower at its ARENA centre, alive or not."""
+        rects = [self.no_deploy_rect(TowerSlot.KING, *arena.king_centers[owner])]
+        for slot in (TowerSlot.LEFT, TowerSlot.RIGHT):
+            rects.append(self.no_deploy_rect(slot, *arena.princess_centers[owner][slot - 1]))
+        return rects
+
+
+def rect_contains(r: Rect, x: int, y: int) -> bool:
+    return r[0] <= x <= r[2] and r[1] <= y <= r[3]
+
+
+# --------------------------------------------------------------------------
+# MatchSetup spawn rule (every engine refuses the same specs, for the same reason)
+# --------------------------------------------------------------------------
+
+
+def touched_half_cells(arena: Arena, x: int, y: int) -> list[tuple[int, int]]:
+    """(hx, hy) of every half-cell a point touches: closed cells, clamped to the grid.
+
+    A point on a half-cell boundary touches both neighbours. This is the Rust
+    engine's ``Arena::touching_bits`` (axis_span clamps to [0, n-1]), which is
+    what makes a centre on the exact river bank line count as touching water.
+    """
+    h = arena.half_size
+
+    def span(v: int, n: int) -> list[int]:
+        i = v // h
+        lo = i - 1 if v % h == 0 else i
+        return list(range(max(lo, 0), min(i, n - 1) + 1))
+
+    return [(hx, hy) for hy in span(y, arena.hy) for hx in span(x, arena.hx)]
+
+
+def spawn_violation(arena: Arena, cards: Sequence[CardInfo], spec: SpawnSpec) -> str | None:
+    """Why ``spec`` may not be placed at reset, or None. THE rule for every engine.
+
+    ORDER AND MEANING (the Rust engine's ``scenario_spawn_now``, state.rs, is the
+    authority; this states it so MockEngine and RustEngine refuse identically):
+      1. team is BLUE or RED;
+      2. card_id is in the catalogue, and is a TROOP or BUILDING card (spells and
+         rolling spells are not units);
+      3. out of arena: the centre outside the CLOSED arena rectangle
+         [0, W] x [0, H] (Rust ``Arena::in_bounds``; deploys use the open interior,
+         spawns the closed one -- the engine's choice, recorded not argued);
+      4. on water: a non-flying unit (ground troop OR building) whose centre
+         touches any WATER half-cell, closed cells (``touched_half_cells``). So
+         the exact bank line y = 15 tiles is water off the bridges, and a bridge
+         edge x = 2.5 tiles inside the river band is water;
+      5. hp: -1 (full) or 1 <= hp <= the card's ``CardInfo.hitpoints`` (the per-unit
+         max at the level the engine runs cards at). The Rust core itself accepts
+         any hp >= 0; the adapter enforces this before the core sees it.
+    Flying units may spawn over water.
+    """
+    if spec.team not in TEAMS:
+        return f"bad spawn team {spec.team}"
+    if not 0 <= spec.card_id < len(cards):
+        return f"unknown card id {spec.card_id}"
+    card = cards[spec.card_id]
+    if card.placement not in (Placement.TROOP, Placement.BUILDING):
+        return f"spawns must be unit or building cards, {card.name} is not"
+    if not (0 <= spec.x <= arena.width and 0 <= spec.y <= arena.height):
+        return f"spawn {card.name} at ({spec.x}, {spec.y}): out of arena"
+    if not card.flying and any(
+        arena.grid[hy][hx] & BIT_WATER for hx, hy in touched_half_cells(arena, spec.x, spec.y)
+    ):
+        return f"spawn {card.name} at ({spec.x}, {spec.y}): on water"
+    if spec.hp != -1 and not 1 <= spec.hp <= card.hitpoints:
+        return f"spawn {card.name} hp {spec.hp} outside -1 or [1, {card.hitpoints}]"
+    return None
+
+
+def validate_spawns(arena: Arena, cards: Sequence[CardInfo], spawns: Sequence[SpawnSpec]) -> None:
+    """Raise ValueError for the first spec ``spawn_violation`` refuses."""
+    for sp in spawns:
+        why = spawn_violation(arena, cards, sp)
+        if why is not None:
+            raise ValueError(why)
+
+
+def spawn_order_key(
+    arena: Arena, cards: Sequence[CardInfo], spec: SpawnSpec
+) -> tuple[int, int, int, str, int]:
+    """Canonical spawn order of a valid ``MatchSetup`` spec (see ``SpawnSpec``).
+
+    ``(team, own-frame y, own-frame x, card NAME, resolved hp)`` -- exactly the Rust
+    core's key (state.rs ``scenario_spawn_batch``: ``(team, to_frame y, to_frame x,
+    name, hp)``). Team first, so the order -- and with it every uid and state_hash --
+    is invariant under ANY permutation of the list, not only within a team.
+
+    THE CARD IS COMPARED BY NAME, NOT BY CATALOGUE ID, and the two are not
+    interchangeable. Any total order on cards keeps ONE engine list-order-free and
+    seat-symmetric, but two engines with different orders give same-team specs on one
+    own-frame point with different cards different ``team_seq``, and so different
+    tie-breaks. The Rust core sorts by card NAME, so this does too, and the two agree
+    exactly: Python ``str`` ordering (code points) equals Rust ``String`` ordering
+    (UTF-8 bytes) for every string. tests/test_parity_hardening.py holds the engines
+    together with a catalogue whose id order is the reverse of its name order.
+    """
+    ox, oy = to_own(arena, spec.team, spec.x, spec.y)
+    card = cards[spec.card_id]
+    hp = card.hitpoints if spec.hp == -1 else spec.hp
+    return spec.team, oy, ox, card.name, hp
+
+
+I32_RANGE = (-(2**31), 2**31 - 1)
+I64_RANGE = (-(2**63), 2**63 - 1)
+U32_MAX = 2**32 - 1
+
+
+def setup_violation(arena: Arena, cards: Sequence[CardInfo], setup: MatchSetup) -> str | None:
+    """Why ``setup`` may not start a battle, or None. See ``MatchSetup`` for the table.
+
+    Reads nothing but its arguments, so an engine that calls it BEFORE touching its
+    state cannot be left half-reset by a refusal. Messages for the core-owned rules
+    are the Rust core's own (py.rs ``Battle.reset``, state.rs
+    ``scenario_set_tower_hp``), so one reason reads the same from either engine.
+    """
+    if len(setup.decks) != 2 or any(len(d) != DECK_SIZE for d in setup.decks):
+        return "setup.decks must be two lists of DECK_SIZE card ids"
+    for d in setup.decks:
+        for cid in d:
+            if not 0 <= cid < len(cards):
+                return f"unknown card id {cid}"
+    if setup.shuffle not in tuple(ShuffleMode):
+        return f"unknown shuffle mode {setup.shuffle}"
+    if not 0 <= setup.start_tick <= U32_MAX:
+        return f"start_tick {setup.start_tick} outside [0, {U32_MAX}]"
+    if setup.elixir_milli is not None:
+        if len(setup.elixir_milli) != 2:
+            return "elixir_milli must have two entries"
+        for e in setup.elixir_milli:
+            if not I64_RANGE[0] <= e <= I64_RANGE[1]:
+                return f"elixir_milli {e} does not fit i64"
+    if setup.tower_hp is not None:
+        if len(setup.tower_hp) != 2 or any(len(row) != len(TowerSlot) for row in setup.tower_hp):
+            return "tower_hp must be [team][3]"
+        for row in setup.tower_hp:
+            for hp in row:
+                if not I32_RANGE[0] <= hp <= I32_RANGE[1]:
+                    return f"tower hp {hp} does not fit i32"
+            if row[TowerSlot.KING] <= 0:
+                return "a battle cannot start with a destroyed king tower"
+    for sp in setup.spawns:
+        why = spawn_violation(arena, cards, sp)
+        if why is not None:
+            return why
+    return None
+
+
+def validate_setup(arena: Arena, cards: Sequence[CardInfo], setup: MatchSetup) -> None:
+    """Raise ValueError with ``setup_violation``'s reason. Call before any state changes."""
+    why = setup_violation(arena, cards, setup)
+    if why is not None:
+        raise ValueError(why)
+
+
+# --------------------------------------------------------------------------
+# The protocol
+# --------------------------------------------------------------------------
+
+
+@runtime_checkable
+class Engine(Protocol):
+    """A deterministic two-player battle engine.
+
+    Contract, method by method:
+
+    cards()        Static card catalogue. ``cards()[i].card_id == i``. Never
+                   changes after construction.
+    arena()        Static arena geometry in integer subtiles.
+    rules()        The placement rules shared with the action mask.
+    reset(seed, setup)
+                   Start a new battle. Same (seed, setup) must give a bit-identical
+                   battle. The engine owns its RNG; there is no global randomness.
+                   A setup ``setup_violation`` refuses (spawns included) raises
+                   ValueError with that reason and leaves the previous battle
+                   untouched -- validate everything, then mutate. Spawn list order
+                   does not matter (``SpawnSpec``).
+    check_deploy(command) -> int
+                   PURE query: the DeployStatus ``step`` would give this command
+                   if it were the only command this step. Must not mutate state.
+    step(commands, ticks) -> list[DeployResult]
+                   All commands are validated against the CURRENT state (the one
+                   ``state()`` returns), so both teams' commands are simultaneous.
+                   At most one command per team; a second gets DUPLICATE_TEAM
+                   (decided in input order). Accepted commands are PAID at once --
+                   elixir spent, hand cycled, even when ``ticks == 0`` -- in canonical
+                   (team, hand slot) order, so the resulting state and state_hash do
+                   not depend on the list order; their units/spells materialise in
+                   the first tick, whose elixir regeneration lands on the reduced
+                   bar (the Rust engine's order, py.rs apply_commands; unsourced for
+                   the live game). Then the engine advances ``ticks`` ticks
+                   (stopping early if the game ends). Returns one result per
+                   command, in input order.
+    state() -> BattleState
+                   Snapshot of the current state. Must be a pure function of the
+                   battle so far (no wall clock, no object identity). ``spells`` and
+                   the entity status timers are what the engine models: an engine
+                   whose spells resolve within a tick reports no spell objects, one
+                   without status effects reports 0 timers (MockEngine, both).
+    save_state() -> bytes / load_state(blob)
+                   Exact round trip, including RNG state: load then step must equal
+                   having never saved. Used for curriculum starts and search.
+                   ``load_state`` raises ValueError, leaving the running battle
+                   untouched, when a hand, the cycle queue, a pending deploy or a
+                   non-tower board entity names a card this engine's catalogue does
+                   not have. Cards are matched by NAME, so a snapshot loads into a
+                   catalogue that is a permuted superset of the one it was saved
+                   from and plays the same cards. (Rust ``catalogue_violation``.
+                   Without the check, a snapshot read through another catalogue
+                   plays a Knight as a Valkyrie.)
+    state_hash() -> int
+                   64-bit digest of the full internal state (RNG included), stable
+                   across processes. Replays check it periodically.
+    """
+
+    def cards(self) -> Sequence[CardInfo]: ...
+
+    def arena(self) -> Arena: ...
+
+    def rules(self) -> DeployRules: ...
+
+    def reset(self, seed: int, setup: MatchSetup) -> None: ...
+
+    def check_deploy(self, command: DeployCommand) -> int: ...
+
+    def step(self, commands: Sequence[DeployCommand], ticks: int) -> list[DeployResult]: ...
+
+    def state(self) -> BattleState: ...
+
+    def save_state(self) -> bytes: ...
+
+    def load_state(self, blob: bytes) -> None: ...
+
+    def state_hash(self) -> int: ...
+
+
+# --------------------------------------------------------------------------
+# Frame helpers shared by obs / action / reward so they cannot disagree
+# --------------------------------------------------------------------------
+
+
+def to_own(arena: Arena, team: int, x: int, y: int) -> tuple[int, int]:
+    """Engine frame -> team's own frame (an involution)."""
+    if team == BLUE:
+        return x, y
+    return arena.width - x, arena.height - y
+
+
+def to_engine(arena: Arena, team: int, x_own: int, y_own: int) -> tuple[int, int]:
+    return to_own(arena, team, x_own, y_own)
+
+
+def mirror_state(arena: Arena, s: BattleState) -> BattleState:
+    """The same battle with the teams' seats swapped.
+
+    Positions rotate 180 degrees and team ids swap. Tower slots are already
+    own-frame, so they are unchanged. Obs/mask for Red on the mirror must equal
+    obs/mask for Blue on the original, bit for bit.
+    """
+    ents = [
+        msgspec.structs.replace(e, team=1 - e.team, x=arena.width - e.x, y=arena.height - e.y)
+        for e in s.entities
+    ]
+    # Spell centres and aim points rotate like positions; delay, roll progress and
+    # hit counts are frame-free.
+    spells = [
+        msgspec.structs.replace(
+            sp,
+            team=1 - sp.team,
+            x=arena.width - sp.x,
+            y=arena.height - sp.y,
+            aim_x=arena.width - sp.aim_x,
+            aim_y=arena.height - sp.aim_y,
+        )
+        for sp in s.spells
+    ]
+    players = [
+        msgspec.structs.replace(s.players[RED], team=BLUE),
+        msgspec.structs.replace(s.players[BLUE], team=RED),
+    ]
+    winner = s.winner
+    if winner in (Winner.BLUE, Winner.RED):
+        winner = 1 - winner
+    return msgspec.structs.replace(s, entities=ents, players=players, winner=winner, spells=spells)
+
+
+@lru_cache(maxsize=1)
+def default_calibration() -> Calibration:
+    return Calibration.load()

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyd
+*.pdb
+.venv/
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.benchmarks/
+*.egg-info/
+
+# Regenerable outputs: recorded traces and rendered replay pages
+*.msgpack
+battle.html
+logs/
+
+# Recorded captures and traces from the real game (RoyaleLive's)
+*.jsonl
+*.jsonl.gz
+reports/
+
+# Secrets and editor cruft
+.env
+.env.*
+*.pem
+*.key
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
