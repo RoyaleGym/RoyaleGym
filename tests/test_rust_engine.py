@@ -78,6 +78,7 @@ from royalegym.action import (
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv
 from royalegym.mock_engine import MockEngine
+from royalegym.obs import spatial_channels
 from royalegym.protocol import (
     BIT_WATER,
     BLUE,
@@ -957,6 +958,12 @@ class RotationStats(collections.Counter):
     """Deploy counts from ``rotation_divergence``, for vacuity floors."""
 
 
+# Spatial channels by name. A fair builder writes no enemy_spell_aim plane, so
+# the spell set is what it does write.
+OBS_CHANNEL = {name: i for i, (name, _) in enumerate(spatial_channels())}
+SPELL_OBS_CHANNELS = ("own_spells", "enemy_spells", "own_spell_aim")
+STUN_OBS_CHANNELS = ("own_stunned", "enemy_stunned")
+
 def rotation_divergence(
     seed: int,
     steps: int = 300,
@@ -1026,8 +1033,16 @@ def rotation_divergence(
             stats["stunned_steps"] += int(any(e.stun_ticks > 0 for e in s.entities))
             sp = obs["blue"].get("spatial")
             if sp is not None:
-                stats["obs_spell_channel_steps"] += int(bool(sp[15:19].any()))
-                stats["obs_stun_channel_steps"] += int(bool(sp[19:21].any()))
+                # BY NAME, not by slice: these were 15:19 and 19:21 until the channel
+                # list changed, and a stale slice here counts the wrong planes without
+                # failing anything -- it just makes the vacuity floors below measure
+                # something other than what they say.
+                stats["obs_spell_channel_steps"] += int(
+                    bool(sp[[OBS_CHANNEL[k] for k in SPELL_OBS_CHANNELS]].any())
+                )
+                stats["obs_stun_channel_steps"] += int(
+                    bool(sp[[OBS_CHANNEL[k] for k in STUN_OBS_CHANNELS]].any())
+                )
             if "spells" in obs["blue"]:  # EntityListObsBuilder: spell rows, stun feature
                 stats["obs_spell_channel_steps"] += int(bool(obs["blue"]["spells"][:, 0].any()))
                 stats["obs_stun_channel_steps"] += int(bool(obs["blue"]["entities"][:, 15].any()))

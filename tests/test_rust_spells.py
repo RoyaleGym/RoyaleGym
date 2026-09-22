@@ -58,7 +58,7 @@ from royalegym.action import PlacementOracle
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
-from royalegym.obs import EntityListObsBuilder, SpatialObsBuilder
+from royalegym.obs import EntityListObsBuilder, SpatialObsBuilder, spatial_channels
 from royalegym.protocol import (
     BLUE,
     RED,
@@ -334,6 +334,10 @@ SPELL_ROTATION_DECK = (
 )
 
 
+# Spatial channel index by name, so a reordering moves this with it.
+CHANNEL = {name: i for i, (name, _) in enumerate(spatial_channels())}
+
+
 def spell_aiming_policy(noop_prob: float = 0.35, aim_prob: float = 0.85):
     """ONE policy for both seats, a pure function of (obs, mask, rng): with probability
     ``aim_prob`` play a legal action on a tile holding enemy troops (on the enemy half
@@ -344,7 +348,13 @@ def spell_aiming_policy(noop_prob: float = 0.35, aim_prob: float = 0.85):
 
     def enemy_troop_tiles(obs):
         if "spatial" in obs:
-            return obs["spatial"][4] + obs["spatial"][5]  # own frame [32, 18]
+            # BY NAME. These were channels 4 and 5 until crown towers were split out
+            # of the buildings planes; a hardcoded index here does not fail, it
+            # quietly aims the policy at a different channel and the test goes on
+            # measuring something else.
+            return obs["spatial"][CHANNEL["enemy_ground_troops"]] + obs["spatial"][
+                CHANNEL["enemy_air_troops"]
+            ]
         grid = np.zeros((32, 18), dtype=np.float32)
         for f in obs["entities"]:
             if f[0] and f[2] and f[3]:  # present, enemy, troop
