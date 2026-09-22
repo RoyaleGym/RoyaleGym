@@ -46,19 +46,19 @@ New here? The install steps are under [Install](#install).
 
 <table>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.svg" alt="Two APIs over one battle: ClashParallelEnv driving both seats through PettingZoo, and a Gymnasium env driving one seat, stepping the same board."><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat against a scripted opponent.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.svg" alt="The legality mask: the actions playable on the first step, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1605 of the 2305 are, for each player.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.svg" alt="Batched self-play: four boards become eight agent slots, and one policy is fed both seats' observations, each in its own frame."><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.png" alt="Two APIs over one battle: ClashParallelEnv driving both seats through PettingZoo, and a Gymnasium env driving one seat, stepping the same board."><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat, and the env plays the other.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.png" alt="The legality mask: the actions playable on the first step, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1605 of the 2305 are, for each player.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.png" alt="Batched self-play: four boards become eight agent slots, and one policy is fed both seats' observations, each in its own frame."><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
   </tr>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/five-pieces.svg" alt="The five swappable pieces of the env constructor: observation builder, action parser, reward, state mutator and done conditions, each with a shipped default."><br><b>Five swappable pieces</b><br><sub>What the bot sees, what its moves mean, what it is rewarded for, how a match starts, and when it ends. Each is a small class with a default that ships.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/start-anywhere.svg" alt="Three ways an episode can start, side by side: a fresh battle, a mid-game board with a tower already down, and a saved snapshot resumed."><br><b>Start from any position</b><br><sub>A fresh battle, a damaged mid-game, a board you set up by hand, or an exact saved snapshot. Mix them by weight to build a curriculum.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/record-and-verify.svg" alt="Verifying a recording: the battle re-simulated on a fresh engine, with every frame hash compared and no divergences."><br><b>Record it, re-run it, prove it</b><br><sub>A recording holds the seed, the setup, the commands and a hash per tick. Re-run it on a fresh engine and every one of those hashes has to come back the same.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/five-pieces.png" alt="The five swappable pieces of the env constructor: observation builder, action parser, reward, state mutator and done conditions, each with a shipped default."><br><b>Five swappable pieces</b><br><sub>What the bot sees, what its moves mean, what it is rewarded for, how a match starts, and when it ends. Each is a small class with a default that ships.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/start-anywhere.png" alt="Three ways an episode can start, side by side: a fresh battle, a mid-game board with a tower already down, and a saved snapshot resumed."><br><b>Start from any position</b><br><sub>A fresh battle, a damaged mid-game, a board you set up by hand, or an exact saved snapshot. Mix them by weight to build a curriculum.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/record-and-verify.png" alt="Verifying a recording: the battle re-simulated on a fresh engine, with every frame hash compared and no divergences."><br><b>Record it, re-run it, prove it</b><br><sub>A recording holds the seed, the setup, the commands and a hash per tick. Re-run it on a fresh engine and every one of those hashes has to come back the same.</sub></td>
   </tr>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/replay-page.svg" alt="The replay page: a self-contained HTML file showing the board, a timeline scrubber and a tooltip on one unit."><br><b>A replay page, no server</b><br><sub>A recording becomes one self-contained HTML file you double-click. Nothing to install and nothing to run.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/replay-page.png" alt="The replay page: a self-contained HTML file showing the board, a timeline scrubber and a tooltip on one unit."><br><b>A replay page, no server</b><br><sub>A recording becomes one self-contained HTML file you double-click. Nothing to install and nothing to run.</sub></td>
     <td width="33%" align="center"><img width="100%" src="docs/media/battle-in-viewer.png" alt="A battle in RoyaleViser"><br><b>Watch it in the viewer</b><br><sub>RoyaleViser draws a recording in a window, or watches a running env live. This is a battle in its window.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt="What one player sees against what the engine holds: its own hand shown, the enemy's hidden, and the enemy's elixir counted rather than read."><br><b>Hidden information, as in the game</b><br><sub>Your bot does not see the opponent's hand. Their elixir is counted from the plays you watched, the way a player counts it. You can turn either one on, which changes the observation's width, and `ClashParallelEnv.config()` records that you did.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.png" alt="What one player sees against what the engine holds: its own hand shown, the enemy's hidden, and the enemy's elixir counted rather than read."><br><b>Hidden information, as in the game</b><br><sub>Your bot does not see the opponent's hand. Their elixir is counted from the plays you watched, the way a player counts it. You can turn either one on, which changes the observation's width, and `ClashParallelEnv.config()` records that you did.</sub></td>
   </tr>
 </table>
 
@@ -118,7 +118,7 @@ machine built, and the same seed then gives you a different battle from the one 
 cards up by name and your battle matches this one.
 
 There are seven runnable programs in [`examples/`](examples/), in the order they are
-worth reading: this battle, one seat against a scripted opponent, batched self-play,
+worth reading: this battle, one seat with the env playing the other, batched self-play,
 writing your own reward, recording and proving a replay, resuming a run where it stopped,
 and comparing two bots. The test suite runs all seven and checks each one printed the
 thing it exists to show.
@@ -202,7 +202,7 @@ environment API over it (RLGym), a trainer on top (RLGym-PPO) and a viewer besid
 |---|---|---|
 | [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | the battle engine. Integer-only Rust. The same seed always gives the same battle. Its movement rules are measured against recordings of real battles | the engine `RustEngine` drives, and where the arena and card data comes from |
 | **RoyaleGym** (this repo) | the environment API: what the bot sees, what its moves mean, what it is rewarded for. Gymnasium, PettingZoo and self-play envs | package `royalegym`, which puts the five pieces together into the envs |
-| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | it will use these envs. Designed, not yet written |
+| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | it trains on these envs, as of 2026-09-22. No bot has been trained with it yet |
 | [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | the viewer: recordings, engine traces and running environments, drawn in its own window | reads this package's recordings and its live UDP frames. The picture above is its window |
 | RoyaleLive | records real matches. It is private | nothing directly. Its recordings are what RoyaleSim is calibrated against, so the accuracy reaches your envs through the engine |
 
@@ -330,6 +330,16 @@ reported an asymmetry that is real and intended.
 
 Read next:
 
+- [`examples/`](examples/) for seven programs that run, starting with one battle and ending
+  with comparing two bots.
+- The documentation site under [`docs/site/pages/`](docs/site/pages/), which is longer than
+  anything here: [Your first bot](docs/site/pages/first-bot.md) walks a custom policy from
+  nothing to beating the random opponent, and there are pages on
+  [installing](docs/site/pages/install.md),
+  [writing a reward](docs/site/pages/rewards.md),
+  [observations and actions](docs/site/pages/observations-and-actions.md),
+  [how accurate the engine is](docs/site/pages/accuracy.md) and
+  [what to do when something breaks](docs/site/pages/troubleshooting.md).
 - [`docs/architecture.md`](docs/architecture.md) for the layers, the engine contract, the
   action space, the module map, and why each convention is there.
 - [`docs/observation-spec.md`](docs/observation-spec.md) for every channel and every vector

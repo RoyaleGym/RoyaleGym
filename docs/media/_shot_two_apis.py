@@ -1,22 +1,30 @@
 #!/usr/bin/env python3
-"""Two standard interfaces over one battle, both built for real and compared.
+"""Two standard interfaces over one battle: who supplies which seat, and a mirrored run.
 
 The README tile says you can drive both seats through PettingZoo or one seat through
-Gymnasium. This draws that claim after checking it: a ``ClashParallelEnv`` and a
-``gym.make`` env are both constructed, both reset, and the three things that ought to
-match are compared field by field before anything is written on the canvas.
+Gymnasium. The picture's job is the SHAPE of that -- two entry points, two seats each,
+and one of the four seats filled by the env itself rather than by you -- which is the
+part a sentence keeps having to re-explain.
 
-Nothing is typed in. The Gymnasium id is read out of ``gymnasium.registry`` rather
-than quoted, the one drawn is the one that registers, builds and emits no warning, the
-action-space size comes off the spaces themselves, and the opening board is compared
-entity by entity between the two envs.
+WHAT IS MEASURED, and how it could fail. A ``ClashGymEnv`` is built and reset, and the
+seed its ``reset`` drew for the ``ClashParallelEnv`` underneath is read back off that
+env and handed to a second, independent ``ClashParallelEnv`` with its own engine. Both
+are then stepped through their own API with the same pair of actions per step -- mine
+for the learner seat, and the ones the opponent object actually returned for the other,
+recorded as it returns them -- and after every step the two BattleState objects are
+compared whole (``==`` on the struct: entities, uids, hands, elixir, towers, spells;
+nothing pruned) along with the observation each API hands back for the learner seat.
 
-WHAT IS NOT CLAIMED. The two envs do not land on the same battle from the same
-``seed=``: ``ClashGymEnv.reset`` draws its own sub-seed from the seed it is given, so
-the opening HANDS differ even though the board does not. The figure therefore says
-"same opening board", which is what was measured, and leans for "one battle" on the
-thing that is structurally true instead -- the Gymnasium env holds a
-``ClashParallelEnv`` and steps it.
+That comparison can fail, and the figure shows it failing: the same battle is replayed a
+third time with the two seats' actions exchanged, and the step at which it parts company
+with the mirrored run is drawn beside a cross. A comparison that could not tell those
+two runs apart would not be worth drawing.
+
+Nothing is typed in. The seat names, their count, the class names, the opponent keyword
+and the number of steps, cards and the divergence step all come out of the objects.
+The one claim the picture makes without evidence beside it is the shared class name in
+the bar, which is structure, not a measurement: ``ClashGymEnv`` builds a
+``ClashParallelEnv``, so no tick is drawn against it.
 
 Sized for a README tile: drawn at 1000 px and shown at about 360, so the smallest type
 is 34 px and the headline is 66.
@@ -24,6 +32,7 @@ is 34 px and the headline is 66.
 
 from __future__ import annotations
 
+import inspect
 import pathlib
 import sys
 
@@ -37,6 +46,8 @@ import make_media as M  # noqa: E402  (palette and fonts, shared with the other 
 # cannot change which cards are dealt, and a fixed seed.
 SEED = 0
 DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Zap", "Musketeer")
+STEPS = 60        # the cap on the mirrored run; it stops early if the battle ends
+NOOP_PROB = 0.5   # both seats: often enough that the run is not 60 no-ops
 
 W, H = 1000, 640
 MARGIN = 36
@@ -44,15 +55,13 @@ MARGIN = 36
 F_HEAD = 66
 F_API = 50
 F_CHIP = 40
-F_ROW = 38
+F_ROW = 36
 F_ID = 36
-F_FOOT = 36
 F_SMALL = 34  # the floor: nothing on this canvas is smaller
 
-PANEL_Y, PANEL_H = 100, 274
-MERGE_Y = 380          # where the two panels join into one
-BAR_Y, BAR_H = 412, 146
-CHIP_W, CHIP_H = 190, 66
+PANEL_Y, PANEL_H = 104, 264
+CHIP_W, CHIP_H = 174, 66
+BAR_Y, BAR_H = 404, 166
 
 
 def _blend(a, b, t):
@@ -64,7 +73,7 @@ def _centre(d, text, font, cx, y, fill):
 
 
 def _dashed(d, box, colour, width=4, dash=13):
-    """A dashed outline, which is how a seat someone else drives is drawn."""
+    """A dashed outline, which is how a seat the env fills is drawn."""
     x0, y0, x1, y1 = box
     for x in range(int(x0), int(x1), dash * 2):
         d.line([x, y0, min(x + dash, x1), y0], fill=colour, width=width)
@@ -81,6 +90,12 @@ def _check(d, x, y, size, colour):
            fill=colour, width=6)
 
 
+def _cross(d, x, y, size, colour):
+    """The tick's opposite, for the run that is supposed to come out different."""
+    d.line([x, y + size * 0.1, x + size, y + size * 0.9], fill=colour, width=6)
+    d.line([x + size, y + size * 0.1, x, y + size * 0.9], fill=colour, width=6)
+
+
 def _merge(d, xs, y0, y1, cx, colour, width=6, head=13):
     """Two stems joined into one arrow: the two APIs meeting on one env.
 
@@ -95,54 +110,56 @@ def _merge(d, xs, y0, y1, cx, colour, width=6, head=13):
     d.polygon([(cx, y1), (cx - head, y1 - head), (cx + head, y1 - head)], fill=colour)
 
 
-def _pick_gym_id(gym, mutator_fn):
-    """The registered id that builds, runs on the real engine and does not warn.
+def _opponent_kwarg(cls) -> str:
+    """The name of the constructor slot that takes the other seat's policy.
 
-    There are three ids and one of them warns on purpose, because it does not say which
-    engine you got. Rather than quoting an id, every ``royalegym/`` id in the registry
-    is built and the warnings it raises are counted; the ones that warn are dropped and
-    the quietest surviving id whose env holds a ``RustEngine`` is the one drawn.
+    Read off the signature rather than quoted, by looking for the parameter whose
+    annotation mentions the ``Opponent`` protocol.
     """
-    import warnings
-
-    from royalegym.rust_engine import RustEngine
-
-    tried = []
-    for env_id in sorted(k for k in gym.registry if k.startswith("royalegym/")):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            try:
-                env = gym.make(env_id, state_mutator=mutator_fn())
-            except Exception as exc:  # an id that cannot build here is just skipped
-                tried.append((env_id, None, type(exc).__name__))
-                continue
-        warned = len(caught)
-        rust = isinstance(env.unwrapped.parallel.engine, RustEngine)
-        tried.append((env_id, warned, "rust" if rust else "other engine"))
-        if warned == 0 and rust:
-            return env_id, env, tried
-        env.close()
-    raise RuntimeError(f"no quiet Rust id in the registry: {tried}")
+    params = inspect.signature(cls.__init__).parameters
+    names = [n for n, p in params.items() if "Opponent" in str(p.annotation)]
+    if len(names) != 1:
+        raise RuntimeError(f"cannot tell which {cls.__name__} slot takes an opponent: {names}")
+    return names[0]
 
 
-def _board_key(state):
-    """Everything on the board, in an order that does not depend on entity ids.
+class _Recorded:
+    """The opponent the env was given, with the action it returns kept.
 
-    Uids and hands come out of the engine's generator, and the two envs do not share
-    one, so neither belongs in a comparison of the BOARD.
+    The other seat's action has to be known to replay the step through the other API,
+    and asking the policy again would not be the same thing: it is stochastic and it
+    draws from the env's generator. So the action is taken as it is handed over.
     """
-    ents = sorted((e.team, e.tower_slot, e.kind, e.card_id, e.x, e.y, e.hp, e.max_hp)
-                  for e in state.entities)
-    players = [(p.team, p.elixir_milli, tuple(p.tower_hp), p.crowns) for p in state.players]
-    return (state.tick, tuple(ents), tuple(players))
+
+    def __init__(self, inner):
+        self.inner = inner
+        self.actions: list[int] = []
+
+    def act(self, obs, mask, rng) -> int:
+        action = int(self.inner.act(obs, mask, rng))
+        self.actions.append(action)
+        return action
+
+
+def _obs_equal(a, b) -> bool:
+    import numpy as np
+
+    return sorted(a) == sorted(b) and all(np.array_equal(a[k], b[k]) for k in a)
 
 
 def draw(out_path: pathlib.Path) -> str:
     import gymnasium as gym
+    import numpy as np
+    from pettingzoo.utils.env import ParallelEnv
 
-    import royalegym  # noqa: F401  (importing it is what registers the gym ids)
-    from royalegym import ClashParallelEnv, DefaultStateMutator, RustEngine
-    from royalegym.protocol import TowerSlot
+    from royalegym import (
+        ClashGymEnv,
+        ClashParallelEnv,
+        DefaultStateMutator,
+        RandomLegalOpponent,
+        RustEngine,
+    )
+    from royalegym.protocol import DeployStatus
 
     engine = RustEngine()
     by_name = {c.name: c.card_id for c in engine.cards()}
@@ -152,48 +169,81 @@ def draw(out_path: pathlib.Path) -> str:
         return DefaultStateMutator(decks=[deck, deck])
 
     # ---- the two interfaces, both built and both reset ----------------------------
-    par = ClashParallelEnv(engine=engine, state_mutator=mutator())
-    par_obs, _ = par.reset(seed=SEED)
-    par_state = par.battle_state
-
-    gym_id, gym_env, tried = _pick_gym_id(gym, mutator)
+    opp_kwarg = _opponent_kwarg(ClashGymEnv)
+    opponent = _Recorded(RandomLegalOpponent(noop_prob=NOOP_PROB))
+    gym_env = ClashGymEnv(engine=RustEngine(), state_mutator=mutator(),
+                          **{opp_kwarg: opponent})
     gym_obs, _ = gym_env.reset(seed=SEED)
-    gym_state = gym_env.unwrapped.parallel.battle_state
 
-    # ---- what the two agree on, measured rather than asserted in prose -------------
-    seats_par = list(par.possible_agents)
-    gym_seat = gym_env.unwrapped.agent
-    gym_other = gym_env.unwrapped.other
-    n_seats_par, n_seats_gym = len(seats_par), 1
+    # The battle the Gymnasium env chose for itself. Its reset draws a sub-seed from the
+    # seed it is given, so seed=SEED on a second env would be a DIFFERENT battle; the
+    # seed that was actually used is read back off the env underneath and passed on.
+    sub_seed = getattr(gym_env.parallel, "_np_random_seed", None)
+    if sub_seed is None:
+        raise RuntimeError("cannot read back the seed the Gymnasium env drew for itself")
+    par = ClashParallelEnv(engine=engine, state_mutator=mutator())
+    par_obs, _ = par.reset(seed=sub_seed)
 
-    par_space = par.action_space(seats_par[0])
-    same_space = par_space == gym_env.action_space
-    n_actions = int(par_space.n)
+    # The labels on the two panels, each true of the object drawn under it.
+    if not isinstance(par, ParallelEnv):
+        raise RuntimeError("the left panel says PettingZoo and the object is not one")
+    if not isinstance(gym_env, gym.Env):
+        raise RuntimeError("the right panel says Gymnasium and the object is not one")
 
-    par_keys = sorted(par_obs[gym_seat].keys())
-    gym_keys = sorted(gym_obs.keys())
-    same_keys = par_keys == gym_keys
-    same_shapes = same_keys and all(
-        par_obs[gym_seat][k].shape == gym_obs[k].shape for k in gym_keys)
-    n_keys = len(gym_keys)
+    seats = list(par.possible_agents)
+    mine, theirs = gym_env.agent, gym_env.other
+    if sorted(seats) != sorted([mine, theirs]):
+        raise RuntimeError(f"the Gymnasium seats {mine}/{theirs} are not {seats}")
+    n_seats_par = len(seats)
+    # One of the two seats is yours through the Gymnasium API; the loop below checks
+    # that the env really did fill the other one, every step.
+    n_seats_gym = len([s for s in seats if s == mine])
 
-    wraps = type(gym_env.unwrapped.parallel).__name__
-    same_class = wraps == type(par).__name__
+    # ---- the mirrored run ----------------------------------------------------------
+    rng = np.random.default_rng(SEED)
+    policy = RandomLegalOpponent(noop_prob=NOOP_PROB)
+    my_actions: list[int] = []
+    mirror: list[object] = [par.battle_state]
+    cards = 0
+    if par.battle_state != gym_env.parallel.battle_state:
+        raise RuntimeError("the two envs did not start on the same battle")
+    for _ in range(STEPS):
+        action = int(policy.act(gym_obs, gym_obs["action_mask"], rng))
+        my_actions.append(action)
+        gym_obs, _, term, trunc, info = gym_env.step(action)
+        par_obs, *_ = par.step({mine: action, theirs: opponent.actions[-1]})
+        cards += sum(int(s) == DeployStatus.OK for s in
+                     (info["deploy_status"], info["opponent_deploy_status"]))
+        if not _obs_equal(par_obs[mine], gym_obs):
+            raise RuntimeError(f"observations differ at step {len(my_actions)}")
+        if par.battle_state != gym_env.parallel.battle_state:
+            raise RuntimeError(f"states differ at step {len(my_actions)}")
+        mirror.append(par.battle_state)
+        if term or trunc:
+            break
+    n_steps = len(my_actions)
+    if len(opponent.actions) != n_steps:
+        raise RuntimeError("the env did not fill the other seat on every step")
+    if cards == 0:
+        raise RuntimeError("no card was played: the run compares two idle battles")
+    # An equality that cannot say no proves nothing, so it is asked something it must
+    # refuse: the same board seen from the two seats is not the same observation.
+    if _obs_equal(par_obs[mine], par_obs[theirs]):
+        raise RuntimeError("the observation comparison cannot tell the two seats apart")
 
-    same_board = _board_key(par_state) == _board_key(gym_state)
-    n_towers = sum(1 for e in par_state.entities if e.tower_slot >= 0)
-    king_hp = par_state.players[0].tower_hp[TowerSlot.KING]
-    # The hands do NOT match, and saying so here keeps the caption honest.
-    hands_match = [list(p.hand) for p in par_state.players] == \
-                  [list(p.hand) for p in gym_state.players]
-
-    if not (same_space and same_keys and same_shapes and same_class and same_board):
-        raise RuntimeError(
-            f"the two APIs disagree: space={same_space} keys={same_keys} "
-            f"shapes={same_shapes} class={same_class} board={same_board}")
-
-    ns, _ = gym_id.split("/", 1)
-    namespace, short_id = ns + "/", gym_id.split("/", 1)[1]
+    # ---- the control: the same comparison, on a run it must NOT pass ----------------
+    # If the actions had landed on the other seat -- the one mistake a matching pair of
+    # states could plausibly hide -- this is where the two would part company.
+    swapped = ClashParallelEnv(engine=RustEngine(), state_mutator=mutator())
+    swapped.reset(seed=sub_seed)
+    split = None
+    for i, action in enumerate(my_actions, start=1):
+        swapped.step({theirs: action, mine: opponent.actions[i - 1]})
+        if swapped.battle_state != mirror[i]:
+            split = i
+            break
+    if split is None:
+        raise RuntimeError("swapping the seats changed nothing: the comparison is blind")
 
     # ---- the drawing ---------------------------------------------------------------
     im, d = M.canvas(W, H)
@@ -203,72 +253,77 @@ def draw(out_path: pathlib.Path) -> str:
     f_row = M.theme_font(F_ROW)
     f_id = M.theme_font(F_ID, mono=True)
     f_small = M.theme_font(F_SMALL)
-    f_foot = M.theme_font(F_FOOT)
     # DIM grey is fine at 34 px and gone at 13; every secondary colour here is lifted.
     bright = _blend(M.DIM, M.TEXT, 0.45)
     brighter = _blend(M.DIM, M.TEXT, 0.65)
 
-    d.text((MARGIN, 12), "Drive %d seats, or just %d" % (n_seats_par, n_seats_gym),
+    d.text((MARGIN, 10), "Drive %d seats, or just %d" % (n_seats_par, n_seats_gym),
            font=f_head, fill=M.TEXT)
 
     pw = (W - 2 * MARGIN - 24) // 2
+    shared = type(par).__name__
     panels = (
-        (MARGIN, "PettingZoo", ("", "ClashParallelEnv"),
-         ((seats_par[0], True), (seats_par[1], True)), ("your bot", "your bot")),
-        (MARGIN + pw + 24, "Gymnasium", (namespace, short_id),
-         ((gym_seat, True), (gym_other, False)), ("your bot", "scripted")),
+        (MARGIN, "PettingZoo", shared,
+         [(s, True) for s in seats]),
+        (MARGIN + pw + 24, "Gymnasium", type(gym_env).__name__,
+         [(s, s == mine) for s in seats]),
     )
     seat_colour = {"blue": M.BLUE, "red": M.RED}
-    for px, name, ids, chips, chip_subs in panels:
+    for px, name, cls, chips in panels:
         d.rounded_rectangle([px, PANEL_Y, px + pw, PANEL_Y + PANEL_H], radius=14,
                             fill=M.PANEL, outline=M.BORDER, width=3)
         cx = px + pw / 2.0
-        _centre(d, name, f_api, cx, PANEL_Y + 10, M.TEXT)
-        for i, line in enumerate(ids):
-            if line:
-                _centre(d, line, f_id, cx, PANEL_Y + 70 + i * 40, brighter)
+        _centre(d, name, f_api, cx, PANEL_Y + 8, M.TEXT)
+        _centre(d, cls, f_id, cx, PANEL_Y + 78, brighter)
         gap = 18
-        cw = 2 * CHIP_W + gap
-        cy = PANEL_Y + 150
-        for i, (seat, mine) in enumerate(chips):
+        cw = len(chips) * CHIP_W + (len(chips) - 1) * gap
+        cy = PANEL_Y + 146
+        for i, (seat, yours) in enumerate(chips):
             x0 = cx - cw / 2.0 + i * (CHIP_W + gap)
             box = [x0, cy, x0 + CHIP_W, cy + CHIP_H]
             col = seat_colour.get(seat, M.TEXT)
-            if mine:
+            if yours:
                 d.rounded_rectangle(box, radius=10, fill=col)
                 _centre(d, seat, f_chip, x0 + CHIP_W / 2.0, cy + 10, M.BG)
+                sub, sub_col = "you", bright
             else:
                 d.rounded_rectangle(box, radius=10, fill=M.BG)
                 _dashed(d, box, col)
                 _centre(d, seat, f_chip, x0 + CHIP_W / 2.0, cy + 10, col)
-            _centre(d, chip_subs[i], f_small, x0 + CHIP_W / 2.0, cy + CHIP_H + 10, bright)
+                sub, sub_col = opp_kwarg + "=", col
+            # Centred on its chip, but never over the panel edge: the widest of these
+            # labels is a keyword and the outer chip is close to the border.
+            half = d.textlength(sub, font=f_small) / 2.0
+            scx = min(max(x0 + CHIP_W / 2.0, px + 14 + half), px + pw - 14 - half)
+            _centre(d, sub, f_small, scx, cy + CHIP_H + 10, sub_col)
 
     # The two stems join into one before they reach the bar: the whole point of the tile.
-    bar_top = BAR_Y
-    _merge(d, [px + pw / 2.0 for px, *_ in panels], MERGE_Y, bar_top - 2, W / 2.0,
-           M.BORDER)
+    _merge(d, [px + pw / 2.0 for px, *_ in panels], PANEL_Y + PANEL_H, BAR_Y - 2,
+           W / 2.0, M.BORDER)
 
-    d.rounded_rectangle([MARGIN, bar_top, W - MARGIN, bar_top + BAR_H], radius=14,
-                        fill=M.PANEL, outline=M.GREEN, width=3)
-    rows = ("same %s underneath" % wraps,
-            "same Discrete(%d)" % n_actions,
-            "same %d observation keys" % n_keys)
-    for i, row in enumerate(rows):
-        ry = bar_top + 14 + i * 44
-        _check(d, MARGIN + 26, ry + 4, 26, M.GREEN)
+    d.rounded_rectangle([MARGIN, BAR_Y, W - MARGIN, BAR_Y + BAR_H], radius=14,
+                        fill=M.PANEL, outline=M.BORDER, width=3)
+    _centre(d, shared, f_id, W / 2.0, BAR_Y + 8, brighter)
+    rows = ((_check, M.GREEN, "obs + state match: %d random legal steps, %d cards"
+             % (n_steps, cards)),
+            (_cross, M.AMBER, "swap the seats and they split at step %d" % split))
+    for i, (glyph, colour, row) in enumerate(rows):
+        ry = BAR_Y + 62 + i * 48
+        glyph(d, MARGIN + 26, ry + 4, 26, colour)
         d.text((MARGIN + 74, ry), row, font=f_row, fill=M.TEXT)
 
-    _centre(d, "Same opening board: %d towers, kings %d hp" % (n_towers, king_hp),
-            f_foot, W / 2.0, bar_top + BAR_H + 14, brighter)
+    _centre(d, "one battle: the seed the Gymnasium env drew, passed on",
+            f_small, W / 2.0, BAR_Y + BAR_H + 12, brighter)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     im.save(out_path)
     gym_env.close()
+    par.close()
+    swapped.close()
 
-    return ("seats: PettingZoo %s (%d) vs Gymnasium %s +%s scripted (%d); id %s chosen "
-            "from %s; Discrete(%d) on both; obs keys %s, shapes equal; gym env wraps %s; "
-            "opening board identical (%d towers, king %d hp); opening hands match: %s; "
-            "canvas %dx%d"
-            % (seats_par, n_seats_par, gym_seat, gym_other, n_seats_gym, gym_id,
-               [t[0] for t in tried], n_actions, gym_keys, wraps, n_towers, king_hp,
-               hands_match, W, H))
+    return ("seats %s: PettingZoo drives %d, Gymnasium %d + %s from a %s; states compared "
+            "whole (BattleState ==, uids and hands included) and observations key by key "
+            "for %d steps with %d cards played, all equal; control: the same actions on "
+            "the swapped seats differ at step %d; canvas %dx%d"
+            % (seats, n_seats_par, n_seats_gym, theirs,
+               type(opponent.inner).__name__, n_steps, cards, split, W, H))

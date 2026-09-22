@@ -58,7 +58,7 @@ Both drive the same battle. The difference is how many seats you are filling.
     `ClashSelfPlayVecEnv` runs N battles at once as 2N player slots, so a single batch carries
     both sides of all of them.
 
-=== "One seat, against a scripted opponent"
+=== "One seat, and the env plays the other"
 
     Use **`ClashGymEnv`**, the plain Gymnasium API. You are one player. The other seat is filled
     by an `Opponent` you pass in, and you never see its moves.
@@ -117,7 +117,7 @@ each player made 480 decisions. It takes well under a second of real time.
     catalogue your machine built. The same seed then gives you a different battle from the one
     above. Naming eight cards makes the battle a function of the program.
 
-## One seat, against a scripted opponent
+## One seat, and the env plays the other
 
 Same battle, Gymnasium shape. You are Blue. Red is the random-legal opponent.
 
