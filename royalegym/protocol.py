@@ -277,11 +277,32 @@ class DeployCommand(msgspec.Struct, frozen=True):
 
 
 class DeployResult(msgspec.Struct, frozen=True):
+    """What an engine did with one command, and where.
+
+    ``x`` and ``y`` are the ENGINE frame, as the command gave them, and they are
+    filled for a REFUSED command too, so a penalty term can say where the mask and
+    the engine disagreed rather than only that they did.
+
+    They are here because a reward function is handed the results and not the
+    commands, so without them the archetypal shaping term for this game cannot be
+    written at all: reward defending near your own tower, penalise dumping a tank in
+    the enemy half, reward a spell that lands on a cluster. Diffing the entity lists
+    is not a substitute -- a spell that resolves inside a tick never appears there,
+    and a refused command leaves no trace at all.
+
+    Trailing and defaulted, like ``EntityState``'s status timers, so an engine or a
+    recorded trace written before they existed still decodes, with 0.
+    IN THE ENGINE FRAME, so a term that scores position must put them through
+    ``to_own`` first or it will reward Blue and punish Red for the same placement.
+    """
+
     team: int
     hand_slot: int
     card_id: int  # EMPTY_CARD if the slot was bad
     status: int  # DeployStatus
     tick: int  # engine tick at which the command was evaluated
+    x: int = 0  # ENGINE frame, subtiles, as commanded (see the class doc)
+    y: int = 0
 
 
 class EntityState(msgspec.Struct, frozen=True, array_like=True):

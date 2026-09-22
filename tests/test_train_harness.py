@@ -39,7 +39,15 @@ from royalegym.env import (
 )
 from royalegym.mock_engine import MockEngine
 from royalegym.obs import EntityListObsBuilder, Reveal, SpatialObsBuilder
-from royalegym.protocol import MatchSetup, TowerSlot, calibration_digest
+from royalegym.protocol import (
+    BLUE,
+    RED,
+    DeployResult,
+    MatchSetup,
+    TowerSlot,
+    calibration_digest,
+    to_engine,
+)
 from royalegym.reward import CombinedReward, CrownReward, TowerHPReward, WinLossReward
 from royalegym.rust_engine import core_available
 from royalegym.selfplay import NoopOpponent
@@ -527,3 +535,121 @@ def test_make_gym_vec_env_still_passes_through_what_is_safe_to_share():
     plain = make_gym_vec_env(2)
     assert len(plain.envs) == 2
     plain.close()
+
+
+# ---------------------------------------------------------------------------
+# 8. a reward can see WHERE a card was played
+# ---------------------------------------------------------------------------
+
+
+def test_deploy_results_carry_the_position_the_command_was_evaluated_at():
+    """Without this the archetypal Clash shaping term cannot be written at all.
+
+    A reward is handed the results, never the commands. Diffing the entity lists is
+    not a substitute: a spell that resolves inside a tick never appears there, and a
+    REFUSED command leaves no trace, so a penalty term could not say where the mask
+    and the engine disagreed.
+    """
+    env = short_env(max_steps=40)
+    obs, _ = env.reset(seed=1)
+    rng = np.random.default_rng(1)
+    arena = env.engine.arena()
+    accepted = 0
+    for _ in range(40):
+        if not env.agents:
+            break
+        acts = {}
+        for a in AGENTS:
+            legal = np.flatnonzero(obs[a]["action_mask"])[1:]
+            acts[a] = int(rng.choice(legal)) if legal.size and rng.random() < 0.5 else 0
+        obs, *_ = env.step(acts)
+        for result in env.last_results:
+            assert result.status == 0, "a masked policy should never be refused"
+            accepted += 1
+            # the coordinates are the tile centre the action names, in the own frame
+            slot, xi, yi = env.action_parser.decode(acts["blue" if result.team == 0 else "red"])
+            pitch = env.action_parser.pitch
+            want = to_engine(
+                arena, result.team, xi * pitch + pitch // 2, yi * pitch + pitch // 2
+            )
+            assert (result.x, result.y) == want
+            assert result.hand_slot == slot
+    assert accepted > 0, "vacuous: nothing was accepted"
+
+    # A REFUSED command carries them too, which is the half a masked policy never
+    # reaches: send an action the mask says is illegal and read back where it was.
+    obs, _ = env.reset(seed=2)
+    illegal = int(np.flatnonzero(obs["blue"]["action_mask"] == 0)[0])
+    env.step({"blue": illegal, "red": 0})
+    refusals = [r for r in env.last_results if r.status != 0]
+    assert refusals, "the fixture must actually be refused"
+    slot, xi, yi = env.action_parser.decode(illegal)
+    pitch = env.action_parser.pitch
+    want = to_engine(arena, BLUE, xi * pitch + pitch // 2, yi * pitch + pitch // 2)
+    assert (refusals[0].x, refusals[0].y) == want, (
+        "a penalty term has to be able to say WHERE the mask and the engine disagreed"
+    )
+
+
+def test_placement_depth_is_antisymmetric_between_the_seats():
+    """The trap the coordinates create: they are ENGINE frame.
+
+    A term that scores position without converting to the own frame rewards Blue and
+    punishes Red for the same placement, and a self-play run learns the seat instead
+    of the game. This is the property that says PlacementDepthReward converted.
+    """
+    from royalegym.protocol import to_own
+    from royalegym.reward import PlacementDepthReward
+
+    engine = MockEngine()
+    engine.reset(0, MatchSetup(decks=[DECK, DECK]))
+    arena = engine.arena()
+    term = PlacementDepthReward()
+    term.bind(engine)
+    state = engine.state()
+
+    sub = arena.subtile
+    # the same tile in each player's OWN frame must score the same for its owner
+    for tx, ty in ((5, 4), (9, 12), (14, 24)):
+        blue_engine = (tx * sub, ty * sub)
+        red_engine = to_own(arena, RED, *blue_engine)  # the rotation
+        b = term.get_reward(
+            BLUE, state, state, [DeployResult(BLUE, 0, 0, 0, 0, *blue_engine)]
+        )
+        r = term.get_reward(RED, state, state, [DeployResult(RED, 0, 0, 0, 0, *red_engine)])
+        assert b == pytest.approx(r), f"tile {(tx, ty)} scores {b} for blue, {r} for red"
+
+    # and it is a real gradient, not a constant
+    back = term.get_reward(BLUE, state, state, [DeployResult(BLUE, 0, 0, 0, 0, sub, sub)])
+    forward = term.get_reward(
+        BLUE, state, state, [DeployResult(BLUE, 0, 0, 0, 0, sub, arena.height - sub)]
+    )
+    assert forward > back
+    assert -1.0 <= back < forward <= 1.0
+
+
+def test_placement_depth_ignores_refused_commands_and_the_other_team():
+    from royalegym.reward import PlacementDepthReward
+
+    engine = MockEngine()
+    engine.reset(0, MatchSetup(decks=[DECK, DECK]))
+    term = PlacementDepthReward()
+    term.bind(engine)
+    state = engine.state()
+    far = engine.arena().height - engine.arena().subtile
+    accepted = DeployResult(BLUE, 0, 0, 0, 0, 1000, far)
+    assert term.get_reward(BLUE, state, state, [accepted]) > 0
+    # a refusal scores nothing
+    refused = DeployResult(BLUE, 0, 0, 4, 0, 1000, far)
+    assert term.get_reward(BLUE, state, state, [refused]) == 0.0
+    # and the other seat's placement is not this seat's business
+    assert term.get_reward(RED, state, state, [accepted]) == 0.0
+
+
+def test_a_zero_weight_term_cannot_change_the_default_reward():
+    """PlacementDepthReward ships unweighted: whether to push is what a bot learns."""
+    from royalegym.reward import PlacementDepthReward, default_reward
+
+    assert not any(
+        isinstance(t, PlacementDepthReward) for t, _ in default_reward().terms
+    ), "the shipped default must not answer the question the bot is meant to learn"

@@ -687,7 +687,9 @@ class MockEngine:
             card = EMPTY_CARD
             if cmd.team in TEAMS and 0 <= cmd.hand_slot < HAND_SIZE:
                 card = s.hands[cmd.team][cmd.hand_slot]
-            results.append(DeployResult(cmd.team, cmd.hand_slot, card, int(status), s.tick))
+            results.append(
+                DeployResult(cmd.team, cmd.hand_slot, card, int(status), s.tick, cmd.x, cmd.y)
+            )
             if status == DeployStatus.OK:
                 seen.add(cmd.team)
                 accepted.append((cmd, card))

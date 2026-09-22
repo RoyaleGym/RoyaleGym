@@ -15,9 +15,17 @@ A WARNING ABOUT WEIGHTS
 
 ZERO-SUM
     Every term here is antisymmetric between seats on a mirrored transition
-    (reward_blue == -reward_red), except ``ElixirLeakPenalty`` which is a
-    per-player penalty. Tests check the antisymmetry, because a self-play reward
-    that is not zero-sum rewards both players for colluding.
+    (reward_blue == -reward_red), except ``ElixirLeakPenalty``,
+    ``IllegalActionPenalty`` and ``PlacementDepthReward``, which score only the
+    acting player's own behaviour. Tests check the antisymmetry, because a self-play
+    reward that is not zero-sum rewards both players for colluding.
+
+POSITION
+    ``DeployResult`` carries the ``x`` and ``y`` a command was evaluated at, in the
+    ENGINE frame. Any term that scores WHERE something was played must convert with
+    ``protocol.to_own`` first, or it rewards Blue and punishes Red for the same
+    placement and the self-play run learns the seat rather than the game.
+    ``PlacementDepthReward`` is the worked example.
 """
 
 from __future__ import annotations
@@ -26,7 +34,16 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from fractions import Fraction
 
-from .protocol import BattleState, CardInfo, DeployResult, Engine, EntityKind, TowerSlot, Winner
+from .protocol import (
+    BattleState,
+    CardInfo,
+    DeployResult,
+    Engine,
+    EntityKind,
+    TowerSlot,
+    Winner,
+    to_own,
+)
 
 
 class RewardFunction(ABC):
@@ -204,6 +221,54 @@ class ElixirLeakPenalty(RewardFunction):
             prev.players[team].elixir_milli >= full and state.players[team].elixir_milli >= full
         )
         return -1.0 if leaked else 0.0
+
+
+class PlacementDepthReward(RewardFunction):
+    """How far up the board this team's accepted placements were, in own-frame tiles.
+
+    The template for every positional shaping term, and the reason
+    ``DeployResult`` carries coordinates. Positive is forward: a placement in the
+    enemy half scores above one behind your own towers, scaled so a placement at the
+    far end is 1 and at your own back line is -1. ``weight`` on the aggressive side
+    is the knob; a NEGATIVE weight rewards defending at home.
+
+    SHIPPED AT ZERO WEIGHT in ``default_reward``, on purpose. Whether pushing or
+    defending is better is the thing a bot is supposed to learn, and a shaping term
+    that answers it in advance is the weight-drift this module's docstring warns
+    about. It is here to be copied and to prove the coordinates arrive, not to be
+    switched on untested.
+
+    Antisymmetric between the seats on a mirrored transition, like the terms above:
+    the own frame flips with the seat, so the same placement scores +d for one
+    player and is scored by the other only through its own placements.
+    """
+
+    def __init__(self, weight: float = 1.0) -> None:
+        self.weight = weight
+
+    def bind(self, engine: Engine) -> None:
+        self.arena = engine.arena()
+
+    def config(self) -> dict[str, object]:
+        return {"weight": self.weight}
+
+    def get_reward(
+        self,
+        team: int,
+        prev: BattleState,
+        state: BattleState,
+        results: Sequence[DeployResult],
+    ) -> float:
+        arena = getattr(self, "arena", None)
+        if arena is None:
+            raise RuntimeError("PlacementDepthReward used before bind()")
+        total = 0.0
+        for r in results:
+            if r.team != team or r.status != 0:
+                continue
+            _, y_own = to_own(arena, team, r.x, r.y)
+            total += (2.0 * y_own / max(1, arena.height)) - 1.0
+        return self.weight * total
 
 
 class IllegalActionPenalty(RewardFunction):

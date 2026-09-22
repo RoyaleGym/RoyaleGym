@@ -430,7 +430,7 @@ class RustEngine:
             raise ValueError("ticks must be >= 0")
         raw = self._battle.step([self._wire(c) for c in commands], int(ticks))
         return [
-            DeployResult(c.team, c.hand_slot, card_id, self._status(reason), tick)
+            DeployResult(c.team, c.hand_slot, card_id, self._status(reason), tick, c.x, c.y)
             for c, (card_id, reason, tick) in zip(commands, raw, strict=True)
         ]
 
