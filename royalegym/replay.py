@@ -83,6 +83,13 @@ class TraceHeader(msgspec.Struct):
     frame_fields: list[str]
     step_fields: list[str]
     spell_fields: list[str] = []  # SpellState columns; empty in a pre-spell trace
+    # The card table the recording engine read (its ``card_table_stamp()``). An engine
+    # fills the ones it states; "" is "not stated", which is also what an older trace
+    # decodes with. RustEngine: the first three. MockEngine: vintage and loaded hash.
+    cards_vintage: str = ""
+    cards_json_fnv1a64: str = ""
+    cards_json_hash_source: str = ""
+    cards_loaded_fnv1a64: str = ""
 
 
 class TraceResult(msgspec.Struct):
@@ -101,6 +108,27 @@ class Trace(msgspec.Struct):
 
 def _hex(h: int) -> str:
     return f"{h & ((1 << 64) - 1):016x}"
+
+
+# The TraceHeader fields an engine's ``card_table_stamp()`` can fill.
+CARD_TABLE_FIELDS = (
+    "cards_vintage",
+    "cards_json_fnv1a64",
+    "cards_json_hash_source",
+    "cards_loaded_fnv1a64",
+)
+
+
+def _card_table_fields(engine: Engine) -> dict[str, str]:
+    """The header's card-table fields, from an engine that states its table.
+
+    ``card_table_stamp`` is not part of ``protocol.Engine``, so an engine without one
+    records a trace with the fields left "".
+    """
+    stamp = getattr(engine, "card_table_stamp", None)
+    if stamp is None:
+        return {}
+    return {k: str(v) for k, v in stamp().items() if k in CARD_TABLE_FIELDS}
 
 
 def _frame(engine: Engine) -> TraceFrame:
@@ -154,6 +182,7 @@ class ReplayRecorder:
             frame_fields=list(TraceFrame.__struct_fields__),
             step_fields=list(TraceStep.__struct_fields__),
             spell_fields=list(SpellState.__struct_fields__),
+            **_card_table_fields(engine),
         )
         self.trace = Trace(header=header, steps=[], frames=[_frame(engine)])
         self._open = True

@@ -97,11 +97,19 @@ class FirstAffordableOpponent:
 
 
 class DefendOpponent:
-    """Only ever place on your own half, as close to your own towers as allowed.
+    """Only ever place on your own half, as near its middle as allowed.
 
-    One sentence of strategy: never commit to the other side of the river. It beats
-    the greedy bots because they walk single units into towers, and it loses to
-    anything that builds a push, which is the shape a learner is supposed to discover.
+    One sentence of strategy: never commit to the other side of the river, and stand
+    where a unit can meet a push down either lane. The anchor is the centre column, a
+    quarter of the way up the board: in front of your own king, just ahead of your
+    princess towers. It loses to anything that builds a push, which is the shape a
+    learner is supposed to discover.
+
+    Until 2026-09-22 this bot took the lowest, then leftmost, legal cell of its own
+    half. So did ``FirstAffordableOpponent``, whose first legal cell is the same
+    back corner, and the two chose the same action on every one of 3 208 decisions
+    compared on both engines. The ladder had one fewer rung than it listed.
+    ``tests/test_opponents.py`` now requires every pair of rungs to differ.
     """
 
     def act(self, obs: dict[str, Any], mask: np.ndarray, rng: np.random.Generator) -> int:
@@ -109,11 +117,19 @@ class DefendOpponent:
         planes = _planes(obs, mask)
         if planes is None:
             return NOOP
-        ny = planes.shape[1]
+        _, ny, nx = planes.shape
+        anchor_y, anchor_x2 = ny // 4, nx - 1  # x doubled, so the centre stays integer
         for slot in range(planes.shape[0]):
             cells = np.argwhere(planes[slot][: ny // 2] > 0)  # own half, own frame
             if cells.size:
-                y, x = min(cells.tolist(), key=lambda c: (c[0], c[1]))
+                y, x = min(
+                    cells.tolist(),
+                    key=lambda c: (
+                        4 * (c[0] - anchor_y) ** 2 + (2 * c[1] - anchor_x2) ** 2,
+                        c[0],
+                        c[1],
+                    ),
+                )
                 return _index(planes, slot, int(y), int(x))
         return NOOP
 

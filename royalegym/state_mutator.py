@@ -18,14 +18,18 @@ there is no ``MutatorSequence``. Variations on a start are subclasses of
 
 from __future__ import annotations
 
+import difflib
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
 from .protocol import (
+    BLUE,
     DECK_SIZE,
+    RED,
     TEAMS,
     CardInfo,
     MatchSetup,
@@ -235,6 +239,197 @@ class WeightedStateMutator(StateMutator):
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup | Snapshot:
         i = int(rng.choice(len(self.mutators), p=self.p))
         return self.mutators[i].build(rng, cards)
+
+
+#: Where ``DeckCurriculumStateMutator`` puts its deck: a fair coin per episode, or one seat.
+SEATS = ("either", "blue", "red")
+_TEAM_OF_SEAT = {"blue": BLUE, "red": RED}
+
+
+def deck_ids(names: Sequence[str], cards: Sequence[CardInfo], where: str = "deck") -> list[int]:
+    """Card ids for a deck written as card NAMES, looked up in an engine's catalogue.
+
+    A card id is a position in one catalogue, and positions move between card tables,
+    so a deck kept as names means the same cards on every engine that has them. A name
+    the catalogue does not have raises ValueError naming it: a typo, or a card this
+    engine does not simulate.
+    """
+    index = {c.name: c.card_id for c in cards}
+    ids = []
+    for name in names:
+        if name not in index:
+            close = difflib.get_close_matches(name, list(index), n=3)
+            hint = f" (close: {', '.join(close)})" if close else ""
+            raise ValueError(
+                f"{where} names {name!r}, which this engine's catalogue of {len(cards)} "
+                f"cards does not have{hint}. A deck can only use cards engine.cards() lists."
+            )
+        ids.append(int(index[name]))
+    return ids
+
+
+def _deck_names(deck: Sequence[str], where: str) -> tuple[str, ...]:
+    # A tuple first, so a deck given as a generator is read once, not used up by the check.
+    names = tuple(deck) if not isinstance(deck, str) else None
+    if names is None or not all(isinstance(n, str) for n in names):
+        raise TypeError(f"{where} must be a list of card names, got {deck!r}")
+    if len(names) != DECK_SIZE:
+        raise ValueError(f"{where} must have {DECK_SIZE} cards, got {len(names)}")
+    if len(set(names)) != DECK_SIZE:
+        raise ValueError(f"{where} lists a card twice: {list(names)}")
+    return names
+
+
+def _probability(value: float, name: str) -> float:
+    p = float(value)
+    if not 0.0 <= p <= 1.0:
+        raise ValueError(f"{name} must be a probability in [0, 1], got {value!r}")
+    return p
+
+
+class DeckCurriculumStateMutator(StateMutator):
+    """A deck curriculum: one deck you name, on one seat or both, against a pool.
+
+    Each episode:
+      * with probability ``p`` the deck is played. Then with probability ``mirror_p``
+        both seats get it in the same order (``ShuffleMode.MIRRORED``). Otherwise it
+        goes to ``seat`` and the other seat draws from ``pool``.
+      * with probability ``1 - p`` both seats draw from ``pool``, independently.
+
+    ``seat`` is "blue", "red", or "either" (a fair coin each episode). With "either"
+    and no mirror, the deck is on each seat in ``p / 2`` of episodes.
+
+    ``pool`` is a list of decks, drawn uniformly (list a deck twice to weight it), or
+    None for a random deck of eight different cards from the catalogue. Pool draws use
+    ``shuffle``; a mirror always uses ``ShuffleMode.MIRRORED``.
+
+    Decks are card NAMES, looked up in the catalogue the env passes to ``build``. A name
+    the catalogue does not have fails the first reset, for every deck in the pool and
+    not only the one drawn, so a typo cannot wait hours for its turn.
+
+    ``config()`` is exactly the constructor's keyword arguments, JSON-able, so
+    ``from_config(m.config())`` rebuilds a mutator that draws the same episodes from the
+    same seed, and a config file can name the class and pass the dict as its kwargs.
+    ``set_curriculum`` changes any of them between episodes without rebuilding the env::
+
+        main = ["HogRider", "Musketeer", "Cannon", "Skeletons",
+                "Fireball", "Log", "Knight", "Zap"]
+        m = DeckCurriculumStateMutator(main, p=1.0, mirror_p=1.0)    # mirror matches
+        env = ClashParallelEnv(engine, state_mutator=m)
+        ...
+        m.set_curriculum(p=0.9, mirror_p=0.0, pool=[deck_a, deck_b])  # then a pool
+
+    ``set_curriculum`` changes this object only. Envs built in other processes (an
+    ``EnvFactory`` recipe run in a worker) hold their own copy and need the call too:
+    send ``m.config()`` and call ``set_curriculum(**config)`` there.
+    """
+
+    def __init__(
+        self,
+        deck: Sequence[str],
+        *,
+        p: float = 1.0,
+        seat: str = "either",
+        mirror_p: float = 0.0,
+        pool: Sequence[Sequence[str]] | None = None,
+        shuffle: int = ShuffleMode.INDEPENDENT,
+    ) -> None:
+        self._ids: tuple[tuple[str, ...], list[int], list[list[int]] | None] | None = None
+        self._set(deck, p, seat, mirror_p, pool, shuffle)
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> DeckCurriculumStateMutator:
+        """The mutator ``config()`` describes. Also takes the ``{"class", "params"}``
+        record ``ClashParallelEnv.config()`` keeps under ``"state_mutator"``."""
+        if "params" in config and "class" in config:
+            if str(config["class"]).rsplit(".", 1)[-1] != cls.__name__:
+                raise ValueError(f"config is for {config['class']}, not {cls.__name__}")
+            config = config["params"]
+        return cls(**config)
+
+    def config(self) -> dict[str, object]:
+        return {
+            "deck": list(self.deck),
+            "p": self.p,
+            "seat": self.seat,
+            "mirror_p": self.mirror_p,
+            "pool": [list(d) for d in self.pool] if self.pool is not None else None,
+            "shuffle": int(self.shuffle),
+        }
+
+    def set_curriculum(self, **changes: Any) -> None:
+        """Change any constructor argument, by name, from the next episode on.
+
+        All or nothing: a value that is refused leaves the mutator as it was.
+        """
+        unknown = sorted(set(changes) - set(self.config()))
+        if unknown:
+            raise TypeError(f"set_curriculum got unknown arguments {unknown}")
+        merged: dict[str, Any] = {**self.config(), **changes}
+        self._set(**merged)
+
+    def _set(
+        self,
+        deck: Sequence[str],
+        p: float,
+        seat: str,
+        mirror_p: float,
+        pool: Sequence[Sequence[str]] | None,
+        shuffle: int,
+    ) -> None:
+        # Everything is checked before anything is stored, so a refusal changes nothing.
+        names = _deck_names(deck, "deck")
+        if seat not in SEATS:
+            raise ValueError(f"seat must be one of {SEATS}, got {seat!r}")
+        if pool is not None:
+            if isinstance(pool, str) or len(pool) == 0:
+                raise ValueError("pool must be a list of decks, or None for random decks")
+            pool_names = tuple(_deck_names(d, f"pool[{i}]") for i, d in enumerate(pool))
+        else:
+            pool_names = None
+        values = (_probability(p, "p"), _probability(mirror_p, "mirror_p"))
+        mode = ShuffleMode(int(shuffle))
+        self.deck, self.seat, self.pool, self.shuffle = names, seat, pool_names, mode
+        self.p, self.mirror_p = values
+        self._ids = None
+
+    def _resolve(self, cards: Sequence[CardInfo]) -> tuple[list[int], list[list[int]] | None]:
+        """Card ids of the deck and the whole pool, for this catalogue.
+
+        Kept until the catalogue or the curriculum changes, so a reset does not look up
+        a large pool again.
+        """
+        key = tuple(c.name for c in cards)
+        if self._ids is None or self._ids[0] != key:
+            deck = deck_ids(self.deck, cards, "deck")
+            pool = None
+            if self.pool is not None:
+                pool = [deck_ids(d, cards, f"pool[{i}]") for i, d in enumerate(self.pool)]
+            self._ids = (key, deck, pool)
+        return self._ids[1], self._ids[2]
+
+    def _from_pool(
+        self, rng: np.random.Generator, cards: Sequence[CardInfo], pool: list[list[int]] | None
+    ) -> list[int]:
+        if pool is None:
+            return random_deck(rng, cards)
+        return list(pool[int(rng.integers(len(pool)))])
+
+    def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup:
+        deck, pool = self._resolve(cards)
+        if rng.random() >= self.p:
+            both = [self._from_pool(rng, cards, pool) for _ in TEAMS]
+            return MatchSetup(decks=both, shuffle=int(self.shuffle))
+        if rng.random() < self.mirror_p:
+            return MatchSetup(decks=[list(deck), list(deck)], shuffle=int(ShuffleMode.MIRRORED))
+        if self.seat == "either":
+            team = int(rng.integers(len(TEAMS)))
+        else:
+            team = _TEAM_OF_SEAT[self.seat]
+        decks: list[list[int]] = [[], []]
+        decks[team] = list(deck)
+        decks[1 - team] = self._from_pool(rng, cards, pool)
+        return MatchSetup(decks=decks, shuffle=int(self.shuffle))
 
 
 # Kept for callers written before the rename.

@@ -18,7 +18,9 @@ without it the videos are skipped and the stills are still written.
 
 Everything it produces is reproducible. The battle is played on a fixed seed with a named
 deck, and the viewer's capture freezes the two numbers on screen that would otherwise move
-with the wall clock. Running this twice gives the same bytes.
+with the wall clock. Running this twice gives the same bytes, except for the two shots
+whose subject is time: ``throughput`` times the engine on this machine, and
+``live-training-env`` shows a real frame rate.
 """
 
 from __future__ import annotations
@@ -80,8 +82,8 @@ def record_battle(seed: int = TRY_IT_SEED, *, noop_prob: float = 0.7,
     training run.
     """
     import numpy as np
-    from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponent,
-                           RustEngine)
+
+    from royalegym import ClashParallelEnv, DefaultStateMutator, RandomLegalOpponent, RustEngine
     from royalegym.replay import ReplayRecorder, save_trace
 
     WORK.mkdir(parents=True, exist_ok=True)
@@ -326,8 +328,7 @@ def live_training_env() -> None:
     Not the scripted battle and not the stand-in learner. The environment here is the real
     one, stepping a batch of four self-play battles on the engine, and the frames reach the
     viewer over the same UDP socket a training run would use. The learning panel stays empty
-    because nothing is training: that is the honest picture today, and it is the one the
-    README's known gaps already describe.
+    because nothing in this shot trains.
 
     This is the one shot whose on-screen timing is real rather than frozen, because the
     frame rate is the thing being shown.
@@ -391,7 +392,8 @@ FIGURES = {
     "snapshots": ("RoyaleSim", "snapshots.png"),
     "ledger": ("RoyaleSim", "ledger.png"),
     "action_mask": ("RoyaleLearn", "ppo-learner.png"),
-    # RoyaleGym's showcase grid, the eight tiles on its front page.
+    # RoyaleGym's showcase grid: eight of the nine tiles on its front page. The ninth,
+    # battle-in-viewer.png, is a screenshot of the viewer and nothing here remakes it.
     "two_apis": ("RoyaleGym", "two-apis.png"),
     "legality_mask": ("RoyaleGym", "legality-mask.png"),
     "self_play_batch": ("RoyaleGym", "self-play-batch.png"),
@@ -441,18 +443,20 @@ SHOTS = {
     **{n.replace("_", "-"): _figure(n) for n in FIGURES},
 }
 
-# Placeholders this script deliberately does not make, and why. The README keeps a
-# placeholder SVG for each, and the caption on it says what the real one has to show.
+# Placeholders this script does not make yet, and why. The README keeps a placeholder SVG
+# for each, and the caption on it says what the real one has to show.
+_LONG_RUN = "the trainer runs, but no run has gone enough iterations to photograph"
 NOT_MADE = {
-    "measured-routes": "wants a recorded real battle beside the engine, and the recordings"
-                       " are private",
-    "contact-law": "wants a recorded real battle beside the engine, and the recordings are"
-                   " private",
-    "training-run": "wants a training run, and the harness is not written yet",
-    "rollout-workers": "wants a training run, and the harness is not written yet",
-    "frozen-pool-ladder": "wants a training run, and the harness is not written yet",
-    "checkpoints": "wants a training run, and the harness is not written yet",
-    "metrics-sink": "wants a training run, and the harness is not written yet",
+    "measured-routes": "wants a recorded real battle drawn beside the engine; nothing here"
+                       " draws one yet",
+    "contact-law": "wants a recorded real battle drawn beside the engine; nothing here draws"
+                   " one yet",
+    "training-run": f"wants a long training run filmed live; {_LONG_RUN}",
+    "rollout-workers": "wants steps per second at several worker counts on an idle machine;"
+                       " nothing sweeps them yet",
+    "frozen-pool-ladder": f"wants a pool of many frozen snapshots; {_LONG_RUN}",
+    "checkpoints": f"wants a long run's curve with a resumed run laid on it; {_LONG_RUN}",
+    "metrics-sink": f"wants a long run's metrics dashboard; {_LONG_RUN}",
 }
 
 

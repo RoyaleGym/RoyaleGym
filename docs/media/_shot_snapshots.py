@@ -18,9 +18,9 @@ from __future__ import annotations
 import hashlib
 import pathlib
 
+import make_media as M
 import numpy as np
 
-import make_media as M
 from royalegym import RustEngine
 from royalegym.protocol import BLUE, RED, DeployCommand, DeployStatus, MatchSetup
 
@@ -106,7 +106,8 @@ def _shared_tile(engine: RustEngine, arena, legal: dict[int, list[tuple[int, int
     else:  # no push to answer: the forward-most tile of the player's own half
         ex, ey = _tile_xy(arena, arena.tiles_x // 2, max(t for _, t in common))
     return min(sorted(common),
-               key=lambda t: sum((a - b) ** 2 for a, b in zip(_tile_xy(arena, *t), (ex, ey))))
+               key=lambda t: sum((a - b) ** 2
+                                 for a, b in zip(_tile_xy(arena, *t), (ex, ey), strict=True)))
 
 
 def _board(state) -> str:

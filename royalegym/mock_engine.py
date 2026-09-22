@@ -81,6 +81,7 @@ from .protocol import (
     calibration_digest,
     data_dir,
     default_calibration,
+    fnv1a64,
     load_globals_csv,
     spawn_order_key,
     validate_setup,
@@ -89,11 +90,20 @@ from .protocol import (
 # calibration match.OVERTIME_TIEBREAK candidates (the Rust core's OvertimeTiebreak enum).
 # The raw client pack MockEngine reads its card stats from. Only this one is tracked
 # in RoyaleSim; the newer packs are not redistributed, so a public checkout has this
-# and nothing else, and the derived cards.json the compiled engine is built from is
+# and nothing else, and the derived cards.json the compiled engine reads is
 # generated from it too (rust_engine.catalogue_vintage_split).
 RAW_CARD_PACK = "retroroyale-2018"
 
 OVERTIME_TIEBREAK_RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction", "none_draw")
+
+# The ground a building stands on, as this engine models it: the CollisionRadius circle
+# and nothing else. A building card is OCCUPIED within the sum of its radius and that of
+# any building or tower, and a troop card within that building's or tower's own radius
+# (``_check``). No entity carries a box, so every ``EntityState.footprint`` it reports
+# is None. An engine that places buildings by a tile box reports that box
+# instead; tests/test_building_footprint.py compares the two statements and skips,
+# naming both, while they differ.
+FOOTPRINT_MODEL = "collision_radius_circle"
 
 # The card subset the mock supports. A mock design choice (a spread of placement
 # types, air/ground, splash, building-targeters), not a physics constant.
@@ -411,12 +421,30 @@ class MockEngine:
 
         The card NAMES, because a catalogue subset is what makes one run's card ids
         mean something different from another's, and ``card_level`` for the same
-        reason the Rust adapter reports it.
+        reason the Rust adapter reports it. ``footprint_model`` because it decides
+        where a building may stand (``FOOTPRINT_MODEL``). ``card_table_stamp`` because
+        the names do not say which numbers were read for them.
         """
         return {
             "cards": [c.name for c in self.cards()],
             "calibration_digest": calibration_digest(self.calibration),
+            "footprint_model": FOOTPRINT_MODEL,
+            **self.card_table_stamp(),
         }
+
+    def card_table_stamp(self) -> dict[str, str]:
+        """Which card table this engine read, as ``RustEngine.card_table_stamp`` says it.
+
+        ``cards_vintage``: the raw client pack the stats come from (``RAW_CARD_PACK``).
+        ``cards_loaded_fnv1a64``: FNV-1a 64 (``protocol.fnv1a64``) of every template
+        built from that pack -- units, spells and cards, msgpack in catalogue order --
+        so it moves with any number read from the CSVs and not with a column nobody
+        reads. There is no ``cards_json_fnv1a64``: this engine reads no cards.json.
+        """
+        loaded = msgspec.msgpack.encode(
+            [self._king_tpl, self._princess_tpl, self._units, self._spells, self._cards]
+        )
+        return {"cards_vintage": RAW_CARD_PACK, "cards_loaded_fnv1a64": fnv1a64(loaded)}
 
     def __getstate__(self) -> dict[str, object]:
         state = dict(self.__dict__)

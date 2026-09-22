@@ -1,4 +1,51 @@
 * text=auto eol=lf
+
+# Pictures and video. SVG is XML and stays text.
 *.png binary
 *.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
 *.mp4 binary
+*.webm binary
+*.mov binary
+*.pdf binary
+
+# Fonts the docs site or a figure might ship.
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Recorded battles, arrays, checkpoints and other data.
+*.msgpack binary
+*.npy binary
+*.npz binary
+*.pt binary
+*.pth binary
+*.onnx binary
+*.safetensors binary
+*.pkl binary
+*.pickle binary
+*.bin binary
+*.parquet binary
+*.sqlite binary
+*.db binary
+
+# Archives and built packages.
+*.zip binary
+*.gz binary
+*.tgz binary
+*.bz2 binary
+*.xz binary
+*.7z binary
+*.whl binary
+*.bundle binary
+
+# Compiled code.
+*.pyd binary
+*.so binary
+*.dll binary
+*.dylib binary
+*.exe binary

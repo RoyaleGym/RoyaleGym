@@ -257,7 +257,7 @@ def draw(out_path: pathlib.Path) -> str:
     bright = _blend(M.DIM, M.TEXT, 0.45)
     brighter = _blend(M.DIM, M.TEXT, 0.65)
 
-    d.text((MARGIN, 10), "Drive %d seats, or just %d" % (n_seats_par, n_seats_gym),
+    d.text((MARGIN, 10), f"Drive {n_seats_par} seats, or just {n_seats_gym}",
            font=f_head, fill=M.TEXT)
 
     pw = (W - 2 * MARGIN - 24) // 2
@@ -304,9 +304,8 @@ def draw(out_path: pathlib.Path) -> str:
     d.rounded_rectangle([MARGIN, BAR_Y, W - MARGIN, BAR_Y + BAR_H], radius=14,
                         fill=M.PANEL, outline=M.BORDER, width=3)
     _centre(d, shared, f_id, W / 2.0, BAR_Y + 8, brighter)
-    rows = ((_check, M.GREEN, "obs + state match: %d random legal steps, %d cards"
-             % (n_steps, cards)),
-            (_cross, M.AMBER, "swap the seats and they split at step %d" % split))
+    rows = ((_check, M.GREEN, f"obs + state match: {n_steps} random legal steps, {cards} cards"),
+            (_cross, M.AMBER, f"swap the seats and they split at step {split}"))
     for i, (glyph, colour, row) in enumerate(rows):
         ry = BAR_Y + 62 + i * 48
         glyph(d, MARGIN + 26, ry + 4, 26, colour)
@@ -321,9 +320,8 @@ def draw(out_path: pathlib.Path) -> str:
     par.close()
     swapped.close()
 
-    return ("seats %s: PettingZoo drives %d, Gymnasium %d + %s from a %s; states compared "
+    return (f"seats {seats}: PettingZoo drives {n_seats_par}, Gymnasium {n_seats_gym} + "
+            f"{theirs} from a {type(opponent.inner).__name__}; states compared "
             "whole (BattleState ==, uids and hands included) and observations key by key "
-            "for %d steps with %d cards played, all equal; control: the same actions on "
-            "the swapped seats differ at step %d; canvas %dx%d"
-            % (seats, n_seats_par, n_seats_gym, theirs,
-               type(opponent.inner).__name__, n_steps, cards, split, W, H))
+            f"for {n_steps} steps with {cards} cards played, all equal; control: the same "
+            f"actions on the swapped seats differ at step {split}; canvas {W}x{H}")

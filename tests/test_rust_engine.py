@@ -513,6 +513,17 @@ KNOWN_STATE_DISAGREEMENTS = {
     "entity.uid",
 }
 
+#: Allowed only while one engine states a building footprint and the other does not.
+#: Kept apart from the list above so it cannot excuse a disagreement between two
+#: engines that both report one: then these two fields must agree like any other.
+FOOTPRINT_DISAGREEMENTS = {"card.footprint_tiles", "entity.footprint"}
+
+
+def footprint_allowance(rust, mock) -> set[str]:
+    """The footprint fields, when exactly one of the two engines reports them."""
+    reports = [any(c.footprint_tiles is not None for c in e.cards()) for e in (rust, mock)]
+    return FOOTPRINT_DISAGREEMENTS if reports[0] != reports[1] else set()
+
 
 def state_disagreements(rust, mock, seed: int, setup: MatchSetup) -> set[str]:
     rust.reset(seed, setup)
@@ -561,9 +572,10 @@ def test_mock_and_rust_agree_on_setup_state(rust, mock, name):
     split = catalogue_vintage_split(rust.cards(), mock.cards())
     if split is not None:
         pytest.skip(split)
+    allowed = KNOWN_STATE_DISAGREEMENTS | footprint_allowance(rust, mock)
     for seed in (1, 2, 77):
         got = state_disagreements(rust, mock, seed, SETUPS[name])
-        unexpected = got - KNOWN_STATE_DISAGREEMENTS
+        unexpected = got - allowed
         assert not unexpected, f"{name} seed {seed}: new disagreements {sorted(unexpected)}"
     if name == "opening":
         stale = KNOWN_STATE_DISAGREEMENTS - got

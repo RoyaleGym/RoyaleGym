@@ -298,6 +298,10 @@ class CardInfo(msgspec.Struct, frozen=True):
     radius: int  # collision radius of one summoned unit / building, subtiles (0 for spells)
     flying: bool
     hitpoints: int  # per unit, 0 for spells
+    # Side of the square of TILES a building stands on, or None for a card that is not
+    # a building and for an engine that states no footprint (MockEngine). Trailing and
+    # defaulted, so a catalogue row without the column still builds a CardInfo.
+    footprint_tiles: int | None = None
 
 
 class DeployCommand(msgspec.Struct, frozen=True):
@@ -354,6 +358,12 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # recorded before status effects existed both decode with 0.
     stun_ticks: int = 0  # >0 while stunned (Zap): no move, no attack
     knockback_ticks: int = 0  # >0 while a knockback (slide or ladder) still moves the unit
+    # The ground a building or crown tower stands on: (x0, y0, x1, y1), a CLOSED box in
+    # engine-frame subtiles, as the engine reports it. None for a troop, and for every
+    # entity of an engine that models no box (MockEngine: ``mock_engine.FOOTPRINT_MODEL``).
+    # Trailing and defaulted like the timers, so a trace or an engine row without it
+    # decodes with None. Never derived here: a box drawn or masked is the engine's own.
+    footprint: tuple[int, int, int, int] | None = None
 
 
 class SpellState(msgspec.Struct, frozen=True, array_like=True):
@@ -550,19 +560,25 @@ class Arena(msgspec.Struct, frozen=True):
         bridges = sorted((int(b["half_cols"][0]), int(b["half_cols"][1])) for b in a["bridges"])
         width, height = tiles_x * subtile, tiles_y * subtile
         bridge_x = [(lo + hi + 1) * hs // 2 for lo, hi in bridges]
-        # PRINCESS TOWER CENTRES ARE NOT IN ANY DATA FILE. calibration.json says so
-        # ("Princess towers are NOT in the static map at all"). x is taken as the
-        # bridge centre line (a hypothesis: they visibly line up in the client);
-        # y is the community-quoted 6.5 tiles from the back edge, a GUESS.
-        # Interface demand: extract_arena.py / calibration.json should own this.
-        princess_y_own = MOCK_PRINCESS_CENTER_Y_HALF_CELLS * hs
-        left_x, right_x = bridge_x[0], bridge_x[-1]
-        blue = [(left_x, princess_y_own), (right_x, princess_y_own)]
-        # Red's own-left is the engine-right tower, by the 180-degree rotation.
-        red = [
-            (width - left_x, height - princess_y_own),
-            (width - right_x, height - princess_y_own),
-        ]
+        if PRINCESS_CENTRES_KEY in a:
+            blue, red = princess_centres_from_arena(a[PRINCESS_CENTRES_KEY], width, height)
+            princess_status = f"arena.json {PRINCESS_CENTRES_KEY}"
+        else:
+            # FALLBACK until arena.json carries the centres. The static map has no
+            # princess towers (calibration.json: "Princess towers are NOT in the static
+            # map at all"), so x is taken as the bridge centre line (a hypothesis: they
+            # visibly line up in the client) and y as the community-quoted 6.5 tiles
+            # from the back edge, a GUESS. RustEngine checks these against the engine's
+            # own tower positions and refuses to start on any difference.
+            princess_y_own = MOCK_PRINCESS_CENTER_Y_HALF_CELLS * hs
+            left_x, right_x = bridge_x[0], bridge_x[-1]
+            blue = [(left_x, princess_y_own), (right_x, princess_y_own)]
+            # Red's own-left is the engine-right tower, by the 180-degree rotation.
+            red = [
+                (width - left_x, height - princess_y_own),
+                (width - right_x, height - princess_y_own),
+            ]
+            princess_status = "guess: x = bridge centre (hypothesis), y = 6.5 tiles (community)"
         return cls(
             subtile=subtile,
             half=half,
@@ -573,14 +589,65 @@ class Arena(msgspec.Struct, frozen=True):
             bridges_half_cols=bridges,
             king_centers=king_centers,
             princess_centers=[blue, red],
-            princess_center_status=(
-                "guess: x = bridge centre (hypothesis), y = 6.5 tiles (community)"
-            ),
+            princess_center_status=princess_status,
         )
 
 
-# 6.5 tiles expressed in half-cells so no float is needed. See Arena.load.
+# 6.5 tiles expressed in half-cells so no float is needed. The fallback in Arena.load,
+# used only while arena.json has no PRINCESS_CENTRES_KEY.
 MOCK_PRINCESS_CENTER_Y_HALF_CELLS = 13
+
+# arena.json's princess tower centres, when the file carries them:
+#
+#     "princess_tower_centres": [[[x, y], [x, y]], [[x, y], [x, y]]]
+#
+# indexed [team][tower], team 0 = Blue (defends low y) and 1 = Red. Each centre is an
+# integer [x, y] in engine-frame SUBTILES, the frame and unit of
+# ``royalesim.Battle.tower_positions()``. The order of a team's two towers is free:
+# they are named by their own-frame x, so Red's own-left is found, not assumed. The
+# engine's own order (low engine x first, as ``tower_positions()[team][1:]``) is the
+# natural one to write.
+PRINCESS_CENTRES_KEY = "princess_tower_centres"
+
+
+def princess_centres_from_arena(
+    raw: Any, width: int, height: int
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """(Blue, Red) princess centres, each [own-left, own-right], from arena.json.
+
+    Refuses anything that is not two teams of two integer points strictly inside the
+    arena and on the owner's half, because a centre that is quietly wrong moves every
+    tower the mask and both engines draw.
+    """
+    where = f"arena.json {PRINCESS_CENTRES_KEY}"
+    if not isinstance(raw, list) or len(raw) != 2:
+        raise ValueError(f"{where} must hold two teams, [Blue, Red]: {raw!r}")
+    named = []
+    for team, towers in enumerate(raw):
+        if not isinstance(towers, list) or len(towers) != 2:
+            raise ValueError(f"{where}[{team}] must hold two towers: {towers!r}")
+        points = []
+        for point in towers:
+            if (
+                not isinstance(point, list)
+                or len(point) != 2
+                or not all(isinstance(v, int) and not isinstance(v, bool) for v in point)
+            ):
+                raise ValueError(f"{where}[{team}]: {point!r} is not an integer [x, y]")
+            x, y = point
+            own_half = 2 * y < height if team == BLUE else 2 * y > height
+            if not (0 < x < width and 0 < y < height and own_half):
+                raise ValueError(
+                    f"{where}[{team}]: {point!r} is not inside the {width} x {height} "
+                    f"arena on team {team}'s own half"
+                )
+            points.append((x, y))
+        # Own-frame x is x for Blue and W - x for Red (the 180-degree rotation).
+        own_x = [x if team == BLUE else width - x for x, _ in points]
+        if own_x[0] == own_x[1]:
+            raise ValueError(f"{where}[{team}]: both towers share x, so neither is the left")
+        named.append(points if own_x[0] < own_x[1] else points[::-1])
+    return named[0], named[1]
 
 
 TERRITORY_MODELS = ("enemy_tower_no_deploy_rects",)
@@ -594,8 +661,10 @@ def load_tower_no_deploy_sizes(path: Path | None = None) -> dict[str, tuple[int,
     Reads ONE field of the derived card data, not the cards (MockEngine reads its
     stats from the raw CSVs; the Rust engine owns the card loader, card.rs). The
     numbers are never typed into Python: a regenerated cards.json moves the mask,
-    MockEngine and -- after a rebuild -- the Rust engine together, and RustEngine
-    refuses to start if its compiled rects differ from these
+    MockEngine and the Rust engine together, with no rebuild, because the engine
+    reads the file each time one is constructed. It reads the copy in the RoyaleSim
+    checkout it was built in, which ``ROYALESIM_DATA_DIR`` does not move, so
+    RustEngine refuses to start if the engine's rects differ from these
     (the family's data gate: stop copying constants -- parse them).
     """
     p = path or data_dir() / "derived" / "cards.json"
@@ -616,10 +685,31 @@ def load_tower_no_deploy_sizes(path: Path | None = None) -> dict[str, tuple[int,
     for name in (KING_TOWER_NAME, PRINCESS_TOWER_NAME):
         if name not in out:
             raise KeyError(
-                f"cards.json tower {name!r} has no no_deploy_size_tiles; troop territory "
-                f"cannot be decided (regenerate with ../RoyaleSim/tools/extract_cards.py)"
+                f"cards.json tower {name!r} has no no_deploy_size_tiles; troop territory cannot "
+                f"be decided. Regenerate it: ../RoyaleSim/tools/extract_cards.py --vintage 2018 "
+                f"--out data/derived/cards.json"
             )
     return out
+
+
+# FNV-1a 64: offset basis and prime.
+FNV1A64_OFFSET = 0xCBF29CE484222325
+FNV1A64_PRIME = 0x100000001B3
+
+
+def fnv1a64(data: bytes) -> str:
+    """FNV-1a 64 of ``data`` as 16 lowercase hex digits.
+
+    The hash RoyaleSim stamps a card table with (``cards_json_fnv1a64`` in its replay
+    fixtures, tools/make_replay_fixture.py), so a stamp taken here compares with one
+    taken there as a plain string. Pure Python, about 0.3 s per MB, so callers hash a
+    file once and keep the answer.
+    """
+    h = FNV1A64_OFFSET
+    prime = FNV1A64_PRIME
+    for byte in data:
+        h = ((h ^ byte) * prime) & 0xFFFF_FFFF_FFFF_FFFF
+    return f"{h:016x}"
 
 
 def derived_cards_vintage(path: Path | None = None) -> str:
@@ -981,8 +1071,25 @@ def mirror_state(arena: Arena, s: BattleState) -> BattleState:
     own-frame, so they are unchanged. Obs/mask for Red on the mirror must equal
     obs/mask for Blue on the original, bit for bit.
     """
+    w, h = arena.width, arena.height
     ents = [
-        msgspec.structs.replace(e, team=1 - e.team, x=arena.width - e.x, y=arena.height - e.y)
+        msgspec.structs.replace(
+            e,
+            team=1 - e.team,
+            x=w - e.x,
+            y=h - e.y,
+            # A closed box rotates corner to corner: the far corner becomes the near one.
+            footprint=(
+                None
+                if e.footprint is None
+                else (
+                    w - e.footprint[2],
+                    h - e.footprint[3],
+                    w - e.footprint[0],
+                    h - e.footprint[1],
+                )
+            ),
+        )
         for e in s.entities
     ]
     # Spell centres and aim points rotate like positions; delay, roll progress and

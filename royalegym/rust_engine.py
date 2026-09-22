@@ -24,10 +24,10 @@ CONVENTIONS, AND HOW EACH IS KNOWN RATHER THAN BELIEVED
       ``DeployStatus`` NAMES, so no protocol number is copied into Rust.
     * Troop territory: the engine and the mask run the same shipped mechanic, the
       closed NoDeploySize rect of every alive enemy crown tower. The engine reads
-      its sizes from the cards.json it was built with, the mask from the one on
-      disk; construction compares ``Battle.tower_no_deploy_rects()`` and
-      ``TERRITORY_MODEL`` with ``DeployRules`` and refuses on any difference
-      (``territory_differences``).
+      its sizes from the cards.json in the checkout it was built in, the mask from
+      the one under ``data_dir()``; construction compares
+      ``Battle.tower_no_deploy_rects()`` and ``TERRITORY_MODEL`` with ``DeployRules``
+      and refuses on any difference (``territory_differences``).
     * MatchSetup: ``protocol.validate_setup`` runs FIRST in ``reset``, before the
       core or this adapter touches anything, so a refused setup raises the
       Protocol's ValueError (same text as MockEngine) and the running battle is
@@ -52,6 +52,18 @@ STALE BUILDS ARE REFUSED
     arena with the files on disk and raises on any difference. The same check
     refuses a ``Calibration.with_override`` the compiled engine cannot honour.
 
+THE CARD TABLE IS READ, NOT COMPILED IN
+    Every ``royalesim.Battle`` reads data/derived/cards.json from the RoyaleSim
+    checkout the engine was built in, when it is constructed (card.rs ``load_repo``).
+    Re-running ``tools/extract_cards.py --vintage 2018 --out data/derived/cards.json``
+    in that checkout changes the next RustEngine's card table at once: no rebuild, and
+    no stale-build refusal, because there is nothing compiled to be stale.
+    ``ROYALESIM_DATA_DIR`` does not move that file; it moves only what this package
+    reads. So build in the checkout whose data you want.
+    Which table an engine got is in its ``config()``: ``cards_json_fnv1a64`` (the hash
+    RoyaleSim's replay fixtures record), ``cards_vintage`` and
+    ``cards_json_hash_source`` (see ``RustEngine.card_table_stamp``).
+
 WHAT DIFFERS FROM MockEngine ON PURPOSE (engine mechanics, not adapter choices)
     Cards and towers run at the engine's unified level (``card_level``, 9 on the
     2018 rarity table) where the mock uses CSV level 1; spells travel, roll, stun and
@@ -61,8 +73,11 @@ WHAT DIFFERS FROM MockEngine ON PURPOSE (engine mechanics, not adapter choices)
 
 from __future__ import annotations
 
+import functools
 import hashlib
+import importlib.machinery
 import json
+import re
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -72,6 +87,7 @@ import msgspec
 from .mock_engine import RAW_CARD_PACK
 from .protocol import (
     BLUE,
+    DEFAULT_DATA_DIR,
     HAND_SIZE,
     RED,
     TEAMS,
@@ -91,6 +107,7 @@ from .protocol import (
     data_dir,
     default_calibration,
     derived_cards_vintage,
+    fnv1a64,
     mirror_state,
     to_engine,
     validate_setup,
@@ -114,7 +131,8 @@ except ImportError as _exc:  # pragma: no cover - exercised only on unbuilt tree
     CORE_IMPORT_ERROR: str | None = (
         f"royalesim is not built ({_exc}); run `maturin develop --release` in the "
         "sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active. "
-        f"The card data has to be extracted BEFORE that build; {INSTALL_POINTER} "
+        "The data has to be extracted BEFORE that build: arena.json is compiled in, "
+        f"and cards.json is read each time an engine is constructed; {INSTALL_POINTER} "
         "has both steps in order."
     )
 else:
@@ -147,7 +165,8 @@ def build_digest() -> str:
     unequal says which way to look without needing the two files side by side.
     Module-level and also reachable as ``RustEngine.build_digest`` so it can be
     read without constructing an engine -- construction is exactly what refuses
-    on a stale build.
+    on a stale build. The card table is not in it, because it is not compiled in:
+    ``RustEngine.card_table_stamp`` says which one an engine read.
     """
     if _core is None:
         raise ImportError(CORE_IMPORT_ERROR)
@@ -183,6 +202,127 @@ def stale_build_differences(calibration: Calibration, arena_path: Path | None = 
     return diffs
 
 
+# ---------------------------------------------------------------- the card table
+
+#: What the compiled engine may call the FNV-1a 64 of the card table a Battle loaded,
+#: looked up on the Battle in this order: a method or an attribute, giving 16 hex
+#: digits or the integer. With none of them, the stamp is the file's, hashed from disk
+#: at construction (``RustEngine.card_table_stamp``).
+ENGINE_CARD_HASH_NAMES = ("cards_json_fnv1a64", "card_table_fnv1a64")
+#: What the compiled engine may call the path of the cards.json it reads: a module
+#: constant, or a static method or attribute of ``Battle``.
+ENGINE_CARD_PATH_NAMES = ("CARDS_JSON_PATH", "cards_json_path")
+
+# The core builds the path it reads a card table from as the crate's build directory
+# followed by this (card.rs ``load_repo_file``). Both pieces are in the compiled
+# extension as text, the directory right before the tail.
+_CARD_PATH_TAIL = b"/../../data/derived/"
+# Where an absolute path can start: a drive, a UNC share, or a POSIX root.
+_PATH_ROOT = re.compile(rb"[A-Za-z]:[\\/]|\\\\|/")
+
+
+def _extension_file() -> Path | None:
+    """The compiled extension module file (``.pyd`` / ``.so``) behind ``royalesim``."""
+    for module in (getattr(_core, "royalesim", None), _core):
+        name = getattr(module, "__file__", None)
+        if name and name.endswith(tuple(importlib.machinery.EXTENSION_SUFFIXES)):
+            return Path(name)
+    return None
+
+
+@functools.cache
+def _cards_json_in_build_checkout() -> Path | None:
+    """data/derived/cards.json of the checkout the loaded extension was built in, or None.
+
+    Read out of the extension itself, because nothing else knows: a wheel installed
+    into a venv keeps no pointer back to the tree it was built from. The bytes before
+    the build directory belong to whatever the linker put there, so each place an
+    absolute path could start is tried, earliest first, and the first that names an
+    existing file wins.
+    """
+    ext = _extension_file()
+    if ext is None:
+        return None
+    blob = ext.read_bytes()
+    at = blob.find(_CARD_PATH_TAIL)
+    while at != -1:
+        start = at
+        # Back over text (printable ASCII or UTF-8), at most one long path's worth.
+        while start > 0 and at - start < 4096 and 0x20 <= blob[start - 1] != 0x7F:
+            start -= 1
+        run = blob[start:at]
+        for m in _PATH_ROOT.finditer(run):
+            try:
+                build_dir = run[m.start() :].decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+            candidate = Path(build_dir, "..", "..", "data", "derived", "cards.json")
+            if candidate.is_file():
+                return candidate.resolve()
+        at = blob.find(_CARD_PATH_TAIL, at + 1)
+    return None
+
+
+def engine_cards_json_path() -> tuple[Path, str]:
+    """(path, how it was found) of the cards.json the compiled engine reads.
+
+    Not ``data_dir()``: ``ROYALESIM_DATA_DIR`` moves what this package reads and never
+    what the engine reads. In order: the path the engine states, if it states one
+    (``ENGINE_CARD_PATH_NAMES``), found by "engine"; the build directory compiled into
+    the extension, "build checkout"; the sibling checkout of the documented layout,
+    "sibling checkout", a fallback that is right only when the engine was built there.
+    """
+    if _core is None:
+        raise ImportError(CORE_IMPORT_ERROR)
+    for name in ENGINE_CARD_PATH_NAMES:
+        for owner in (_core, _core.Battle):
+            value = getattr(owner, name, None)
+            if value is not None:
+                return Path(value() if callable(value) else value), "engine"
+    built = _cards_json_in_build_checkout()
+    if built is not None:
+        return built, "build checkout"
+    return DEFAULT_DATA_DIR / "derived" / "cards.json", "sibling checkout"
+
+
+# (path, size, mtime_ns) -> (FNV-1a 64, vintage). The hash is pure Python and costs
+# about half a second on a full card table, so it is paid once per version of a file.
+_CARDS_JSON_STAMPS: dict[tuple[str, int, int], tuple[str, str]] = {}
+
+
+def cards_json_stamp(path: Path) -> tuple[str, str]:
+    """(FNV-1a 64 of the file's bytes, its ``provenance.vintage``), hashed once per version.
+
+    The hash is ``protocol.fnv1a64`` over the raw bytes, the one RoyaleSim's replay
+    fixtures record as ``cards_json_fnv1a64``. Keyed on size and modification time, so
+    a regenerated file is hashed again and an unchanged one is not.
+    """
+    st = path.stat()
+    key = (str(path), st.st_size, st.st_mtime_ns)
+    if key not in _CARDS_JSON_STAMPS:
+        _CARDS_JSON_STAMPS[key] = (fnv1a64(path.read_bytes()), derived_cards_vintage(path))
+    return _CARDS_JSON_STAMPS[key]
+
+
+def _card_table(fnv: str, vintage: str, source: str) -> dict[str, str]:
+    return {"cards_json_fnv1a64": fnv, "cards_vintage": vintage, "cards_json_hash_source": source}
+
+
+def _engine_card_hash(battle: Any) -> str | None:
+    """The card-table hash the engine itself reports, or None when it reports none."""
+    for name in ENGINE_CARD_HASH_NAMES:
+        value = getattr(battle, name, None)
+        if value is None:
+            continue
+        value = value() if callable(value) else value
+        if isinstance(value, int) and not isinstance(value, bool) and 0 <= value < 2**64:
+            return f"{value:016x}"
+        if isinstance(value, str) and re.fullmatch(r"[0-9a-fA-F]{16}", value):
+            return value.lower()
+        raise RuntimeError(f"the engine's {name} gave {value!r}, not an FNV-1a 64 hash")
+    return None
+
+
 # CardInfo fields that are card DATA -- read from the table both engines are meant
 # to be reading. ``hitpoints`` is deliberately absent: it is the engine's card LEVEL,
 # a known and intended mechanics difference (tests/test_rust_engine.py's allow-list).
@@ -194,21 +334,24 @@ def catalogue_vintage_split(
 ) -> str | None:
     """Why the two engines are reading DIFFERENT card tables, or None.
 
-    The compiled engine carries the catalogue it was BUILT with; MockEngine reads the
-    raw CSVs on disk, every time. In a public checkout that is built there, the two are
+    The compiled engine reads data/derived/cards.json from the RoyaleSim checkout it was
+    built in, each time an engine is constructed; MockEngine reads the raw CSVs under
+    ``data_dir()``, every time. In a public checkout that is built there, the two are
     the same vintage by construction: the newer client packs are not redistributed, so
     the extractor can only produce the tracked table, and any difference here is then a
     real defect. On a machine that HAS a newer pack and regenerated cards.json from it,
     the two are simply different tables and every cross-engine comparison is measuring
     the data rather than the engines.
 
-    THE TWO HALVES MOVE AT DIFFERENT TIMES, which is the part that catches people out.
-    Pointing ``ROYALESIM_DATA_DIR`` at a 2018 data directory moves MockEngine's half
-    immediately and does not move the compiled half at all -- measured: with a pure 2018
-    data dir the extension still reported 95 cards and Goblins at 4. So getting the two
-    to agree needs a BUILD in that checkout, not just its data. ``stale_build_differences``
-    does not cover this: it compares calibration.json and arena.json, deliberately not
-    the card table, and the skip is what handles the catalogue instead.
+    THE TWO HALVES ARE READ FROM DIFFERENT PLACES, which is the part that catches people
+    out. Pointing ``ROYALESIM_DATA_DIR`` at a 2018 data directory moves MockEngine's half
+    and does not move the engine's at all -- measured: with a pure 2018 data dir the
+    extension still reported 95 cards and Goblins at 4, because it went on reading the
+    cards.json of the checkout it was built in. Regenerating THAT file moves the engine's
+    half at once, with no rebuild. So build in the checkout whose data you want.
+    ``stale_build_differences`` does not cover this: it compares calibration.json and
+    arena.json, the two files compiled in, and the skip is what handles the catalogue.
+    ``RustEngine.card_table_stamp`` names the table an engine actually read.
 
     THAT IS OBSERVED, NOT PREDICTED. A clean clone of the four repos, its data generated
     from the tracked 2018 tables and royalesim built in it, runs the tests this function
@@ -245,13 +388,18 @@ def catalogue_vintage_split(
     if not differences:
         return None
     detail = "; ".join(f"{f}: {', '.join(v[:4])}" for f, v in sorted(differences.items()))
+    engine_cards = engine_cards_json_path()[0] if _core is not None else None
+    vintage = derived_cards_vintage(engine_cards)
     return (
         "the two engines are reading different card tables, so this comparison would "
-        "measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, use a "
-        "checkout with no private client pack AND BUILD royalesim IN IT: the compiled "
-        "engine carries the table it was built with, so changing the data on disk alone "
-        "moves only MockEngine's half and these will still skip. cards.json vintage "
-        f"{derived_cards_vintage()!r} vs MockEngine's {RAW_CARD_PACK!r}. "
+        "measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, the "
+        "engine's cards.json has to be the 2018 table: it reads data/derived/cards.json "
+        "in the RoyaleSim checkout it was built in "
+        f"({engine_cards or 'royalesim is not built'}), each time one is constructed, "
+        "and ROYALESIM_DATA_DIR does not move it. Regenerate that file with "
+        "`python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json` "
+        "in that checkout; no rebuild is needed. cards.json vintage "
+        f"{vintage!r} vs MockEngine's {RAW_CARD_PACK!r}. "
         f"Differences (rust/mock) -- {detail}"
     )
 
@@ -326,7 +474,7 @@ class RustEngine:
         ground_deploy_point: str | None = None,
     ) -> None:
         """``path_search``: None = the ledger's ``pathfinding.PATH_SEARCH`` (the game's own
-        search, measured on client 16.402 (RoyaleLive traces), which is NOT seat-symmetric:
+        search, measured on client 16.402, which is NOT seat-symmetric:
         rotated twins can take different equal-cost routes, as in the real game).
         ``"trace_fitted_astar"`` selects the frame-planned arm whose routes are exact
         rotations -- and the fixed-distance knockback with it (the shipped
@@ -367,6 +515,11 @@ class RustEngine:
         self.path_search = path_search
         self.ground_y_clamp = ground_y_clamp
         self.ground_deploy_point = ground_deploy_point
+        # The card table is read by the Battle below, from this file (module doc).
+        # Stamped from disk on both sides of that read unless the engine reports it.
+        self.cards_json_path, self.cards_json_found_by = engine_cards_json_path()
+        from_engine = any(hasattr(_core.Battle, n) for n in ENGINE_CARD_HASH_NAMES)
+        before = None if from_engine else self._disk_stamp()
         self._battle = _core.Battle(
             list(card_names) if card_names is not None else None,
             self.slot_of_k,
@@ -374,12 +527,16 @@ class RustEngine:
             ground_y_clamp,
             ground_deploy_point,
         )
+        self._card_table = self._stamp_card_table(before)
         terr = territory_differences(self._battle, self._rules, self._arena, self.slot_of_k)
         if terr:
             raise RuntimeError(
-                "the Rust engine and the action mask disagree on troop territory; rebuild "
-                "with `maturin develop --release` after regenerating cards.json:\n  "
-                + "\n  ".join(terr)
+                "the Rust engine and the action mask disagree on troop territory. The "
+                "engine read data/derived/cards.json in the checkout it was built in "
+                f"({self.cards_json_path}); the mask reads the one under data_dir() "
+                f"({data_dir() / 'derived' / 'cards.json'}). Make them the same file: "
+                "point ROYALESIM_DATA_DIR at that checkout's data/ folder, or build the "
+                "engine in the checkout whose data you want:\n  " + "\n  ".join(terr)
             )
         self.card_level: int = self._battle.card_level()
         rows = json.loads(self._battle.catalogue_json())
@@ -389,6 +546,10 @@ class RustEngine:
                 f"the Rust catalogue uses kind codes {unknown} this adapter has no "
                 "protocol Placement for (py.rs kind_code)"
             )
+        # A catalogue row is positional and may GROW: the core appends a column rather
+        # than rekeying the row, because this is decoded per battle. So the trailing
+        # columns are taken by position from ``rest`` and an unknown one is ignored,
+        # which is what lets an engine built with a newer column load here.
         self._cards = [
             CardInfo(
                 card_id=cid,
@@ -399,8 +560,9 @@ class RustEngine:
                 radius=radius,
                 flying=flying,
                 hitpoints=hp,
+                footprint_tiles=rest[0] if rest else None,
             )
-            for cid, (name, kind, elixir, count, radius, flying, hp) in enumerate(rows)
+            for cid, (name, kind, elixir, count, radius, flying, hp, *rest) in enumerate(rows)
         ]
         self._status_of_reason: list[int | None] = [
             int(DeployStatus[n]) if n in DeployStatus.__members__ else None
@@ -505,7 +667,8 @@ class RustEngine:
         pathfinder and deploy-clamp arms were selected. ``SymmetricRustEngine`` is a
         different engine for this purpose and a checkpoint that does not say so cannot
         be reproduced -- and the clamp has to be named separately from the pathfinder,
-        because selecting one does not select the other.
+        because selecting one does not select the other. The card NAMES do not say
+        which card table they were read from, so ``card_table_stamp`` is in here too.
         """
         return {
             "cards": [c.name for c in self._cards],
@@ -514,7 +677,44 @@ class RustEngine:
             "ground_y_clamp": self.ground_y_clamp,
             "ground_deploy_point": self.ground_deploy_point,
             "calibration_digest": calibration_digest(self.calibration),
+            **self._card_table,
         }
+
+    def card_table_stamp(self) -> dict[str, str]:
+        """Which card table this engine read, taken when it was constructed.
+
+        ``cards_json_fnv1a64``: FNV-1a 64 of the cards.json bytes, 16 hex digits, the
+        value RoyaleSim's replay fixtures record under the same name.
+        ``cards_vintage``: that file's ``provenance.vintage``.
+        ``cards_json_hash_source``: ``"engine"`` when the compiled engine reported the
+        hash of the table it loaded (``ENGINE_CARD_HASH_NAMES``), and then the vintage
+        is "unknown" unless ``cards_json_path`` hashes to the same value;
+        ``"disk_at_construction"`` when it was hashed from ``cards_json_path``, the
+        file the engine reads, just before and just after the engine read it (a file
+        that changed in between is refused); ``"unavailable"`` when that file could
+        not be found, and then the other two are "" and "unknown".
+        """
+        return dict(self._card_table)
+
+    def _disk_stamp(self) -> tuple[str, str] | None:
+        path = self.cards_json_path
+        return cards_json_stamp(path) if path.is_file() else None
+
+    def _stamp_card_table(self, before: tuple[str, str] | None) -> dict[str, str]:
+        engine_hash = _engine_card_hash(self._battle)
+        disk = self._disk_stamp()
+        if engine_hash is not None:
+            # The file's vintage names the engine's table only if the file IS that table.
+            vintage = disk[1] if disk is not None and disk[0] == engine_hash else "unknown"
+            return _card_table(engine_hash, vintage, "engine")
+        if disk != before:
+            raise RuntimeError(
+                f"{self.cards_json_path} changed while the engine was reading it, so "
+                "which card table it holds cannot be said; construct it again"
+            )
+        if disk is None:
+            return _card_table("", "unknown", "unavailable")
+        return _card_table(disk[0], disk[1], "disk_at_construction")
 
     build_digest = staticmethod(build_digest)
 
@@ -531,7 +731,7 @@ class RustEngine:
 #: tried a single tile would have had a one-in-six chance of reporting clean.
 PROBE_TILES = ((1, 2), (4, 3), (9, 4), (13, 2), (16, 5))
 
-#: Probe verdicts, keyed by engine build and constructor arguments. The probe costs a
+#: Probe verdicts, keyed by engine build, card table and constructor arguments. The probe costs a
 #: handful of resets and a tick; a test suite builds hundreds of these.
 _PROBE_CACHE: dict[tuple, list[str]] = {}
 
@@ -602,7 +802,10 @@ def _rotation_probe_cached(args: tuple, kwargs: dict) -> list[str]:
     Probing the instance itself would leave it holding the probe's battle, and a
     constructor that quietly resets what it just built is its own kind of trap.
     """
-    cache_key = (RustEngine.build_digest(), repr(args), repr(sorted(kwargs.items())))
+    # The card table too: it is read at construction, so it can change with no rebuild.
+    cards = engine_cards_json_path()[0]
+    table = cards_json_stamp(cards)[0] if cards.is_file() else ""
+    cache_key = (RustEngine.build_digest(), table, repr(args), repr(sorted(kwargs.items())))
     if cache_key not in _PROBE_CACHE:
         _PROBE_CACHE[cache_key] = rotation_probe(RustEngine(*args, **kwargs))
     return _PROBE_CACHE[cache_key]
@@ -615,7 +818,7 @@ class SymmetricRustEngine(RustEngine):
     ``RustEngine.__init__``).
 
     FOR ROTATION-MIRROR GATES ONLY. The shipped search is the game's own, measured on
-    client 16.402 (RoyaleLive traces), and it is not seat-symmetric: its goal scan and
+    client 16.402, and it is not seat-symmetric: its goal scan and
     neighbour order run in absolute arena coordinates, so a Red unit and its
     rotated Blue twin can publish different equal-cost routes (measured: 20 of 54 twin
     problems on the shipped arena).

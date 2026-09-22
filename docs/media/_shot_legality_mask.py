@@ -49,7 +49,7 @@ BOARD_EDGE = M.BORDER
 
 
 def _blend(a, b, t):
-    return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(3))
+    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
 RIVER_OFF = _blend(OFF, M.RIVER, 0.34)  # illegal AND in the water band
@@ -192,8 +192,6 @@ def draw(out_path: pathlib.Path) -> str:
 
     im, d = M.canvas(W, H)
     f_head = M.theme_font(64)
-    f_name = M.theme_font(36)
-    f_rule = M.theme_font(F_FLOOR)
     f_num = M.theme_font(F_FLOOR, mono=True)
 
     # The headline is the question the four boards answer. The counts the README tile quotes

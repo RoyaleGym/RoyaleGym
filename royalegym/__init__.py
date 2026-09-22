@@ -89,6 +89,7 @@ from .selfplay import (
     RandomLegalOpponent,
 )
 from .state_mutator import (
+    DeckCurriculumStateMutator,
     DefaultStateMutator,
     DefaultStateSetter,
     MidGameStateMutator,
@@ -144,6 +145,7 @@ __all__ = [
     "ClashSelfPlayVecEnv",
     "CombinedReward",
     "CrownReward",
+    "DeckCurriculumStateMutator",
     "DefaultStateMutator",
     "DefaultStateSetter",
     "DefendOpponent",

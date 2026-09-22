@@ -143,7 +143,7 @@ def _status_colour(words, order):
     rank = sum(order.index(w) for w in words) / len(words) / (len(order) - 1)
     lo, mid, hi = M.RED, M.AMBER, M.GREEN
     a, b, t = (lo, mid, rank / 0.5) if rank < 0.5 else (mid, hi, (rank - 0.5) / 0.5)
-    return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(3))
+    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
 def _fit(d, text, width, sizes, **kw):
@@ -194,7 +194,7 @@ def draw(out_path: pathlib.Path) -> str:
     for n in counts:
         widths.append(round((inner - gap * (len(counts) - 1)) * n / total))
     widths[-1] += inner - gap * (len(counts) - 1) - sum(widths)
-    for w, col in zip(widths, colours):
+    for w, col in zip(widths, colours, strict=True):
         d.rounded_rectangle((x, bar_y, x + w, bar_y + bar_h), 10, fill=col)
         x += w + gap
 
@@ -203,7 +203,7 @@ def draw(out_path: pathlib.Path) -> str:
     bw, bh, step = 128, 62, 72
     f_count = M.theme_font(44, mono=True)
     f_share = M.theme_font(36)
-    for label, n, col in zip(labels, counts, colours):
+    for label, n, col in zip(labels, counts, colours, strict=True):
         d.rounded_rectangle((pad, y, pad + bw, y + bh), 14, fill=col)
         txt = str(n)
         d.text((pad + (bw - d.textlength(txt, font=f_count)) / 2, y + 4), txt,
@@ -220,7 +220,7 @@ def draw(out_path: pathlib.Path) -> str:
     d.text((pad, H - 50), foot, font=f_foot, fill=M.DIM)
 
     im.save(out_path)
-    parts = ", ".join(f"{lab}:{n}" for lab, n in zip(labels, counts))
+    parts = ", ".join(f"{lab}:{n}" for lab, n in zip(labels, counts, strict=True))
     raw = ", ".join(f"{w}:{tally[w]}" for w in sorted(tally, key=order.index,
                                                       reverse=True))
     return (f"{total} keys over {len(tally)} status words ({raw}); drawn as "

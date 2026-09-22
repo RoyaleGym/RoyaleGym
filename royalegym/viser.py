@@ -66,6 +66,7 @@ ATTACH_TIMEOUT_S = 3.0  # no heartbeat for this long: detached, nothing is sent
 POLL_INTERVAL_S = 1.0  # how often the socket is looked at for heartbeats
 MAX_DATAGRAM = 65507
 ENV_VAR = "ROYALEVISER"  # host:port; read once by ClashParallelEnv when no publisher is given
+RUN_ENV_VAR = "ROYALEVISER_RUN"  # names the run whose frames these are (see from_env)
 EVENTS_KEPT = 200  # event lines carried in every frame (newest last)
 
 TOWER_NAMES = {EntityKind.KING_TOWER: "KingTower", EntityKind.PRINCESS_TOWER: "PrincessTower"}
@@ -79,7 +80,12 @@ def names_of(cards: Sequence[CardInfo]) -> Callable[[int], str]:
 
 
 def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
-    """royaleviser.model.Unit as a dict. Path and target are not in an engine state."""
+    """royaleviser.model.Unit as a dict. Path and target are not in an engine state.
+
+    ``footprint`` is the engine's own box for a building or tower, passed through as it
+    came: None for a troop and for an engine that reports no box, so the viewer draws
+    its marked stand-in rather than a box made up here.
+    """
     name = TOWER_NAMES.get(e.kind) if e.card_id == EMPTY_CARD else None
     return {
         "uid": e.uid,
@@ -99,6 +105,7 @@ def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
         "direction": None,
         "state": None,
         "extra": {"tower_slot": e.tower_slot, "knockback_ticks": e.knockback_ticks},
+        "footprint": list(e.footprint) if e.footprint is not None else None,
     }
 
 
@@ -194,7 +201,8 @@ class ViserPublisher:
     ``publish_dict`` sends a ready dict (royaleviser.sources.Publisher's path).
     """
 
-    def __init__(self, host: str = HOST, port: int = PORT) -> None:
+    def __init__(self, host: str = HOST, port: int = PORT, run: str = "") -> None:
+        self.run = run
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._sock.bind((host, port))
         self._sock.setblocking(False)
@@ -211,14 +219,20 @@ class ViserPublisher:
 
     @classmethod
     def from_env(cls) -> ViserPublisher | None:
-        """A publisher for ROYALEVISER=host:port, or None when the variable is unset/empty."""
+        """A publisher for ROYALEVISER=host:port, or None when the variable is unset/empty.
+
+        ``ROYALEVISER_RUN`` names the run these frames come from. The ports are fixed, so
+        two runs on one machine reach the same viewer and it cannot tell whose frames it
+        is drawing beside whose learning panel; the name in every frame is what lets it
+        say. Unset is the empty string, and then no ``run`` key is sent at all.
+        """
         spec = os.environ.get(ENV_VAR, "").strip()
         if not spec:
             return None
         host, _, port = spec.rpartition(":")
         if not port.isdigit():
             raise ValueError(f"{ENV_VAR}={spec!r} is not host:port")
-        return cls(host or HOST, int(port))
+        return cls(host or HOST, int(port), os.environ.get(RUN_ENV_VAR, "").strip())
 
     def _poll(self, now: float) -> None:
         self._last_poll = now
@@ -262,6 +276,8 @@ class ViserPublisher:
         self._events.extend(events)
         del self._events[:-EVENTS_KEPT]
         m = {"source": "engine", "seq": self.seq, "wall_us": time.time_ns() // 1000}
+        if self.run:
+            m["run"] = self.run
         m.update(meta or {})
         d = frame_dict(state, name_of, arena.subtile, decks, self._events, m)
         return self.publish_dict(d)

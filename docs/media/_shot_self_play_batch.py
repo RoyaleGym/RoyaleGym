@@ -92,8 +92,13 @@ SEAT_EDGE = (M.BLUE, M.RED)
 
 def _build(np):
     """A real vector environment, stepped for real. Returns what the figure draws."""
-    from royalegym import (ClashParallelEnv, ClashSelfPlayVecEnv, DefaultStateMutator,
-                           RandomLegalOpponent, RustEngine)
+    from royalegym import (
+        ClashParallelEnv,
+        ClashSelfPlayVecEnv,
+        DefaultStateMutator,
+        RandomLegalOpponent,
+        RustEngine,
+    )
     from royalegym.obs import vector_offsets
 
     engine = RustEngine()

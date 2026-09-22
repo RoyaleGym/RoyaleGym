@@ -137,8 +137,8 @@ def _liveliness(slot_of_k, script, ticks: int) -> tuple[int, int]:
     for t in range(ticks):
         b.step(script.get(t, []), 1)
     last = json.loads(bytes(b.state_json()))
-    lost = sum(a - b_ for p, q in zip(first["players"], last["players"])
-               for a, b_ in zip(p["tower_hp"], q["tower_hp"]))
+    lost = sum(a - b_ for p, q in zip(first["players"], last["players"], strict=True)
+               for a, b_ in zip(p["tower_hp"], q["tower_hp"], strict=True))
     alive = sum(1 for e in last["entities"] if e[2] == 0) if last.get("entities") else 0
     return lost, alive
 
@@ -188,11 +188,10 @@ def draw(out_path: pathlib.Path) -> str:
     hp_lost, n_alive = _liveliness(slot_of_k, script, TICKS)
 
     # The counts. Nothing below is written into a string literal.
-    n_diff_12 = sum(1 for a, b in zip(h1, h2) if a != b)
+    n_diff_12 = sum(1 for a, b in zip(h1, h2, strict=True) if a != b)
     third = {SNAPSHOT_AT + i + 1: h for i, h in enumerate(h3)}
     n_diff_13 = sum(1 for i, h in enumerate(h3) if h != h1[SNAPSHOT_AT + i])
     n_resumed = len(h3)
-    n_distinct = len(set(h1))
     total_cmp = TICKS + n_resumed
     total_diff = n_diff_12 + n_diff_13
 

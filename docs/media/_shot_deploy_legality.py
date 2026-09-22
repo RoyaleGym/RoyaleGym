@@ -180,18 +180,18 @@ def draw(out_path: pathlib.Path) -> str:
     f_foot = M.theme_font(F_FOOT)
 
     x0 = 36
-    head = "%d → %d legal tiles" % (legal[0], legal[1])
+    head = f"{legal[0]} → {legal[1]} legal tiles"
     d.text((x0, 10), head, font=f_head, fill=M.TEXT)
     d.text((x0 + d.textlength(head, font=f_head) + 24, 10),
-           "+%d" % (legal[1] - legal[0]), font=f_head, fill=M.GREEN)
-    d.text((x0, 92), "Blue's %s, after the %s-hand enemy princess falls" % (card_name, side),
+           f"+{legal[1] - legal[0]}", font=f_head, fill=M.GREEN)
+    d.text((x0, 92), f"Blue's {card_name}, after the {side}-hand enemy princess falls",
            font=f_sub, fill=M.DIM)
 
     board_w, board_h = nx * TILE, ny * TILE
     cap_y, board_y = 148, 192
     xs = (x0, x0 + board_w + 26)
-    for i, (names, bx) in enumerate(zip(boards, xs)):
-        d.text((bx, cap_y), "%d legal" % legal[i], font=f_cap,
+    for i, (names, bx) in enumerate(zip(boards, xs, strict=True)):
+        d.text((bx, cap_y), f"{legal[i]} legal", font=f_cap,
                fill=M.GREEN if i else M.TEXT)
         _draw_board(d, bx, board_y, names, bridges, river_rows)
         for k in princess_k:
@@ -204,7 +204,7 @@ def draw(out_path: pathlib.Path) -> str:
     gys = [t[1] for t in gained]
     d.text((gx + (max(gxs) + 1) * TILE + 10,
             board_y + (min(gys) + max(gys) + 1) * TILE / 2 - F_NUM * 0.62),
-           "+%d" % len(gained), font=f_num, fill=M.GREEN)
+           f"+{len(gained)}", font=f_num, fill=M.GREEN)
 
     # Legend: the codes exactly as DEPLOY_REASONS spells them, with both tile counts.
     lx = xs[1] + board_w + 34
@@ -225,27 +225,25 @@ def draw(out_path: pathlib.Path) -> str:
         d.rectangle(sw, outline=M.BORDER, width=1)
         d.text((lx + 42, y), name, font=f_code, fill=M.TEXT)
         if a == b:
-            d.text((lx + 42, y + 40), "%d" % a, font=f_num, fill=M.DIM)
+            d.text((lx + 42, y + 40), f"{a}", font=f_num, fill=M.DIM)
         else:
             # Green when the change went Blue's way: more legal tiles, fewer refusals.
             better = (b > a) if name == "OK" else (b < a)
-            txt = "%d → " % a
+            txt = f"{a} → "
             d.text((lx + 42, y + 40), txt, font=f_num, fill=M.DIM)
-            d.text((lx + 42 + d.textlength(txt, font=f_num), y + 40), "%d" % b,
+            d.text((lx + 42 + d.textlength(txt, font=f_num), y + 40), f"{b}",
                    font=f_num, fill=M.GREEN if better else M.RED)
         y += row_h
 
     d.text((x0, board_y + board_h + 12),
-           "%d tile centres per board; %d of %d codes shown."
-           % (nx * ny, len(shown), len(returned)), font=f_foot, fill=M.DIM)
+           f"{nx * ny} tile centres per board; {len(shown)} of {len(returned)} codes shown.",
+           font=f_foot, fill=M.DIM)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     im.save(out_path)
 
-    return ("%d x %d action grid, Blue playing %s: legal %d -> %d tiles (+%d) after Red's "
-            "%s princess tower is set to 0 hp, the tiles gained being rows %d-%d, cols "
-            "%d-%d; %s"
-            % (nx, ny, card_name, legal[0], legal[1], legal[1] - legal[0], side,
-               min(gys), max(gys), min(gxs), max(gxs),
-               ", ".join("%s %d->%d" % (n, counts[0].get(n, 0), counts[1].get(n, 0))
-                         for n in returned)))
+    codes = ", ".join(f"{n} {counts[0].get(n, 0)}->{counts[1].get(n, 0)}" for n in returned)
+    return (f"{nx} x {ny} action grid, Blue playing {card_name}: legal {legal[0]} -> "
+            f"{legal[1]} tiles (+{legal[1] - legal[0]}) after Red's {side} princess tower "
+            f"is set to 0 hp, the tiles gained being rows {min(gys)}-{max(gys)}, cols "
+            f"{min(gxs)}-{max(gxs)}; {codes}")

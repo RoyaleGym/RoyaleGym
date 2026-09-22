@@ -23,6 +23,8 @@ WHAT IT CANNOT CATCH
 
 from __future__ import annotations
 
+import itertools
+
 import numpy as np
 import pytest
 
@@ -146,6 +148,43 @@ def test_the_pusher_places_further_forward_than_the_defender() -> None:
     assert push, "the pusher never placed anything"
     assert defend, "the defender never placed anything"
     assert min(push) > max(defend), f"push {min(push)}..{max(push)} vs defend {max(defend)}"
+
+
+def decisions(steps: int = 400, seeds: int = 3) -> list[dict]:
+    """Observations from battles a random bot plays on both seats, for comparing rules."""
+    out = []
+    for seed in range(seeds):
+        env = env_fn(steps)()
+        obs, _ = env.reset(seed=seed)
+        rng = np.random.default_rng(seed)
+        rnd = dict(ladder())["random"]
+        while env.agents:
+            out.extend(obs[a] for a in env.agents)
+            obs, *_ = env.step(
+                {a: int(rnd.act(obs[a], obs[a]["action_mask"], rng)) for a in env.agents}
+            )
+        env.close()
+    return out
+
+
+def test_no_two_rungs_are_the_same_bot() -> None:
+    """Two rungs that choose the same action are one rung listed twice.
+
+    It happened: the defender used to take the lowest, then leftmost, legal cell of its
+    own half, and the first-affordable bot's first legal cell is that same back corner.
+    They agreed on every decision, and the round robin reported two identical rows as
+    two results. Each pair must disagree on at least a tenth of the decisions where
+    either one plays.
+    """
+    obs_list = decisions()
+    rungs = [(n, o) for n, o in ladder() if n not in ("noop", "random")]
+    rng = np.random.default_rng(0)
+    acts = {n: [int(o.act(ob, ob["action_mask"], rng)) for ob in obs_list] for n, o in rungs}
+    for (a, _), (b, _) in itertools.combinations(rungs, 2):
+        played = [(x, y) for x, y in zip(acts[a], acts[b], strict=True) if x or y]
+        assert len(played) >= 50, f"{a} and {b} played only {len(played)} times"
+        differ = sum(x != y for x, y in played) / len(played)
+        assert differ >= 0.1, f"{a} and {b} chose the same action on {1 - differ:.0%} of plays"
 
 
 def test_the_patient_one_waits() -> None:

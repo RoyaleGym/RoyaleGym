@@ -55,7 +55,7 @@ DEAD = (206, 48, 74)   # the tint on a card with no legal tile at all
 
 
 def _blend(a, b, t):
-    return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(3))
+    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
 def _centre(d, text, font, cx, y, fill):
@@ -184,7 +184,7 @@ def draw(out_path: pathlib.Path) -> str:
     f_num = M.theme_font(F_SMALL, mono=True)
     f_note = M.theme_font(F_SMALL)
 
-    d.text((MARGIN, 14), "%d of %d moves legal" % (legal, total), font=f_head, fill=M.TEXT)
+    d.text((MARGIN, 14), f"{legal} of {total} moves legal", font=f_head, fill=M.TEXT)
     # Brighter than DIM: grey at 34 px is fine at full size and grey at 14 px is not.
     d.text((MARGIN, 94), "lit tiles are the legal placements", font=f_sub,
            fill=_blend(M.DIM, M.TEXT, 0.4))
@@ -197,36 +197,36 @@ def draw(out_path: pathlib.Path) -> str:
         cx = x0 + bw / 2.0
         card, count, dead = hand[s], per[s], per[s] == 0
         colour = M.RED if dead else M.TEXT
-        _centre(d, "%s %d" % (card.name, card.elixir), f_name, cx, name_y, colour)
+        _centre(d, f"{card.name} {card.elixir}", f_name, cx, name_y, colour)
         im.paste(_board(np, planes[s], arena, dead), (x0, board_y))
         d.rectangle([x0 - 1, board_y - 1, x0 + bw, board_y + bh],
                     outline=M.RED if dead else M.BORDER, width=2)
-        _centre(d, "%d/%d" % (count, tiles), f_num, cx, board_y + bh + 12, colour)
+        _centre(d, f"{count}/{tiles}", f_num, cx, board_y + bh + 12, colour)
 
     # The arithmetic behind the headline, so it can be checked off the picture.
     d.text((MARGIN, 540),
-           "%d = %d no-op + %s" % (legal, noop, " + ".join(str(c) for c in per)),
+           f"{legal} = {noop} no-op + {' + '.join(str(c) for c in per)}",
            font=f_num, fill=M.TEXT)
 
     # This step was searched for, so say so, and say what was searched for.
     if chosen and len(priced_out) == 1:
         card = hand[priced_out[0]]
-        note = "chosen step: %s needs %d, bar has %.1f" % (card.name, card.elixir, elixir)
+        note = f"chosen step: {card.name} needs {card.elixir}, bar has {elixir:.1f}"
         colour = M.AMBER
     elif chosen:
         note = "chosen step: one card has no legal tile"
         colour = M.AMBER
     else:
-        note = "step %d of this battle, %.1f elixir" % (step, elixir)
+        note = f"step {step} of this battle, {elixir:.1f} elixir"
         colour = M.DIM
     d.text((MARGIN, 586), note, font=f_note, fill=colour)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     im.save(out_path)
-    return ("step %d, tick %d (%.1f s), %.3f elixir: %d of %d legal = %d no-op + %s; "
-            "hand %s; no legal tile: %s; priced out: %s; canvas %dx%d"
-            % (step, state.tick, seconds, elixir, legal, total, noop,
-               " + ".join(str(c) for c in per),
-               ", ".join("%s/%d" % (c.name, c.elixir) for c in hand),
-               ", ".join(hand[i].name for i in zero) or "none",
-               ", ".join(hand[i].name for i in priced_out) or "none", W, H))
+    sums = " + ".join(str(c) for c in per)
+    held = ", ".join(f"{c.name}/{c.elixir}" for c in hand)
+    no_tile = ", ".join(hand[i].name for i in zero) or "none"
+    priced = ", ".join(hand[i].name for i in priced_out) or "none"
+    return (f"step {step}, tick {state.tick} ({seconds:.1f} s), {elixir:.3f} elixir: "
+            f"{legal} of {total} legal = {noop} no-op + {sums}; "
+            f"hand {held}; no legal tile: {no_tile}; priced out: {priced}; canvas {W}x{H}")
