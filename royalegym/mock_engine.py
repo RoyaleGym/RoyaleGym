@@ -78,6 +78,7 @@ from .protocol import (
     ShuffleMode,
     TowerSlot,
     Winner,
+    calibration_digest,
     data_dir,
     default_calibration,
     load_globals_csv,
@@ -348,6 +349,18 @@ class MockEngine:
     # and it is what makes a whole ClashParallelEnv on this engine picklable
     # (env.py, EnvFactory: a built env is still not the thing to send to a
     # subprocess worker, but it must not be a TypeError either).
+
+    def config(self) -> dict[str, object]:
+        """Constructor state, JSON-able, for ``ClashParallelEnv.config()``.
+
+        The card NAMES, because a catalogue subset is what makes one run's card ids
+        mean something different from another's, and ``card_level`` for the same
+        reason the Rust adapter reports it.
+        """
+        return {
+            "cards": [c.name for c in self.cards()],
+            "calibration_digest": calibration_digest(self.calibration),
+        }
 
     def __getstate__(self) -> dict[str, object]:
         state = dict(self.__dict__)

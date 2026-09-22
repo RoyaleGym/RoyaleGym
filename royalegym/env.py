@@ -99,6 +99,7 @@ EPISODE_STAT_KEYS = (
     "own_tower_hp_frac",
     "enemy_tower_hp_frac",
     "elixir_leak_steps",
+    "elixir_count_exact",
 )
 # Observation keys ``state()`` leaves out: the action mask in either of its shapes.
 # It is legality, not state, it is already an input to the policy, and a centralised
@@ -132,6 +133,17 @@ def engine_build_digest(engine: Engine) -> str | None:
         return str(fn())
     except ImportError:
         return None
+
+
+def _counts_are_exact(obs_builder: ObsBuilder, team: int) -> bool:
+    """Whether the builder's counted features are still provably right for ``team``.
+
+    True for a builder that keeps no counts -- nothing was counted, so nothing can
+    have been counted wrong -- which is also what a builder written before
+    ``ObsBuilder.counts_are_exact`` existed reports.
+    """
+    fn = getattr(obs_builder, "counts_are_exact", None)
+    return bool(fn(team)) if callable(fn) else True
 
 
 def tower_hp_frac(state: BattleState, team: int) -> float:
@@ -225,7 +237,10 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self._state: BattleState | None = None
         self._masks: dict[str, np.ndarray] = {}
         self._obs: dict[str, dict[str, np.ndarray]] = {}
-        self.decision_ticks = 1
+        # From the calibration this env already holds, so ``config()`` is honest
+        # before the first reset; ``reset`` recomputes it from the engine's own
+        # state, which is the authority if an engine ever reports a different tick.
+        self.decision_ticks = max(1, -(-decision_ms // self.calibration.int("time.TICK_MS")))
         self.last_results: list[DeployResult] = []
         self._episode_steps = 0
         self._start_tick = 0
@@ -408,9 +423,10 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
 
         Written only on the terminal step, so a rollout buffer carries one of these
         per EPISODE rather than one per step; ``EPISODE_STAT_KEYS`` is the key list.
-        Tower hp is the fraction of TOTAL tower hp left (king and both princesses),
-        which is the number that says how close the match was: crowns alone cannot
-        tell a tower left at 1 hp from a tower never touched.
+        Tower hp is the MEAN of the three towers' hp fractions (``tower_hp_frac``),
+        which is TowerHPReward's potential over three -- so what a run logs and what
+        its shaping term optimised are the same number. Crowns alone cannot tell a
+        tower left at 1 hp from a tower never touched, which is why it is here.
         """
         return {
             "episode_steps": self._episode_steps,
@@ -420,6 +436,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             "own_tower_hp_frac": tower_hp_frac(state, team),
             "enemy_tower_hp_frac": tower_hp_frac(state, 1 - team),
             "elixir_leak_steps": self._leak_steps[team],
+            "elixir_count_exact": _counts_are_exact(self.obs_builder, team),
         }
 
     def config(self) -> dict[str, Any]:
@@ -622,6 +639,12 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
         *,
         viser: str | ViserPublisher | None = "env",
     ) -> None:
+        if isinstance(viser, str) and viser != "env":
+            raise ValueError(
+                f'viser must be "env", a ViserPublisher or None, not {viser!r}: a string '
+                "that is not the sentinel would be stored as the publisher and fail "
+                "later, on the first step, as an AttributeError inside publish()"
+            )
         self.envs = [env_fn() for _ in range(num_games)]
         self.viser = ViserPublisher.from_env() if viser == "env" else viser
         if self.viser is not None:
@@ -707,10 +730,14 @@ class EnvFactory:
     dropped and rebuilt, so a MockEngine env does pickle), and RustEngine holds a
     live PyO3 ``Battle``, which pickle cannot reach at all. That could be worked
     around -- the engine can already ``save_state()`` to bytes -- but it would be
-    the wrong thing to ship: it cannot be verified in a tree whose extension is
-    not built, and sending a whole battle down a pipe at every worker spawn is not
-    what a worker wants anyway. It wants a build recipe, which is also what
-    gymnasium's own ``AsyncVectorEnv`` asks for.
+    the wrong thing to ship: it cannot be verified in a tree whose extension is not
+    built, and sending a whole battle down a pipe at every worker spawn is not what
+    a worker wants anyway. It wants a build recipe, which is also the shape
+    gymnasium's vector envs ask for.
+
+    NOT a drop-in for ``gym.vector.AsyncVectorEnv``: that wants a single-agent
+    ``gym.Env`` factory, and this builds a two-seat ``ClashParallelEnv``. Hand it to
+    ``ClashSelfPlayVecEnv``, or call it in a worker you own.
 
     Every component is given as its CLASS (or any importable callable) and its
     kwargs, never as a built instance::
@@ -720,8 +747,8 @@ class EnvFactory:
             obs_builder=(SpatialObsBuilder, {"reveal": Reveal(enemy_elixir=True)}),
             decision_ms=250,
         )
-        env = factory()                       # in the worker
-        gym.vector.AsyncVectorEnv([factory] * 8)
+        env = factory()                                  # in the worker
+        ClashSelfPlayVecEnv(4, factory)                  # or hand it to the vec env
 
     The spec is checked with ``pickle.dumps`` at construction, so a lambda or a
     locally-defined class fails HERE, naming the key, rather than at worker spawn

@@ -84,8 +84,8 @@
 <circle cx="614.0" cy="306.0" r="10" fill="#f2b634"/>
 <polygon points="594.0,350.0 630.0,316.0 652.0,336.0 666.0,324.0 686.0,350.0" fill="#f2b634"/>
 <text x="640.0" y="430.0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="44" font-weight="700" fill="#e8edf5">Hidden information, as in the game</text>
-<text x="640.0" y="490.0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" fill="#9aa7bd">Blue&#x27;s observation with its own elixir and hand shown and the enemy&#x27;s</text>
-<text x="640.0" y="522.0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" fill="#9aa7bd">blank, next to the full engine state that has both</text>
+<text x="640.0" y="490.0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" fill="#9aa7bd">Blue&#x27;s observation: its own hand shown, the enemy&#x27;s blank, and the</text>
+<text x="640.0" y="522.0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" fill="#9aa7bd">enemy&#x27;s elixir COUNTED, next to the engine state that has everything</text>
 <rect x="28" y="28" width="205" height="38" rx="19" fill="#18202f" stroke="#3a4a63"/>
 <text x="48" y="54" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" font-weight="600" fill="#f2b634">IMAGE</text>
 <text x="129" y="54" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">placeholder</text>

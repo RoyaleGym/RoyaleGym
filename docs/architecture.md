@@ -162,8 +162,9 @@ no-op, reshaped to `[4, 32, 18]` for a convolutional trunk — beside it; `actio
 returns it as `bool`, the form MaskablePPO calls for. An action the engine rejects becomes a
 no-op and is reported in `info["deploy_status"]`. Because the mask already states per-slot,
 per-tile legality exactly, the observation has no placement-zone channels for the acting
-player: they restated it more coarsely and cost three `PlacementOracle.point_grid` calls per
-seat per step (measured on MockEngine, removing them took `env.step` from 783/s to 1238/s).
+player: they restated it more coarsely and cost two of the three
+`PlacementOracle.point_grid` calls the observation made per seat per step. Measured: 6.66
+`point_grid` calls per `env.step` before and 2.66 after. Measured by alternating the two trees three times in one session, because the absolute numbers move by a third with machine load while the comparison does not: the suite's own throughput report went 766 -> 953 `env.step`/s on the Rust engine and 475 -> 580 on `MockEngine` (medians of three rounds).
 
 ## Constants are read, never copied
 
@@ -213,7 +214,7 @@ started from managed about 20 ticks/s on a full board of 156 entities, real time
 ## Tests
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 238 passed (2026-09-21, ~80 s)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 294 passed, 11 failed (2026-09-21)
 ..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
 ```
 
@@ -227,7 +228,7 @@ refuses it and names every differing key. `tests/test_viser.py` needs `royalevis
 | Module | What it holds |
 |---|---|
 | `protocol.py` | the `Engine` contract and its value types (`BattleState`, `MatchSetup`, `Calibration`, `Arena`, `DeployRules`); `data_dir()` |
-| `env.py` | `ClashParallelEnv` (PettingZoo), `ClashGymEnv` (Gymnasium, id `royalegym/ClashRoyale-v0`), `ClashSelfPlayVecEnv` (N games as 2N agent slots: four games give a `spatial` batch of shape (8, 21, 32, 18) and eight masks), `make_gym_vec_env` |
+| `env.py` | `ClashParallelEnv` (PettingZoo), `ClashGymEnv` (Gymnasium, id `royalegym/ClashRoyale-v0`), `ClashSelfPlayVecEnv` (N games as 2N agent slots: four games give a `spatial` batch of shape (8, 20, 32, 18) and eight masks), `make_gym_vec_env` |
 | `mock_engine.py` | `MockEngine`, the pure-Python reference engine the RL layer is tested against |
 | `rust_engine.py` | `RustEngine` over the compiled `royalesim` core; `SymmetricRustEngine` for the rotation-mirror gates |
 | `obs.py` | `ObsBuilder`: `SpatialObsBuilder`, `EntityListObsBuilder` |

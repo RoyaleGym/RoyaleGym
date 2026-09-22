@@ -30,7 +30,7 @@ recorded, replayed and re-verified bit for bit.
   <tr>
     <td width="33%" align="center"><img width="100%" src="docs/media/replay-page.svg" alt=""><br><b>A replay page, no server</b><br><sub>A trace becomes one self-contained HTML file you double-click: 3.3 MB and 4130 frames for the battle above.</sub></td>
     <td width="33%" align="center"><img width="100%" src="docs/media/battle-in-viewer.png" alt="The Try-it battle at tick 4120 in RoyaleViser"><br><b>Watch it in the viewer</b><br><sub>RoyaleViser draws a trace in a window or watches a running env live; this is the Try-it battle at tick 4120.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt=""><br><b>Hidden information, as in the game</b><br><sub>The opponent's hand is left out and their elixir is counted from the plays you saw, as a player would; revealing either is opt-in and is recorded in the checkpoint.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt=""><br><b>Hidden information, as in the game</b><br><sub>The opponent's hand is left out and their elixir is counted from the plays you saw, as a player would; revealing either is opt-in and changes the observation's width, and `ClashParallelEnv.config()` records which was used.</sub></td>
   </tr>
 </table>
 
@@ -141,8 +141,10 @@ per second on the Rust engine at 10 ticks per step, and about 32 000 engine tick
 when the engine is stepped 20 ticks at a time. The gap between the two is Python, which builds
 both players' observations and masks on every step; closing it is the first open item below.
 Later the same day, dropping the observation's placement-zone channels — the action mask
-already states that legality exactly — took the Python side from 783 to 1238 env steps per
-second on `MockEngine`, which is the arm that can be measured without a fresh engine build.
+already states that legality exactly — took the same report from 766 to 953 env steps per second
+on the Rust engine and from 475 to 580 on `MockEngine`, measured by alternating the two trees
+three times in one session (the absolute numbers move by a third with machine load; the
+comparison does not).
 
 Open:
 
@@ -158,12 +160,19 @@ Open:
 Tests:
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 238 passed (2026-09-21, ~80 s)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 294 passed, 11 failed (2026-09-21)
 ..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
 ```
 
 Without the engine built the Rust-backed tests skip; an engine build older than the data files
 fails them rather than skipping.
+
+The 11 failures on 2026-09-21 are all in the engine, not in this layer, and all 11 fail the same
+way on the tree before this one: five `mock_and_rust_agree_on_setup_state` cases and the thin-slice
+catalogue check are a card-table vintage split (`MockEngine` reads the 2018 CSVs, the compiled
+engine was rebuilt from a newer table, and they now disagree on one card's unit count), and four
+rotation-mirror cases are a deliberately asymmetric deploy clamp whose symmetric arm the engine
+does not yet expose to Python. Both are tracked in RoyaleSim.
 
 Read next: [`docs/architecture.md`](docs/architecture.md) (the layers, the engine contract, the
 action space, the module map, the conventions and why each is there),

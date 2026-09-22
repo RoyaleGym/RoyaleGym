@@ -42,8 +42,10 @@ NO FLOAT MAY DEPEND ON ENTITY LIST ORDER
 PLACEMENT LEGALITY IS THE MASK'S JOB, NOT A CHANNEL'S
     The action space is ``Discrete(2305)`` = no-op + 4 hand slots x 18 x 32 tiles,
     so the mask ALREADY states per-slot, per-tile legality exactly. ``own_troop_zone``
-    and ``own_building_zone`` restated a coarser version of it and cost three
-    ``PlacementOracle.point_grid`` calls per seat per step; the mask itself is
+    and ``own_building_zone`` restated a coarser version of it and cost two of the
+    three ``PlacementOracle.point_grid`` calls the observation made per seat per
+    step -- 6.66 calls per ``env.step`` before and 2.66 after, both seats, and
+    ``env.step`` itself 766 -> 953 per second on the Rust engine; the mask itself is
     handed to the policy twice instead -- flat as ``action_mask`` for the head, and
     as ``mask_planes`` [4, 32, 18] (the mask minus the no-op, reshaped) for a
     convolutional trunk. ``enemy_troop_zone`` stays: it is about the OPPONENT's
@@ -306,20 +308,33 @@ class MatchMemory:
     still identical for the two seats of a mirrored battle, but not necessarily the
     order they happened in.
 
-    AND IT SAYS WHEN IT CANNOT BE EXACT. The same law is run on the player's OWN
-    bar, which is visible, so every step the count is checked against a number the
-    memory is not allowed to guess at. The moment the two disagree, ``exact`` goes
-    False and stays False for the rest of the match: a play was missed, or the
-    engine's elixir law is not the one in calibration.json. That is the only way
-    the enemy count can be wrong, and it is never wrong SILENTLY. The own bar is
-    resynced from the observed value so it stops drifting further; the enemy count
-    is left alone, because the only way to repair it would be to read it.
+    AND IT SAYS WHEN IT CANNOT BE EXACT. ``exact`` goes False, and stays False for
+    the match, the moment the count disagrees with the bar it is modelling -- on
+    EITHER side. Two things make that happen: a play was missed (a deck that repeats
+    a card can hide one, because a play that swaps a card for itself changes no hand
+    slot), or the engine's elixir law is not the one in calibration.json.
+
+    The enemy half of that check is the ONE place this class looks at the
+    opponent's bar, and it does exactly one thing with it: set a boolean. The value
+    is never read into ``foe_fine`` and never reaches an observation -- a wrong
+    count is left wrong rather than quietly repaired, because repairing it is the
+    cheat. Checking only the own bar was not enough and the gap was not theoretical:
+    with a normal deck on one side and a repeating deck on the other, the own bar
+    stays perfect while the enemy count drifts, and ``exact`` stayed True while the
+    number it certified was wrong. The own bar IS resynced, since it is visible
+    anyway, so it stops drifting further.
 
     IDEMPOTENT BY TICK. ``observe`` advances nothing when the state's tick has not
     moved, so building the same state twice -- which the seat-flip and list-order
-    gates do dozens of times -- cannot drift. A tick that moves BACKWARDS is a new
-    battle and re-seeds, so even a builder that is never ``reset`` cannot carry one
-    episode's memory into the next.
+    gates do dozens of times -- cannot drift. A tick that moves BACKWARDS re-seeds,
+    because in a running battle the clock does not go back.
+
+    THAT BACKWARDS-TICK RULE IS A BACKSTOP, NOT THE GUARANTEE. ``BattleState``
+    carries no episode identity, so nothing in it distinguishes a new battle that
+    starts at a HIGHER tick -- a Snapshot resume, or a MatchSetup with
+    ``start_tick`` past the last episode's end -- from the same battle continuing.
+    The guarantee is ``ObsBuilder.reset``, which the env calls on every episode and
+    which forgets everything. A caller that drives builders itself must call it.
     """
 
     def __init__(self, num_cards: int, law: ElixirLaw) -> None:
@@ -353,8 +368,8 @@ class MatchMemory:
         me, foe = state.players[team], state.players[1 - team]
         self.tick = state.tick
         self.exact = True
-        self.own_fine = self.law.from_milli(me.elixir_milli)
-        self.foe_fine = self.law.from_milli(foe.elixir_milli)
+        self.own_fine = self.law.seed_fine(me.elixir_milli)
+        self.foe_fine = self.law.seed_fine(foe.elixir_milli)
         self.leak_fine = 0
         self.own_hand = list(me.hand)
         self.foe_hand = list(foe.hand)
@@ -388,7 +403,9 @@ class MatchMemory:
         self.leak_fine += leaked
         if self.law.to_milli(self.own_fine) != me.elixir_milli:
             self.exact = False
-            self.own_fine = self.law.from_milli(me.elixir_milli)
+            self.own_fine = self.law.seed_fine(me.elixir_milli)
+        if self.law.to_milli(self.foe_fine) != foe.elixir_milli:
+            self.exact = False
         for card in own_played:
             self.own_cycle = [*self.own_cycle[1:], card]
             self.own_last_card = card
@@ -412,7 +429,7 @@ class MatchMemory:
     # -- what the vector reads ----------------------------------------------
 
     def enemy_elixir_milli(self) -> int:
-        """The opponent's bar. Exact while ``exact`` is True, an estimate after."""
+        """The opponent's bar, counted. Exact while ``exact``; an estimate after."""
         return self.law.to_milli(self.foe_fine)
 
     def own_elixir_milli(self) -> int:
@@ -583,6 +600,17 @@ class ObsBuilder(ABC):
         """Called at the start of every episode: both seats forget the last one."""
         for team, memory in self.memory.items():
             memory.seed(state, team)
+
+    def counts_are_exact(self, team: int) -> bool:
+        """Whether this seat's counted features are still provably right.
+
+        False once the opponent's elixir count has been caught disagreeing with the
+        bar it models (``MatchMemory``). A training run should log it: a policy
+        trained on a match where it went False was reading an estimate in a slot
+        documented as exact, and the whole argument for putting that slot in the
+        fair set is that it is not an estimate.
+        """
+        return self.memory[team].exact
 
     def vector_layout(self) -> list[VectorField]:
         """The flat vector's fields, in order, for this builder's ``Reveal``."""
@@ -865,7 +893,12 @@ def entity_row_key(row: tuple[Any, ...]) -> tuple[Any, ...]:
 
 def spell_row_key(row: tuple[Any, ...]) -> tuple[Any, ...]:
     """Sort key of a ``spells`` row: every field but the spell itself (as entity rows).
-    ``state.spells`` is in engine cast order, which is not seat-canonical."""
+
+    ``state.spells`` is in engine cast order, which is not seat-canonical. The row is
+    built with the AIM POINT LAST, for the reason in ``EntityListObsBuilder``: an
+    enemy spell's aim is hidden, and a key that ranks it before a visible field
+    orders visible content by hidden data.
+    """
     return row[:-1]
 
 
@@ -890,6 +923,8 @@ ENTITY_FEATURE_NAMES = (
     "knockback",
 )
 
+# Columns 9 and 10 hold the aim point of the VIEWER's own spells and are 0 on an
+# enemy row; ``Reveal.enemy_spell_aim`` appends two more for the opponent's.
 SPELL_FEATURE_NAMES = (
     "present",
     "own",
@@ -900,8 +935,8 @@ SPELL_FEATURE_NAMES = (
     "motion_area",
     "x_own",
     "y_own",
-    "aim_x_own",
-    "aim_y_own",
+    "own_aim_x_own",
+    "own_aim_y_own",
     "delay_ticks",
     "roll_progress",
     "hits",
@@ -931,18 +966,24 @@ class EntityListObsBuilder(ObsBuilder):
     ``SPELL_FEATURE_NAMES``:
         0 present, 1 own, 2 enemy, 3..6 motion one-hot (flight, airborne, rolling,
         area; a pulsing area effect sets the area bit), 7 x_own / width, 8 y_own /
-        height, 9 aim_x_own / width, 10 aim_y_own / height, 11 delay_ticks / 100
-        (clipped; a pulsing area's life left), 12 travelled / length (0 when length
-        is 0), 13 hits / 16 (clipped), 14.. card one-hot. Sorted by ``spell_row_key``
-        (enemy, y_own, x_own, motion, card, aim y_own, aim x_own, delay, travelled,
-        length, hits); beyond ``max_spells`` dropped in that order. Positions are
-        clipped to [0, 1] (a roll end point can lie past the arena edge).
-        AN ENEMY SPELL'S AIM POINT IS A REVEAL: without ``Reveal.enemy_spell_aim``
-        the two aim columns stay 0 for enemy rows, exactly as the spatial builder
-        then writes no ``enemy_spell_aim`` channel. The columns themselves do not
-        disappear, because a row's width may not depend on whose row it is; the
-        SORT KEY still uses the true aim point, which is engine data and not an
-        observation, so row order stays seat-canonical either way.
+        height, 9 and 10 the aim point of YOUR spells (0 on an enemy row),
+        11 delay_ticks / 100 (clipped; a pulsing area's life left), 12 travelled /
+        length (0 when length is 0), 13 hits / 16 (clipped), 14.. card one-hot, and
+        then two APPENDED columns under ``Reveal.enemy_spell_aim`` holding the
+        opponent's aim point. Rows past ``max_spells`` are dropped in sort order.
+        Positions are clipped to [0, 1] (a roll end point can lie past the arena
+        edge).
+
+        THE SORT KEY PUTS THE AIM POINT LAST, AND THAT IS NOT COSMETIC. Row ORDER is
+        observable: it decides whose delay and hit count appear first. The key must
+        still name every field a row is built from, so the aim cannot leave it -- but
+        with the aim ranked early, two enemy spells alike in everything visible and
+        different in where they were going came out in an order set by where they
+        were going, and the fair observation changed when only the hidden aim
+        changed. Measured: two states differing ONLY in two enemy aim points gave
+        delay columns [0.03, 0.07] and [0.07, 0.03]. With the aim last, hidden data
+        can only order rows whose every visible field is equal, and those rows write
+        the same numbers, so their order cannot be seen.
     """
 
     BASE_FEATURES = 18
@@ -963,6 +1004,13 @@ class EntityListObsBuilder(ObsBuilder):
         super().bind(engine, action_parser)
         self.features = self.BASE_FEATURES + self.num_cards + 1
         self.spell_features = self.SPELL_BASE_FEATURES + self.num_cards
+        # Reveal.enemy_spell_aim APPENDS two columns rather than filling the two the
+        # fair rows already have: a reveal must change the width (module doc), and
+        # the fair aim columns mean "where MY spell is going", which is a different
+        # feature from where the opponent's is.
+        self._enemy_aim_at = self.spell_features if self.reveal.enemy_spell_aim else None
+        if self._enemy_aim_at is not None:
+            self.spell_features += 2
         self._space = spaces.Dict(
             {
                 "entities": spaces.Box(
@@ -978,12 +1026,15 @@ class EntityListObsBuilder(ObsBuilder):
 
     def channel_names(self) -> list[str]:
         """Entity columns, then spell columns; the card one-hots are the trailing run."""
-        return [
+        names = [
             *(f"entity.{n}" for n in ENTITY_FEATURE_NAMES),
             "entity.card_one_hot",
             *(f"spell.{n}" for n in SPELL_FEATURE_NAMES),
             "spell.card_one_hot",
         ]
+        if self._enemy_aim_at is not None:
+            names += ["spell.enemy_aim_x_own", "spell.enemy_aim_y_own"]
+        return names
 
     def config(self) -> dict[str, Any]:
         return {
@@ -1059,19 +1110,19 @@ class EntityListObsBuilder(ObsBuilder):
                     ox,
                     sp.motion,
                     sp.card_id,
-                    ay,
-                    ax,
                     sp.delay_ticks,
                     sp.travelled,
                     sp.length,
                     sp.hits,
+                    ay,
+                    ax,
                     sp,
                 )
             )
         rows.sort(key=spell_row_key)
-        show_enemy_aim = self.reveal.enemy_spell_aim
+        aim_at = self._enemy_aim_at
         out = np.zeros((self.max_spells, self.spell_features), dtype=np.float32)
-        for i, (enemy, oy, ox, motion, card, ay, ax, delay, trav, length, hits, _) in enumerate(
+        for i, (enemy, oy, ox, motion, card, delay, trav, length, hits, ay, ax, _) in enumerate(
             rows[: self.max_spells]
         ):
             f = out[i]
@@ -1083,7 +1134,11 @@ class EntityListObsBuilder(ObsBuilder):
                 f[3 + SpellMotion.AREA] = 1
             f[7] = ox / a.width
             f[8] = oy / a.height
-            if not enemy or show_enemy_aim:
+            if enemy:
+                if aim_at is not None:
+                    f[aim_at] = ax / a.width
+                    f[aim_at + 1] = ay / a.height
+            else:
                 f[9] = ax / a.width
                 f[10] = ay / a.height
             f[11] = min(1.0, delay / 100.0)

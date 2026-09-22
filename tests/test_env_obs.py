@@ -37,7 +37,7 @@ from royalegym.protocol import (
     mirror_state,
     to_own,
 )
-from royalegym.state_mutator import DefaultStateMutator
+from royalegym.state_mutator import DefaultStateMutator, SnapshotStateMutator
 
 DECK = [0, 3, 10, 14, 11, 13, 7, 9]
 # The FAIR channel set. Every reveal appends its channels after these, so a fair
@@ -722,7 +722,14 @@ def test_a_reveal_adds_slots_and_never_moves_a_fair_one(field):
     if field == "enemy_elixir":
         assert added == []
         assert width == fair_width
-        assert "counted" not in dict(vector_fields(n, one))  # the doc text changed
+        # The slot's DESCRIPTION flips from the count to the read value, which is
+        # the only way a reader can tell which one a run used. (dict() keys here
+        # are whole "key: doc" sentences, so a bare `in` on the dict is vacuous.)
+        docs = " ".join(name for name, _ in vector_fields(n, one))
+        assert "counted from the plays seen" not in docs
+        assert "read from the state" in docs
+        fair_docs = " ".join(name for name, _ in vector_fields(n))
+        assert "counted from the plays seen" in fair_docs
     elif field == "enemy_spell_aim":
         assert added == []  # it adds a CHANNEL, not a slot
         assert width == fair_width
@@ -752,23 +759,95 @@ def test_only_a_reveal_writes_the_enemy_spell_aim_channel():
 
 
 def test_the_entity_list_builder_hides_the_enemy_aim_point_too():
+    """The reveal APPENDS two columns; the fair rows never carry the enemy aim."""
     s = STATES[-1]
-    rows = {}
+    built = {}
     for reveal in (None, Reveal(enemy_spell_aim=True)):
         b = EntityListObsBuilder(reveal=reveal)
         b.bind(ENG, PARSER)
-        rows[bool(reveal)] = b.build(s, BLUE, PARSER.action_mask(s, BLUE))["spells"]
-    enemy = rows[True][:, 2] > 0
+        built[bool(reveal)] = (b, b.build(s, BLUE, PARSER.action_mask(s, BLUE))["spells"])
+    (fair_b, fair), (seen_b, seen) = built[False], built[True]
+    assert seen.shape[1] == fair.shape[1] + 2, "a reveal changes the width (rule (a))"
+    assert seen_b.channel_names()[-2:] == ["spell.enemy_aim_x_own", "spell.enemy_aim_y_own"]
+    assert fair_b.observation_space() != seen_b.observation_space()
+    enemy = seen[:, 2] > 0
+    own_rows = (seen[:, 1] > 0) & (seen[:, 0] > 0)
     assert enemy.any(), "fixture must carry an enemy spell row"
-    aim = slice(9, 11)
-    assert rows[True][enemy][:, aim].any(), "the revealed rows must carry an aim point"
-    assert not rows[False][enemy][:, aim].any()
-    # Own rows are untouched, and so is row ORDER: the sort key reads engine data,
-    # not the observation, so hiding a column cannot reorder the array.
-    own = (rows[True][:, 1] > 0) & (rows[True][:, 0] > 0)
-    assert own.any()
-    assert np.array_equal(rows[False][own], rows[True][own])
-    assert np.array_equal(rows[False][:, :9], rows[True][:, :9])
+    assert own_rows.any(), "fixture must carry an own spell row"
+    # The appended columns carry the enemy aim and nothing else.
+    assert seen[enemy][:, -2:].any()
+    assert not seen[own_rows][:, -2:].any()
+    # The fair columns 9, 10 are the viewer's OWN aim, on own rows only.
+    assert fair[own_rows][:, 9:11].any()
+    assert not fair[enemy][:, 9:11].any()
+    # And the fair block is byte-identical with the reveal on: nothing moved.
+    assert np.array_equal(fair, seen[:, : fair.shape[1]])
+
+
+def _two_enemy_spells(aim_x_a, aim_x_b):
+    """One state with two enemy spells alike in everything a fair viewer can see,
+    differing only in where they are going -- and in delay and hits, which ARE
+    visible and must therefore not be ordered by the hidden aim."""
+    fb = next(c.card_id for c in ENG.cards() if c.name == "Fireball")
+    t = ENG.arena().subtile
+    return msgspec.structs.replace(
+        MOCK_STATES[0],
+        spells=[
+            SpellState(RED, fb, SpellMotion.FLIGHT, 5 * t, 11 * t, aim_x_a, 9 * t, 3, 0, 0, 1),
+            SpellState(RED, fb, SpellMotion.FLIGHT, 5 * t, 11 * t, aim_x_b, 9 * t, 7, 0, 0, 2),
+        ],
+    )
+
+
+def test_the_fair_spell_rows_do_not_change_when_only_the_hidden_aim_changes():
+    """Row ORDER is observable, so it may not be decided by hidden data.
+
+    With the aim ranked early in the sort key, these two states -- identical in every
+    visible field -- gave delay columns [0.03, 0.07] and [0.07, 0.03]. The aim is
+    last in the key now, so it can only order rows whose visible fields all tie, and
+    those rows write the same numbers.
+    """
+    t = ENG.arena().subtile
+    a = _two_enemy_spells(2 * t, 14 * t)
+    b = _two_enemy_spells(14 * t, 2 * t)
+    fair = EntityListObsBuilder()
+    fair.bind(ENG, PARSER)
+    ra = fair.build(a, BLUE, PARSER.action_mask(a, BLUE))["spells"]
+    rb = fair.build(b, BLUE, PARSER.action_mask(b, BLUE))["spells"]
+    assert np.array_equal(ra, rb), (ra[:2, 11], rb[:2, 11])
+    # Vacuity: the two states really do differ, and a builder allowed to see the aim
+    # really does tell them apart.
+    assert a.spells != b.spells
+    seen = EntityListObsBuilder(reveal=Reveal(enemy_spell_aim=True))
+    seen.bind(ENG, PARSER)
+    sa = seen.build(a, BLUE, PARSER.action_mask(a, BLUE))["spells"]
+    sb = seen.build(b, BLUE, PARSER.action_mask(b, BLUE))["spells"]
+    assert not np.array_equal(sa, sb)
+
+
+def test_plant_the_aim_ranked_early_in_the_spell_key_leaks_it(monkeypatch):
+    """Put the defect back: rank the hidden aim before the visible fields."""
+    t = ENG.arena().subtile
+    a = _two_enemy_spells(2 * t, 14 * t)
+    b = _two_enemy_spells(14 * t, 2 * t)
+
+    def aim_first(row):
+        # (enemy, y, x, motion, card, delay, trav, length, hits, ay, ax) -> aim early
+        return (*row[:5], *row[9:11], *row[5:9])
+
+    fair = EntityListObsBuilder()
+    fair.bind(ENG, PARSER)
+    before = fair.build(a, BLUE, PARSER.action_mask(a, BLUE))["spells"]
+    assert np.array_equal(
+        before, fair.build(b, BLUE, PARSER.action_mask(b, BLUE))["spells"]
+    ), "baseline must be green"
+    monkeypatch.setattr(obs_mod, "spell_row_key", aim_first)
+    assert obs_mod.spell_row_key is aim_first, "plant did not land"
+    ra = fair.build(a, BLUE, PARSER.action_mask(a, BLUE))["spells"]
+    rb = fair.build(b, BLUE, PARSER.action_mask(b, BLUE))["spells"]
+    assert not np.array_equal(ra, rb), (
+        "PLANT DID NOT LAND: an aim-first key left the fair rows unchanged"
+    )
 
 
 # --- crown towers are their own channels --------------------------------------
@@ -1236,3 +1315,91 @@ def test_spatial_layout_names_every_plane_and_exactly_the_static_ones(reveal):
     e = EntityListObsBuilder()
     e.bind(ENG, PARSER)
     assert e.spatial_layout() == ()
+
+
+def test_the_count_survives_a_snapshot_resume():
+    """A running bar is not on the lattice ``from_milli`` floors onto.
+
+    ``elixir_milli`` is a floor of an internal value, so seeding a mid-battle resume
+    from it starts the count up to ``scale/1000 - 1`` fine units low and it never
+    recovers. ``ElixirLaw.seed_fine`` snaps onto the spacing the engine can actually
+    reach, which is wider than the milli window, so the snap is unambiguous.
+    """
+    src = MockEngine()
+    env = ClashParallelEnv(engine=src, state_mutator=DefaultStateMutator(decks=[DECK, DECK[::-1]]))
+    _rollout(env, 37, seed=1, deploy_prob=0.5)
+    blob = src.save_state()
+    mid = src.state()
+    assert mid.tick > 0
+    assert any(p.elixir_milli % 1000 for p in mid.players), "vacuous: both bars on a round value"
+
+    resumed = ClashParallelEnv(
+        engine=MockEngine(),
+        state_mutator=SnapshotStateMutator([blob]),
+        truncation_cond=StepLimitCondition(200),
+    )
+    bad = []
+
+    def check(e, obs):
+        st = e.battle_state
+        for team in (BLUE, RED):
+            mem = e.obs_builder.memory[team]
+            if mem.enemy_elixir_milli() != st.players[1 - team].elixir_milli:
+                bad.append(st.tick)
+
+    _rollout(resumed, 60, seed=2, deploy_prob=0.4, on_step=check)
+    assert bad == []
+    assert all(m.exact for m in resumed.obs_builder.memory.values())
+
+
+def test_plant_seeding_a_resume_by_flooring_is_caught(monkeypatch):
+    """Put the floor back and the resumed count drifts."""
+    src = MockEngine()
+    env = ClashParallelEnv(engine=src, state_mutator=DefaultStateMutator(decks=[DECK, DECK[::-1]]))
+    _rollout(env, 37, seed=1, deploy_prob=0.5)
+    blob = src.save_state()
+    law = obs_mod.ElixirLaw.load()
+    monkeypatch.setattr(type(law), "seed_fine", type(law).from_milli, raising=False)
+    resumed = ClashParallelEnv(
+        engine=MockEngine(),
+        state_mutator=SnapshotStateMutator([blob]),
+        truncation_cond=StepLimitCondition(200),
+    )
+    bad = []
+
+    def check(e, obs):
+        st = e.battle_state
+        for team in (BLUE, RED):
+            if e.obs_builder.memory[team].enemy_elixir_milli() != st.players[1 - team].elixir_milli:
+                bad.append(st.tick)
+
+    _rollout(resumed, 60, seed=2, deploy_prob=0.4, on_step=check)
+    assert bad, "PLANT DID NOT LAND: a floored resume seed still matched the engine"
+
+
+def test_exactness_is_checked_on_both_bars_not_just_the_visible_one():
+    """Only the OPPONENT's deck repeats a card, so the own bar stays perfect.
+
+    The check that matters is the one on the bar the memory is modelling rather than
+    reading. With the own-bar check alone, ``exact`` stayed True on this setup while
+    the number it certified was wrong.
+    """
+    doubled = [0, 0, 3, 3, 10, 10, 14, 14]
+    env = ClashParallelEnv(
+        engine=MockEngine(),
+        state_mutator=DefaultStateMutator(decks=[DECK, doubled]),
+        truncation_cond=StepLimitCondition(400),
+    )
+    wrong = {BLUE: 0, RED: 0}
+
+    def check(e, obs):
+        st = e.battle_state
+        for team in (BLUE, RED):
+            mem = e.obs_builder.memory[team]
+            if mem.enemy_elixir_milli() != st.players[1 - team].elixir_milli:
+                wrong[team] += 1
+
+    _rollout(env, 200, seed=3, deploy_prob=0.6, on_step=check)
+    blue = env.obs_builder.memory[BLUE]
+    assert wrong[BLUE] > 0, "vacuous: Blue's count of Red's repeating deck never went wrong"
+    assert not blue.exact, "the count was wrong and the flag did not say so"

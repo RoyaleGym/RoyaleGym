@@ -1041,6 +1041,29 @@ class ElixirLaw(msgspec.Struct, frozen=True):
         """The engine's own seeding: ``elixir_milli`` back into fine units."""
         return milli * self.scale // 1000
 
+    def seed_fine(self, milli: int) -> int:
+        """A reported bar back into fine units, snapped onto the reachable lattice.
+
+        ``from_milli`` is a floor, and the floor is only exact for a bar the engine
+        seeded from that same milli value. A bar that has been RUNNING is a start
+        plus gains minus spends, and every one of those is a multiple of
+        ``gcd(gain_1x, gain_2x)``, so it sits on a lattice with that spacing. The
+        milli window for one reported value is ``scale / 1000`` fine units wide --
+        28 at the shipped numbers, against a spacing of 500 -- so the window holds
+        AT MOST ONE lattice point, and the snap is unambiguous.
+
+        Both cases are therefore exact: a running bar snaps back to itself, and a
+        bar seeded off the lattice by a MatchSetup (an odd ``elixir_milli``) has no
+        lattice point in its window and keeps the floor, which is what the engine
+        used. Without this, resuming from a Snapshot mid-battle starts the count up
+        to ``scale / 1000 - 1`` fine units low and it never recovers.
+        """
+        lo = self.from_milli(milli)
+        hi = lo + self.scale // 1000 - 1
+        spacing = gcd(self.gain_1x, self.gain_2x)
+        snapped = -(-lo // spacing) * spacing
+        return snapped if snapped <= hi else lo
+
     def rate_at(self, tick: int, regular_ticks: int, overtime: bool = False) -> int:
         """The multiplier in force during the tick that runs FROM ``tick``."""
         if overtime or tick >= regular_ticks - self.speedup_ticks:

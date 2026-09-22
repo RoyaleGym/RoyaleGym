@@ -85,6 +85,7 @@ from .protocol import (
     MatchSetup,
     Placement,
     TowerSlot,
+    calibration_digest,
     calibration_values,
     data_dir,
     default_calibration,
@@ -381,6 +382,22 @@ class RustEngine:
                 f"engine reported {_core.DEPLOY_REASONS[reason]} for a slot command"  # type: ignore[union-attr]
             )
         return status
+
+    def config(self) -> dict[str, object]:
+        """Constructor state, JSON-able, for ``ClashParallelEnv.config()``.
+
+        Everything that makes two RustEngines run different battles from the same
+        commands: which cards are in the catalogue, the level they run at, and which
+        pathfinder arm was selected (``SymmetricRustEngine`` is a different engine
+        for this purpose, and a checkpoint that does not say so is a checkpoint that
+        cannot be reproduced).
+        """
+        return {
+            "cards": [c.name for c in self._cards],
+            "card_level": self.card_level,
+            "path_search": self.path_search,
+            "calibration_digest": calibration_digest(self.calibration),
+        }
 
     build_digest = staticmethod(build_digest)
 

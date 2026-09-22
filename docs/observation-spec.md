@@ -37,8 +37,8 @@ keep their indices, so turning a reveal on never moves a fair feature.
 | `enemy_elixir` | the opponent's bar, read from the state | **no new slot** — it swaps the source of the slot that already holds the count (§4) |
 | `enemy_hand` | the opponent's four hand slots | +4(n+1) vector slots |
 | `enemy_next_card` | the opponent's cycle position 5 | +(n+1) vector slots |
-| `enemy_deck` | the opponent's whole deck | +n vector slots |
-| `enemy_spell_aim` | where the opponent's live spells will land | +1 spatial channel; +2 populated columns in the entity-list `spells` rows |
+| `enemy_deck` | as much of the opponent's deck as the state holds | +n vector slots |
+| `enemy_spell_aim` | where the opponent's live spells will land | +1 spatial channel; +2 appended columns on every entity-list `spells` row |
 
 `own_spell_aim` is **not** gated. The player chose where to throw their own spell.
 
@@ -91,9 +91,9 @@ asserts exactly that.
 * `own_troop_zone` and `own_building_zone` were deleted. The action space is
   `Discrete(2305)` = no-op + 4 hand slots × 18 × 32 tiles, so the **mask already
   states per-slot, per-tile legality exactly** — the zones were a coarser restatement
-  of it that cost three `PlacementOracle.point_grid` calls per seat per step.
-  Measured on MockEngine: 6.66 → 2.66 `point_grid` calls per `env.step` (both seats),
-  and env throughput 783 → 1238 steps/s.
+  of it that cost two of the three `PlacementOracle.point_grid` calls the
+  observation made per seat per step. Measured: 6.66 → 2.66 `point_grid` calls per
+  `env.step` (both seats). Measured by alternating the two trees three times in one session, because the absolute numbers move by a third with machine load while the comparison does not: the suite's own throughput report went 766 -> 953 `env.step`/s on the Rust engine and 475 -> 580 on `MockEngine` (medians of three rounds).
 * `enemy_troop_zone` stays. It is about the opponent's options and is in no mask.
 * A knockback channel. Under `knockback.DURATION_MS = 0` the push is instant and the
   timer reads 0 between ticks, so the plane would be a constant zero no coverage
@@ -130,9 +130,10 @@ the key is simply absent.
 
 ## 4. The flat `vector`, float32 `[12n + 37]` (fair)
 
-All slots are clipped to `[0, 1]`. Offsets below are for n = 16 (the shipped
-catalogue), giving 229; read them from `vector_offsets(n, reveal)` rather than
-copying.
+All slots are clipped to `[0, 1]`. The offsets in the table are for n = 16, which is
+`MockEngine`'s default catalogue and what the test suite runs on — **not** the full
+card list, which is larger and gives a wider vector. Read offsets from
+`vector_offsets(n, reveal)`; never copy a number out of this table into code.
 
 | slots (n=16) | field | size | range | meaning | fair? |
 |---|---|---|---|---|---|
@@ -259,11 +260,18 @@ Rows are sorted by a key made of **every field the row is built from**, so two r
 that tie are identical and the order is seat-invariant whatever order the engine
 listed them in.
 
-The only reveal here is the aim point: without `Reveal.enemy_spell_aim`, columns
-`aim_x_own` and `aim_y_own` stay 0 on enemy rows. The columns themselves do not
-disappear — a row's width may not depend on whose row it is — and the **sort key still
-uses the true aim point**, because that is engine data rather than an observation, so
-row order is the same either way.
+The only reveal here is the aim point. Columns 9 and 10 are the aim of the **viewer's
+own** spells and are 0 on an enemy row; `Reveal.enemy_spell_aim` **appends two more
+columns** for the opponent's, so the space really does change width.
+
+The sort key puts the aim **last**, and that is not cosmetic. Row order is observable —
+it decides whose delay and hit count appear first — and the key must still name every
+field a row is built from, so the aim cannot leave it. With the aim ranked early, two
+enemy spells alike in everything visible came out in an order set by where they were
+going: two states differing *only* in two hidden aim points gave delay columns
+`[0.03, 0.07]` and `[0.07, 0.03]`. With the aim last, hidden data can only order rows
+whose every visible field ties, and those rows write the same numbers. A test and a
+plant hold this.
 
 ---
 

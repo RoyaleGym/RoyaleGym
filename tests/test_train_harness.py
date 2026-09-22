@@ -47,9 +47,9 @@ from royalegym.viser import ENV_VAR, ViserPublisher
 DECK = [0, 3, 10, 14, 11, 13, 7, 9]
 
 
-def short_env(max_steps: int = 6, **kwargs) -> ClashParallelEnv:
+def short_env(max_steps: int = 6, engine: MockEngine | None = None, **kwargs) -> ClashParallelEnv:
     return ClashParallelEnv(
-        engine=MockEngine(),
+        engine=engine or MockEngine(),
         state_mutator=DefaultStateMutator(decks=[DECK, list(reversed(DECK))]),
         termination_cond=GameOverCondition(),
         truncation_cond=StepLimitCondition(max_steps),
@@ -377,3 +377,56 @@ def test_env_factory_feeds_the_self_play_vec_env():
     obs, _ = vec.reset(seed=2)
     assert vec.observation_space.contains(obs)
     vec.close()
+
+
+def test_decision_ticks_is_known_before_the_first_reset():
+    """A checkpoint that hashes config() must not hash a placeholder."""
+    env = short_env(decision_ms=250)
+    assert env.config()["decision_ticks"] == 5
+    env.reset(seed=1)
+    assert env.config()["decision_ticks"] == 5 == env.decision_ticks
+
+
+def test_config_says_which_catalogue_and_which_engine_arm():
+    """Two engines that run different battles must not report the same config."""
+    cfg = short_env().config()["engine"]
+    assert cfg["class"] == "royalegym.mock_engine.MockEngine"
+    assert cfg["params"]["cards"], "the catalogue is what makes a card id mean something"
+    assert cfg["params"]["calibration_digest"] == calibration_digest()
+    thin = short_env(engine=MockEngine(card_names=["Knight", "Archer", "Giant"])).config()
+    assert thin["engine"]["params"]["cards"] != cfg["params"]["cards"]
+
+
+def test_a_string_that_is_not_the_sentinel_is_refused():
+    """It used to be stored as the publisher and fail on the first step."""
+    with pytest.raises(ValueError, match="sentinel"):
+        ClashSelfPlayVecEnv(2, lambda: short_env(max_steps=3), viser="on")
+
+
+def test_the_episode_says_whether_its_counted_features_were_trustworthy():
+    """A policy trained on an episode where the count went wrong read an estimate
+    in a slot documented as exact. The episode has to say so."""
+    env = short_env(max_steps=4)
+    env.reset(seed=1)
+    for _ in range(4):
+        _, _, _, _, infos = env.step(dict.fromkeys(AGENTS, 0))
+    assert infos["blue"]["elixir_count_exact"] is True
+
+    doubled = [0, 0, 3, 3, 10, 10, 14, 14]
+    env = ClashParallelEnv(
+        engine=MockEngine(),
+        state_mutator=DefaultStateMutator(decks=[doubled, doubled]),
+        truncation_cond=StepLimitCondition(200),
+    )
+    obs, _ = env.reset(seed=3)
+    rng = np.random.default_rng(3)
+    infos = None
+    for _ in range(200):
+        acts = {}
+        for a in env.agents:
+            legal = np.flatnonzero(obs[a]["action_mask"])[1:]
+            acts[a] = int(rng.choice(legal)) if legal.size and rng.random() < 0.6 else 0
+        obs, _, _, _, infos = env.step(acts)
+        if not env.agents:
+            break
+    assert infos["blue"]["elixir_count_exact"] is False
