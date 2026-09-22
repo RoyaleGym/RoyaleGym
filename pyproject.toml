@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "royalegym"
 version = "0.1.0"
-description = "RoyaleGym: RLGym-style reinforcement-learning environment layer over the RoyaleSim engine"
+description = "RoyaleGym: reinforcement-learning environments for Clash Royale, over the RoyaleSim battle engine"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 dependencies = [

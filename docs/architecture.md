@@ -5,16 +5,16 @@ design document behind `royalegym`; the module docstrings carry the detail for e
 
 ## Three layers, one direction
 
-The split copies the one the Rocket League community arrived at: an environment API
-(RLGym) over a fast engine (RocketSim), driven by a separate learner (RLGym-PPO), with a
-viewer (rlviser) off to the side.
+The battle rules, the environment API and the training harness are three separate packages,
+with the viewer off to the side. (The shape is prior art: RLGym and RocketSim settled on
+the same seams for Rocket League.)
 
-| Layer | Analog | Owns | Language |
-|---|---|---|---|
-| RoyaleSim | RocketSim | the battle: pathfinding, targeting, collision, combat, spells, elixir, win conditions | Rust, exposed as the PyO3 module `royalesim` |
-| RoyaleGym | RLGym | the environment API: observations, actions, rewards, state setters, terminal conditions, the Gymnasium / PettingZoo / vectorised self-play envs | Python |
-| RoyaleLearn | RLGym-PPO | the training harness: rollout workers, PPO, the frozen-pool ladder, checkpoints, metrics | Python |
-| RoyaleViser | rlviser | drawing a battle, in a separate process | Python (pygame) |
+| Layer | Owns | Language |
+|---|---|---|
+| RoyaleSim | the battle: pathfinding, targeting, collision, combat, spells, elixir, win conditions | Rust, exposed as the PyO3 module `royalesim` |
+| RoyaleGym | the environment API: observations, actions, rewards, state setters, terminal conditions, the Gymnasium / PettingZoo / vectorised self-play envs | Python |
+| RoyaleLearn | the training harness: rollout workers, PPO, the frozen-pool ladder, checkpoints, metrics | Python |
+| RoyaleViser | drawing a battle, in a separate process | Python (pygame) |
 
 Dependencies run strictly `RoyaleLearn -> RoyaleGym -> RoyaleSim`, with
 `RoyaleViser -> RoyaleGym` off to the side. RoyaleSim knows nothing about rewards or

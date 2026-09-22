@@ -1,4 +1,4 @@
-"""royalegym -- an RLGym-style RL layer over a deterministic Clash Royale engine (RoyaleSim).
+"""royalegym -- RL environments over a deterministic Clash Royale engine (RoyaleSim).
 
 Components (each an ABC with swappable implementations):
     ObsBuilder        obs.py           SpatialObsBuilder, EntityListObsBuilder

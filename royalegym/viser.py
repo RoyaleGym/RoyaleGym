@@ -1,9 +1,9 @@
 """The engine side of RoyaleViser: publish battle state over UDP only while a viewer watches.
 
-rlviser's rule (README.md, "RoyaleViser"): a separate process, never in the tick loop,
-zero cost when nobody is watching. This module is the whole of what royalegym knows about
-the viewer; it imports nothing from RoyaleViser (dependency direction stays
-RoyaleLearn -> RoyaleGym -> RoyaleSim) and nothing graphical.
+The viewer's rule: a separate process, never in the tick loop, zero cost when nobody is
+watching. This module is the whole of what royalegym knows about the viewer; it imports
+nothing from RoyaleViser (dependency direction stays RoyaleLearn -> RoyaleGym -> RoyaleSim)
+and nothing graphical.
 
     from royalegym.env import ClashParallelEnv
     from royalegym.viser import ViserPublisher

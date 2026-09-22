@@ -1,6 +1,6 @@
 """Environments: PettingZoo ParallelEnv, Gymnasium single-agent wrapper, vectorised self-play.
 
-DECOMPOSITION (after RLGym)
+DECOMPOSITION
     ObsBuilder, ActionParser, RewardFunction, TerminalCondition and StateSetter
     are constructor arguments. Changing a reward or an observation is a Python
     edit and never a recompile of the simulator, because that is where most
