@@ -61,7 +61,20 @@ README = REPO / "README.md"
 POINTER_FORMS = (
     re.compile(r"README(?:\.md)?(?:'s)?[,:]?\s+\"([A-Z][A-Za-z ]{1,30})\""),
     re.compile(r"README(?:\.md)?(?:'s)?[,:]?\s+([A-Z][A-Za-z]{1,20})\b"),
-    re.compile(r'the "([^"]{2,40})" section of the \w+ README\.md'),
+    # The name BEFORE the file, which is how it reads when the sentence leads with the
+    # section. No repo name required: requiring one meant this repo's own constant --
+    # "the Install section of the RoyaleGym README.md" -- matched while the same
+    # sentence without the repo did not, a near miss of its own wording.
+    re.compile(r'the "([^"]{2,40})" section of (?:the )?(?:\w+ )?README'),
+    re.compile(r"the ([A-Z][A-Za-z]{1,20}) section of (?:the )?(?:\w+ )?README"),
+)
+
+#: A link names a section too, and a dead one is worse than dead prose: GitHub serves
+#: the page with a 200 and scrolls to the top, so it looks like it worked.
+ANCHOR_FORMS = (
+    re.compile(r"README\.md#([a-z0-9][a-z0-9-]*)"),
+    re.compile(r"github\.com/\w+/(\w+)#([a-z0-9][a-z0-9-]*)"),
+    re.compile(r"\]\(#([a-z0-9][a-z0-9-]*)\)"),  # a README's own internal links
 )
 
 # This file is left out of its own scan. It quotes the defect it exists for, in its
@@ -152,6 +165,67 @@ def test_every_section_pointer_in_the_source_names_a_real_heading(
     assert section in headings, (
         f"{path.relative_to(REPO)} points at {repo}'s README section {section!r}, which "
         f"does not exist. That README has: {sorted(headings)}"
+    )
+
+
+def slug(heading: str) -> str:
+    """A heading as GitHub turns it into an anchor.
+
+    Lowercase, punctuation dropped, spaces hyphenated. "Status (2026-09-21)" becomes
+    "status-2026-09-21", which is the anchor that made this worth checking: it carries
+    a date, and the date is the sort of thing that gets updated.
+    """
+    kept = re.sub(r"[^\w\s-]", "", heading.lower())
+    return re.sub(r"[\s_]+", "-", kept).strip("-")
+
+
+def anchors() -> list[tuple[Path, str, str]]:
+    """(source file, target document, anchor) for every link to a section.
+
+    The target is what the link points AT, and it is not always a README. A bare
+    ``](#x)`` is an internal link and resolves against the file it is written in, which
+    the first version of this got wrong: it checked install.md's own table of contents
+    against the README and reported five perfectly good links as dead. An instrument
+    that invents findings gets switched off faster than one that misses them.
+    """
+    found = []
+    for path in [README, *sorted((REPO / "docs").rglob("*.md")), *SOURCES]:
+        text = path.read_text(encoding="utf-8")
+        for m in re.finditer(r"README\.md#([a-z0-9][a-z0-9-]*)", text):
+            found.append((path, "RoyaleGym/README.md", m.group(1)))
+        for m in re.finditer(r"github\.com/[\w-]+/(\w+)#([a-z0-9][a-z0-9-]*)", text):
+            found.append((path, f"{m.group(1)}/README.md", m.group(2)))
+        for m in re.finditer(r"\]\(#([a-z0-9][a-z0-9-]*)\)", text):
+            found.append((path, "", m.group(1)))  # internal: resolves against `path`
+    return found
+
+
+def headings_of(path: Path) -> set[str] | None:
+    if not path.exists():
+        return None
+    return {
+        m.group(1).strip()
+        for m in re.finditer(r"^#{1,6} +(.+?)\s*$", path.read_text(encoding="utf-8"), re.M)
+    }
+
+
+@pytest.mark.parametrize(
+    ("path", "target", "anchor"), anchors(), ids=lambda v: getattr(v, "name", v)
+)
+def test_every_link_to_a_section_resolves(path: Path, target: str, anchor: str) -> None:
+    """A link to a section that no longer exists, caught here rather than by a reader.
+
+    GitHub answers a dead anchor with the page and a 200, scrolled to the top. Nothing
+    reports it, which is why this is a test and not a habit.
+    """
+    doc = path if not target else REPO.parent / target
+    headings = headings_of(doc)
+    if headings is None:
+        pytest.skip(f"{target} is not checked out beside this repo and cannot be read")
+    slugs = {slug(h) for h in headings}
+    assert anchor in slugs, (
+        f"{path.relative_to(REPO)} links to #{anchor} in {target or path.name}, which no "
+        f"heading produces. That document's anchors are: {sorted(slugs)}"
     )
 
 

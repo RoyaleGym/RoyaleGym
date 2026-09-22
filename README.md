@@ -47,7 +47,7 @@ New here? The install steps are under [Install](#install).
 <table>
   <tr>
     <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.svg" alt=""><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat against a scripted opponent.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.svg" alt=""><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1259 of the 2305 are, for each player.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.svg" alt=""><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1605 of the 2305 are, for each player.</sub></td>
     <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.svg" alt=""><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
   </tr>
   <tr>
@@ -73,7 +73,7 @@ from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponen
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}          # look cards up BY NAME
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 env = ClashParallelEnv(engine=engine,                          # PettingZoo parallel API, both seats
                        state_mutator=DefaultStateMutator(decks=[deck, deck]))
@@ -89,19 +89,24 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3600
+winner 1  crowns [1, 1]  tick 4800
 ```
 
-That is a whole match. Blue, player 0, took one of Red's princess towers. Tick 3600 is the full
-three minutes, so this battle ended in regulation, on crowns.
+That is a whole match, and a close one. Each player took one of the other's princess towers, so
+the crowns are level. Tick 4800 is three minutes plus the full sixty seconds of overtime, and
+with the crowns still level at the end it came down to which king tower had taken more damage.
+Red's was the healthier, so Red won.
 
-These eight cards are here so the battle comes out the same on your machine as it did on ours. They are an example, not a recommendation, and seven of the eight are from the 18 cards whose behaviour is checked against recordings (`thin_slice` in `cards.json`). Any eight will do. Leave the deck out entirely and each team is dealt a random eight, which is the default.
+These eight cards are here so the battle comes out the same on your machine as it did on ours.
+They are an example, not a recommendation. All eight are from the 18 whose behaviour is checked
+against recordings, which `cards.json` lists under `thin_slice`, so the example leans on the
+best-measured part of the engine. Any eight will do. Leave the deck out and each team is dealt a
+random eight, which is the default.
 
-One env step is half a second of game time, which is 10 ticks. So each player made 360
+One env step is half a second of game time, which is 10 ticks. So each player made 480
 decisions. The whole battle takes well under a second of real time, and how far under depends
-entirely on what else your machine is doing. Timed four times each on 2026-09-22, a quiet run
-of this laptop gave 0.24 to 0.30 s and a run with several other jobs on it gave 0.69 to 0.88 s.
-Treat any timing on this page the same way.
+entirely on what else your machine is doing: four runs on 2026-09-22 with several other jobs
+going gave 0.57 to 0.74 s. Treat any timing on this page the same way.
 
 Both players here just pick at random from the moves that are legal. That is already a working
 opponent, so you have something to train against from the first minute.
@@ -189,14 +194,30 @@ What goes out: recordings (`.msgpack` or `.json`) for the viewer, the replay pag
 regression tests; one UDP frame per env step for a viewer that is listening; and env objects
 for the learner.
 
-## Status (2026-09-21)
+## Status
 
 <p align="center">
-  <img alt="pytest" src="https://img.shields.io/badge/pytest-green%2C%206%20skipped-2ea043?style=flat-square">
+  <img alt="pytest" src="https://img.shields.io/badge/pytest-1%20failed%2C%2014%20skipped-d29922?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
 </p>
+
+**As of 2026-09-22.** The date is here rather than in the heading on purpose: a heading
+that carries a date gives its section a link that dies the next time the date moves, and
+a dead anchor on GitHub returns a perfectly good page scrolled to the top, which nobody
+notices.
+
+One test is failing and it is worth reading before you decide what this repo is. The
+seat-symmetry gates run on an engine configured to be a rotation mirror, and the engine
+has gained a measured property of the real game -- where a ground summon's ring is laid
+relative to the tap -- that is keyed per side and per arena half. That is correct
+behaviour and the engine reproduces it deliberately. The symmetric configuration is
+supposed to switch it off, and cannot yet, because the setting is not exposed to Python.
+So the vehicle is not a mirror, the gates that need one skip, and
+`test_the_symmetric_vehicle_is_a_rotation_mirror` fails and names the reason. It is a
+hard failure rather than a skip so that the state cannot be quiet. Everything else
+passes: 297 without the engine, 97 with it.
 
 Working:
 

@@ -50,7 +50,11 @@ Here is a complete program. It builds a battle, plays it to the end with both pl
 random among their legal moves, and prints who won.
 
 !!! note "About the deck"
-    These eight cards are here so the battle comes out the same on your machine as it did on ours. They are an example, not a recommendation, and seven of the eight are from the 18 cards whose behaviour is checked against recordings (`thin_slice` in `cards.json`). Any eight will do. Leave the deck out entirely and each team is dealt a random eight, which is the default.
+    These eight cards are here so the battle comes out the same on your machine as it did on
+    ours. They are an example, not a recommendation. All eight are from the 18 whose behaviour
+    is checked against recordings, which `cards.json` lists under `thin_slice`, so the example
+    leans on the best-measured part of the engine. Any eight will do, and if you leave the deck
+    out each team is dealt a random eight, which is the default.
 
 ```python
 import numpy as np
@@ -59,7 +63,7 @@ from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponen
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}          # look cards up BY NAME
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 env = ClashParallelEnv(engine=engine,
                        state_mutator=DefaultStateMutator(decks=[deck, deck]))
@@ -75,14 +79,15 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3600
+winner 1  crowns [1, 1]  tick 4800
 ```
 
-Blue is player 0. Blue took one of Red's princess towers and Red took none, so Blue won on
-crowns. A *tick* is the game's own 50 ms step, and there are 20 of them in a second, so tick 3600
-is exactly three minutes. This battle ended in regulation rather than going to overtime.
+Blue is player 0. A *tick* is the game's own 50 ms step and there are 20 in a second, so tick
+3600 is three minutes and tick 4800 adds the full sixty seconds of overtime. Each player took
+one of the other's princess towers, so the crowns finished level and the match was decided on
+which king tower had taken more damage. Red's was healthier, so Red won.
 
-One env step is half a second of game time, which is 10 ticks. So each player made 360 decisions
+One env step is half a second of game time, which is 10 ticks. So each player made 480 decisions
 in that battle. It took about half a second of real time.
 
 !!! tip "Always name the deck, card by card"
@@ -136,7 +141,7 @@ class OneTilePolicy:
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 parser = TileActionParser()
 env = ClashParallelEnv(engine=engine, action_parser=parser,
@@ -159,14 +164,14 @@ print(f"blue deployed {blue.plays} times")
 ```
 
 ```
-winner 0  crowns [3, 1]  tick 4439
-blue deployed 35 times
+winner 0  crowns [3, 1]  tick 1919
+blue deployed 12 times
 ```
 
-Read that result. Blue took all three towers, so it was a three crown win. Tick 4439 is past
-3600, so the battle went into overtime and ended when the king tower fell. Blue deployed 35 times
-in the whole match, which is roughly one card every six seconds, because it plays the instant it
-can afford whatever is in slot 0.
+Read that result. Blue took all three towers, so it was a three crown win, and tick 1919 is a
+minute and thirty six seconds in. It did not need the full three minutes. Blue deployed 12
+times in the whole match, because it plays the instant it can afford whatever is in slot 0 and
+does nothing else at all.
 
 That is a stupid bot and it beat the random one. That is the point. A fixed rule with no learning
 in it already does better than picking legal moves out of a hat, which tells you the random
@@ -209,7 +214,7 @@ from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponen
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 rec = ReplayRecorder(frame_every_tick=True)          # keep every 50 ms tick, not every step
 env = ClashParallelEnv(engine=engine, recorder=rec,
@@ -277,7 +282,7 @@ from royalegym.viser import ViserPublisher
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 pub = ViserPublisher()                                  # 127.0.0.1:9870
 env = ClashParallelEnv(engine=engine, viser=pub,
@@ -337,7 +342,7 @@ The arithmetic is exact rather than a trick. A three minute battle is 3,600 tick
 The gap between the two rows is Python. On every step the environment builds both players'
 observations and works out the full list of legal moves. That is real work and it happens outside
 the engine. Closing that gap is the first open item in
-[RoyaleGym's status](https://github.com/RoyaleGym/RoyaleGym#status-2026-09-21), and until it is
+[RoyaleGym's status](https://github.com/RoyaleGym/RoyaleGym#status), and until it is
 closed, a training run spends more time describing the battle than playing it.
 
 !!! danger "Nobody knows how many battles a good bot needs"
