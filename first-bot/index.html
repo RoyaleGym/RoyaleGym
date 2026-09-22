@@ -1309,6 +1309,10 @@ viewer section below also wants <code>RoyaleViser</code> installed, which is one
 <h3 id="play-a-whole-battle">Play a whole battle<a class="headerlink" href="#play-a-whole-battle" title="Permanent link">&para;</a></h3>
 <p>Here is a complete program. It builds a battle, plays it to the end with both players choosing at
 random among their legal moves, and prints who won.</p>
+<div class="admonition note">
+<p class="admonition-title">About the deck</p>
+<p>These eight cards are here so the battle comes out the same on your machine as it did on ours. They are an example, not a recommendation, and seven of the eight are from the 18 cards whose behaviour is checked against recordings (<code>thin_slice</code> in <code>cards.json</code>). Any eight will do. Leave the deck out entirely and each team is dealt a random eight, which is the default.</p>
+</div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">ClashParallelEnv</span><span class="p">,</span> <span class="n">DefaultStateMutator</span><span class="p">,</span> <span class="n">RandomLegalOpponent</span><span class="p">,</span> <span class="n">RustEngine</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
