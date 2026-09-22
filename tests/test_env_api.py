@@ -56,6 +56,7 @@ from royalegym.done_condition import (
     TruncationCondition,
 )
 from royalegym.env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv, make_gym_vec_env
+from royalegym.mock_engine import MockEngine
 from royalegym.obs import vector_offsets
 from royalegym.protocol import DeployStatus, MatchSetup, ShuffleMode
 from royalegym.selfplay import NoopOpponent, RandomLegalOpponent
@@ -76,6 +77,12 @@ def with_warnings(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[An
 
 
 def make_gym(**kwargs: Any) -> ClashGymEnv:
+    # engine NAMED, not defaulted. These tests are about API conformance, and the
+    # default id warns when nobody chose an engine -- deliberately, since it decides
+    # which engine a result came from. check_env re-makes the env from its spec, so the
+    # warning would fire inside the no-warnings assertion and read as a conformance
+    # failure. Same engine either way; the only difference is that this says so.
+    kwargs.setdefault("engine", MockEngine())
     env = gym.make(royalegym.GYM_ENV_ID, **kwargs).unwrapped
     assert isinstance(env, ClashGymEnv)
     assert env.spec is not None  # so check_env also runs the render-mode and close checks
@@ -492,7 +499,9 @@ def test_maskable_ppo_mask_convention():
     must describe the observation the policy was just given.
     """
     # Bare env through gymnasium's wrapper chain, as sb3's DummyVecEnv reaches it.
-    wrapped = gym.make(royalegym.GYM_ENV_ID, opponent=RandomLegalOpponent(0.5))
+    wrapped = gym.make(
+        royalegym.GYM_ENV_ID, engine=MockEngine(), opponent=RandomLegalOpponent(0.5)
+    )
     obs, _ = wrapped.reset(seed=0)
     n = wrapped.action_space.n
     for _ in range(20):

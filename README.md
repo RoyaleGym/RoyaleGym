@@ -46,19 +46,19 @@ New here? The install steps are under [Install](#install).
 
 <table>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.svg" alt=""><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat against a scripted opponent.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.svg" alt=""><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1605 of the 2305 are, for each player.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.svg" alt=""><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.svg" alt="Two APIs over one battle: ClashParallelEnv driving both seats through PettingZoo, and a Gymnasium env driving one seat, stepping the same board."><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat against a scripted opponent.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.svg" alt="The legality mask: the actions playable on the first step, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1605 of the 2305 are, for each player.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.svg" alt="Batched self-play: four boards become eight agent slots, and one policy is fed both seats' observations, each in its own frame."><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
   </tr>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/five-pieces.svg" alt=""><br><b>Five swappable pieces</b><br><sub>What the bot sees, what its moves mean, what it is rewarded for, how a match starts, and when it ends. Each is a small class with a default that ships.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/start-anywhere.svg" alt=""><br><b>Start from any position</b><br><sub>A fresh battle, a damaged mid-game, a board you set up by hand, or an exact saved snapshot. Mix them by weight to build a curriculum.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/record-and-verify.svg" alt=""><br><b>Record it, re-run it, prove it</b><br><sub>A recording holds the seed, the setup, the commands and a hash per tick. Re-run it on a fresh engine and every one of those hashes has to come back the same.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/five-pieces.svg" alt="The five swappable pieces of the env constructor: observation builder, action parser, reward, state mutator and done conditions, each with a shipped default."><br><b>Five swappable pieces</b><br><sub>What the bot sees, what its moves mean, what it is rewarded for, how a match starts, and when it ends. Each is a small class with a default that ships.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/start-anywhere.svg" alt="Three ways an episode can start, side by side: a fresh battle, a mid-game board with a tower already down, and a saved snapshot resumed."><br><b>Start from any position</b><br><sub>A fresh battle, a damaged mid-game, a board you set up by hand, or an exact saved snapshot. Mix them by weight to build a curriculum.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/record-and-verify.svg" alt="Verifying a recording: the battle re-simulated on a fresh engine, with every frame hash compared and no divergences."><br><b>Record it, re-run it, prove it</b><br><sub>A recording holds the seed, the setup, the commands and a hash per tick. Re-run it on a fresh engine and every one of those hashes has to come back the same.</sub></td>
   </tr>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/replay-page.svg" alt=""><br><b>A replay page, no server</b><br><sub>A recording becomes one self-contained HTML file you double-click. Nothing to install and nothing to run.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/replay-page.svg" alt="The replay page: a self-contained HTML file showing the board, a timeline scrubber and a tooltip on one unit."><br><b>A replay page, no server</b><br><sub>A recording becomes one self-contained HTML file you double-click. Nothing to install and nothing to run.</sub></td>
     <td width="33%" align="center"><img width="100%" src="docs/media/battle-in-viewer.png" alt="A battle in RoyaleViser"><br><b>Watch it in the viewer</b><br><sub>RoyaleViser draws a recording in a window, or watches a running env live. This is a battle in its window.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt=""><br><b>Hidden information, as in the game</b><br><sub>Your bot does not see the opponent's hand. Their elixir is counted from the plays you watched, the way a player counts it. You can turn either one on, which changes the observation's width, and `ClashParallelEnv.config()` records that you did.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt="What one player sees against what the engine holds: its own hand shown, the enemy's hidden, and the enemy's elixir counted rather than read."><br><b>Hidden information, as in the game</b><br><sub>Your bot does not see the opponent's hand. Their elixir is counted from the plays you watched, the way a player counts it. You can turn either one on, which changes the observation's width, and `ClashParallelEnv.config()` records that you did.</sub></td>
   </tr>
 </table>
 
@@ -116,6 +116,24 @@ positions move between card tables, so the same number is not the same card on e
 If you leave the deck out, each side is dealt eight random cards from whatever catalogue your
 machine built, and the same seed then gives you a different battle from the one above. Look
 cards up by name and your battle matches this one.
+
+If you would rather start from Gymnasium's single-agent API, that is one line, and the id
+says which engine you are getting:
+
+```python
+import gymnasium as gym
+import royalegym                                   # registers the ids
+
+env = gym.make("royalegym/ClashRoyaleRust-v0")     # the real engine, one seat
+env = gym.make("royalegym/ClashRoyaleMock-v0")     # the reference implementation
+```
+
+`royalegym/ClashRoyale-v0` also exists and takes whatever `engine=` you pass it. Leave that
+out and you get the reference implementation with a warning saying so, because a default
+that silently decides which engine your results came from is worse than no default. The
+reference implementation is a readable Python engine, not the game: different card table,
+spells that resolve on the spot instead of travelling, no stuns and no knockback. It is the
+right thing to learn the API on and the wrong thing to believe a trained bot against.
 
 ## Install
 
@@ -197,7 +215,7 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="pytest" src="https://img.shields.io/badge/pytest-1%20failed%2C%2014%20skipped-d29922?style=flat-square">
+  <img alt="pytest" src="https://img.shields.io/badge/pytest-418%20passed%2C%206%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
@@ -208,16 +226,9 @@ that carries a date gives its section a link that dies the next time the date mo
 a dead anchor on GitHub returns a perfectly good page scrolled to the top, which nobody
 notices.
 
-One test is failing and it is worth reading before you decide what this repo is. The
-seat-symmetry gates run on an engine configured to be a rotation mirror, and the engine
-has gained a measured property of the real game -- where a ground summon's ring is laid
-relative to the tap -- that is keyed per side and per arena half. That is correct
-behaviour and the engine reproduces it deliberately. The symmetric configuration is
-supposed to switch it off, and cannot yet, because the setting is not exposed to Python.
-So the vehicle is not a mirror, the gates that need one skip, and
-`test_the_symmetric_vehicle_is_a_rotation_mirror` fails and names the reason. It is a
-hard failure rather than a skip so that the state cannot be quiet. Everything else
-passes: 297 without the engine, 97 with it.
+The six skips are the two-engine comparisons on a machine that has the newer card
+data: they would be measuring the data rather than the engines, and they say so. On a
+clean checkout they run.
 
 Working:
 

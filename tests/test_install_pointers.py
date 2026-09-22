@@ -248,6 +248,53 @@ def test_the_scan_finds_the_references_it_is_guarding() -> None:
     assert {repo for _, repo, _ in found} >= {"RoyaleGym", "RoyaleSim"}
 
 
+IMAGES = re.compile(r"<img\b[^>]*>")
+SRC = re.compile(r'src="([^"]+)"')
+ALT = re.compile(r'alt="([^"]*)"')
+
+
+def readme_images() -> list[tuple[str, str]]:
+    """(src, alt) for every ``<img>`` in README.md, in order."""
+    out = []
+    for tag in IMAGES.finditer(README.read_text(encoding="utf-8")):
+        src = SRC.search(tag.group(0))
+        alt = ALT.search(tag.group(0))
+        out.append((src.group(1) if src else "", alt.group(1) if alt else ""))
+    return out
+
+
+def test_every_image_the_readme_shows_is_actually_there() -> None:
+    """A src is a pointer too, and a dead one renders as a broken icon on the front page."""
+    missing = [
+        src
+        for src, _ in readme_images()
+        if not src.startswith("http") and not (REPO / src).exists()
+    ]
+    assert not missing, f"README.md shows images that do not exist: {missing}"
+
+
+def test_every_image_the_readme_shows_is_described() -> None:
+    """Empty alt means a screen reader is told nothing at all.
+
+    Seven of the eight diagrams in the showcase table had ``alt=""`` until 2026-09-22,
+    and they are the ones carrying the most information -- the two-API comparison, the
+    legality mask, the self-play batch shapes. A reader who cannot see them got a row
+    of nothing where the explanation was.
+
+    The badge images are exempt from the length floor: "Discord" is a complete
+    description of the Discord badge, and padding it would make the page worse to
+    listen to, not better.
+    """
+    undescribed = [src for src, alt in readme_images() if not alt.strip()]
+    assert not undescribed, f"README.md images with no alt text: {undescribed}"
+    thin = [
+        (src, alt)
+        for src, alt in readme_images()
+        if not src.startswith("http") and len(alt.split()) < 4
+    ]
+    assert not thin, f"README.md images whose alt says almost nothing: {thin}"
+
+
 def test_the_build_command_in_the_error_matches_the_one_in_the_readme() -> None:
     """The message tells a reader to run what the README tells them to run.
 

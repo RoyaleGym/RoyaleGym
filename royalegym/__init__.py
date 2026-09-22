@@ -80,14 +80,28 @@ from .state_mutator import (
     WeightedStateSetter,
 )
 
+#: ``gym.make`` ids. The plain one takes whatever engine you pass and defaults to the
+#: mock WITH A WARNING, because a default that decides which engine a result came from
+#: and does not say so is the one thing this package should never do. The other two name
+#: their engine, so a reader can tell from the id what a number means, and neither warns.
 GYM_ENV_ID = "royalegym/ClashRoyale-v0"
+GYM_MOCK_ENV_ID = "royalegym/ClashRoyaleMock-v0"
+GYM_RUST_ENV_ID = "royalegym/ClashRoyaleRust-v0"
+
+#: id -> entry point. Registered at import, as gymnasium expects.
+GYM_ENV_IDS = {
+    GYM_ENV_ID: "royalegym.env:ClashGymEnv",
+    GYM_MOCK_ENV_ID: "royalegym.env:mock_gym_env",
+    GYM_RUST_ENV_ID: "royalegym.env:rust_gym_env",
+}
 
 
 def _register() -> None:
     import gymnasium
 
-    if GYM_ENV_ID not in gymnasium.registry:
-        gymnasium.register(id=GYM_ENV_ID, entry_point="royalegym.env:ClashGymEnv")
+    for env_id, entry_point in GYM_ENV_IDS.items():
+        if env_id not in gymnasium.registry:
+            gymnasium.register(id=env_id, entry_point=entry_point)
 
 
 _register()
@@ -95,6 +109,9 @@ _register()
 __all__ = [
     "CORE_IMPORT_ERROR",
     "GYM_ENV_ID",
+    "GYM_ENV_IDS",
+    "GYM_MOCK_ENV_ID",
+    "GYM_RUST_ENV_ID",
     "ActionParser",
     "AllCondition",
     "AnyCondition",

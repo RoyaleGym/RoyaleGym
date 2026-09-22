@@ -55,6 +55,7 @@ from __future__ import annotations
 
 import copy
 import pickle
+import warnings
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, ClassVar
 
@@ -113,6 +114,31 @@ EPISODE_STAT_KEYS = (
 # It is legality, not state, it is already an input to the policy, and a centralised
 # critic fed both shapes would carry 2 304 duplicated numbers per seat per step.
 MASK_KEYS = ("action_mask", "mask_planes")
+
+
+def warn_engine_not_chosen(stacklevel: int = 2) -> None:
+    """Say that nobody chose an engine, so this one is the reference implementation.
+
+    The warning is about the SILENCE, not about the mock. MockEngine is the right
+    default for learning the API -- it needs no build and no data -- and the wrong thing
+    to train a bot against believing it is the game. A result from it does not look
+    wrong; it just does not transfer, and before this there was nothing anywhere that
+    would have told a reader which one they had been running.
+
+    One message, raised from every entry point that can default, so a reader cannot get
+    a different explanation depending on which door they came in by.
+    """
+    warnings.warn(
+        "No engine given, so this is MockEngine: a readable reference implementation, "
+        "NOT the game. Different card table, spells that resolve instantly rather than "
+        "travelling, no stuns or knockback. Fine for learning the API; a bot trained "
+        "against it has not been trained against the game. Pass engine=RustEngine() for "
+        "the real one, or use the gym ids that say which they are, "
+        "royalegym/ClashRoyaleRust-v0 and royalegym/ClashRoyaleMock-v0. Either "
+        "silences this.",
+        UserWarning,
+        stacklevel=stacklevel,
+    )
 
 
 def class_name(obj: Any) -> str:
@@ -610,7 +636,19 @@ def render_ansi(engine: Engine, state: BattleState) -> str:
 
 
 class ClashGymEnv(gym.Env[dict[str, np.ndarray], int]):
-    """Single-agent Gymnasium env: one seat is the learner, the other an ``Opponent``."""
+    """Single-agent Gymnasium env: one seat is the learner, the other an ``Opponent``.
+
+    WHICH ENGINE YOU GET. With no ``engine=`` this builds a ``MockEngine``, which is a
+    readable reference implementation and not the game: different card table, spells
+    that resolve instantly instead of travelling, no stuns or knockback. That is the
+    right default for trying the API out, and the wrong thing to train a bot on
+    believing it is the real one -- so it says so, once, rather than leaving the reader
+    to find out from a result that does not transfer.
+
+    ``royalegym/ClashRoyaleMock-v0`` and ``royalegym/ClashRoyaleRust-v0`` say which they
+    are in their names and neither warns. Pass ``engine=`` here and nothing warns
+    either: the warning is about not having chosen, not about the mock.
+    """
 
     # gymnasium.Env declares `metadata` as an instance attribute, so ClassVar here would
     # trip mypy's override check; the dict is never mutated.
@@ -625,6 +663,8 @@ class ClashGymEnv(gym.Env[dict[str, np.ndarray], int]):
     ) -> None:
         if agent not in AGENTS:
             raise ValueError(f"agent must be one of {AGENTS}")
+        if "engine" not in parallel_kwargs:
+            warn_engine_not_chosen(stacklevel=3)
         self.parallel = ClashParallelEnv(render_mode=render_mode, **parallel_kwargs)
         self.agent = agent
         self.other = AGENTS[1 - AGENTS.index(agent)]
@@ -732,6 +772,10 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
                 f"-> int, not {autoreset_seed_fn!r}: a non-callable would be stored and "
                 "fail later, on the first episode that ends"
             )
+        if env_fn is ClashParallelEnv:
+            # The self-play training entry point, so the most important place to say it:
+            # a run that gets here has not chosen an engine and is about to train.
+            warn_engine_not_chosen(stacklevel=3)
         self.autoreset_seed_fn = autoreset_seed_fn
         # Episodes STARTED per game, not finished: the seed of the next one is
         # fn(game, ordinal) and the counter moves after it is used. Checkpoint it.
@@ -857,6 +901,29 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
     def close_extras(self, **kwargs: Any) -> None:
         for env in self.envs:
             env.close()
+
+
+def mock_gym_env(**kwargs: Any) -> ClashGymEnv:
+    """``royalegym/ClashRoyaleMock-v0``: the reference implementation, chosen on purpose.
+
+    Same env as the default id, with the engine named rather than defaulted, so it does
+    not warn. The point of the pair is that a reader can tell from the id which engine a
+    result came from, which the default id cannot tell them.
+    """
+    kwargs.setdefault("engine", MockEngine())
+    return ClashGymEnv(**kwargs)
+
+
+def rust_gym_env(**kwargs: Any) -> ClashGymEnv:
+    """``royalegym/ClashRoyaleRust-v0``: the real engine.
+
+    Raises the not-built ImportError if royalesim is missing, which is the honest
+    answer -- the alternative is handing back the mock under a name that says Rust.
+    """
+    from .rust_engine import RustEngine
+
+    kwargs.setdefault("engine", RustEngine())
+    return ClashGymEnv(**kwargs)
 
 
 class EnvFactory:
