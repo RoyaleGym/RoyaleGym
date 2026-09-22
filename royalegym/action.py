@@ -54,6 +54,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 from gymnasium import spaces
@@ -78,6 +79,13 @@ from .protocol import (
 )
 
 NOOP = 0
+# How many ``point_grid`` results one oracle keeps. A battle reaches at most a few
+# distinct keys per tick -- one per placement class per seat -- and the key changes
+# whenever a building appears or a tower falls, so the useful window is the current
+# tick and its neighbours. The cache is cleared wholesale rather than evicted one at
+# a time: it is a within-step memo, not a long-lived store, and a clear costs less
+# than tracking ages.
+GRID_CACHE_SIZE = 64
 
 
 class PlacementOracle:
@@ -104,6 +112,11 @@ class PlacementOracle:
         # [owner team][TowerSlot] closed NoDeploySize rects at the arena's tower centres.
         self.tower_rects = [rules.tower_rects(arena, owner) for owner in (BLUE, RED)]
         self._points: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+        # ``point_grid`` memo. See ``grid_key`` for why it is safe and
+        # ``GRID_CACHE_SIZE`` for why it is small.
+        self._grids: dict[tuple[Any, ...], np.ndarray] = {}
+        self.grid_hits = 0
+        self.grid_misses = 0
 
     # -- static + tower-dependent part, at half-cell resolution --------------
 
@@ -181,6 +194,54 @@ class PlacementOracle:
             )
         return self._points[pitch_div]
 
+    def grid_key(
+        self, state: BattleState, team: int, card: CardInfo, pitch_div: int
+    ) -> tuple[Any, ...] | None:
+        """Everything ``point_grid`` reads, as a hashable key -- or None, do not cache.
+
+        The grid is NOT a function of the card, and that is the whole point. It reads
+        the placement class, the acting team, the pitch, which enemy crown towers are
+        still standing, and the position and radius of every NON-troop entity (troops
+        do not block a deploy). A building adds its own radius to each footprint, so
+        that enters the key too; for a troop the term is zero, which is why one grid
+        serves every troop card in a hand.
+
+        That collapses the calls that actually happen. Per env step both seats build a
+        mask over up to four hand slots and an observation over the OPPONENT's troop
+        zone -- and Blue's ``enemy_troop_zone`` is the identical grid Red's mask needs.
+        Measured on MockEngine: 2.66 ``point_grid`` calls per ``env.step`` before this,
+        and the observation's own call was 45% of the time spent building it.
+
+        Returns None for a placement whose grid this cannot key safely, so a future
+        rule that reads something else is a cache MISS rather than a stale hit.
+        """
+        placement = card.placement
+        if placement not in (
+            Placement.TROOP,
+            Placement.BUILDING,
+            Placement.ROLLING,
+            Placement.SPELL,
+            Placement.SPELL_NOT_ON_WATER,
+        ):
+            return None
+        rects = (
+            tuple(self.enemy_rects(state, team))
+            if placement in (Placement.TROOP, Placement.ROLLING)
+            else ()
+        )
+        if placement in (Placement.TROOP, Placement.BUILDING):
+            extra = card.radius if placement == Placement.BUILDING else 0
+            blockers = tuple(
+                sorted(
+                    (e.x, e.y, e.radius)
+                    for e in state.entities
+                    if e.kind != EntityKind.TROOP
+                )
+            )
+        else:
+            extra, blockers = 0, ()
+        return (int(placement), team, pitch_div, extra, rects, blockers)
+
     def point_grid(
         self, state: BattleState, team: int, card: CardInfo, pitch_div: int
     ) -> np.ndarray:
@@ -199,7 +260,20 @@ class PlacementOracle:
         Python stack from about 1 012/s to 753/s on the Rust engine; this
         specialisation measures 82/91 us on the same board.
         tests/test_rust_engine.py holds this path equal to ``legal_points``.
+
+        MEMOISED on everything it reads (``grid_key``). The returned array is marked
+        READ-ONLY, because callers share it: writing to it would change what another
+        seat's mask sees. Both shipped callers already copy on their way out -- the
+        mask reshapes into its own buffer, the observation casts to float32 -- so the
+        flag is a guard against a future one, not a change to either.
         """
+        key = self.grid_key(state, team, card, pitch_div)
+        if key is not None:
+            cached = self._grids.get(key)
+            if cached is not None:
+                self.grid_hits += 1
+                return cached
+            self.grid_misses += 1
         a = self.arena
         cells = self.cell_grid(state, team, card.placement)
         if pitch_div == 1:
@@ -225,6 +299,11 @@ class PlacementOracle:
                     continue
                 r = e.radius + extra
                 ok &= ((ys - e.y) ** 2)[:, None] + ((xs - e.x) ** 2)[None, :] > r * r
+        if key is not None:
+            ok.flags.writeable = False
+            if len(self._grids) >= GRID_CACHE_SIZE:
+                self._grids.clear()
+            self._grids[key] = ok
         return ok
 
 

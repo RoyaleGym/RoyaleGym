@@ -404,3 +404,118 @@ def test_action_masks_method_matches_obs_for_maskable_ppo():
         planes = obs[agent]["mask_planes"]
         assert planes.shape == (4, 32, 18)
         assert np.array_equal(planes.reshape(-1), obs[agent]["action_mask"][1:])
+
+
+# --- the point_grid memo ------------------------------------------------------
+#
+# One grid serves every troop card in a hand, and Blue's enemy_troop_zone is the
+# identical grid Red's mask needs, so the same result was being computed several
+# times per step. Memoising it took grids computed per env.step from 2.66 to 0.27.
+# The risk a memo adds is a STALE hit, so these check the key notices everything
+# point_grid reads.
+
+
+def _oracle_and_states():
+    eng = MockEngine()
+    parser = TileActionParser()
+    parser.bind(eng)
+    return eng, parser
+
+
+def test_the_memo_returns_exactly_what_recomputing_would():
+    """Cached against a deliberately un-cacheable oracle, over a played-out battle."""
+    eng, parser = _oracle_and_states()
+    plain = PlacementOracle(eng.arena(), eng.rules(), eng.cards())
+    plain.grid_key = lambda *a, **k: None  # every call a miss
+    deck = [0, 3, 10, 14, 11, 13, 7, 9]
+    rng = np.random.default_rng(3)
+    checked = 0
+    for trial in range(4):
+        eng.reset(
+            trial,
+            MatchSetup(
+                decks=[deck, deck[::-1]],
+                elixir_milli=[10000, 10000],
+                tower_hp=[[2400, 0 if trial % 2 else 900, 1400], [2400, 1400, 1400]],
+            ),
+        )
+        for _ in range(8):
+            st = eng.state()
+            for team in (BLUE, RED):
+                for card in eng.cards():
+                    for pitch in (1, 2):
+                        a = parser.oracle.point_grid(st, team, card, pitch)
+                        b = plain.point_grid(st, team, card, pitch)
+                        assert np.array_equal(a, b), (team, card.name, pitch)
+                        checked += 1
+            cmds = []
+            for team in (BLUE, RED):
+                legal = np.flatnonzero(parser.action_mask(st, team))[1:]
+                if legal.size and rng.random() < 0.6:
+                    cmds.append(parser.parse(int(rng.choice(legal)), st, team))
+            eng.step(cmds, 10)
+    assert checked > 2000
+    assert parser.oracle.grid_hits > 0, "vacuous: the memo never served anything"
+
+
+def test_a_memoised_grid_is_read_only():
+    """Callers share it, so writing to one seat's grid would change the other's."""
+    eng, parser = _oracle_and_states()
+    eng.reset(0, MatchSetup(decks=[[0, 3, 10, 14, 11, 13, 7, 9]] * 2))
+    grid = parser.oracle.point_grid(eng.state(), BLUE, eng.cards()[0], 1)
+    with pytest.raises(ValueError, match="read-only"):
+        grid[0, 0] = True
+
+
+@pytest.mark.parametrize("what", ["tower falls", "building appears", "seat", "pitch"])
+def test_the_memo_key_notices_everything_the_grid_reads(what):
+    """A stale hit is the only way a memo can be wrong. Change one input at a time."""
+    eng, parser = _oracle_and_states()
+    deck = [0, 3, 10, 14, 11, 13, 7, 9]
+    sub = eng.arena().subtile
+    troop = next(c for c in eng.cards() if c.placement == Placement.TROOP)
+
+    base = MatchSetup(decks=[deck, deck], elixir_milli=[10000, 10000])
+    eng.reset(0, base)
+    before = parser.oracle.point_grid(eng.state(), BLUE, troop, 1)
+
+    if what == "seat":
+        after = parser.oracle.point_grid(eng.state(), RED, troop, 1)
+    elif what == "pitch":
+        after = parser.oracle.point_grid(eng.state(), BLUE, troop, 2)
+        assert after.shape != before.shape
+        return
+    else:
+        if what == "tower falls":
+            fallen = [[2400, 1400, 1400], [2400, 0, 1400]]
+            eng.reset(0, msgspec.structs.replace(base, tower_hp=fallen))
+        else:
+            # A real BUILDING, at a tile CENTRE. Both parts took a wrong test to
+            # find: a troop blocks nothing (point_grid skips them), and a building
+            # at a tile corner reaches no tile centre either -- the nearest is
+            # sqrt(2)/2 of a tile away, which is further than a Cannon's radius.
+            building = next(c for c in eng.cards() if c.placement == Placement.BUILDING)
+            centre = 9 * sub + sub // 2
+            eng.reset(
+                0,
+                msgspec.structs.replace(
+                    base, spawns=[SpawnSpec(BLUE, building.card_id, centre, centre)]
+                ),
+            )
+        after = parser.oracle.point_grid(eng.state(), BLUE, troop, 1)
+    assert not np.array_equal(before, after), f"{what} did not change the grid"
+
+
+def test_every_troop_card_shares_one_grid_and_a_building_does_not():
+    """Why the memo pays: the grid is not a function of the card, except for size."""
+    eng, parser = _oracle_and_states()
+    eng.reset(0, MatchSetup(decks=[[0, 3, 10, 14, 11, 13, 7, 9]] * 2))
+    st = eng.state()
+    troops = [c for c in eng.cards() if c.placement == Placement.TROOP]
+    assert len(troops) > 2
+    keys = {parser.oracle.grid_key(st, BLUE, c, 1) for c in troops}
+    assert len(keys) == 1, "troop cards should share one key; the footprint term is 0"
+    buildings = [c for c in eng.cards() if c.placement == Placement.BUILDING]
+    if len({c.radius for c in buildings}) > 1:
+        bkeys = {parser.oracle.grid_key(st, BLUE, c, 1) for c in buildings}
+        assert len(bkeys) > 1, "buildings of different radius must not share a grid"
