@@ -39,6 +39,18 @@ NO FLOAT MAY DEPEND ON ENTITY LIST ORDER
     played out. ``MatchMemory`` obeys the same rule: integer fine elixir units and
     integer counts, converted once, per seat.
 
+MOST OF AN OBSERVATION IS STRUCTURALLY CONSTANT, AND THAT DECIDES HOW TO READ IT
+    Across eight boards differing in a unit's position, a destroyed tower and the
+    elixir, 51 of the spatial observation's 11 749 numbers differ. 0.4%. The rest is
+    the arena's static planes, the standing towers and an unchanged hand. So the
+    greatest pairwise cosine between two observations is about 0.9998 with nothing
+    whatever wrong, and a collapse detector that puts a threshold under a cosine is
+    measuring how much of the tensor is static rather than whether it discriminates.
+    ``measure_variability`` reports both numbers for a given builder and set of
+    states, so a consumer can calibrate against its own configuration instead of
+    against this paragraph. On the cells that CAN move, those same eight boards sit
+    at 0.984.
+
 PLACEMENT LEGALITY IS THE MASK'S JOB, NOT A CHANNEL'S
     The action space is ``Discrete(2305)`` = no-op + 4 hand slots x 18 x 32 tiles,
     so the mask ALREADY states per-slot, per-tile legality exactly. ``own_troop_zone``
@@ -126,6 +138,9 @@ from .protocol import (
 # from calibration.json, which holds the game's own numbers.
 HP_SCALE = 1000.0
 SPATIAL_CLIP = 64.0
+# Observation keys that are the action mask in one shape or another. They are
+# legality rather than representation, so ``measure_variability`` leaves them out.
+MASK_OBS_KEYS = ("action_mask", "mask_planes")
 LEAK_SCALE = 20.0  # elixir leaked at which ``own_elixir_leaked`` saturates
 PLAY_GAP_TICKS = 600.0  # ticks since own last play at which that feature saturates
 PLAYS_SCALE = 40.0  # enemy plays at which ``enemy_plays`` saturates
@@ -529,6 +544,83 @@ def build_vector(
         out.append(deck)
     vec: np.ndarray = np.clip(np.concatenate(out), 0.0, 1.0).astype(np.float32)
     return vec
+
+
+class Variability(NamedTuple):
+    """How much of an observation can actually move. See ``measure_variability``."""
+
+    cells: int  #: numbers in one observation, counting every key except the masks
+    varying: int  #: how many of them differ across the states measured
+    fraction: float  #: ``varying / cells``
+    cosine_raw: float  #: greatest pairwise cosine over the whole observation
+    cosine_varying: float  #: the same over the varying cells alone
+    states: int
+
+    def __str__(self) -> str:
+        return (
+            f"{self.varying}/{self.cells} cells move ({100 * self.fraction:.1f}%) over "
+            f"{self.states} states; max pairwise cosine {self.cosine_raw:.4f} raw, "
+            f"{self.cosine_varying:.4f} on the cells that move"
+        )
+
+
+def measure_variability(
+    builder: ObsBuilder,
+    states: Sequence[BattleState],
+    action_masks: Sequence[np.ndarray],
+    team: int = 0,
+) -> Variability:
+    """What fraction of this builder's observation responds to the battle at all.
+
+    WHY A CONSUMER WANTS THIS. A representation that has collapsed -- every board
+    encoding to nearly the same vector -- looks exactly like slow learning, and the
+    usual detector is a cosine between encoded states with a threshold under it.
+    That threshold is meaningless without this number. Measured on the shipped
+    spatial builder over eight boards differing in a unit's position, a destroyed
+    tower and the elixir: 51 of 11 749 cells move, 0.4%, and the greatest pairwise
+    cosine is 0.9998 with nothing whatever wrong. An encoder reporting 0.99 on that
+    input is INCREASING discrimination, not losing it.
+
+    So measure the input the same way you measure the encoding, on the same states,
+    and compare the two. A cosine threshold chosen without the input's own cosine is
+    worse than no threshold, because it will fire on a healthy encoder or stay quiet
+    on a dead one depending only on how much of the observation happens to be
+    static.
+
+    The masks are excluded: they are legality, they are handed to the policy
+    separately, and their variability says nothing about the representation.
+    """
+    if len(states) != len(action_masks):
+        raise ValueError("one action mask per state")
+    if len(states) < 2:
+        raise ValueError("variability needs at least two states")
+    rows = []
+    for state, mask in zip(states, action_masks, strict=True):
+        obs = builder.build(state, team, mask)
+        rows.append(
+            np.concatenate(
+                [np.asarray(v, dtype=np.float64).ravel() for k, v in sorted(obs.items())
+                 if k not in MASK_OBS_KEYS]
+            )
+        )
+    block = np.asarray(rows)
+    varying = block.max(axis=0) != block.min(axis=0)
+
+    def worst_cosine(m: np.ndarray) -> float:
+        if m.shape[1] == 0:
+            return 1.0
+        unit = m / np.maximum(np.linalg.norm(m, axis=1, keepdims=True), 1e-12)
+        cos = unit @ unit.T
+        return float(cos[~np.eye(len(m), dtype=bool)].max())
+
+    return Variability(
+        cells=int(block.shape[1]),
+        varying=int(varying.sum()),
+        fraction=float(varying.mean()),
+        cosine_raw=worst_cosine(block),
+        cosine_varying=worst_cosine(block[:, varying]),
+        states=len(states),
+    )
 
 
 def _one_hot(card: int, onehot: int, empty_index: int) -> np.ndarray:

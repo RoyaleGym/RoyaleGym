@@ -39,7 +39,14 @@ from .done_condition import (
 )
 from .env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv, make_gym_vec_env
 from .mock_engine import MockEngine
-from .obs import EntityListObsBuilder, ObsBuilder, SpatialObsBuilder
+from .obs import (
+    EntityListObsBuilder,
+    ObsBuilder,
+    Reveal,
+    SpatialObsBuilder,
+    Variability,
+    measure_variability,
+)
 from .protocol import Engine
 from .replay import ReplayRecorder, load_trace, save_trace, verify_trace
 from .reward import (
@@ -116,6 +123,7 @@ __all__ = [
     "PlacementOracle",
     "RandomLegalOpponent",
     "ReplayRecorder",
+    "Reveal",
     "RewardFunction",
     "RustEngine",
     "ScriptedBoardStateMutator",
@@ -132,6 +140,7 @@ __all__ = [
     "TileActionParser",
     "TowerHPReward",
     "TruncationCondition",
+    "Variability",
     "WeightedStateMutator",
     "WeightedStateSetter",
     "WinLossReward",
@@ -139,6 +148,7 @@ __all__ = [
     "default_reward",
     "load_trace",
     "make_gym_vec_env",
+    "measure_variability",
     "save_trace",
     "verify_trace",
 ]

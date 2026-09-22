@@ -437,3 +437,99 @@ def test_a_played_out_battle_does_not_collapse(engine):
         off = cos[~np.eye(len(block), dtype=bool)]
         assert off.mean() < 0.995, f"{name}: mean pairwise cosine {off.mean():.4f}"
         assert len({tuple(v) for v in block}) == len(block), f"{name}: duplicate observations"
+
+
+# --- the number a consumer needs before choosing a collapse threshold ---------
+
+
+def test_measure_variability_reports_both_cosines_and_the_static_fraction(engine):
+    """A cosine threshold is meaningless without the input's own cosine.
+
+    The detector for a collapsed representation is a cosine between encoded states
+    with a threshold under it. Pick that threshold without knowing what the INPUT's
+    cosine already is and it fires on a healthy encoder or stays quiet on a dead
+    one, depending only on how much of the observation happens to be static. So the
+    builder can report it.
+    """
+    from royalegym.obs import measure_variability
+
+    eng, parser = engine
+    sub = eng.arena().subtile
+    states = [
+        base_state(engine, spawns=[SpawnSpec(BLUE, 0, x * sub, y * sub)])
+        for x, y in ((4, 8), (6, 9), (9, 11), (13, 8), (6, 14))
+    ]
+    states += [
+        base_state(engine),
+        base_state(engine, tower_hp=[[2400, 0, 1400], [2400, 1400, 1400]]),
+        base_state(engine, elixir_milli=[9000, 2000]),
+    ]
+    masks = [parser.action_mask(s, BLUE) for s in states]
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    b.reset(states[0])
+    v = measure_variability(b, states, masks)
+
+    assert v.states == len(states)
+    assert v.cells > 10000
+    assert 0 < v.varying < v.cells
+    assert v.fraction == pytest.approx(v.varying / v.cells)
+    # the whole point: raw cosine is near 1 and that is NOT a defect
+    assert v.cosine_raw > 0.99
+    assert v.cosine_varying < v.cosine_raw
+    assert "cells move" in str(v)
+
+    # the masks are excluded: they are legality, not representation
+    assert v.cells == sum(
+        int(np.asarray(x).size)
+        for k, x in b.build(states[0], BLUE, masks[0]).items()
+        if k not in ("action_mask", "mask_planes")
+    )
+
+
+def test_measure_variability_sees_a_collapse(engine, monkeypatch):
+    """A builder that stops reading the board sends the varying cosine to 1.0 while
+    the raw number barely twitches -- which is exactly why both are reported."""
+    import royalegym.obs as obs_mod
+    from royalegym.obs import measure_variability
+
+    eng, parser = engine
+    sub = eng.arena().subtile
+    states = [
+        base_state(engine, spawns=[SpawnSpec(BLUE, 0, x * sub, y * sub)])
+        for x, y in ((4, 8), (6, 9), (9, 11), (13, 8))
+    ]
+    masks = [parser.action_mask(s, BLUE) for s in states]
+
+    def fresh():
+        b = SpatialObsBuilder()
+        b.bind(eng, parser)
+        b.reset(states[0])
+        return b
+
+    healthy = measure_variability(fresh(), states, masks)
+    real = obs_mod.entity_channels
+    monkeypatch.setattr(
+        obs_mod,
+        "entity_channels",
+        lambda entities, team, arena: real([], team, arena),  # the board vanishes
+    )
+    collapsed = measure_variability(fresh(), states, masks)
+    assert collapsed.varying < healthy.varying
+    assert collapsed.cosine_raw > healthy.cosine_raw
+    assert healthy.cosine_raw - collapsed.cosine_raw < 0.01, (
+        "the RAW cosine barely moves under total collapse, which is the point"
+    )
+
+
+def test_measure_variability_refuses_what_it_cannot_measure(engine):
+    from royalegym.obs import measure_variability
+
+    eng, parser = engine
+    s = base_state(engine)
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    with pytest.raises(ValueError, match="at least two"):
+        measure_variability(b, [s], [parser.action_mask(s, BLUE)])
+    with pytest.raises(ValueError, match="one action mask per state"):
+        measure_variability(b, [s, s], [parser.action_mask(s, BLUE)])
