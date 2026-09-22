@@ -160,12 +160,18 @@ Open:
 Tests:
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 294 passed, 6 skipped, 5 failed (2026-09-21)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 309 passed, 6 skipped, 5 failed (2026-09-21)
 ..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
 ```
 
 Without the engine built the Rust-backed tests skip; an engine build older than the data files
 fails them rather than skipping.
+
+**On a checkout that has a private client pack, the two-engine agreement gate does not run.** It
+skips, loudly and with its reason, and a skip is not a pass — but it means the machine most likely
+to be running this suite is the one machine not checking that contract. If you have
+`RoyaleSim/data/raw/cr-*/` and a `cards.json` generated from it, run the comparison somewhere that
+does not, or regenerate `cards.json` with `--vintage 2018` first.
 
 The six SKIPS on 2026-09-21 are a card-table vintage split, and they cannot happen in a public
 checkout: only the oldest raw client pack is tracked, so the extractor builds the same table the

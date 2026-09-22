@@ -107,15 +107,23 @@ def test_the_statistics_describe_the_battle_from_each_seat():
 
 
 def test_elixir_leak_steps_count_the_steps_spent_at_a_full_bar():
-    """Nobody plays anything, so both bars fill and then every step leaks."""
+    """Blue starts full and leaks from step one; Red starts empty and has to fill.
+
+    Asymmetric on purpose: with both seats started full the two counts are equal and
+    the test cannot see them swapped, which is the mistake worth catching.
+    """
     env = short_env(max_steps=90)
-    setup = MatchSetup(decks=[DECK, DECK], elixir_milli=[10000, 10000])
+    setup = MatchSetup(decks=[DECK, DECK], elixir_milli=[10000, 0])
     env.reset(seed=3, options={"setup": setup})
     for _ in range(90):
         _, _, _, _, infos = env.step(dict.fromkeys(AGENTS, 0))
-    for agent in AGENTS:
-        leak = infos[agent]["elixir_leak_steps"]
-        assert leak == 90, f"{agent} started full and never spent, so every step leaked: {leak}"
+    blue = infos["blue"]["elixir_leak_steps"]
+    red = infos["red"]["elixir_leak_steps"]
+    assert blue == 90, f"Blue started full and never spent, so every step leaked: {blue}"
+    # Red needs MAX_MANA elixir at one per 56 ticks, ten ticks a step, so it reaches
+    # the cap partway through and leaks only after that.
+    assert 0 < red < blue, f"Red started empty and had to fill first: {red}"
+    assert infos["blue"]["own_tower_hp_frac"] == infos["red"]["own_tower_hp_frac"]
 
 
 def test_episode_statistics_reach_final_info_of_the_self_play_vec_env():
@@ -185,13 +193,31 @@ def test_two_configs_differ_exactly_where_the_envs_do():
 
 
 def test_calibration_digest_moves_with_a_value_and_not_with_prose():
-    from royalegym.protocol import default_calibration
+    """Both halves, because the second is the whole reason it hashes values only."""
+    import copy
+    import json
+
+    from royalegym.protocol import Calibration, default_calibration
 
     cal = default_calibration()
     assert calibration_digest(cal) == calibration_digest(cal)
     assert len(calibration_digest(cal)) == 16
-    moved = cal.with_override("match.MAX_MANA", 11)
-    assert calibration_digest(moved) != calibration_digest(cal)
+    assert calibration_digest(cal.with_override("match.MAX_MANA", 11)) != calibration_digest(cal)
+
+    # ... and NOT with prose: reword a note and change a status, keep every value.
+    raw = copy.deepcopy(json.loads(json.dumps(cal.raw)))
+    touched = 0
+    for section in raw.values():
+        if not isinstance(section, dict):
+            continue
+        for entry in section.values():
+            if isinstance(entry, dict) and "value" in entry:
+                entry["status"] = "reworded by a test"
+                entry["note"] = "prose that should not invalidate a checkpoint"
+                touched += 1
+    assert touched > 10, "vacuous: nothing was reworded"
+    assert raw != cal.raw
+    assert calibration_digest(Calibration(raw)) == calibration_digest(cal)
 
 
 @pytest.mark.skipif(not core_available(), reason="the compiled engine is not importable")
@@ -199,14 +225,33 @@ def test_build_digest_reads_the_data_the_extension_was_compiled_with():
     """It is deliberately callable WITHOUT constructing an engine.
 
     Constructing one is exactly what refuses on a stale build, and a stale build is
-    when a checkpoint most needs to record which data it actually ran on.
+    when a checkpoint most needs to record which data it actually ran on. The test
+    that matters is that it READS the embedded data rather than returning a
+    constant: swap one value in the compiled-in calibration and the digest moves.
     """
-    from royalegym.rust_engine import build_digest
+    import json
 
-    first = build_digest()
-    assert first == build_digest()
+    from royalegym import rust_engine
+
+    first = rust_engine.build_digest()
+    assert first == rust_engine.build_digest()
     assert len(first) == 16
     assert set(first) <= set("0123456789abcdef")
+
+    embedded = json.loads(rust_engine._core.EMBEDDED_CALIBRATION_JSON)
+    embedded["match"]["MAX_MANA"]["value"] = 11
+
+    class _Moved:
+        EMBEDDED_CALIBRATION_JSON = json.dumps(embedded)
+        EMBEDDED_ARENA_JSON = rust_engine._core.EMBEDDED_ARENA_JSON
+
+    original = rust_engine._core
+    try:
+        rust_engine._core = _Moved
+        assert rust_engine.build_digest() != first, "the digest ignores the embedded data"
+    finally:
+        rust_engine._core = original
+    assert rust_engine.build_digest() == first
 
 
 # ---------------------------------------------------------------------------

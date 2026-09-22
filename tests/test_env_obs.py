@@ -1255,14 +1255,38 @@ def test_the_memory_says_when_its_count_can_no_longer_be_exact():
     _rollout(env, 60, seed=3, deploy_prob=0.4)
     assert all(m.exact for m in env.obs_builder.memory.values()), "a normal deck stays exact"
 
-    doubled = [0, 0, 3, 3, 10, 10, 14, 14]
-    env = ClashParallelEnv(
-        engine=MockEngine(),
-        state_mutator=DefaultStateMutator(decks=[doubled, doubled]),
-        truncation_cond=StepLimitCondition(400),
+    # Scripted, not sampled: the repeated card is played from a known slot, so the
+    # hidden play is a fact of the fixture rather than something a seed has to
+    # stumble into.
+    # The card at cycle position 5 is the one at hand slot 0, so playing slot 0
+    # draws the same card straight back into it and NOTHING in the hand changes.
+    doubled = [0, 3, 10, 14, 0, 11, 13, 7]
+    eng = MockEngine()
+    parser = TileActionParser()
+    parser.bind(eng)
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    eng.reset(
+        0,
+        MatchSetup(
+            decks=[doubled, doubled], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 10000]
+        ),
     )
-    _rollout(env, 200, seed=3, deploy_prob=0.6)
-    assert not any(m.exact for m in env.obs_builder.memory.values()), (
+    b.reset(eng.state())
+    per = parser.nx * parser.ny
+    before = eng.state().players[RED].hand[0]
+    st = eng.state()
+    slot0 = [a for a in np.flatnonzero(parser.action_mask(st, RED))[1:] if (a - 1) // per == 0]
+    assert slot0
+    eng.step([parser.parse(int(slot0[0]), st, RED)], 5)
+    assert eng.state().players[RED].hand[0] == before, (
+        "fixture needs the repeated card to be drawn back into the same slot"
+    )
+    b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))
+    blue = b.memory[BLUE]
+    assert blue.foe_plays == 0, "the play really is invisible in the hand"
+    assert blue.enemy_elixir_milli() != eng.state().players[RED].elixir_milli
+    assert not blue.exact, (
         "a deck that repeats a card hides plays, and the memory has to notice"
     )
 
@@ -1403,3 +1427,212 @@ def test_exactness_is_checked_on_both_bars_not_just_the_visible_one():
     blue = env.obs_builder.memory[BLUE]
     assert wrong[BLUE] > 0, "vacuous: Blue's count of Red's repeating deck never went wrong"
     assert not blue.exact, "the count was wrong and the flag did not say so"
+
+
+# --- every channel and every field, by CONTENT ---------------------------------
+#
+# The coverage guard above only says a channel is not all-zero SOMEWHERE, and the
+# flip and order gates only say two builds agree with each other. Neither can see
+# two channels swapped, or a field written into its neighbour's slots -- and the
+# rewrite that split crown towers out of the buildings planes moved every index
+# after own_buildings. These two tests check the contents against the state.
+
+
+def entity_channel_errors(builder, states=STATES) -> list[str]:
+    """Every entity channel, cell by cell, against the entity list, for both seats."""
+    builder.bind(ENG, PARSER)
+    a = ENG.arena()
+    names = builder.channel_names()
+    errors = []
+    for i, s in enumerate(states):
+        for seat in (BLUE, RED):
+            sp = builder.build(s, seat, PARSER.action_mask(s, seat))["spatial"]
+            want = {n: np.zeros((32, 18)) for n in names[:obs_mod.ENTITY_CHANNELS]}
+            for e in s.entities:
+                ox, oy = to_own(a, seat, e.x, e.y)
+                ty, tx = min(max(oy // a.subtile, 0), 31), min(max(ox // a.subtile, 0), 17)
+                side = "own" if e.team == seat else "enemy"
+                if e.kind == EntityKind.TROOP:
+                    want[f"{side}_{'air' if e.flying else 'ground'}_troops"][ty, tx] += 1
+                elif e.kind == EntityKind.BUILDING:
+                    want[f"{side}_buildings"][ty, tx] += 1
+                else:
+                    want[f"{side}_towers"][ty, tx] += 1
+                want[f"{side}_hp"][ty, tx] += e.hp / obs_mod.HP_SCALE
+                if e.deploy_ticks > 0:
+                    want[f"{side}_deploying"][ty, tx] += 1
+            for name, grid in want.items():
+                got = sp[names.index(name)]
+                if not np.allclose(got, grid, rtol=0, atol=1e-3):
+                    errors.append(f"state {i} seat {seat}: {name}")
+    return errors
+
+
+def test_every_entity_channel_holds_what_the_entity_list_says():
+    assert entity_channel_errors(SpatialObsBuilder()) == []
+
+
+@pytest.mark.parametrize(
+    "swap",
+    [
+        ("own_ground_troops", "own_air_troops"),
+        ("own_buildings", "own_towers"),
+        ("own_hp", "enemy_hp"),
+        ("own_deploying", "enemy_deploying"),
+        ("enemy_ground_troops", "enemy_air_troops"),
+    ],
+)
+def test_plant_two_swapped_entity_channels_are_caught(swap):
+    """The gate the coverage guard could not be: both planes stay non-zero."""
+    lo, hi = (CHANNEL[swap[0]], CHANNEL[swap[1]])
+
+    class Swapped(SpatialObsBuilder):
+        def build(self, state, team, action_mask):
+            o = super().build(state, team, action_mask)
+            o["spatial"][[lo, hi]] = o["spatial"][[hi, lo]]
+            return o
+
+    assert unseen_channels(STATES) == [], "baseline coverage must be green"
+    bad = entity_channel_errors(Swapped())
+    assert bad, f"PLANT DID NOT LAND: swapping {swap} went unseen"
+
+
+def _vector_content_errors(builder, eng, parser, plays, seat=BLUE) -> list[str]:
+    """Named vector fields against ground truth computed from the engine, not the
+    builder. ``plays`` is the true list of cards each team has played, in order."""
+    st = eng.state()
+    n = len(eng.cards())
+    off = vector_offsets(n, builder.reveal)
+    v = builder.build(st, seat, parser.action_mask(st, seat))["vector"]
+    me, foe = st.players[seat], st.players[1 - seat]
+    full = 1000 * builder.max_mana
+    errors = []
+
+    def check(key, want):
+        got = v[off[key]]
+        if not np.allclose(got, np.asarray(want, dtype=np.float32), rtol=0, atol=1e-6):
+            errors.append(f"{key}: got {np.round(got, 4)} want {np.round(want, 4)}")
+
+    check("own_elixir", [me.elixir_milli / full])
+    check("enemy_elixir", [foe.elixir_milli / full])
+    hand = np.zeros((HAND_SIZE, n + 1), dtype=np.float32)
+    for i, c in enumerate(me.hand):
+        hand[i, n if c == -1 else c] = 1
+    check("own_hand_cards", hand.reshape(-1))
+    nxt = np.zeros(n + 1, dtype=np.float32)
+    nxt[n if me.next_card == -1 else me.next_card] = 1
+    check("own_next_card", nxt)
+    seen = np.zeros(n, dtype=np.float32)
+    for c in plays[1 - seat]:
+        seen[c] = 1
+    check("enemy_cards_seen", seen)
+    possible = np.ones(n, dtype=np.float32)
+    for c in plays[1 - seat][-(DECK_SIZE - HAND_SIZE) :]:
+        possible[c] = 0
+    check("enemy_possible_hand", possible)
+    check("enemy_plays", [min(1.0, len(plays[1 - seat]) / obs_mod.PLAYS_SCALE)])
+    last = np.zeros(n + 1, dtype=np.float32)
+    last[plays[seat][-1] if plays[seat] else n] = 1
+    check("own_last_card", last)
+    check("crowns", [me.crowns / 3.0, foe.crowns / 3.0])
+    check("own_tower_hp", [me.tower_hp[s] / max(1, me.tower_max_hp[s]) for s in TowerSlot])
+    check("enemy_tower_hp", [foe.tower_hp[s] / max(1, foe.tower_max_hp[s]) for s in TowerSlot])
+    check("elixir_rate", [float(st.elixir_rate == 1), float(st.elixir_rate == 2)])
+    return errors
+
+
+def _scripted_plays(n_plays: int = 5):
+    """A battle where the test knows exactly which cards each side played."""
+    eng = MockEngine()
+    parser = TileActionParser()
+    parser.bind(eng)
+    eng.reset(
+        6,
+        MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 10000]),
+    )
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    b.reset(eng.state())
+    plays = {BLUE: [], RED: []}
+    per = parser.nx * parser.ny
+    for k in range(n_plays):
+        team = BLUE if k % 2 else RED
+        st = eng.state()
+        legal = np.flatnonzero(parser.action_mask(st, team))[1:]
+        slot = k % HAND_SIZE
+        options = [a for a in legal if (a - 1) // per == slot]
+        if not options:
+            continue
+        plays[team].append(st.players[team].hand[slot])
+        eng.step([parser.parse(int(options[0]), st, team)], TICKS_PER_PLAY)
+        b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))
+        b.build(eng.state(), RED, parser.action_mask(eng.state(), RED))
+    return eng, parser, b, plays
+
+
+def test_every_named_vector_field_holds_what_the_state_says():
+    eng, parser, b, plays = _scripted_plays()
+    assert plays[RED], "vacuous: Red played nothing"
+    assert plays[BLUE], "vacuous: Blue played nothing"
+    for seat in (BLUE, RED):
+        assert _vector_content_errors(b, eng, parser, plays, seat) == []
+
+
+@pytest.mark.parametrize(
+    "swap",
+    [
+        ("enemy_cards_seen", "enemy_possible_hand"),
+        ("own_tower_hp", "enemy_tower_hp"),
+        ("own_elixir", "enemy_elixir"),
+        ("own_next_card", "own_last_card"),
+    ],
+)
+def test_plant_two_swapped_vector_fields_are_caught(swap):
+    eng, parser, b, plays = _scripted_plays()
+    off = vector_offsets(len(eng.cards()), b.reveal)
+    lo, hi = off[swap[0]], off[swap[1]]
+    assert lo.stop - lo.start == hi.stop - hi.start, "fixture needs two runs of equal width"
+
+    class Swapped(SpatialObsBuilder):
+        def build(self, state, team, action_mask):
+            o = super().build(state, team, action_mask)
+            v = o["vector"]
+            v[lo], v[hi] = v[hi].copy(), v[lo].copy()
+            return o
+
+    planted = Swapped()
+    planted.bind(eng, parser)
+    planted.reset(eng.state())
+    bad = _vector_content_errors(planted, eng, parser, plays)
+    assert bad, f"PLANT DID NOT LAND: swapping {swap} went unseen"
+
+
+def test_a_play_missed_because_two_came_from_one_slot_is_flagged():
+    """Two plays from the SAME hand slot inside one observed interval read as one.
+
+    The hand is compared slot by slot, so slot0 going X -> Y -> Z between two
+    observations is one change. The count is then wrong, and the guard on the bar
+    is what has to notice, because the hand cannot.
+    """
+    eng = MockEngine()
+    parser = TileActionParser()
+    parser.bind(eng)
+    eng.reset(
+        0, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 10000])
+    )
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    b.reset(eng.state())
+    per = parser.nx * parser.ny
+    for _ in range(2):
+        st = eng.state()
+        legal = np.flatnonzero(parser.action_mask(st, RED))[1:]
+        slot0 = [a for a in legal if (a - 1) // per == 0]
+        assert slot0, "hand slot 0 must be playable"
+        eng.step([parser.parse(int(slot0[0]), st, RED)], 5)
+    b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))
+    mem = b.memory[BLUE]
+    st = eng.state()
+    assert mem.foe_plays == 1, "the fixture must actually hide a play"
+    assert mem.enemy_elixir_milli() != st.players[RED].elixir_milli
+    assert not mem.exact, "a wrong count must never be a quiet one"
