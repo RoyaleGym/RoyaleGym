@@ -82,7 +82,7 @@ from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponen
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 env = ClashParallelEnv(engine=engine,
                        state_mutator=DefaultStateMutator(decks=[deck, deck]))
@@ -98,14 +98,15 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3600
+winner 1  crowns [1, 1]  tick 4800
 ```
 
 Blue, player 0, took one of Red's princess towers. Tick 3600 is the full three minutes, so this
-one ended in regulation on crowns rather than going to overtime.
+this one went the full three minutes plus sixty seconds of overtime, finished with the crowns
+level, and was decided on king-tower damage.
 
-One env step is half a second of game time, which is 10 ticks. That battle was 360 steps, so each
-player made 360 decisions. It takes about half a second of real time.
+One env step is half a second of game time, which is 10 ticks. That battle was 480 steps, so
+each player made 480 decisions. It takes well under a second of real time.
 
 !!! warning "Name the deck, and name it card by card"
     Notice the deck is looked up by name and not by number. A card id is only a position in the
@@ -127,7 +128,7 @@ from royalegym import (ClashGymEnv, DefaultStateMutator, RandomLegalOpponent, Ru
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 env = ClashGymEnv(agent="blue",                                # you are Blue
                   opponent=RandomLegalOpponent(noop_prob=0.7),  # Red is scripted

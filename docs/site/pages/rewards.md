@@ -30,13 +30,13 @@ below it is the output that came back.
 
     ---
 
-    What you actually want. It paid out on 1 step out of 360.
+    What you actually want. It paid out on 2 steps out of 480, and they cancelled.
 
 - __3. Tower damage__
 
     ---
 
-    The same goal, measured more often. It paid out on 50 steps out of 360.
+    The same goal, measured more often. It paid out on 56 steps out of 480.
 
 - __4. Both together__
 
@@ -101,7 +101,7 @@ from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponen
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 
 def play(reward_fn):
@@ -131,11 +131,11 @@ play(ZeroReward())
 ```
 
 ```
-ZeroReward: blue total +0.000  over 360 steps, 0 of them non-zero
+ZeroReward: blue total +0.000  over 480 steps, 0 of them non-zero
 ```
 
-Three lines of your own code and it ran a whole match. 360 steps is one decision every
-half second for three minutes of game time.
+Three lines of your own code and it ran a whole match. 480 steps is one decision every half
+second, for three minutes of game time plus the sixty seconds of overtime this battle went to.
 
 Name the eight cards, as the program does. A card id is only a position in the
 catalogue and positions move between card tables, so the same number is not the same
@@ -158,12 +158,14 @@ play(CrownReward())
 ```
 
 ```
-CrownReward: blue total +1.000  over 360 steps, 1 of them non-zero
+CrownReward: blue total +0.000  over 480 steps, 2 of them non-zero
 ```
 
-That is the shipped `CrownReward`, near enough line for line. Notice the second half of
-the output. One tower fell in this battle, so out of 360 decisions exactly one got a
-number that was not zero. The other 359 told the bot nothing at all.
+That is the shipped `CrownReward`, near enough line for line, and this battle makes its
+weakness unusually visible. Two towers fell, one each way, so exactly two of 480 decisions
+got a number that was not zero. The other 478 told the bot nothing at all. And because the
+two payments were +1 and -1, the total for the whole match is zero. A bot reading only this
+signal cannot tell this battle apart from one in which nothing happened.
 
 That is the problem with scoring only the thing you care about. It is correct and it is
 almost silent.
@@ -191,7 +193,7 @@ play(TowerDamageReward())
 ```
 
 ```
-TowerDamageReward: blue total +0.792  over 360 steps, 50 of them non-zero
+TowerDamageReward: blue total -0.360  over 480 steps, 56 of them non-zero
 ```
 
 Same battle, same bots, and now 50 steps carry a number instead of 1. That is what
@@ -219,12 +221,13 @@ print("blue's last step, term by term:", shaped.terms_for(0))
 ```
 
 ```
-CombinedReward: blue total +1.279  over 360 steps, 51 of them non-zero
-blue's last step, term by term: {'WinLossReward': 1.0, 'CrownReward': 0.0, 'TowerDamageReward': 0.0}
+CombinedReward: blue total -1.036  over 480 steps, 57 of them non-zero
+blue's last step, term by term: {'WinLossReward': -1.0, 'CrownReward': 0.0, 'TowerDamageReward': 0.0}
 ```
 
-`WinLossReward` pays +1 the moment the battle is won and nothing before that. That is
-the actual objective. The other two terms exist to give the bot something to go on in
+`WinLossReward` pays +1 the moment the battle is won, -1 when it is lost, and nothing
+before that. Blue loses this one, which is why the last step reads -1.0 and why every total
+on this page from here down is negative. That is the actual objective. The other two terms exist to give the bot something to go on in
 the meantime, which is why their weights are small.
 
 `terms_for(seat)` gives you the breakdown of that seat's last reward. Log it. When a
@@ -256,7 +259,7 @@ print(json.dumps(default_reward().config(), indent=2)[:400])
 ```
 
 ```
-CombinedReward: blue total +1.277  over 360 steps, 131 of them non-zero
+CombinedReward: blue total -1.048  over 480 steps, 132 of them non-zero
 {
   "terms": [
     {
@@ -283,7 +286,7 @@ CombinedReward: blue total +1.277  over 360 steps, 131 of them non-zero
       "class": "ElixirTradeReward
 ```
 
-131 non-zero steps out of 360, because `ElixirTradeReward` pays out every time anything
+132 non-zero steps out of 480, because `ElixirTradeReward` pays out every time anything
 dies. The JSON is cut off at 400 characters by the `[:400]` in the program, which is why
 the last line stops mid word. It is the whole recipe, and it is how the reward ends up
 written into a checkpoint. `ClashParallelEnv.config()` carries the same thing under
@@ -323,8 +326,8 @@ both_seats(TowerDamageReward())
 ```
 
 ```
-CrownReward: blue +1.000  red -1.000  sum +0.000
-TowerDamageReward: blue +0.792  red -0.792  sum +0.000
+CrownReward: blue +0.000  red +0.000  sum +0.000
+TowerDamageReward: blue -0.360  red +0.360  sum +0.000
 ```
 
 Every shipped term except `ElixirLeakPenalty` is meant to add to zero like this.

@@ -37,7 +37,7 @@ from royalegym import ClashParallelEnv, DefaultStateMutator, RustEngine
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 env = ClashParallelEnv(engine=engine,
                        state_mutator=DefaultStateMutator(decks=[deck, deck]))
@@ -56,7 +56,7 @@ vector       shape (1177,)        dtype float32
 action_mask  shape (2305,)        dtype int8
 mask_planes  shape (4, 32, 18)    dtype int8
 cards in this catalogue: 95
-legal actions right now: 1259 of 2305
+legal actions right now: 1605 of 2305
 ```
 
 The deck is named card by card on purpose. With no deck named, each side is dealt eight
@@ -164,7 +164,7 @@ from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponen
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 env = ClashParallelEnv(engine=engine,
                        state_mutator=DefaultStateMutator(decks=[deck, deck]))
@@ -219,14 +219,17 @@ and waiting is just picking index 0.
 The second half of that program printed this:
 
 ```
-step   1  legal actions  1259  elixir 5.18
-step  20  legal actions     1  elixir 2.57
-step  60  legal actions   459  elixir 3.71
+step   1  legal actions  1605  elixir 5.00
+step  20  legal actions     1  elixir 2.39
+step  60  legal actions   459  elixir 3.54
 ```
 
 Read the middle line. At step 20 exactly one action was legal, and that one is the wait
-action. The player had 2.57 elixir and nothing in hand cost that little. Without a mask
-your bot would spend thousands of steps discovering that by being refused.
+action. The player had 2.39 elixir and the four cards in hand were Giant, Cannon, Minions
+and Archer, the cheapest of them 3. The deck does hold a 2 cost card, Zap, and it was not in
+hand at that moment, which is the whole point: what you can afford depends on the four cards
+you happen to be holding, not on the eight you chose. Without a mask your bot would spend
+thousands of steps discovering that by being refused.
 
 The count moves with your elixir, with your hand, with the towers still standing and
 with the buildings already on the board. The mask covers elixir, which half of the
@@ -236,7 +239,7 @@ the rectangle around each enemy crown tower that is still alive.
 For comparison, RoyaleGym's
 [architecture.md](https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/architecture.md)
 reports 691 legal actions of 2305 on the first step with default random decks on the
-Rust engine, and 1235 on `MockEngine`. This page got 1259 with the named deck above.
+Rust engine, and 1235 on `MockEngine`. This page got 1605 with the named deck above.
 Different deck, different card table, different count. The number is not a property of
 the game.
 
@@ -275,7 +278,7 @@ from royalegym.obs import Reveal
 engine = RustEngine()
 by_name = {c.name: c.card_id for c in engine.cards()}
 deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
-                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
 
 
 def widths(builder):

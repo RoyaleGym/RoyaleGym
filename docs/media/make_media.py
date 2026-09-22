@@ -44,7 +44,7 @@ WORK = HERE / ".work"  # traces and other intermediates, gitignored
 # battles from the same seed. Naming eight cards that exist in every table makes the battle
 # a function of this file instead.
 TRY_IT_SEED = 0
-TRY_IT_DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Goblins",
+TRY_IT_DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Zap",
                "Musketeer")
 
 TILE_PX = 22       # the mp4: the whole window stays under 1024 px wide
@@ -203,7 +203,7 @@ def whole_battle() -> None:
     """RoyaleGym: one whole battle, end to end, in the viewer."""
     src = trace()
     clip(src, out_dir("RoyaleGym") / "whole-battle",
-         tick0=0, tick1=src.length, mp4_every=4, gif_every=15)
+         tick0=0, tick1=src.length, mp4_every=5, gif_every=20)
 
 
 def battle_page() -> None:

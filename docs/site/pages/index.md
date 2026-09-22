@@ -57,7 +57,7 @@ the environments, so you have something to play against from your first minute.
 
     Reset the environment, pick a move for each player, step, repeat until someone wins. One step
     is one decision for each player and covers half a second of game time, so a three minute match
-    is 360 decisions each.
+    is 480 decisions each.
 
 -   **Your own idea of what "good" means**
 

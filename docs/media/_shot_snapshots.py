@@ -25,7 +25,7 @@ from royalegym import RustEngine
 from royalegym.protocol import BLUE, RED, DeployCommand, DeployStatus, MatchSetup
 
 # The deck and seed the README's Try-it battle uses, so this figure is that battle.
-DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Goblins",
+DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Zap",
         "Musketeer")
 SEED = 0
 LEAD_IN_STEPS = 40      # env-sized steps played before the snapshot is taken

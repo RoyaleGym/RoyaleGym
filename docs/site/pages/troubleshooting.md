@@ -232,6 +232,21 @@ instead, so it steps aside and says why, naming both tables.
 
 Add `-rs` to any pytest run to see the reason for every skip. Without it you get a letter.
 
+!!! info "What the two engines actually disagree about"
+    `MockEngine` is an independent Python reading of the same card data, not a copy of the Rust
+    engine, which is what makes comparing them worth anything. On the tracked 2018 table they
+    agree across the measured set.
+
+    The one difference this check reports on a machine holding a private client pack is the
+    **unit count of Goblins: 4 in the newer table, 3 in the tracked one.** That is a difference
+    between the two card tables rather than between the two engines, which is exactly why the
+    comparison steps aside instead of failing.
+
+    It is worth knowing before you meet it. If you compare a Goblins battle across the two
+    engines on a machine like that, the unit counts will not line up, and nothing is broken.
+    The example deck used elsewhere in these docs is drawn entirely from the 18 cards whose
+    behaviour is checked against recordings, and Goblins is not one of them.
+
 **What to do.** On a normal clone, nothing. Both engines come from the tracked 2018 table there,
 the check runs, and it passes. That has been confirmed on a clean clone of all four repos: 96
 passed, 0 skipped over the two Rust-backed test files.

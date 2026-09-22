@@ -38,7 +38,7 @@ import make_media as M  # noqa: E402
 SEED = 20260922
 TICKS = 600
 SNAPSHOT_AT = 240  # where run 3 is handed the bytes and takes over
-DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Goblins",
+DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Zap",
         "Musketeer")
 SHUFFLE_MIRRORED = 2
 R_OK = 0

@@ -30,7 +30,9 @@ import make_media as M  # noqa: E402  (palette and fonts, shared with the other 
 # The same battle the other figures and the README quote: a named deck, so the card
 # catalogue's size cannot change which cards are dealt, and a fixed seed.
 SEED = 0
-DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Goblins", "Musketeer")
+# The same example deck the docs use, and for the same reason: every card is in the
+# thin slice, the 18 whose behaviour is checked against recordings.
+DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Zap", "Musketeer")
 NOOP_PROB = 0.7
 MAX_STEPS = 60
 
