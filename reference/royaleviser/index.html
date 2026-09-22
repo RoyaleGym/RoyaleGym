@@ -3317,8 +3317,11 @@ capture(src, "clip.gif", ticks=(0, 2400, 4), scale=16, crop="left", fps=20)
 <p>WHAT IS FROZEN, AND WHY
     The status block prints the draw time and the frames per second, which differ every run.
     An image in a README that changes when nothing changed is a diff nobody can review, so a
-    capture zeroes both of those, and the LIVE pill with them. <code>live_timing=True</code> puts them
-    back, for the one shot whose subject IS the timing.</p>
+    capture always zeroes both, and never draws the LIVE pill: a capture is a replay of a
+    file, not a window onto a running engine. Every capture is reproducible, including with
+    <code>live_timing=True</code> -- which restores only the SOURCE's own status line ("frame 412/2400
+    ...", built from the file rather than from a clock). A shot whose subject is the timing
+    of a live stream is not a capture at all; <code>tests/run_stream.py --shot</code> takes that one.</p>
 <p>WHAT IT COSTS TO CARRY
     PNG needs nothing beyond this package. mp4 and gif are encoded by ffmpeg, which arrives
     with <code>imageio-ffmpeg</code> -- the <code>media</code> extra (<code>pip install royaleviser[media]</code>).
@@ -3431,8 +3434,9 @@ frame, numbered <code>name-0000.png</code> when the range holds more than one; <
 <p><code>crop</code> is one of CROPS or a rectangle, <code>compare</code> ghosts a second source at the same
 tick, and <code>view</code> carries everything else the window can be told to show -- the seat,
 the overlays, and <code>hover_uid</code> to pin a unit in the inspector.</p>
-<p>The same source and arguments give the same bytes: the only thing on screen that moves
-with the wall clock is frozen (see <code>live_timing</code>).</p>
+<p>The same source and arguments give the same bytes, always: nothing on screen moves with
+the wall clock. <code>live_timing=True</code> adds the source's own status line, which is built
+from the file and is reproducible too.</p>
 
 
     </div>
@@ -3999,8 +4003,11 @@ unit paths, then dropped). <code>frame_from_state</code> builds a Frame from a B
     A frame lost on the way is replaced a few milliseconds later; a status lost on the
     way is the panel standing still for a whole iteration, and a rollout can fill the
     viewer's receive queue with frames just as the one status of that minute arrives. So
-    each viewer is sent the standing status LEARNING_REPEATS times, a heartbeat apart,
-    and then the sender falls silent until the next status or the next viewer.</p>
+    a viewer is sent the standing status LEARNING_REPEATS times, a heartbeat apart, and
+    then the sender falls silent until the next status or the next viewer. NOTE that the
+    budget follows the ONE peer this sender keeps, the address of the last hello: two
+    viewers heart-beating at once take it in turns, so it keeps sending and each of them
+    sees some of the statuses. One viewer per learner is the shape this protocol has.</p>
 <p>One message is the whole status (<code>model.Learning</code>): the viewer replaces rather than
 merges, so a field the learner stops sending goes back to an em dash rather than standing
 as a stale number. <code>Learning.extra</code> carries whatever the fixed rows cannot hold; a
@@ -5495,6 +5502,9 @@ Naming the port turns that from a shrug into something a person can check.</p>
     <div class="doc doc-contents ">
 
         <p><code>s</code> shortened with an ellipsis so it renders within <code>width</code> pixels.</p>
+<p>Control characters are dropped first: a learner names its own rows and its own run, and
+a NUL reaching the font layer takes the window down. One edit here covers every string
+the panel draws rather than trusting each call site.</p>
 
 
     </div>

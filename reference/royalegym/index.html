@@ -4674,6 +4674,15 @@ opens them.</p>
 
 
         <p>Single-agent Gymnasium env: one seat is the learner, the other an <code>Opponent</code>.</p>
+<p>WHICH ENGINE YOU GET. With no <code>engine=</code> this builds a <code>MockEngine</code>, which is a
+readable reference implementation and not the game: different card table, spells
+that resolve instantly instead of travelling, no stuns or knockback. That is the
+right default for trying the API out, and the wrong thing to train a bot on
+believing it is the real one -- so it says so, once, rather than leaving the reader
+to find out from a result that does not transfer.</p>
+<p><code>royalegym/ClashRoyaleMock-v0</code> and <code>royalegym/ClashRoyaleRust-v0</code> say which they
+are in their names and neither warns. Pass <code>engine=</code> here and nothing warns
+either: the warning is about not having chosen, not about the mock.</p>
 
 
 
@@ -5283,11 +5292,12 @@ engine's MAX_MANA via calibration when bound through an env.</p>
 enemy half scores above one behind your own towers, scaled so a placement at the
 far end is 1 and at your own back line is -1. <code>weight</code> on the aggressive side
 is the knob; a NEGATIVE weight rewards defending at home.</p>
-<p>SHIPPED AT ZERO WEIGHT in <code>default_reward</code>, on purpose. Whether pushing or
-defending is better is the thing a bot is supposed to learn, and a shaping term
-that answers it in advance is the weight-drift this module's docstring warns
-about. It is here to be copied and to prove the coordinates arrive, not to be
-switched on untested.</p>
+<p>NOT IN <code>default_reward</code> AT ALL, on purpose -- not at zero weight, not at any
+weight. Whether pushing or defending is better is the thing a bot is supposed to
+learn, and a shaping term that answers it in advance is the weight-drift this
+module's docstring warns about. It is here to be copied and to prove the
+coordinates arrive, not to be switched on untested.
+<code>test_the_positional_term_stays_out_of_the_default_reward</code> keeps it out.</p>
 <p>Antisymmetric between the seats on a mirrored transition, like the terms above:
 the own frame flips with the seat, so the same placement scores +d for one
 player and is scored by the other only through its own placements.</p>
@@ -9524,7 +9534,10 @@ is tracked on the same scale as the snapshots it plays.</p>
 
         <p>Record one game. <code>score_a</code> is 1 (a won), 0.5 (draw) or 0 (b won).</p>
 <p>Returns the new (elo_a, elo_b). The update is zero-sum: the pool's total
-Elo is conserved, which the tests check.</p>
+Elo is conserved, checked by
+<code>tests/test_selfplay_pool.py::test_the_elo_update_is_zero_sum</code>. It was not
+checked by anything for the life of this class, while this line said it was --
+which is worse than saying nothing, because it stops the next reader looking.</p>
 
 
     </div>

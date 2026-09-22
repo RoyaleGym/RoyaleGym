@@ -1558,21 +1558,23 @@ them to one arena tile, which is why positions come back as large whole numbers.
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>..\.venv\Scripts\python tools\watch_battle.py
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>winner: RED
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>crowns: [0, 2]
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>final_tick: 3600
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>troops: 61
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>crowns: [2, 3]
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>final_tick: 2968
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>troops: 46
 <a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>[OK ] determinism: re-simulated hash-for-hash on a fresh engine
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>[OK ] vacuity: 3601 frames (floor 50); blue accepted 24 deploys; red accepted 23 deploys; ...
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>[OK ] vacuity: 2969 frames (floor 50); blue accepted 18 deploys; red accepted 17 deploys; ...
 <a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>[OK ] arena: trace grid == data/derived/arena.json (64x36 half-cells)
-<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>[OK ] dry: 138 of 37819 ground entity positions on water (the live game allows it; bound 5 %)
-<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>[OK ] render: battle.html, 2440450 bytes, 3601 frames, self-contained
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>[OK ] dry: 74 of 27489 ground entity positions on water (the live game allows it; bound 5 %)
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>[OK ] render: battle.html, 1841257 bytes, 2969 frames, self-contained
 <a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>EVERY GATE GREEN.
 </code></pre></div>
-<p>That took 2.07 seconds, a whole three minute match and five checks on it.</p>
-<p>You should get that battle. The tool's <code>--seed</code> defaults to 1, so the winner, the crowns and
-the troop count above are what a fresh install produces, and a difference means something is
-wrong rather than nothing. Only the timing moves. Pass <code>--seed 7</code> for a different battle.
-The five <code>[OK ]</code> lines say, In order: the battle replayed on a fresh engine and every board
+<p>That took about two seconds: a whole match and five checks on it.</p>
+<p><strong>Do not expect the winner and the counts to match.</strong> The tool deals each side a random deck out
+of the card table your clone built, so a <code>--vintage 2018</code> install plays a different battle from
+the one above, which used the 15.535 table. <code>--seed</code> defaults to 1, so the same checkout does
+repeat the same battle, and <code>--seed 7</code> gives you another.</p>
+<p><strong>The five <code>[OK ]</code> lines are the part that should be green on any install.</strong> That is what to
+check. In order: the battle replayed on a fresh engine and every board
 hash came back identical, both sides actually deployed and fought rather than standing still, the
 arena the battle was played on matches the arena file, ground units stayed out of the water, and
 the HTML page it wrote holds every frame and needs nothing else to open.</p>

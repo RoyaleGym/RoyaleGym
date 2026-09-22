@@ -530,10 +530,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#one-seat-against-a-scripted-opponent" class="md-nav__link">
+  <a href="#one-seat-and-the-env-plays-the-other" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One seat, against a scripted opponent
+        One seat, and the env plays the other
       
     </span>
   </a>
@@ -1000,10 +1000,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#one-seat-against-a-scripted-opponent" class="md-nav__link">
+  <a href="#one-seat-and-the-env-plays-the-other" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One seat, against a scripted opponent
+        One seat, and the env plays the other
       
     </span>
   </a>
@@ -1180,7 +1180,7 @@ same one. <code>StateMutator</code>, <code>TerminationCondition</code>, <code>Tr
 </div>
 <h2 id="two-apis-and-which-one-you-want">Two APIs, and which one you want<a class="headerlink" href="#two-apis-and-which-one-you-want" title="Permanent link">&para;</a></h2>
 <p>Both drive the same battle. The difference is how many seats you are filling.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Both seats are bots</label><label for="__tabbed_1_2">One seat, against a scripted opponent</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Both seats are bots</label><label for="__tabbed_1_2">One seat, and the env plays the other</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>Use <strong><code>ClashParallelEnv</code></strong>, the PettingZoo parallel API. You hand it a move for each
@@ -1239,7 +1239,7 @@ card on two machines.</p>
 catalogue your machine built. The same seed then gives you a different battle from the one
 above. Naming eight cards makes the battle a function of the program.</p>
 </div>
-<h2 id="one-seat-against-a-scripted-opponent">One seat, against a scripted opponent<a class="headerlink" href="#one-seat-against-a-scripted-opponent" title="Permanent link">&para;</a></h2>
+<h2 id="one-seat-and-the-env-plays-the-other">One seat, and the env plays the other<a class="headerlink" href="#one-seat-and-the-env-plays-the-other" title="Permanent link">&para;</a></h2>
 <p>Same battle, Gymnasium shape. You are Blue. Red is the random-legal opponent.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">ClashGymEnv</span><span class="p">,</span> <span class="n">DefaultStateMutator</span><span class="p">,</span> <span class="n">RandomLegalOpponent</span><span class="p">,</span> <span class="n">RustEngine</span><span class="p">)</span>
@@ -1353,8 +1353,11 @@ code. Everything in the project does it that way for the same reason.</p>
 </tbody>
 </table>
 <h2 id="speed-and-the-honest-caveat">Speed, and the honest caveat<a class="headerlink" href="#speed-and-the-honest-caveat" title="Permanent link">&para;</a></h2>
-<p>The suite's own throughput report here printed <strong>957 env steps per second</strong> on the Rust engine,
-with other jobs running on the machine. An env step is one decision for each player.</p>
+<p>The durable figure is a ratio: the Rust engine runs <strong>1.16 to 1.38 times</strong> the pure-Python
+stand-in, measured by alternating the two inside one process so that whatever the machine is
+doing it does to both. An env step is one decision for each player.</p>
+<p>Absolute rates on this hardware have ranged from 859 to 1812 env steps per second within a
+day, so take any single figure as an illustration rather than a target.</p>
 <p>Stepped directly, the same engine does tens of thousands of ticks a second. The gap is Python:
 on every single step it builds both players' observations and both players' legal-move lists.</p>
 <p>That gap is the project's first open item, and the fix is to move the default observation into

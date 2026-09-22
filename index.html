@@ -1015,15 +1015,19 @@ replace.</p>
 <li>
 <p><strong>A lot of battles, on a normal computer</strong></p>
 <hr />
-<p>On a four core laptop with 8 GB of RAM: about 16,100 battles an hour on one worker process,
-about 65,200 on six. A run that needs a million battles is an overnight job, not a fortnight.</p>
+<p>Six worker processes give about four times what one does, and the fall-off past four is a
+four core laptop running out of cores. On that laptop, with other things running, one
+worker did about 16,100 three-minute battles an hour. Treat any absolute rate here as an
+illustration; the ratio is the part that should hold for you.</p>
 </li>
 <li>
 <p><strong>Moves that are always legal</strong></p>
 <hr />
-<p>Every observation tells your bot which of the 2305 card and tile moves it can actually play
-right now. On the first step of a battle, 691 of the 2305 are. Your bot never wastes a
-decision on a card it cannot afford.</p>
+<p>Every observation tells your bot which of the 2305 card and tile moves it can actually
+play right now. How many that is depends on the deck and on what is in hand: on the first
+step of the Try-it battle it is 1605 for each player, and with randomly dealt decks it was
+691 for one seat and 1259 for the other. Your bot never wastes a decision on a card it
+cannot afford.</p>
 </li>
 <li>
 <p><strong>A battle you can watch, not guess at</strong></p>

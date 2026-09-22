@@ -1059,7 +1059,7 @@ tells it where to walk.</p>
 <p>You need the install from <a href="../../install/">Install</a> first, up to and including the engine build.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">royalesim</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">deck</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archers"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">,</span> <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Arrows"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span> <span class="s2">"Goblins"</span><span class="p">]</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">deck</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archers"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">,</span> <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Arrows"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span> <span class="s2">"Zap"</span><span class="p">]</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">b</span> <span class="o">=</span> <span class="n">royalesim</span><span class="o">.</span><span class="n">Battle</span><span class="p">(</span><span class="n">card_names</span><span class="o">=</span><span class="n">deck</span><span class="p">,</span> <span class="n">slot_of_k</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]])</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">b</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">decks</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">))]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">start_tick</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="n">elixir_milli</span><span class="o">=</span><span class="p">[</span><span class="mi">10_000</span><span class="p">,</span> <span class="mi">10_000</span><span class="p">],</span> <span class="n">tower_hp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spawns</span><span class="o">=</span><span class="p">[])</span>
@@ -1095,19 +1095,22 @@ RoyaleSim folder. It plays a random three-minute match, runs five checks on it, 
 self-contained HTML page you can scrub tick by tick. The whole thing took 2.07 seconds here, and
 all five checks came back green:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>winner: RED
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>crowns: [0, 2]
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>final_tick: 3600
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>troops: 61
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>crowns: [2, 3]
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>final_tick: 2968
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>troops: 46
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>[OK ] determinism: re-simulated hash-for-hash on a fresh engine
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>[OK ] vacuity: 3601 frames (floor 50); blue accepted 24 deploys; red accepted 23 deploys; ...
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>[OK ] vacuity: 2969 frames (floor 50); blue accepted 18 deploys; red accepted 17 deploys; ...
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>[OK ] arena: trace grid == data/derived/arena.json (64x36 half-cells)
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>[OK ] dry: 138 of 37819 ground entity positions on water (the live game allows it; bound 5 %)
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>[OK ] render: battle.html, 2440450 bytes, 3601 frames, self-contained
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>[OK ] dry: 74 of 27489 ground entity positions on water (the live game allows it; bound 5 %)
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>[OK ] render: battle.html, 1841257 bytes, 2969 frames, self-contained
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>EVERY GATE GREEN.
 </code></pre></div>
-<p>You get that battle, not a different one: <code>--seed</code> defaults to 1. Only the timings move, so a
-difference in the result is a signal rather than noise. Pass <code>--seed N</code> for another battle and
-<code>--open</code> to open the page in a browser.</p>
+<p>Expect different numbers from these. The tool deals each side a random deck out of the card
+table your clone built, and the run above used the 15.535 table, so a <code>--vintage 2018</code> install
+plays a different battle. <code>--seed</code> defaults to 1, so one checkout repeats its own battle;
+<code>--seed N</code> gives another, and <code>--open</code> opens the page in a browser.</p>
+<p>The five <code>[OK ]</code> lines are the part that is the same everywhere, and they are what the tool is
+for.</p>
 <h2 id="when-you-would-touch-it">When you would touch it<a class="headerlink" href="#when-you-would-touch-it" title="Permanent link">&para;</a></h2>
 <p>Four reasons, and they are all "the battle itself is wrong or missing something".</p>
 <p><strong>A card behaves wrong.</strong> A unit walks somewhere it should not, a spell does the wrong damage, a
@@ -1168,35 +1171,41 @@ about rewards, so you can change a reward without recompiling anything.</p>
 <p>There is a piece of arithmetic here worth keeping. A three-minute battle is 3,600 ticks, and an
 hour is 3,600 seconds. So a ticks-per-second figure is also a battles-per-hour figure for one
 process. 51,582 ticks a second is 51,582 whole battles an hour on one core.</p>
-<p>RoyaleSim's README measures the same thing across worker processes:</p>
+<p>RoyaleSim's README measures how that scales across worker processes. The scaling is the part
+that should hold on your machine:</p>
 <table>
 <thead>
 <tr>
 <th>workers</th>
-<th>battles / hour</th>
+<th>speed-up over one worker</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>16,100</td>
+<td>1.00x</td>
 </tr>
 <tr>
 <td>2</td>
-<td>31,100</td>
+<td>1.93x</td>
 </tr>
 <tr>
 <td>4</td>
-<td>49,300</td>
+<td>3.06x</td>
 </tr>
 <tr>
 <td>6</td>
-<td>65,200</td>
+<td>4.05x</td>
 </tr>
 </tbody>
 </table>
-<p>What that means for you: a bot that needs a million battles is a fifteen-hour run, not a
-fortnight. You can start one before bed.</p>
+<p>The fall-off past four workers is four cores running out. The absolute rates behind those
+ratios, on that laptop with other programs running, were about 16,100 battles an hour on one
+worker and 65,200 on six. Treat those as an illustration: the same measurement on this hardware
+has moved by a factor of two inside one evening.</p>
+<p>What that means for you: overnight rather than a fortnight, on a laptop, for a run of the size
+people usually reach for. Nobody has trained a bot yet, so that is arithmetic on the battle rate
+rather than experience.</p>
 <p><strong>Accuracy.</strong> Real matches are replayed in the engine and compared tick by tick. Leaving the six
 towers out, because towers do not move and counting them flatters the result: a unit is within a
 quarter of a tile of where it really was 49.4% of the time, and its hitpoints are exactly right
