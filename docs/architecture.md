@@ -214,7 +214,7 @@ started from managed about 20 ticks/s on a full board of 156 entities, real time
 ## Tests
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 315 passed, 6 skipped, 5 failed (2026-09-21)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 323 passed, 6 skipped, 5 failed (2026-09-21)
 ..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
 ```
 
