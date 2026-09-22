@@ -179,7 +179,7 @@ Two more reasons a viewer stays empty, in the order worth checking:
 **What you see.**
 
 ```
-ImportError: royalesim is not built (No module named 'royalesim'); run `maturin develop --release` in the sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active (README.md, Setup)
+ImportError: royalesim is not built (No module named 'royalesim'); run `maturin develop --release` in the sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active. The card data has to be extracted BEFORE that build; the "Install" section of the RoyaleGym README.md has both steps in order.
 ```
 
 **What it means.** Exactly what it says, with one wrong turning in it. The Rust engine was never
@@ -187,12 +187,11 @@ built into the venv you are running, or you are running a different Python from 
 into. Note that `import royalegym` itself still works. The package is designed to import without
 the engine.
 
-!!! note "The message points at the wrong README"
-    It ends `(README.md, Setup)`. The error comes from `royalegym`, so you will look in
-    RoyaleGym's README, and that section is called **Install**. RoyaleSim's is called Install
-    too, and RoyaleSim's is the one you actually want, because the build happens there. The
-    only **Setup** heading in the project is in RoyaleViser's README, which is the repo this
-    error has least to do with. The message is being corrected.
+!!! tip "Read the middle clause, not just the command"
+    The part people skip is that the card data has to be extracted **before** the build.
+    `maturin develop --release` on its own succeeds and hands you an engine with no cards,
+    which fails later and further away. If you have already built, extract the data and build
+    again.
 
 **What to do.** Either build it, which is the `maturin develop --release` line in problem 1, or
 carry on without it for now:
