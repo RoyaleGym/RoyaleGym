@@ -221,7 +221,7 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="pytest" src="https://img.shields.io/badge/pytest-471%20passed%2C%206%20skipped-2ea043?style=flat-square">
+  <img alt="pytest" src="https://img.shields.io/badge/pytest-486%20passed%2C%206%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
@@ -247,6 +247,12 @@ Working:
   ([`docs/architecture.md`](docs/architecture.md)).
 - Recording, verification, the replay page and the viewer stream. None of them are in the tick
   loop.
+- Six scripted opponents to train against, from one that never plays a card to one that
+  saves elixir before committing. `ladder()` returns them. Their order is a measurement,
+  and what it measures is smaller than it looks: over a round robin of 40 games a pairing,
+  only two orderings hold, and the three middle rungs cannot be told apart. That is
+  written down in `royalegym/opponents.py` rather than smoothed over, because a ladder in
+  the wrong order tells you a bot improved when it only moved to an easier opponent.
 - An answer to "is this bot better than that one". `evaluate` plays the pair on both seats,
   half the games each way, and reports the win rate with a confidence interval, so a 55-45
   result over 100 games reads as "too close to call" rather than as a win. It also counts a

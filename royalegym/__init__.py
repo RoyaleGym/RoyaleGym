@@ -19,6 +19,9 @@ ClashSelfPlayVecEnv (vectorised self-play). Engine contract: protocol.Engine;
 MockEngine is the pure-Python reference implementation; RustEngine
 (rust_engine.py) drives the compiled Rust core through the same protocol.
 
+Opponents: selfplay.py has the trivial two (noop, random); opponents.py adds four
+scripted strategies and ``ladder()``, whose ordering is measured rather than assumed.
+
 Comparing bots: evaluate.py plays two Opponents head to head on both seats and
 reports a win rate with a Wilson interval, so "A is better" is a claim with an error
 bar rather than a percentage. selfplay.py's OpponentPool keeps Elo across many such
@@ -53,6 +56,13 @@ from .obs import (
     SpatialObsBuilder,
     Variability,
     measure_variability,
+)
+from .opponents import (
+    DefendOpponent,
+    FirstAffordableOpponent,
+    PatientOpponent,
+    PushOpponent,
+    ladder,
 )
 from .protocol import Engine
 from .replay import ReplayRecorder, load_trace, save_trace, verify_trace
@@ -136,11 +146,13 @@ __all__ = [
     "CrownReward",
     "DefaultStateMutator",
     "DefaultStateSetter",
+    "DefendOpponent",
     "DoneCondition",
     "ElixirLeakPenalty",
     "ElixirTradeReward",
     "Engine",
     "EntityListObsBuilder",
+    "FirstAffordableOpponent",
     "FirstCrownCondition",
     "GameOverCondition",
     "HalfTileActionParser",
@@ -152,8 +164,10 @@ __all__ = [
     "NoopOpponent",
     "ObsBuilder",
     "OpponentPool",
+    "PatientOpponent",
     "PlacementDepthReward",
     "PlacementOracle",
+    "PushOpponent",
     "RandomLegalOpponent",
     "ReplayRecorder",
     "Reveal",
@@ -181,6 +195,7 @@ __all__ = [
     "core_available",
     "default_reward",
     "evaluate",
+    "ladder",
     "load_trace",
     "make_gym_vec_env",
     "measure_variability",

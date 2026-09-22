@@ -278,6 +278,34 @@ def test_every_image_the_readme_shows_is_actually_there() -> None:
     assert not missing, f"README.md shows images that do not exist: {missing}"
 
 
+def readme_links() -> list[str]:
+    """Every relative markdown link target in README.md, without its anchor."""
+    text = README.read_text(encoding="utf-8")
+    out = []
+    for target in re.findall(r"\]\(([^)\s]+)\)", text):
+        if target.startswith(("http", "#", "mailto:")):
+            continue
+        out.append(target.split("#", 1)[0])
+    return [t for t in out if t]
+
+
+def test_every_file_the_readme_links_to_exists() -> None:
+    """A link to a page that is not there, caught before a reader clicks it.
+
+    The README gained links into ``docs/site/pages/`` on 2026-09-22, which is where the
+    tutorial lives -- 568 lines that nothing in the repository had ever pointed at, so a
+    reader cloning from GitHub saw one snippet and never found it. Those links are worth
+    keeping alive.
+    """
+    missing = [t for t in readme_links() if not (REPO / t).exists()]
+    assert not missing, f"README.md links to files that do not exist: {missing}"
+    # Vacuity: it really is reading links, and the tutorial is among them.
+    assert any("first-bot" in t for t in readme_links()), (
+        "the README no longer links to the tutorial, which is the longest piece of "
+        "writing in the repository and was unreachable until it did"
+    )
+
+
 def test_every_image_the_readme_shows_is_described() -> None:
     """Empty alt means a screen reader is told nothing at all.
 
