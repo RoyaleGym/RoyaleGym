@@ -99,6 +99,20 @@ asserts exactly that.
   timer reads 0 between ticks, so the plane would be a constant zero no coverage
   guard could check. `knockback_ticks` survives as a per-entity feature.
 
+### An open question: stun is nearly invisible at 500 ms decisions
+
+A Zap's stun is 10 ticks and a decision is 10 ticks. Measured on the Rust engine: a
+Zap cast at tick k of a decision leaves `stun_ticks` = k at the **one** observation
+that follows (1, 4, 6, 10 for k = 0, 3, 5, 9) and 0 at every observation after. So
+`own_stunned` / `enemy_stunned` fire for at most one step per Zap, and the entity
+row's `stun_ticks / 100` reads 0.01 to 0.10 for that one step.
+
+The features stay as "is stunned **now**" — that is what the engine reports, and it is
+what the seat-flip and cell-by-cell tests can check exactly. "Was stunned since the
+last observation" is the feature a policy could actually use, but it is a different
+thing: it depends on the decision rate and not only on the state. Recorded here rather
+than changed quietly.
+
 ## 3. `mask_planes`, int8 `[4, 32, 18]` — both builders
 
 The flat `action_mask` with index 0 (the no-op) removed, reshaped. The action space

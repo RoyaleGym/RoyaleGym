@@ -70,6 +70,21 @@ SPELLS AND STATUS EFFECTS
     channel. Under the shipped calibration knockback.DURATION_MS = 0 the push is
     instant and the timer is 0 between ticks, so a channel for it would be constant
     zero and unverifiable by any coverage guard.
+
+    STUN IS ALMOST INVISIBLE AT THE DEFAULT DECISION RATE, and that is a measured
+    fact rather than a guess. A Zap's stun is 10 ticks; a decision is 10 ticks
+    (500 ms at TICK_MS 50). Measured on the Rust engine, a Zap cast at tick k of a
+    decision leaves stun_ticks = k (1, 4, 6, 10 for k = 0, 3, 5, 9) at the ONE
+    observation that follows, and 0 at every observation after it. So
+    ``own_stunned`` / ``enemy_stunned`` fire for at most one step per Zap, and the
+    per-entity ``stun_ticks / 100`` feature reads between 0.01 and 0.10 for that one
+    step. A policy at 500 ms decisions can barely perceive a stun.
+    The features are left as "is stunned NOW", which is what the engine reports and
+    what the seat-flip and cell-by-cell tests can check exactly. "Was stunned since
+    the last observation" would be the feature a policy could actually use, but it
+    is a different thing -- it depends on the decision rate, not only on the state --
+    so it is recorded here as an open question rather than taken quietly.
+    (Measured with Simulator 1 on the 2026-09-21 build.)
 """
 
 from __future__ import annotations
