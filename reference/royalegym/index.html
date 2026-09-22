@@ -2065,6 +2065,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" SymmetricRustEngine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.SymmetricRustEngine.symmetry_problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;symmetry_problems
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.SymmetricRustEngine.symmetry_report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;symmetry_report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2105,6 +2133,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;territory_differences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.rotation_probe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;rotation_probe
       
     </span>
   </a>
@@ -3893,6 +3932,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" SymmetricRustEngine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.SymmetricRustEngine.symmetry_problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;symmetry_problems
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.SymmetricRustEngine.symmetry_report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;symmetry_report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -3933,6 +4000,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;territory_differences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.rotation_probe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;rotation_probe
       
     </span>
   </a>
@@ -8327,6 +8405,48 @@ correctly reported an asymmetry that is real and intended.</p>
 
 
 
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.rust_engine.SymmetricRustEngine.symmetry_problems" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">symmetry_problems</span><span class="p">()</span></code>
+
+<a href="#royalegym.rust_engine.SymmetricRustEngine.symmetry_problems" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Where this vehicle is NOT a rotation mirror, measured. Empty means it is.</p>
+<p>Not raised from <code>__init__</code> on purpose. Some callers want this class for its
+determinism rather than its symmetry -- the spawn-ordinal parity gates, for
+instance -- and refusing to construct would fail six tests whose claim has
+nothing to do with seats. The check belongs where the claim is made:
+<code>rotation_divergence</code> calls it before measuring anything, and one test
+asserts it is empty so the state of the vehicle is visible on its own.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.rust_engine.SymmetricRustEngine.symmetry_report" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">symmetry_report</span><span class="p">()</span></code>
+
+<a href="#royalegym.rust_engine.SymmetricRustEngine.symmetry_report" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p><code>symmetry_problems</code> with what to do about it. Empty when there is nothing.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -8435,6 +8555,36 @@ not a pass: the comparison that skipped still has to run somewhere.</p>
 tower k order, mapped to protocol slots through <code>slot_of_k</code>), never the
 adapter's own copy: a check that compares the Python rules with themselves
 cannot fail.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.rust_engine.rotation_probe" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">rotation_probe</span><span class="p">(</span><span class="n">engine</span><span class="p">,</span> <span class="n">tiles</span><span class="o">=</span><span class="n">PROBE_TILES</span><span class="p">)</span></code>
+
+<a href="#royalegym.rust_engine.rotation_probe" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Deploy each multi-unit card at the same own-frame tile from both seats; report drift.</p>
+<p>THE DIRECT MEASUREMENT of the property a rotation gate assumes. Both seats command
+the same tile in their own frame, so after one tick the two groups must be exact
+rotations of each other. Anything else means some system under the engine is keyed
+on the seat or on the absolute arena frame.</p>
+<p>Multi-unit cards only, because a single unit lands on the tap and a formation is
+laid out AROUND it -- which is where a per-side offset shows up. Troops only:
+a building or a spell does not have a ring.</p>
+<p>This exists because the alternative failed twice. Deciding from a list of which
+keys are asymmetry sources means the list is right only until the engine gains a
+key, and both times it gained one the gates went red pointing at the wrong thing --
+at the observation builder, and at the engine. Measuring the property instead is
+immune to a key nobody has named yet.</p>
 
 
     </div>

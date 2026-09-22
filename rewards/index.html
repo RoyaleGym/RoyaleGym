@@ -1114,12 +1114,12 @@ below it is the output that came back.</p>
 <li>
 <p><strong>2. Crowns</strong></p>
 <hr />
-<p>What you actually want. It paid out on 1 step out of 360.</p>
+<p>What you actually want. It paid out on 2 steps out of 480, and they cancelled.</p>
 </li>
 <li>
 <p><strong>3. Tower damage</strong></p>
 <hr />
-<p>The same goal, measured more often. It paid out on 50 steps out of 360.</p>
+<p>The same goal, measured more often. It paid out on 56 steps out of 480.</p>
 </li>
 <li>
 <p><strong>4. Both together</strong></p>
@@ -1218,7 +1218,7 @@ rung on this page, so keep the file.</p>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">engine</span> <span class="o">=</span> <span class="n">RustEngine</span><span class="p">()</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">card_id</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()}</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">deck</span> <span class="o">=</span> <span class="p">[</span><span class="n">by_name</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archer"</span><span class="p">,</span> <span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Goblins"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Zap"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">play</span><span class="p">(</span><span class="n">reward_fn</span><span class="p">):</span>
@@ -1246,10 +1246,10 @@ rung on this page, so keep the file.</p>
 <a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>
 <a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="n">play</span><span class="p">(</span><span class="n">ZeroReward</span><span class="p">())</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ZeroReward: blue total +0.000  over 360 steps, 0 of them non-zero
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ZeroReward: blue total +0.000  over 480 steps, 0 of them non-zero
 </code></pre></div>
-<p>Three lines of your own code and it ran a whole match. 360 steps is one decision every
-half second for three minutes of game time.</p>
+<p>Three lines of your own code and it ran a whole match. 480 steps is one decision every half
+second, for three minutes of game time plus the sixty seconds of overtime this battle went to.</p>
 <p>Name the eight cards, as the program does. A card id is only a position in the
 catalogue and positions move between card tables, so the same number is not the same
 card on every machine.</p>
@@ -1265,11 +1265,13 @@ to the end of the file from rung 1.</p>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">play</span><span class="p">(</span><span class="n">CrownReward</span><span class="p">())</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>CrownReward: blue total +1.000  over 360 steps, 1 of them non-zero
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>CrownReward: blue total +0.000  over 480 steps, 2 of them non-zero
 </code></pre></div>
-<p>That is the shipped <code>CrownReward</code>, near enough line for line. Notice the second half of
-the output. One tower fell in this battle, so out of 360 decisions exactly one got a
-number that was not zero. The other 359 told the bot nothing at all.</p>
+<p>That is the shipped <code>CrownReward</code>, near enough line for line, and this battle makes its
+weakness unusually visible. Two towers fell, one each way, so exactly two of 480 decisions
+got a number that was not zero. The other 478 told the bot nothing at all. And because the
+two payments were +1 and -1, the total for the whole match is zero. A bot reading only this
+signal cannot tell this battle apart from one in which nothing happened.</p>
 <p>That is the problem with scoring only the thing you care about. It is correct and it is
 almost silent.</p>
 <h2 id="rung-3-reward-damage-to-the-enemy-towers">Rung 3: reward damage to the enemy towers<a class="headerlink" href="#rung-3-reward-damage-to-the-enemy-towers" title="Permanent link">&para;</a></h2>
@@ -1290,7 +1292,7 @@ something you can pay out on every step. Add this next.</p>
 <a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
 <a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="n">play</span><span class="p">(</span><span class="n">TowerDamageReward</span><span class="p">())</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>TowerDamageReward: blue total +0.792  over 360 steps, 50 of them non-zero
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>TowerDamageReward: blue total -0.360  over 480 steps, 56 of them non-zero
 </code></pre></div>
 <p>Same battle, same bots, and now 50 steps carry a number instead of 1. That is what
 people mean when they call a reward <em>dense</em>. The bot gets told it is getting warmer
@@ -1310,11 +1312,12 @@ should be, and the number would also change whenever your card table changes.</p
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">play</span><span class="p">(</span><span class="n">shaped</span><span class="p">)</span>
 <a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"blue's last step, term by term:"</span><span class="p">,</span> <span class="n">shaped</span><span class="o">.</span><span class="n">terms_for</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>CombinedReward: blue total +1.279  over 360 steps, 51 of them non-zero
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>blue's last step, term by term: {'WinLossReward': 1.0, 'CrownReward': 0.0, 'TowerDamageReward': 0.0}
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>CombinedReward: blue total -1.036  over 480 steps, 57 of them non-zero
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>blue's last step, term by term: {'WinLossReward': -1.0, 'CrownReward': 0.0, 'TowerDamageReward': 0.0}
 </code></pre></div>
-<p><code>WinLossReward</code> pays +1 the moment the battle is won and nothing before that. That is
-the actual objective. The other two terms exist to give the bot something to go on in
+<p><code>WinLossReward</code> pays +1 the moment the battle is won, -1 when it is lost, and nothing
+before that. Blue loses this one, which is why the last step reads -1.0 and why every total
+on this page from here down is negative. That is the actual objective. The other two terms exist to give the bot something to go on in
 the meantime, which is why their weights are small.</p>
 <p><code>terms_for(seat)</code> gives you the breakdown of that seat's last reward. Log it. When a
 bot starts doing something strange, the breakdown usually says which term is paying for
@@ -1370,7 +1373,7 @@ reward function at all.</p>
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">play</span><span class="p">(</span><span class="n">default_reward</span><span class="p">())</span>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">default_reward</span><span class="p">()</span><span class="o">.</span><span class="n">config</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)[:</span><span class="mi">400</span><span class="p">])</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>CombinedReward: blue total +1.277  over 360 steps, 131 of them non-zero
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>CombinedReward: blue total -1.048  over 480 steps, 132 of them non-zero
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>{
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>  "terms": [
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    {
@@ -1396,7 +1399,7 @@ reward function at all.</p>
 <a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a>    {
 <a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a>      "class": "ElixirTradeReward
 </code></pre></div>
-<p>131 non-zero steps out of 360, because <code>ElixirTradeReward</code> pays out every time anything
+<p>132 non-zero steps out of 480, because <code>ElixirTradeReward</code> pays out every time anything
 dies. The JSON is cut off at 400 characters by the <code>[:400]</code> in the program, which is why
 the last line stops mid word. It is the whole recipe, and it is how the reward ends up
 written into a checkpoint. <code>ClashParallelEnv.config()</code> carries the same thing under
@@ -1428,8 +1431,8 @@ that loses to everything else.</p>
 <a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="n">both_seats</span><span class="p">(</span><span class="n">CrownReward</span><span class="p">())</span>
 <a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="n">both_seats</span><span class="p">(</span><span class="n">TowerDamageReward</span><span class="p">())</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>CrownReward: blue +1.000  red -1.000  sum +0.000
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>TowerDamageReward: blue +0.792  red -0.792  sum +0.000
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>CrownReward: blue +0.000  red +0.000  sum +0.000
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>TowerDamageReward: blue -0.360  red +0.360  sum +0.000
 </code></pre></div>
 <p>Every shipped term except <code>ElixirLeakPenalty</code> is meant to add to zero like this.
 <code>ElixirLeakPenalty</code> is deliberately the exception: both players really can waste elixir at

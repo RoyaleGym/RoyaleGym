@@ -1044,7 +1044,7 @@ page as a constant of the project.</p>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">engine</span> <span class="o">=</span> <span class="n">RustEngine</span><span class="p">()</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">card_id</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()}</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">deck</span> <span class="o">=</span> <span class="p">[</span><span class="n">by_name</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archer"</span><span class="p">,</span> <span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Goblins"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Zap"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">env</span> <span class="o">=</span> <span class="n">ClashParallelEnv</span><span class="p">(</span><span class="n">engine</span><span class="o">=</span><span class="n">engine</span><span class="p">,</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                       <span class="n">state_mutator</span><span class="o">=</span><span class="n">DefaultStateMutator</span><span class="p">(</span><span class="n">decks</span><span class="o">=</span><span class="p">[</span><span class="n">deck</span><span class="p">,</span> <span class="n">deck</span><span class="p">]))</span>
@@ -1061,7 +1061,7 @@ page as a constant of the project.</p>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>action_mask  shape (2305,)        dtype int8
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>mask_planes  shape (4, 32, 18)    dtype int8
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>cards in this catalogue: 95
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>legal actions right now: 1259 of 2305
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>legal actions right now: 1605 of 2305
 </code></pre></div>
 <p>The deck is named card by card on purpose. With no deck named, each side is dealt eight
 random cards out of your catalogue, so the same seed gives a different battle on a
@@ -1150,7 +1150,7 @@ on tile <code>(x, y)</code>, in your own frame.</p>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">engine</span> <span class="o">=</span> <span class="n">RustEngine</span><span class="p">()</span>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">card_id</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()}</span>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">deck</span> <span class="o">=</span> <span class="p">[</span><span class="n">by_name</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archer"</span><span class="p">,</span> <span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Goblins"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Zap"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
 <a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">env</span> <span class="o">=</span> <span class="n">ClashParallelEnv</span><span class="p">(</span><span class="n">engine</span><span class="o">=</span><span class="n">engine</span><span class="p">,</span>
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>                       <span class="n">state_mutator</span><span class="o">=</span><span class="n">DefaultStateMutator</span><span class="p">(</span><span class="n">decks</span><span class="o">=</span><span class="p">[</span><span class="n">deck</span><span class="p">,</span> <span class="n">deck</span><span class="p">]))</span>
@@ -1197,13 +1197,16 @@ half tile resolution, so the trade can be measured rather than argued about.</p>
 and waiting is just picking index 0.</p>
 <h2 id="the-legality-mask-and-why-it-saves-you-so-much">The legality mask, and why it saves you so much<a class="headerlink" href="#the-legality-mask-and-why-it-saves-you-so-much" title="Permanent link">&para;</a></h2>
 <p>The second half of that program printed this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>step   1  legal actions  1259  elixir 5.18
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>step  20  legal actions     1  elixir 2.57
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>step  60  legal actions   459  elixir 3.71
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>step   1  legal actions  1605  elixir 5.00
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>step  20  legal actions     1  elixir 2.39
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>step  60  legal actions   459  elixir 3.54
 </code></pre></div>
 <p>Read the middle line. At step 20 exactly one action was legal, and that one is the wait
-action. The player had 2.57 elixir and nothing in hand cost that little. Without a mask
-your bot would spend thousands of steps discovering that by being refused.</p>
+action. The player had 2.39 elixir and the four cards in hand were Giant, Cannon, Minions
+and Archer, the cheapest of them 3. The deck does hold a 2 cost card, Zap, and it was not in
+hand at that moment, which is the whole point: what you can afford depends on the four cards
+you happen to be holding, not on the eight you chose. Without a mask your bot would spend
+thousands of steps discovering that by being refused.</p>
 <p>The count moves with your elixir, with your hand, with the towers still standing and
 with the buildings already on the board. The mask covers elixir, which half of the
 arena you may play in, water, the river, the footprint of buildings already down, and
@@ -1211,7 +1214,7 @@ the rectangle around each enemy crown tower that is still alive.</p>
 <p>For comparison, RoyaleGym's
 <a href="https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/architecture.md">architecture.md</a>
 reports 691 legal actions of 2305 on the first step with default random decks on the
-Rust engine, and 1235 on <code>MockEngine</code>. This page got 1259 with the named deck above.
+Rust engine, and 1235 on <code>MockEngine</code>. This page got 1605 with the named deck above.
 Different deck, different card table, different count. The number is not a property of
 the game.</p>
 <p>Two details worth trusting the project for:</p>
@@ -1245,7 +1248,7 @@ and the important part is how it is done.</p>
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">engine</span> <span class="o">=</span> <span class="n">RustEngine</span><span class="p">()</span>
 <a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">card_id</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()}</span>
 <a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">deck</span> <span class="o">=</span> <span class="p">[</span><span class="n">by_name</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archer"</span><span class="p">,</span> <span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Goblins"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Zap"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
 <a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
 <a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
 <a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">widths</span><span class="p">(</span><span class="n">builder</span><span class="p">):</span>
