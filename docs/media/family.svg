@@ -32,8 +32,8 @@
 <rect x="1340" y="440" width="400" height="150" rx="16" fill="#1e2735" stroke="#3a4a63" stroke-width="2" stroke-dasharray="10 8"/>
 <text x="1368" y="492" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#e8edf5">RoyaleLive</text>
 <text x="1368" y="528" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#e8edf5">the client instrument</text>
-<text x="1368" y="560" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">records real battles (private)</text>
+<text x="1368" y="560" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">records ground-truth traces</text>
 <rect x="1608" y="458" width="112" height="30" rx="15" fill="#18202f" stroke="#3a4a63"/>
-<text x="1664.0" y="479" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#9aa7bd">private</text>
+<text x="1664.0" y="479" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#9aa7bd">traces</text>
 <text x="60" y="680" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">One workspace folder, one venv, five sibling repos. Arrows point at what each one uses.</text>
 </svg>
