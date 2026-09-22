@@ -41,10 +41,12 @@ from __future__ import annotations
 
 import csv
 import enum
+import hashlib
 import json
 import os
 from collections.abc import Sequence
 from functools import lru_cache
+from math import gcd
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
@@ -933,3 +935,160 @@ def mirror_state(arena: Arena, s: BattleState) -> BattleState:
 @lru_cache(maxsize=1)
 def default_calibration() -> Calibration:
     return Calibration.load()
+
+
+def calibration_values(raw: dict[str, Any]) -> dict[str, Any]:
+    """Every ``section.KEY -> value`` in a calibration document (prose excluded)."""
+    out: dict[str, Any] = {}
+    for section, entries in raw.items():
+        if not isinstance(entries, dict):
+            continue
+        for key, entry in entries.items():
+            if isinstance(entry, dict) and "value" in entry:
+                out[f"{section}.{key}"] = entry["value"]
+    return out
+
+
+def calibration_digest(calibration: Calibration | None = None) -> str:
+    """A short hash of every calibration VALUE, for a checkpoint to pin.
+
+    Values only, so reworded prose or a changed ``status`` does not invalidate a
+    checkpoint while a changed constant does. ``rust_engine.build_digest`` is the
+    same hash over the data the compiled engine was built with, so a checkpoint
+    that carries both says whether the two agreed when it was written.
+    """
+    cal = calibration if calibration is not None else default_calibration()
+    blob = json.dumps(calibration_values(cal.raw), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
+# --------------------------------------------------------------------------
+# The elixir bar's arithmetic, in one place
+# --------------------------------------------------------------------------
+
+
+class ElixirLaw(msgspec.Struct, frozen=True):
+    """How an elixir bar fills, as integers, from calibration.json and globals.csv.
+
+    WHY IT IS HERE AND NOT IN THE ENGINE
+        ``obs.py`` counts the opponent's elixir the way a player does -- from the
+        plays it sees and the regeneration rate everyone knows -- and the count is
+        only worth having if it is EXACT against the bar the engine keeps. Two
+        copies of the law would be two chances to drift, so this is the one copy;
+        the engines derive their own from the same calibration keys and
+        tests/test_env_obs.py holds this against a played-out MockEngine battle,
+        tick by tick, including the seeding round trip.
+
+    THE FINE UNIT
+        Milli-elixir cannot carry the law: at TICK_MS 50 and MANA_REGEN_MS_1X
+        28000 a tick is worth 17.857... milli, so a milli-space sum drifts within
+        one match. One elixir is ``scale`` = lcm(regen 1x, regen 2x) fine units
+        instead, which makes the per-tick gain an integer under both rates
+        (checked at load). ``elixir_milli`` on the wire is ``fine * 1000 //
+        scale``, a floor, so ``from_milli`` inverts it exactly only while
+        ``scale`` is a multiple of 1000 (``seed_is_exact``).
+
+    THE RATE
+        1x below ``regular_ticks - speedup_ticks``, 2x from there on, where the
+        threshold is globals.csv MANA_SPEED_UP_WHEN_REMAINING_SECONDS (not in
+        calibration.json yet; MockEngine reads the same row). Overtime is always
+        past the threshold under the shipped numbers, so the flag never decides
+        the rate on its own; it is taken as 2x anyway rather than relying on that.
+    """
+
+    scale: int  # fine units per elixir
+    gain_1x: int  # fine units gained per tick at 1x
+    gain_2x: int
+    cap_fine: int  # MAX_MANA in fine units
+    tick_ms: int
+    speedup_ticks: int  # ticks before the end of regulation at which 2x starts
+
+    @classmethod
+    def load(cls, calibration: Calibration | None = None) -> ElixirLaw:
+        cal = calibration if calibration is not None else default_calibration()
+        r1 = cal.int("match.MANA_REGEN_MS_1X")
+        r2 = cal.int("match.MANA_REGEN_MS_2X")
+        tick_ms = cal.int("time.TICK_MS")
+        max_mana = cal.int("match.MAX_MANA")
+        scale = r1 * r2 // gcd(r1, r2)
+        gains = {}
+        for rate, regen in ((1, r1), (2, r2)):
+            per_tick = tick_ms * max_mana * scale // regen
+            if per_tick * regen != tick_ms * max_mana * scale:
+                raise ValueError(f"elixir gain per tick at {rate}x is not exact")
+            gains[rate] = per_tick
+        speedup_s = load_globals_csv().get("MANA_SPEED_UP_WHEN_REMAINING_SECONDS", (None, None))[0]
+        if speedup_s is None:
+            raise KeyError("globals.csv lacks MANA_SPEED_UP_WHEN_REMAINING_SECONDS")
+        return cls(
+            scale=scale,
+            gain_1x=gains[1],
+            gain_2x=gains[2],
+            cap_fine=max_mana * scale,
+            tick_ms=tick_ms,
+            speedup_ticks=-(-speedup_s * 1000 // tick_ms),
+        )
+
+    @property
+    def seed_is_exact(self) -> bool:
+        """Whether ``to_milli(from_milli(m)) == m`` for every reachable m."""
+        return self.scale % 1000 == 0
+
+    def to_milli(self, fine: int) -> int:
+        return fine * 1000 // self.scale
+
+    def from_milli(self, milli: int) -> int:
+        """The engine's own seeding: ``elixir_milli`` back into fine units."""
+        return milli * self.scale // 1000
+
+    def rate_at(self, tick: int, regular_ticks: int, overtime: bool = False) -> int:
+        """The multiplier in force during the tick that runs FROM ``tick``."""
+        if overtime or tick >= regular_ticks - self.speedup_ticks:
+            return 2
+        return 1
+
+    def gain(self, rate: int) -> int:
+        if rate == 1:
+            return self.gain_1x
+        if rate == 2:
+            return self.gain_2x
+        raise ValueError(f"unknown elixir rate {rate}")
+
+    def regen(self, tick_from: int, tick_to: int, regular_ticks: int, overtime: bool) -> int:
+        """Fine units a bar gains over ticks [tick_from, tick_to), ignoring the cap.
+
+        The rate is a step function of the tick, so the interval splits in two at
+        the speed-up threshold instead of being walked tick by tick.
+        """
+        if tick_to <= tick_from:
+            return 0
+        if overtime:
+            return (tick_to - tick_from) * self.gain_2x
+        threshold = regular_ticks - self.speedup_ticks
+        slow = max(0, min(tick_to, threshold) - tick_from)
+        fast = (tick_to - tick_from) - slow
+        return slow * self.gain_1x + fast * self.gain_2x
+
+    def advance(
+        self,
+        fine: int,
+        spent_elixir: int,
+        tick_from: int,
+        tick_to: int,
+        regular_ticks: int,
+        overtime: bool,
+    ) -> tuple[int, int]:
+        """One decision step of a bar: (new fine value, fine units lost to the cap).
+
+        The engine pays accepted commands BEFORE the first tick (``Engine.step``),
+        and regeneration is positive, so clamping once at the end is the same bar
+        as clamping every tick.
+        """
+        raw = fine - spent_elixir * self.scale
+        raw = max(0, raw) + self.regen(tick_from, tick_to, regular_ticks, overtime)
+        return min(self.cap_fine, raw), max(0, raw - self.cap_fine)
+
+
+@lru_cache(maxsize=1)
+def default_elixir_law() -> ElixirLaw:
+    return ElixirLaw.load()
