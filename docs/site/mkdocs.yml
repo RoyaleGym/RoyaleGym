@@ -1,0 +1,118 @@
+# The documentation site for the whole Royale family, not just this repo.
+#
+#   cd RoyaleGym/docs/site
+#   ..\..\..\.venv\Scripts\python -m mkdocs serve      # http://127.0.0.1:8000, live reload
+#   ..\..\..\.venv\Scripts\python -m mkdocs build      # static HTML into _build/
+#   ..\..\..\.venv\Scripts\python -m mkdocs gh-deploy  # publishes to GitHub Pages
+#
+# It lives in RoyaleGym because RoyaleGym is the front door of the project and the
+# organisation is named after it, so a reader who finds one finds the other. Nothing here
+# imports from the sibling repos at build time; where a page needs the detail, it links to
+# that repo's own docs rather than copying them.
+
+site_name: Royale
+site_description: Train a Clash Royale bot. A fast battle engine, the environments to train in, and the viewer to watch it.
+site_url: https://royalegym.github.io/RoyaleGym/
+repo_url: https://github.com/RoyaleGym/RoyaleGym
+repo_name: RoyaleGym
+edit_uri: edit/main/docs/site/pages/
+
+docs_dir: pages
+site_dir: _build
+
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+  palette:
+    # The viewer's own colours, so the site and the screenshots on it agree.
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Follow my system
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+            show_root_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            docstring_style: google
+            filters: ["!^_"]
+
+nav:
+  - Start here: index.md
+  - Install: install.md
+  - Your first bot: first-bot.md
+  - The pieces:
+      - The engine: pieces/engine.md
+      - The environments: pieces/environments.md
+      - The learner: pieces/learner.md
+      - The viewer: pieces/viewer.md
+  - Writing a reward function: rewards.md
+  - What the bot sees and does: observations-and-actions.md
+  - How accurate is the engine: accuracy.md
+  - Troubleshooting: troubleshooting.md
+  - API reference:
+      - royalegym: reference/royalegym.md
+      - royaleviser: reference/royaleviser.md
+      - royalelearn: reference/royalelearn.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/4D2BS5JBHP
+      name: The project Discord
+    - icon: fontawesome/brands/github
+      link: https://github.com/RoyaleGym
+      name: The RoyaleGym organisation
+
+not_in_nav: |
+  /unverified.md

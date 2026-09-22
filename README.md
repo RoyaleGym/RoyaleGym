@@ -1,36 +1,64 @@
 # RoyaleGym
 
-**Reinforcement-learning environments for Clash Royale**: Gymnasium, PettingZoo and batched
-self-play envs over a deterministic battle engine, for people who train agents or write bots.
+<p align="center">
+  <img alt="License" src="https://img.shields.io/github/license/RoyaleGym/RoyaleGym?style=flat-square&color=555">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
+  <a href="docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-in--repo-8957e5?style=flat-square&logo=readthedocs&logoColor=white"></a>
+  <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/discord/1551699576304705647?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2"></a>
+  <img alt="Last commit" src="https://img.shields.io/github/last-commit/RoyaleGym/RoyaleGym?style=flat-square&color=555">
+</p>
 
-<p align="center"><img src="docs/media/whole-battle.svg" width="100%" alt="Video placeholder: a whole battle between two random-legal players, played back in the viewer"></p>
+<p align="center">
+  <img alt="APIs" src="https://img.shields.io/badge/APIs-Gymnasium%20%2B%20PettingZoo-0b7285?style=flat-square">
+  <img alt="Engine" src="https://img.shields.io/badge/engine-Rust%2C%20deterministic-DEA584?style=flat-square&logo=rust&logoColor=white">
+  <img alt="Tick" src="https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square">
+  <img alt="Action space" src="https://img.shields.io/badge/action%20space-2305%20moves-555?style=flat-square">
+  <img alt="Speed" src="https://img.shields.io/badge/env%20steps%2Fs-953%20on%202026--09--21-2ea043?style=flat-square">
+</p>
 
-RoyaleGym is the environment layer of the Royale stack. You write the parts that decide *what*
-to train, in Python: what the policy sees, what its actions mean, what it is rewarded for, how
-an episode starts and when it ends. The battle itself runs in
-[RoyaleSim](https://github.com/RoyaleGym/RoyaleSim), a Rust engine that advances the game in
-fixed 50 ms steps (*ticks*, 20 per battle second) and whose rules are calibrated against
-recordings of real battles. Two random players finish a whole battle in well under a second,
-the policy is told exactly which actions are legal before it picks one, and any battle can be
-recorded, replayed and re-verified bit for bit.
+**Make a Clash Royale bot.** You write a reward function in Python, which says what your bot
+should want. The other four pieces already have a version that ships in the box: what your bot
+sees, what its moves mean, how a match starts, and when it ends. So does the battle.
 
-## What it does
+<p align="center"><img src="docs/media/whole-battle.gif" width="100%" alt="A whole battle between two players choosing at random among their legal moves, played back in RoyaleViser"></p>
+
+You can replace any of those other pieces too. Each one is a small Python class.
+
+The battle itself runs in [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim), a Rust engine.
+It moves the game forward in fixed 50 ms steps. Those steps are called *ticks*, and there are
+20 of them per second of game time. Its rules are calibrated against recordings of real
+battles.
+
+Three things worth knowing before you start:
+
+- Two random players finish a whole battle in well under a second.
+- Your bot is told exactly which moves are legal before it picks one. It never wastes a turn
+  on a card it cannot afford or a tile it is not allowed to deploy on.
+- Any battle can be recorded and re-run later. The recording carries a hash of the board for
+  every tick, and the re-run has to match all of them.
+
+RoyaleGym speaks the two standard Python interfaces for this kind of thing, Gymnasium and
+PettingZoo, so the API is the one those libraries' examples use.
+
+New here? The install steps are under [Install](#install).
+
+## What you get
 
 <table>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.svg" alt=""><br><b>Two APIs, one battle</b><br><sub>PettingZoo with both players (the two seats) as agents, or Gymnasium for one seat against a scripted opponent.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.svg" alt=""><br><b>An exact legality mask</b><br><sub>Each observation says which of the 2305 card-and-tile actions are playable now: 691 of 2305 on the first step.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.svg" alt=""><br><b>Batched self-play</b><br><sub>N battles run as 2N agent slots, so one policy collects both players' experience in a single batch.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.svg" alt=""><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat against a scripted opponent.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.svg" alt=""><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1259 of the 2305 are, for each player.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.svg" alt=""><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
   </tr>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/five-pieces.svg" alt=""><br><b>Five swappable pieces</b><br><sub>Observation, actions, reward, episode start and episode end are each a base class with a shipped default.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/start-anywhere.svg" alt=""><br><b>Start from any position</b><br><sub>A fresh battle, a damaged mid-game, a scripted board or an exact snapshot, mixed by weight as a curriculum.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/record-and-verify.svg" alt=""><br><b>Record it, re-run it, prove it</b><br><sub>A trace (seed, setup, commands, a hash per tick) re-runs on a fresh engine; the battle above: no divergence.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/five-pieces.svg" alt=""><br><b>Five swappable pieces</b><br><sub>What the bot sees, what its moves mean, what it is rewarded for, how a match starts, and when it ends. Each is a small class with a default that ships.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/start-anywhere.svg" alt=""><br><b>Start from any position</b><br><sub>A fresh battle, a damaged mid-game, a board you set up by hand, or an exact saved snapshot. Mix them by weight to build a curriculum.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/record-and-verify.svg" alt=""><br><b>Record it, re-run it, prove it</b><br><sub>A recording holds the seed, the setup, the commands and a hash per tick. Re-run it on a fresh engine and every one of those hashes has to come back the same.</sub></td>
   </tr>
   <tr>
-    <td width="33%" align="center"><img width="100%" src="docs/media/replay-page.svg" alt=""><br><b>A replay page, no server</b><br><sub>A trace becomes one self-contained HTML file you double-click: 3.3 MB and 4130 frames for the battle above.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/battle-in-viewer.png" alt="The Try-it battle at tick 4120 in RoyaleViser"><br><b>Watch it in the viewer</b><br><sub>RoyaleViser draws a trace in a window or watches a running env live; this is the Try-it battle at tick 4120.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt=""><br><b>Hidden information, as in the game</b><br><sub>The opponent's hand is left out and their elixir is counted from the plays you saw, as a player would; revealing either is opt-in and changes the observation's width, and `ClashParallelEnv.config()` records which was used.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/replay-page.svg" alt=""><br><b>A replay page, no server</b><br><sub>A recording becomes one self-contained HTML file you double-click. Nothing to install and nothing to run.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/battle-in-viewer.png" alt="A battle in RoyaleViser"><br><b>Watch it in the viewer</b><br><sub>RoyaleViser draws a recording in a window, or watches a running env live. This is a battle in its window.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt=""><br><b>Hidden information, as in the game</b><br><sub>Your bot does not see the opponent's hand. Their elixir is counted from the plays you watched, the way a player counts it. You can turn either one on, which changes the observation's width, and `ClashParallelEnv.config()` records that you did.</sub></td>
   </tr>
 </table>
 
@@ -40,13 +68,19 @@ Nothing but `royalegym` and numpy; this is the complete program:
 
 ```python
 import numpy as np
-from royalegym import ClashParallelEnv, RustEngine, RandomLegalOpponent
+from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponent, RustEngine)
 
-env = ClashParallelEnv(engine=RustEngine())           # PettingZoo parallel API, both seats
+engine = RustEngine()
+by_name = {c.name: c.card_id for c in engine.cards()}          # look cards up BY NAME
+deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
+                             "Fireball", "Cannon", "Goblins", "Musketeer")]
+
+env = ClashParallelEnv(engine=engine,                          # PettingZoo parallel API, both seats
+                       state_mutator=DefaultStateMutator(decks=[deck, deck]))
 obs, info = env.reset(seed=0)
 rng, policy = np.random.default_rng(0), RandomLegalOpponent(noop_prob=0.7)
 
-while env.agents:                                     # one whole battle
+while env.agents:                                              # one whole battle
     actions = {a: policy.act(obs[a], obs[a]["action_mask"], rng) for a in env.agents}
     obs, reward, terminated, truncated, info = env.step(actions)
 
@@ -55,43 +89,31 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 4129
+winner 0  crowns [1, 0]  tick 3600
 ```
 
-Blue (player 0) took one of Red's princess towers at tick 4129, 3:26 into the match and so in
-overtime. One env step is half a second of game time (10 ticks), so that was 413 decisions per
-player and under a second of wall clock (0.5-0.9 s over four runs on 2026-09-21). Two players
-choosing uniformly among their *legal* moves already make a valid opponent, so there is no
-bootstrap problem when you plug in a real one. The still under "Watch it in the viewer" above is
-this battle at tick 4120.
+That is a whole match. Blue, player 0, took one of Red's princess towers. Tick 3600 is the full
+three minutes, so this battle ended in regulation, on crowns.
 
-## With the rest of the stack
+One env step is half a second of game time, which is 10 ticks. So each player made 360
+decisions. The whole battle takes well under a second of real time, and how far under depends
+entirely on what else your machine is doing. Timed four times each on 2026-09-22, a quiet run
+of this laptop gave 0.24 to 0.30 s and a run with several other jobs on it gave 0.69 to 0.88 s.
+Treat any timing on this page the same way.
 
-<p align="center"><img src="docs/media/family.svg" width="100%" alt="The five Royale repos: RoyaleLearn trains on RoyaleGym, which steps RoyaleSim; RoyaleViser draws traces and streams; RoyaleLive's recordings calibrate RoyaleSim"></p>
+Both players here just pick at random from the moves that are legal. That is already a working
+opponent, so you have something to train against from the first minute.
 
-RoyaleGym is the front door of a five-repo project, and the project is named after it. The
-shape is the one the Rocket League community settled on with RLGym over RocketSim, trained by
-RLGym-PPO and watched in rlviser: a fast deterministic engine
-([RoyaleSim](https://github.com/RoyaleGym/RoyaleSim), Rust), an environment API over it (this
-repo), a training harness on top ([RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn)), a
-viewer beside them ([RoyaleViser](https://github.com/RoyaleGym/RoyaleViser)), and a client
-instrument (RoyaleLive) that records ground-truth traces from the real game, against which the
-engine is calibrated. Dependencies run one way, RoyaleLearn to RoyaleGym to RoyaleSim: the engine knows
-nothing about rewards or observations, this repo knows nothing about PPO.
+Name the deck, and name it card by card. A card id is only a position in the catalogue, and
+positions move between card tables, so the same number is not the same card on every machine.
+If you leave the deck out, each side is dealt eight random cards from whatever catalogue your
+machine built, and the same seed then gives you a different battle from the one above. Look
+cards up by name and your battle matches this one.
 
-| Repo | What it is | To this repo |
-|---|---|---|
-| [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | the battle engine: deterministic, integer-only Rust, its movement rules measured against recordings of real battles | the engine `RustEngine` drives, and the source of the arena and card data this package reads |
-| **RoyaleGym** (this repo) | the environment API: observations, actions, rewards; Gymnasium, PettingZoo and self-play envs | package `royalegym`, which composes the five pieces into the envs |
-| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | the consumer of these envs (designed, not yet written) |
-| [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | the viewer: recordings, engine traces and running environments in its own window | reads this package's traces and its UDP frame stream; the still above is its window |
-| RoyaleLive | the client instrument that records ground-truth traces from the real game | nothing directly: its recordings calibrate RoyaleSim, and the fidelity reaches the envs through the engine |
+## Install
 
-What flows in: the compiled engine module `royalesim`, and RoyaleSim's data files (its table
-of calibrated constants and the derived arena and card tables), found at `../RoyaleSim/data`
-or wherever `ROYALESIM_DATA_DIR` points. What flows out: traces (`.msgpack` or `.json`) for the
-viewer, the replay page and regression tests; one UDP frame per env step for a viewer that is
-listening; and env objects for the learner.
+You need this repo and [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim). Here is the whole
+thing from an empty folder:
 
 ```
 mkdir Royale && cd Royale
@@ -101,106 +123,177 @@ git clone https://github.com/RoyaleGym/RoyaleViser.git
 git clone https://github.com/RoyaleGym/RoyaleLearn.git
 python -m venv .venv                                                    # Python 3.12
 .venv\Scripts\python -m pip install maturin pytest hypothesis ruff
-cd RoyaleSim && ..\.venv\Scripts\python tools\extract_arena.py && ..\.venv\Scripts\python tools\extract_cards.py && ..\.venv\Scripts\python tools\extract_globals.py && cd ..   # generates RoyaleSim/data/derived/
-cd RoyaleSim && ..\.venv\Scripts\maturin develop --release && cd ..     # builds the engine into the venv (~1 min, ~1.5 GB RAM)
+cd RoyaleSim && ..\.venv\Scripts\python tools\extract_arena.py && ..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 && ..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 --out data\derived\cards.json && ..\.venv\Scripts\python tools\extract_globals.py && cd ..   # generates RoyaleSim/data/derived/
+cd RoyaleSim && ..\.venv\Scripts\maturin develop --release && cd ..     # builds the engine into the venv. Give it a few minutes and some free memory.
 .venv\Scripts\python -m pip install -e RoyaleGym
 .venv\Scripts\python -m pip install -e RoyaleViser
 .venv\Scripts\python -m pip install -e RoyaleLearn
 ```
 
-This repo needs everything down to its own `pip install -e RoyaleGym` line; RoyaleViser is
-optional (the viewer, and one test that round-trips a frame through it) and RoyaleLearn is not
-needed. `royalegym` imports without the engine built: `RustEngine()` then raises an
-`ImportError` naming the build command, and `MockEngine`, a pure-Python stand-in engine, runs
-the whole API meanwhile. `RustEngine()` also refuses an engine build older than the data files
-on disk, so rebuild after either changes.
+You can stop after the `pip install -e RoyaleGym` line. RoyaleViser is optional. It is the
+viewer, plus one test that sends a frame through it. RoyaleLearn is not needed at all.
+
+Keep `--vintage 2018` on both `extract_cards.py` runs. Without that flag the extractor asks for
+card data that is not shipped with the repo, and a fresh clone does not have it. The 2018 card
+table is tracked, so that is the one that works everywhere.
+
+The order of those two lines matters, for a reason that is easy to miss. The card table is
+fixed when the engine is **built**, not when it is run. Pointing `ROYALESIM_DATA_DIR` at other
+data afterwards does not change what the compiled engine holds. So extract first, build second,
+and build again if you regenerate the data.
+
+One hazard if you keep more than one checkout. `maturin develop` installs the engine into the
+venv it is run from. Building from a second checkout that shares that venv swaps the engine out
+from under the first one. For a second checkout, build a wheel with `maturin build --release`
+and install it into a throwaway venv instead.
+
+If the Rust engine will not build on your machine, you can still start. `royalegym` imports
+without it. `RustEngine()` then raises an `ImportError` that names the build command, and
+`MockEngine`, a plain Python stand-in, runs the whole API in the meantime.
+
+`RustEngine()` also refuses an engine build that is older than the data files on disk. Rebuild
+after you change either one.
+
+### The five repos
+
+<p align="center"><img src="docs/media/family.svg" width="100%" alt="The five Royale repos: RoyaleLearn trains on RoyaleGym, which steps RoyaleSim; RoyaleViser draws traces and streams; RoyaleLive's recordings calibrate RoyaleSim"></p>
+
+You only need this repo and RoyaleSim to train a bot. The other three are there when you want
+them: a trainer, a viewer, and the recordings the engine is calibrated against. RoyaleGym is
+the front door of the five, and the project is named after it.
+
+The layout copies the one the Rocket League community settled on: a fast engine (RocketSim), an
+environment API over it (RLGym), a trainer on top (RLGym-PPO) and a viewer beside them
+(rlviser). Swap in RoyaleSim, RoyaleGym, RoyaleLearn and RoyaleViser and you have this project.
+
+| Repo | What it is | To this repo |
+|---|---|---|
+| [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | the battle engine. Integer-only Rust. The same seed always gives the same battle. Its movement rules are measured against recordings of real battles | the engine `RustEngine` drives, and where the arena and card data comes from |
+| **RoyaleGym** (this repo) | the environment API: what the bot sees, what its moves mean, what it is rewarded for. Gymnasium, PettingZoo and self-play envs | package `royalegym`, which puts the five pieces together into the envs |
+| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | it will use these envs. Designed, not yet written |
+| [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | the viewer: recordings, engine traces and running environments, drawn in its own window | reads this package's recordings and its live UDP frames. The picture above is its window |
+| RoyaleLive | records real matches. It is private | nothing directly. Its recordings are what RoyaleSim is calibrated against, so the accuracy reaches your envs through the engine |
+
+Each layer only talks downward: RoyaleLearn to RoyaleGym to RoyaleSim. The engine knows
+nothing about rewards or observations. This repo knows nothing about PPO. That means you can
+change a reward without recompiling anything.
+
+What comes in: the compiled engine module `royalesim`, and RoyaleSim's data files, which are
+its table of calibrated constants and the arena and card tables built from it. They are found
+at `../RoyaleSim/data`, or wherever `ROYALESIM_DATA_DIR` points.
+
+What goes out: recordings (`.msgpack` or `.json`) for the viewer, the replay page and
+regression tests; one UDP frame per env step for a viewer that is listening; and env objects
+for the learner.
 
 ## Status (2026-09-21)
 
+<p align="center">
+  <img alt="pytest" src="https://img.shields.io/badge/pytest-368%20passed%2C%206%20skipped-2ea043?style=flat-square">
+  <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
+  <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
+  <img alt="Trainer" src="https://img.shields.io/badge/trainer-designed%2C%20not%20written-orange?style=flat-square">
+</p>
+
 Working:
 
-- The whole API on both engines: the Gymnasium, PettingZoo and self-play vectorised envs, with
-  the legality mask computed independently of the engine and checked against the engine's own
-  ruling for every card and position in the tests.
-- One policy plays both seats: observations are in the acting player's frame (own king at the
-  bottom), so a battle rotated 180 degrees gives the other seat the same view. Its mirror drifts
-  apart: 80 of 144 multi-unit deploys diverged ([`docs/architecture.md`](docs/architecture.md)).
-- Recording, verification, the replay page and the viewer stream, all off the per-tick path.
-- An observation that is fair by construction: what it writes by default is what a person
-  watching the match could write down, including a COUNT of the opponent's elixir that is
-  exact against the engine's own bar. Anything hidden is opened one field at a time by a
-  `Reveal`, which changes the observation's WIDTH rather than filling zeroed slots, and which
-  `ClashParallelEnv.config()` records so a checkpoint says whether the policy was cheating
-  ([`docs/observation-spec.md`](docs/observation-spec.md)).
-- The RLGym v2 names: `StateMutator`, and `TerminationCondition` / `TruncationCondition` so
-  that a decided outcome and a time-out are different things. The earlier names still import
-  as aliases.
+- The whole API on both engines. That is the Gymnasium, PettingZoo and self-play batched envs.
+  The list of legal moves is worked out separately from the engine, and the tests check it
+  against the engine's own ruling for every card and every position.
+- One bot can play both seats. Everything it sees is drawn from the acting player's point of
+  view, with its own king at the bottom, so a battle turned 180 degrees looks the same to the
+  other seat. The mirror of that does drift apart: 80 of 144 multi-unit deploys diverged
+  ([`docs/architecture.md`](docs/architecture.md)).
+- Recording, verification, the replay page and the viewer stream. None of them are in the tick
+  loop.
+- An observation that is fair by default. What your bot sees is what a person watching the
+  match could write down, including a COUNT of the opponent's elixir that is exact against the
+  engine's own bar. Anything hidden is opened one field at a time with a `Reveal`. Turning one
+  on changes the observation's WIDTH instead of filling in zeroed slots, and
+  `ClashParallelEnv.config()` records it, so a checkpoint always says whether the bot was
+  cheating ([`docs/observation-spec.md`](docs/observation-spec.md)).
+- The RLGym v2 names, so the vocabulary matches what you already know: `StateMutator`, and
+  `TerminationCondition` / `TruncationCondition` so that a settled result and a time-out are
+  different things. The earlier names still import as aliases.
 
-Speed, in plain words: on 2026-09-21 the test suite's throughput report printed 826 env steps
-per second on the Rust engine at 10 ticks per step, and about 32 000 engine ticks per second
-when the engine is stepped 20 ticks at a time. The gap between the two is Python, which builds
-both players' observations and masks on every step; closing it is the first open item below.
-Later the same day, dropping the observation's placement-zone channels — the action mask
-already states that legality exactly — took the same report from 766 to 953 env steps per second
-on the Rust engine and from 475 to 580 on `MockEngine`, measured by alternating the two trees
-three times in one session (the absolute numbers move by a third with machine load; the
-comparison does not).
+**Speed: the throughput report printed 953 env steps per second on the Rust engine on
+2026-09-21, and 957 on 2026-09-22 with five other jobs on the machine.** An env step is one
+decision for each player, covering half a second of game time.
+
+How that was measured, and the rest of the numbers:
+
+- On 2026-09-21 the test suite's throughput report printed 826 env steps per second on the
+  Rust engine at 10 ticks per step. The same report printed about 32 000 engine ticks per
+  second when the engine is stepped 20 ticks at a time.
+- The gap between those two figures is Python. Python builds both players' observations and
+  their legal-move lists on every step. Closing that gap is the first open item below.
+- Later the same day we dropped the placement-zone channels from the observation. The
+  legal-move list already states that exactly, so the channels were saying it twice. The same
+  report went from 766 to 953 env steps per second on the Rust engine, and from 475 to 580 on
+  `MockEngine`.
+- That was measured by alternating the two trees three times in one session. The absolute
+  numbers move by a third depending on what else the machine is doing. The comparison between
+  them does not.
+- The same report on 2026-09-22, with five other jobs running on the machine, printed 957 env
+  steps per second on the Rust engine.
+- The Rust engine is not the landslide you might expect here. Alternated against `MockEngine`
+  in one process on a release build, it comes out 1.16 to 1.38 times as fast. The Python around
+  the engine is most of the cost, which is the first open item below.
 
 Open:
 
-- Default observations and rewards computed inside the engine, with the Python versions kept
-  as the override for experiments. Until then training time goes to the observation builder,
-  not the battle.
-- Nothing trains on these envs out of the box yet: RoyaleLearn is designed but not written. The
-  envs expose `action_masks()` in the form sb3-contrib's MaskablePPO expects.
-- `MockEngine` is a stand-in, not a second simulator: spells resolve instantly, there are no
-  stuns or knockbacks, and cards run at their base level. Anything about game fidelity is
-  RoyaleSim's status, not this repo's.
+- Default observations and rewards should be computed inside the engine, with the Python
+  versions kept as the override for experiments. Until that is done, training time goes to
+  building observations rather than to the battle.
+- Nothing trains on these envs out of the box yet. RoyaleLearn is designed but not written. The
+  envs do expose `action_masks()` in the form sb3-contrib's MaskablePPO expects.
+- `MockEngine` is a stand-in, not a second simulator. Spells resolve instantly, there are no
+  stuns or knockbacks, and cards run at their base level. Anything about how faithful the game
+  itself is belongs to RoyaleSim's status, not this repo's.
 
 Tests:
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 342 passed, 6 skipped (2026-09-21)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 368 passed, 6 skipped (2026-09-22)
 ..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
 ```
 
-Without the engine built the Rust-backed tests skip; an engine build older than the data files
-fails them rather than skipping.
+Without the engine built, the Rust-backed tests skip. An engine build older than the data
+files fails them instead of skipping.
 
-**On a checkout that has a private client pack, the two-engine agreement gate does not run.** It
-skips, loudly and with its reason, and a skip is not a pass. It means the machine most likely to be
-running this suite is the one machine not checking that contract.
+Six tests skip here, and that is about this machine and not about the code. They are the
+check that the two engines agree with each other. For that check to mean anything, both
+engines have to be reading the same card table. This machine holds a private client pack and
+built its table from that, so the check would be grading the two card tables rather than the
+two engines. `rust_engine.catalogue_vintage_split` says so, and the
+tests skip on it and name both card tables. On a clean checkout, where both engines are built
+from the tracked table, the check runs and it passes: 96 passed, 0 skipped. A skip is not a
+pass, and this tells you which of the two you are looking at.
 
-Getting it to run takes a data directory without the private pack **and a `royalesim` built in that
-checkout**. The compiled engine carries the card table it was built with, so regenerating
-`cards.json` or repointing `ROYALESIM_DATA_DIR` moves only `MockEngine`'s half and the tests still
-skip. Measured: with a pure 2018 data directory, an extension built from the newer pack still
-reported 95 cards with Goblins at 4.
+There are no failures now. Five tests were failing earlier on 2026-09-21, and the cause was
+one missing keyword. The engine's deploy clamp is measured per side and is deliberately not the
+rotation of itself, and its seat-symmetric arm had no way through to Python. So
+`SymmetricRustEngine` ran the rotation gates against the asymmetric one, and they correctly
+reported an asymmetry that is real and intended.
 
-The six SKIPS on 2026-09-21 are a card-table vintage split, and they cannot happen in a public
-checkout: only the oldest raw client pack is tracked, so the extractor builds the same table the
-mock reads and the two engines agree by construction. This machine has a newer pack and a card
-table generated from it, so its two engines are reading different data and every cross-engine
-comparison would measure that rather than the engines — `rust_engine.catalogue_vintage_split` says
-so and the tests skip on it, naming both vintages. A skip is not a pass.
+Read next:
 
-There are no failures. The five that stood earlier on 2026-09-21 were one missing keyword: the
-engine's deploy clamp is measured per side and is deliberately not the rotation of itself, and its
-seat-symmetric arm had no way through to Python, so `SymmetricRustEngine` ran the rotation gates
-against the asymmetric one and they correctly reported an asymmetry that is real and intended.
-
-Read next: [`docs/architecture.md`](docs/architecture.md) (the layers, the engine contract, the
-action space, the module map, the conventions and why each is there),
-[`docs/observation-spec.md`](docs/observation-spec.md) (every channel and every vector slot,
-its range, and whether it is fair or a reveal),
-[`docs/background.md`](docs/background.md) (what is publicly known about the game's rules and
-why the engine is measured against recordings rather than reasoned out), then the
-[RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) and
-[RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) READMEs.
+- [`docs/architecture.md`](docs/architecture.md) for the layers, the engine contract, the
+  action space, the module map, and why each convention is there.
+- [`docs/observation-spec.md`](docs/observation-spec.md) for every channel and every vector
+  slot, its range, and whether it is fair or a reveal.
+- [`docs/background.md`](docs/background.md) for what is publicly known about the game's rules,
+  and why the engine is measured against recordings rather than reasoned out.
+- Then the [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) and
+  [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) READMEs.
 
 ## Community
 
-The project's Discord is the front door for the whole family — bot creators, engine work and training runs:
-[**https://discord.gg/4D2BS5JBHP**](https://discord.gg/4D2BS5JBHP)
+The project's Discord is the front door for the whole family: bot creators, engine work and
+training runs.
+
+<p align="center">
+  <a href="https://discord.gg/4D2BS5JBHP"><img alt="Join the Discord" src="https://img.shields.io/badge/Discord-join%20the%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+</p>
 
 Issues and pull requests on this repo are welcome too.

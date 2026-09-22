@@ -1,7 +1,7 @@
 # Background: why this stack is measured rather than modelled
 
 A Clash Royale simulator is easy to start and hard to finish. The difficult part is not
-writing a tick loop — it is knowing what the tick loop is supposed to do. This page records
+writing a tick loop. It is knowing what the tick loop is supposed to do. This page records
 what is publicly established about the game's rules, what is not, and why the project is
 built around differential testing against recordings of the real game instead of around a
 model someone reasoned out.
@@ -25,7 +25,7 @@ Ram 5.5 to 6.5 and Golem 7 to 7.5 on 2026-09-08 alone). No public engine models 
 pathfinder, and no amount of reasoning about the old one recovers it.
 
 The answer the project settled on is to treat the real game as the oracle: per-tick
-recordings of real battles — entity state, targets and each unit's planned path nodes — turn
+recordings of real battles (entity state, targets and each unit's planned path nodes) turn
 "work out the pathfinder" into a differential test. RoyaleLive, the client instrument that records those
 ground-truth traces, produces them; RoyaleSim's `tools/oracle_diff.py` diffs the engine against
 one. Every constant that comes out of that process lands in
@@ -46,20 +46,20 @@ monthly client update can move it.
 
 The lesson the ledger encodes: a constant with a plausible comment next to it is
 indistinguishable from a guess. Every entry in `calibration.json` therefore states how it is
-known — measured, read out of the shipped game data, or an open question — and nothing reads
+known: measured, read out of the shipped game data, or an open question. Nothing reads
 a number that does not say.
 
 Independent measurements of the current pathfinder exist publicly and are useful as a
 cross-check: the SQURS "Advanced Stats" per-tile Skeleton Army lane-split and damage
-heatmaps changed measurably between their November 2025 and September 2026 revisions, which
-is itself evidence that the pathfinder moved.
+heatmaps changed measurably between their November 2025 and September 2026 revisions. That
+change is itself evidence that the pathfinder moved.
 
 ## Card and arena data
 
 Supercell's asset CDN serves the full `csv_logic` bundle (CSV plus per-card TOML overlays)
 and all 24 tilemaps. That is the source of the card table and the arena geometry; RoyaleSim's
-`tools/extract_*.py` turn it into `data/derived/`. Fields that a casual merge tends to drop —
-mass, flying height, jump parameters, building footprints — are exactly the ones the engine
+`tools/extract_*.py` turn it into `data/derived/`. Fields that a casual merge tends to drop
+(mass, flying height, jump parameters, building footprints) are exactly the ones the engine
 needs, so the extractors are held to the shipped data by tests rather than trusted.
 
 ## There is no bot interface in the real game

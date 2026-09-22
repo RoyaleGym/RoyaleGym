@@ -30,3 +30,7 @@ reports/
 .idea/
 .DS_Store
 Thumbs.db
+
+# the media generator's trace cache and the built docs site
+docs/media/.work/
+docs/site/_build/

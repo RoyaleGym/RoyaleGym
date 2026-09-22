@@ -1,11 +1,11 @@
 # Observation spec
 
 Every channel and every vector slot a `royalegym` observation builder writes, what
-range it takes, and whether it is **fair** — something a person watching the match
-could write down — or a **reveal**, read out of the half of the state a player cannot
+range it takes, and whether it is **fair** (something a person watching the match
+could write down) or a **reveal**, read out of the half of the state a player cannot
 see.
 
-The code is `royalegym/obs.py`. This file is the reference; `vector_layout()`,
+The code is `royalegym/obs.py`. This file is the reference. `vector_layout()`,
 `vector_offsets()`, `spatial_channels()` and `ObsBuilder.channel_names()` are the same
 thing in a form a program can read, and the test suite asserts the two agree.
 
@@ -79,9 +79,9 @@ depend on the engine's entity list order (see `obs.py`, NO FLOAT MAY DEPEND ON E
 LIST ORDER).
 
 `ObsBuilder.spatial_layout()` returns `(name, is_static)` per plane. **Static** means a
-function of the arena alone — `water` and `no_deploy`, and nothing else — so a consumer
+function of the arena alone (`water` and `no_deploy`, and nothing else), so a consumer
 that stores observations can hold those two once instead of once per transition. Read
-the declaration rather than deciding by sampling: `own_towers` and `enemy_towers` are
+the declaration rather than deciding by sampling. `own_towers` and `enemy_towers` are
 constant on any sample in which no tower falls, because a crown tower never moves, and
 a consumer that concluded "static" from that would never see a tower destroyed. A test
 asserts exactly that.
@@ -90,10 +90,10 @@ asserts exactly that.
 
 * `own_troop_zone` and `own_building_zone` were deleted. The action space is
   `Discrete(2305)` = no-op + 4 hand slots × 18 × 32 tiles, so the **mask already
-  states per-slot, per-tile legality exactly** — the zones were a coarser restatement
+  states per-slot, per-tile legality exactly**. The zones were a coarser restatement
   of it that cost two of the three `PlacementOracle.point_grid` calls the
   observation made per seat per step. Measured: 6.66 → 2.66 `point_grid` calls per
-  `env.step` (both seats). Measured by alternating the two trees three times in one session, because the absolute numbers move by a third with machine load while the comparison does not: the suite's own throughput report went 766 -> 953 `env.step`/s on the Rust engine and 475 -> 580 on `MockEngine` (medians of three rounds).
+  `env.step` (both seats). Measured by alternating the two trees three times in one session, because the absolute numbers move by a third with machine load while the comparison does not. The suite's own throughput report went 766 -> 953 `env.step`/s on the Rust engine and 475 -> 580 on `MockEngine` (medians of three rounds).
 * `enemy_troop_zone` stays. It is about the opponent's options and is in no mask.
 * A knockback channel. Under `knockback.DURATION_MS = 0` the push is instant and the
   timer reads 0 between ticks, so the plane would be a constant zero no coverage
@@ -107,7 +107,7 @@ that follows (1, 4, 6, 10 for k = 0, 3, 5, 9) and 0 at every observation after. 
 `own_stunned` / `enemy_stunned` fire for at most one step per Zap, and the entity
 row's `stun_ticks / 100` reads 0.01 to 0.10 for that one step.
 
-The features stay as "is stunned **now**" — that is what the engine reports, and it is
+The features stay as "is stunned **now**". That is what the engine reports, and it is
 what the seat-flip and cell-by-cell tests can check exactly. "Was stunned since the
 last observation" is the feature a policy could actually use, but it is a different
 thing: it depends on the decision rate and not only on the state. Recorded here rather
@@ -120,7 +120,7 @@ is laid out as `1 + slot * ny * nx + y * nx + x`, so this is a **view**, not a
 recomputation: `mask_planes[slot, y, x] == action_mask[encode(slot, x, y)]`.
 
 `action_mask`, int8 `[2305]`, is still there for the policy head; the info dict no
-longer repeats it. Both are left out of `ClashParallelEnv.state()` — legality is not
+longer repeats it. Both are left out of `ClashParallelEnv.state()`. Legality is not
 state, and a centralised critic does not need 2 304 duplicated numbers per seat.
 
 A parser whose action space is not a grid returns `None` from `mask_plane_shape()` and
@@ -131,8 +131,8 @@ the key is simply absent.
 ## 4. The flat `vector`, float32 `[12n + 37]` (fair)
 
 All slots are clipped to `[0, 1]`. The offsets in the table are for n = 16, which is
-`MockEngine`'s default catalogue and what the test suite runs on — **not** the full
-card list, which is larger and gives a wider vector. Read offsets from
+`MockEngine`'s default catalogue and what the test suite runs on. It is **not** the
+full card list, which is larger and gives a wider vector. Read offsets from
 `vector_offsets(n, reveal)`; never copy a number out of this table into code.
 
 | slots (n=16) | field | size | range | meaning | fair? |
@@ -168,7 +168,7 @@ are not read from calibration.
 ### 12n + 37, not 12n + 36
 
 The specification this rewrite was built to called the width 12n + 36. It is 12n + 37,
-and the extra slot is real rather than an accident — the arithmetic, term by term:
+and the extra slot is real rather than an accident. The arithmetic, term by term:
 
 | block | width |
 |---|---|
@@ -195,16 +195,16 @@ one fair feature that needs saying carefully.
 * From there it is the engine's own arithmetic (`protocol.ElixirLaw`, derived from
   `calibration.json` and `globals.csv`): pay for each play seen, regenerate over the
   ticks that passed at the rate the clock says, clamp at the cap. All in integer
-  "fine" units — one elixir is `lcm(regen 1x, regen 2x)` of them — because
-  milli-elixir cannot carry the law (a tick is worth 17.857… milli at the shipped
-  numbers, and a milli-space sum drifts inside one match).
+  "fine" units (one elixir is `lcm(regen 1x, regen 2x)` of them), because
+  milli-elixir cannot carry the law. A tick is worth 17.857… milli at the shipped
+  numbers, and a milli-space sum drifts inside one match.
 * A **play** is a public event: a unit appears, a spell is cast. The builder reads it
   from the opponent's hand changing between two observed states, which names the same
   event and names the card exactly.
 
 The result is bit-exact against the bar the engine keeps, which is why it belongs in
 the fair set rather than being an estimate. `Reveal.enemy_elixir` swaps in the value
-read from the state, and a test plays a battle out and asserts the two agree at every
+read from the state. A test plays a battle out and asserts the two agree at every
 step, from both seats, on a busy game and on a quiet one (the quiet game is what
 exercises the cap). Verified exact, per step, on: the opening, a `start_tick` that
 crosses the 2x threshold, a start already in overtime, asymmetric starting elixir,
@@ -213,9 +213,9 @@ curriculum, and a game quiet enough to sit at the cap.
 
 **`MatchMemory.exact`** says when it cannot be. The same law runs on the player's own
 bar, which is visible, so the count is checked every step against a number the memory
-is not allowed to guess at; the moment the two disagree, `exact` goes False and stays
+is not allowed to guess at. The moment the two disagree, `exact` goes False and stays
 False for the match. Two things make that happen: a deck that repeats a card (a play
-that swaps a card for itself changes no hand slot, so it is unseen — a real deck is
+that swaps a card for itself changes no hand slot, so it is unseen; a real deck is
 eight distinct cards), and an engine whose elixir law is not the one in
 `calibration.json`. The own bar is then resynced from the observed value so it stops
 drifting; the enemy count is left alone, because the only way to repair it would be to
@@ -240,7 +240,7 @@ These features make the builder carry a `MatchMemory` per seat. Two guards keep 
 episode out of the next: `ObsBuilder.reset(state)`, which the env calls, re-seeds both
 seats; and `MatchMemory.observe` re-seeds whenever the clock moves **backwards**,
 which can only be a new battle. `observe` is also idempotent by tick, so building the
-same state twice cannot drift — which is what lets the seat-flip and list-order gates
+same state twice cannot drift. That is what lets the seat-flip and list-order gates
 build the same state dozens of times.
 
 Tests replay a seeded episode twice in the same env and require the two observation
@@ -264,11 +264,11 @@ The only reveal here is the aim point. Columns 9 and 10 are the aim of the **vie
 own** spells and are 0 on an enemy row; `Reveal.enemy_spell_aim` **appends two more
 columns** for the opponent's, so the space really does change width.
 
-The sort key puts the aim **last**, and that is not cosmetic. Row order is observable —
-it decides whose delay and hit count appear first — and the key must still name every
+The sort key puts the aim **last**, and that is not cosmetic. Row order is observable
+(it decides whose delay and hit count appear first), and the key must still name every
 field a row is built from, so the aim cannot leave it. With the aim ranked early, two
 enemy spells alike in everything visible came out in an order set by where they were
-going: two states differing *only* in two hidden aim points gave delay columns
+going. Two states differing *only* in two hidden aim points gave delay columns
 `[0.03, 0.07]` and `[0.07, 0.03]`. With the aim last, hidden data can only order rows
 whose every visible field ties, and those rows write the same numbers. A test and a
 plant hold this.
@@ -283,5 +283,5 @@ comparison is against traces recorded by RoyaleLive, the client instrument that
 records ground-truth traces from the real game.
 
 MockEngine resolves spells inside a tick and models no status effects, so on it the
-spell and stun channels and the `spells` array are always zero; the Rust engine's
+spell and stun channels and the `spells` array are always zero. The Rust engine's
 tests are where those channels are exercised on real battles.
