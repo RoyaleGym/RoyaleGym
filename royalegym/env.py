@@ -682,6 +682,34 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
     when ROYALEVISER=host:port is set, and None -- costing nothing -- when it is
     not. Pass a ``ViserPublisher`` to bind one explicitly, or None never to
     publish.
+
+    ADDRESSABLE EPISODES, and why a run cannot resume without them. With
+    ``autoreset_seed_fn`` unset, an autoreset calls ``reset()`` with no seed, and
+    ``ClashParallelEnv.reset`` leaves its generator alone when the seed is None --
+    so the battle a game plays depends on how many battles that game has already
+    played. A fresh worker cannot arrive at episode 400 without playing 399 first,
+    which is why a resumed run diverges from the one it is continuing even when
+    the learner itself came back byte for byte.
+
+    Set ``autoreset_seed_fn`` and each episode is named instead of counted: the
+    seed for the nth episode of game g is ``fn(g, n)``, so any episode can be
+    reached directly. ``episode_ordinals`` is the counter to checkpoint and
+    ``set_episode_ordinals`` puts it back, after which the stream continues row
+    for row rather than restarting::
+
+        fn = lambda game, n: (run_seed * 1_000_003 + game * 9973 + n) % 2**31
+        vec = ClashSelfPlayVecEnv(8, autoreset_seed_fn=fn)
+        ...
+        saved = vec.episode_ordinals          # into the checkpoint
+
+        vec = ClashSelfPlayVecEnv(8, autoreset_seed_fn=fn)
+        vec.set_episode_ordinals(saved)       # out of it, before reset()
+        vec.reset()
+
+    The default is None and changes nothing: ``reset(seed=None)`` is what the
+    autoreset already did. An explicit ``reset(seed=...)`` still wins over the
+    function, and still consumes an ordinal, so the numbering keeps meaning "the
+    nth episode this object started in game g" either way.
     """
 
     def __init__(
@@ -690,6 +718,7 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
         env_fn: Callable[[], ClashParallelEnv] = ClashParallelEnv,
         *,
         viser: str | ViserPublisher | None = "env",
+        autoreset_seed_fn: Callable[[int, int], int] | None = None,
     ) -> None:
         if isinstance(viser, str) and viser != "env":
             raise ValueError(
@@ -697,6 +726,16 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
                 "that is not the sentinel would be stored as the publisher and fail "
                 "later, on the first step, as an AttributeError inside publish()"
             )
+        if autoreset_seed_fn is not None and not callable(autoreset_seed_fn):
+            raise TypeError(
+                "autoreset_seed_fn must be callable as fn(game_index, episode_ordinal) "
+                f"-> int, not {autoreset_seed_fn!r}: a non-callable would be stored and "
+                "fail later, on the first episode that ends"
+            )
+        self.autoreset_seed_fn = autoreset_seed_fn
+        # Episodes STARTED per game, not finished: the seed of the next one is
+        # fn(game, ordinal) and the counter moves after it is used. Checkpoint it.
+        self._ordinals = [0] * num_games
         self.envs = [env_fn() for _ in range(num_games)]
         self.viser = ViserPublisher.from_env() if viser == "env" else viser
         if self.viser is not None:
@@ -715,6 +754,50 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
         )
         self._last: list[dict[str, np.ndarray]] = []
 
+    @property
+    def episode_ordinals(self) -> tuple[int, ...]:
+        """Episodes started so far, per game. The number a checkpoint has to carry.
+
+        Without it a resumed run can name its episodes and still not know WHICH one
+        to name next, so it starts at 0 and replays a run it has already played.
+        """
+        return tuple(self._ordinals)
+
+    def set_episode_ordinals(self, ordinals: Sequence[int]) -> None:
+        """Put the counter back where a checkpoint left it, before ``reset()``.
+
+        The other half of ``episode_ordinals``. Call it before ``reset()``: reset
+        starts an episode and therefore consumes an ordinal, so setting it after
+        would skip one.
+        """
+        values = [int(n) for n in ordinals]
+        if len(values) != self.num_games:
+            raise ValueError(
+                f"expected {self.num_games} ordinals, one per game, got {len(values)}"
+            )
+        if any(n < 0 for n in values):
+            raise ValueError(f"episode ordinals count episodes and cannot be negative: {values}")
+        self._ordinals = values
+
+    def _next_seed(self, game: int) -> int | None:
+        """The seed for the episode this game is about to start, and move the counter.
+
+        None when no function is set, which is exactly what the autoreset passed
+        before this existed: ``reset(seed=None)`` leaves the generator running.
+        """
+        ordinal = self._ordinals[game]
+        self._ordinals[game] = ordinal + 1
+        if self.autoreset_seed_fn is None:
+            return None
+        seed = self.autoreset_seed_fn(game, ordinal)
+        # bool is an int, and fn returning True would silently seed every episode 1.
+        if isinstance(seed, bool) or not isinstance(seed, (int, np.integer)):
+            raise TypeError(
+                f"autoreset_seed_fn({game}, {ordinal}) returned {seed!r}; it has to "
+                "return an int, because the seed is what makes the episode addressable"
+            )
+        return int(seed)
+
     def reset(
         self, *, seed: int | list[int | None] | None = None, options: dict[str, Any] | None = None
     ) -> tuple[Any, dict[str, Any]]:
@@ -727,7 +810,10 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
         flat: list[dict[str, np.ndarray]] = []
         infos: dict[str, Any] = {}
         for g, (env, s) in enumerate(zip(self.envs, seeds, strict=True)):
-            obs, info = env.reset(seed=s, options=options)
+            # An explicit seed wins; the ordinal moves either way, so the numbering
+            # keeps meaning "the nth episode this object started in this game".
+            named = self._next_seed(g)
+            obs, info = env.reset(seed=s if s is not None else named, options=options)
             for k, agent in enumerate(AGENTS):
                 flat.append(obs[agent])
                 infos = self._add_info(infos, info[agent], 2 * g + k)
@@ -748,7 +834,7 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
             obs, rew, term, trunc, info = env.step(acts)
             done = term["blue"] or trunc["blue"]
             if done:
-                new_obs, new_info = env.reset()
+                new_obs, new_info = env.reset(seed=self._next_seed(g))
             for k, agent in enumerate(AGENTS):
                 i = 2 * g + k
                 rewards[i], terms[i], truncs[i] = rew[agent], term[agent], trunc[agent]
