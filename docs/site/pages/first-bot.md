@@ -16,9 +16,12 @@
     nothing on this page can tell you how long a real run takes or whether the bot comes out any
     good. You would be the first to find out.
 
-    **Training needs torch, and the install page does not give it to you by default.** Run
-    `pip install -e "RoyaleLearn[torch]"` first. Without it, `train`, `doctor` and `bench` all
-    stop with `ModuleNotFoundError: No module named 'torch'`.
+    **Training needs torch, and it is an extra rather than part of the plain install.** Run
+    `pip install -e "RoyaleLearn[torch]"` before you try to train. Skip it and `train`, `doctor`
+    and `bench` all stop with `ModuleNotFoundError: No module named 'torch'`. That is the one
+    first-run failure worth recognising on sight. Being able to install the rest without torch
+    is deliberate: the settings, the run identity and the workers are all tested to work without
+    it.
 
     This page has two halves. Part 1 is code that runs on your machine today, and every block in
     it was run to write this page, with the real output underneath. Part 2 is the training run
@@ -343,14 +346,23 @@ closed, a training run spends more time describing the battle than playing it.
 
 ## Part 2: the plan
 
-!!! warning "UNVERIFIED on this machine"
-    These commands exist and they run. What has not happened here is a training run: this venv
-    has no torch, so the commands below were checked as far as the point where they ask for it,
-    and no further. Their author reports the loop closing end to end in commit 5685cad, for
-    three iterations.
+!!! note "What has and has not been run here"
+    `train` was run for this page and it completed:
 
-    So treat the shape of this section as solid and any claim about what a run produces as
-    untested. If you run one, the project would like to hear what happened.
+    ```
+    royalelearn train --config examples\configs\smoke.json
+    ...
+    run 85b4ce0a1d6e8f1d stopped at iteration 3
+    ```
+
+    It left a checkpoint with the network, the advantage scaler and the ladder's pool under
+    `runs/smoke-85b4ce0a1d6e8f1d/checkpoints/`.
+
+    Read what that proves narrowly. `smoke.json` runs on `MockEngine`, the pure-Python stand-in,
+    with a `timestep_limit` of 96. It is a self-test that the loop closes, not a training run
+    and not the real engine. `laptop.json` and `workstation.json` are the real thing:
+    `RustEngine` and a limit of 100,000,000 timesteps. **Nobody has run one of those to the
+    end.** If you do, you will be the first, and the project would like to hear what happened.
 
 Source for this section: RoyaleLearn's own README and its owner, on 2026-09-22.
 
@@ -373,8 +385,11 @@ Start with the middle two, not the last one.
   shapes of everything, checks the list of legal moves against the engine exhaustively, works out
   how much memory your run will need and refuses to start a run that will not fit. It takes
   seconds and it catches most first-run failures.
-- `bench` measures how fast your own machine is, so you can plan a run against your number instead
-  of the table above.
+- `bench` measures how fast your own machine is, so you can plan a run against your number
+  instead of the table above. Budget time for it. It forks a farm of worker processes and
+  prints nothing while it works: on a 4-core laptop with other jobs running it had produced no
+  output after fifteen minutes, at which point it was stopped rather than left to finish, so
+  what it finally prints is not recorded here. Run it when you can leave the machine alone.
 - `train` is the run.
 
 There will also be a script for people who would rather edit Python than a command line.
