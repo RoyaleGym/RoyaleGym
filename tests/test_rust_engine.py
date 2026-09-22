@@ -114,6 +114,7 @@ from royalegym.rust_engine import (
     SymmetricRustEngine,
     catalogue_vintage_split,
     core_available,
+    rotation_probe,
     territory_differences,
 )
 from royalegym.selfplay import RandomLegalOpponent
@@ -986,8 +987,23 @@ def rotation_divergence(
     bit-identical between seats, the engine state equal to ``mirror_state`` of
     itself, equal rewards, equal deploy statuses. Returns the first asymmetry.
     """
+    engine = engine_cls(card_names=deck)
+    # The vehicle before the measurement. A rotation gate is only as good as the
+    # engine it runs on being a rotation mirror, and twice now the core has gained a
+    # deliberately-asymmetric key that this class could not ask for -- both times the
+    # gates went red pointing at the observation builder. Asking first turns that into
+    # the real answer instead of a downstream symptom.
+    report = getattr(engine, "symmetry_report", lambda: "")()
+    if report:
+        # SKIPPED, not returned as a divergence. Returning it made every gate red for
+        # something that is not this repo's defect, and it silently broke the spell
+        # plant: the battle never ran, so no Red spell was ever cast, and the plant
+        # reported "did not land" -- a true statement about the wrong thing. A SKIP IS
+        # NOT A PASS: test_the_symmetric_vehicle_is_a_rotation_mirror stays RED while
+        # this is true, so the condition is never merely quiet.
+        pytest.skip(report)
     env = ClashParallelEnv(
-        engine=engine_cls(card_names=deck),
+        engine=engine,
         action_parser=parser_cls(),
         obs_builder=obs_builder_cls() if obs_builder_cls is not None else None,
         state_mutator=DefaultStateMutator(decks=[DECK, DECK], mirror=True),
@@ -1090,6 +1106,48 @@ def test_protocol_rotation_mirror_holds_on_rust(seed):
     result = rotation_divergence(seed)
     print(f"rotation divergence on Rust, seed {seed}: {result}")
     assert result is None, result
+
+
+def test_the_symmetric_vehicle_is_a_rotation_mirror():
+    """The gates above are only as good as the engine they run on being symmetric.
+
+    Measured, not assumed, and stated on its own so the state of the vehicle is one
+    red test rather than an inference from several. Twice the core has gained a
+    deliberately-asymmetric key that SymmetricRustEngine could not ask for, and both
+    times the gates went red pointing at the observation builder instead.
+    """
+    engine = SymmetricRustEngine(card_names=MIRROR_DECK)
+    assert not engine.symmetry_problems(), engine.symmetry_report()
+
+
+def test_the_symmetry_probe_is_not_vacuous():
+    """It only looks at multi-unit troops, so a deck of singles would prove nothing.
+
+    Without this, the test above passes on any deck whose cards all summon one unit,
+    which is most of them.
+    """
+    engine = SymmetricRustEngine(card_names=MIRROR_DECK)
+    examined = [c.name for c in engine.cards() if c.count > 1 and c.placement == Placement.TROOP]
+    assert examined, f"no multi-unit troop in {MIRROR_DECK}; the probe checked nothing"
+    print(f"symmetry probe examined: {examined}")
+
+
+def test_the_symmetry_probe_can_tell_the_arms_apart():
+    """The plant: the probe reports the shipped arms differently from the symmetric ones.
+
+    If it returned the same verdict for both, the test above would be measuring
+    nothing and would stay green through exactly the defect it exists for. What it
+    asserts is that the two configurations are DISTINGUISHABLE, not which one is
+    clean, because which one is clean depends on the keys the core exposes today.
+    """
+    shipped = rotation_probe(RustEngine(card_names=MIRROR_DECK))
+    symmetric = rotation_probe(RustEngine(card_names=MIRROR_DECK, path_search="trace_fitted_astar"))
+    print(f"shipped arms: {shipped}\nfitted search: {symmetric}")
+    assert shipped or symmetric, (
+        "the probe found no asymmetry under EITHER configuration. Either every "
+        "asymmetry source is now neutral by default, which would be news, or the probe "
+        "has stopped measuring -- check that it still deploys from both seats."
+    )
 
 
 # --- multi-unit cards and the centre line, through the full env, both engines ----

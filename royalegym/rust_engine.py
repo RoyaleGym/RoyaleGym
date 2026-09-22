@@ -91,6 +91,8 @@ from .protocol import (
     data_dir,
     default_calibration,
     derived_cards_vintage,
+    mirror_state,
+    to_engine,
     validate_setup,
 )
 
@@ -508,6 +510,91 @@ class RustEngine:
         return bool(self._battle.debug_nudge(uid, dx, dy))
 
 
+#: Own-frame tile centres the symmetry probe deploys on. More than one, and spread
+#: across both arena halves and the centre column, because an asymmetry keyed on the
+#: ABSOLUTE half is invisible from a tile whose mirror is in the same half, and one
+#: keyed on a rounding is invisible wherever the rounding happens to land even. The
+#: deploy-point offset measured in September broke 209 of 255 own tiles: a probe that
+#: tried a single tile would have had a one-in-six chance of reporting clean.
+PROBE_TILES = ((1, 2), (4, 3), (9, 4), (13, 2), (16, 5))
+
+#: Probe verdicts, keyed by engine build and constructor arguments. The probe costs a
+#: handful of resets and a tick; a test suite builds hundreds of these.
+_PROBE_CACHE: dict[tuple, list[str]] = {}
+
+
+def rotation_probe(engine: RustEngine, tiles: Sequence[tuple[int, int]] = PROBE_TILES) -> list[str]:
+    """Deploy each multi-unit card at the same own-frame tile from both seats; report drift.
+
+    THE DIRECT MEASUREMENT of the property a rotation gate assumes. Both seats command
+    the same tile in their own frame, so after one tick the two groups must be exact
+    rotations of each other. Anything else means some system under the engine is keyed
+    on the seat or on the absolute arena frame.
+
+    Multi-unit cards only, because a single unit lands on the tap and a formation is
+    laid out AROUND it -- which is where a per-side offset shows up. Troops only:
+    a building or a spell does not have a ring.
+
+    This exists because the alternative failed twice. Deciding from a list of which
+    keys are asymmetry sources means the list is right only until the engine gains a
+    key, and both times it gained one the gates went red pointing at the wrong thing --
+    at the observation builder, and at the engine. Measuring the property instead is
+    immune to a key nobody has named yet.
+    """
+    arena = engine.arena()
+    tile = arena.subtile
+    problems: list[str] = []
+
+    def key(state: BattleState) -> list[tuple[int, ...]]:
+        return sorted(
+            (e.team, e.kind, e.card_id, e.tower_slot, e.x, e.y, e.deploy_ticks)
+            for e in state.entities
+        )
+
+    for card in engine.cards():
+        if card.count < 2 or card.placement != Placement.TROOP:
+            continue
+        for tx, ty in tiles:
+            if not (0 < tx < arena.tiles_x and 0 < ty < arena.tiles_y // 2):
+                continue
+            deck = [card.card_id] * HAND_SIZE * 2
+            engine.reset(_PROBE_SEED, MatchSetup(decks=[deck, deck], shuffle=0))
+            commands = []
+            for team in TEAMS:
+                ex, ey = to_engine(arena, team, tx * tile, ty * tile)
+                commands.append(DeployCommand(team=team, hand_slot=0, x=ex, y=ey))
+            engine.step(commands, 1)
+            state = engine.state()
+            mirrored = mirror_state(arena, state)
+            if key(state) != key(mirrored):
+                drift = [
+                    (a[4] - b[4], a[5] - b[5])
+                    for a, b in zip(key(state), key(mirrored), strict=True)
+                    if a != b
+                ]
+                problems.append(
+                    f"{card.name} (count {card.count}) at own tile ({tx}, {ty}): "
+                    f"offsets (dx, dy) = {sorted(set(drift))}"
+                )
+                break  # one tile per card is enough to say the vehicle is not symmetric
+    return problems
+
+
+_PROBE_SEED = 7
+
+
+def _rotation_probe_cached(args: tuple, kwargs: dict) -> list[str]:
+    """Probe a THROWAWAY engine built the same way, so the caller's is untouched.
+
+    Probing the instance itself would leave it holding the probe's battle, and a
+    constructor that quietly resets what it just built is its own kind of trap.
+    """
+    cache_key = (RustEngine.build_digest(), repr(args), repr(sorted(kwargs.items())))
+    if cache_key not in _PROBE_CACHE:
+        _PROBE_CACHE[cache_key] = rotation_probe(RustEngine(*args, **kwargs))
+    return _PROBE_CACHE[cache_key]
+
+
 class SymmetricRustEngine(RustEngine):
     """``RustEngine`` under the frame-planned pathfinder (``path_search="trace_fitted_astar"``),
     which also selects the fixed-distance knockback, AND the own-frame deploy clamp
@@ -537,4 +624,41 @@ class SymmetricRustEngine(RustEngine):
     def __init__(self, *args, **kwargs) -> None:
         kwargs.setdefault("path_search", "trace_fitted_astar")
         kwargs.setdefault("ground_y_clamp", "deploy_column_range_own_frame")
+        self._probe_args = (args, dict(kwargs))
         super().__init__(*args, **kwargs)
+
+    def symmetry_problems(self) -> list[str]:
+        """Where this vehicle is NOT a rotation mirror, measured. Empty means it is.
+
+        Not raised from ``__init__`` on purpose. Some callers want this class for its
+        determinism rather than its symmetry -- the spawn-ordinal parity gates, for
+        instance -- and refusing to construct would fail six tests whose claim has
+        nothing to do with seats. The check belongs where the claim is made:
+        ``rotation_divergence`` calls it before measuring anything, and one test
+        asserts it is empty so the state of the vehicle is visible on its own.
+        """
+        args, kwargs = self._probe_args
+        return list(_rotation_probe_cached(args, kwargs))
+
+    def symmetry_report(self) -> str:
+        """``symmetry_problems`` with what to do about it. Empty when there is nothing."""
+        problems = self.symmetry_problems()
+        if not problems:
+            return ""
+        _, kwargs = self._probe_args
+        asked = ", ".join(f"{k}={v!r}" for k, v in sorted(kwargs.items()) if v is not None)
+        return (
+            "SymmetricRustEngine is not symmetric on this engine build. A multi-unit card "
+            "deployed at the same OWN-FRAME tile by both seats does not land at mirrored "
+            "positions:\n  " + "\n  ".join(problems) + "\n\n"
+            "The engine is not wrong. It reproduces a measured property of the real game "
+            "that is keyed per side or per arena half, and this class exists to select the "
+            f"symmetric arm of every such key. It asks for {asked}, and that is no longer "
+            "all of them.\n\n"
+            "The arm is chosen at construction, so the missing key has to be a keyword "
+            "RustEngine accepts and passes to the core. Compare the formation section of "
+            "`royalesim.EMBEDDED_CALIBRATION_JSON` against RustEngine.__init__: a key whose "
+            "candidates include a 'none' or '*_own_frame' arm is one this class has to be "
+            "able to ask for. Until it can, a rotation gate run on this vehicle measures a "
+            "property the real game has and reports it as a defect."
+        )
