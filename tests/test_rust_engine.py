@@ -639,6 +639,30 @@ def SHARED_BUILDING_RADIUS(arena: Arena) -> int:
     return next(c.radius for c in MockEngine(card_names=SHARED).cards() if c.card_id == CANNON)
 
 
+def building_tap_arms_differ(rust, mock) -> str | None:
+    """Why a building tap may get two verdicts here, or None when it may not.
+
+    The two engines state what they do with a building tap whose ground is taken
+    (``DeployRules.illegal_building_tap``). The compiled engine RELOCATES the building
+    to the nearest place its box fits, so the tap is accepted; MockEngine has no box to
+    move and refuses. Both are stated, neither is hidden, and every other verdict on
+    every other card still has to match exactly.
+    """
+    r, m = rust.rules().illegal_building_tap, mock.rules().illegal_building_tap
+    if r == m:
+        return None
+    return f"rust {r!r}, mock {m!r}"
+
+
+def allowed_building_split(placement: int, mock_status: str, rust_status: str) -> bool:
+    """The one difference the arms above permit: mock refuses the ground, rust relocates."""
+    return (
+        placement == Placement.BUILDING
+        and mock_status == "OCCUPIED"
+        and rust_status == "OK"
+    )
+
+
 def legality_disagreements(rust, mock, tower_hp) -> tuple[collections.Counter, collections.Counter]:
     a = mock.arena()
     s = a.subtile
@@ -656,6 +680,7 @@ def legality_disagreements(rust, mock, tower_hp) -> tuple[collections.Counter, c
     mock.reset(4, setup)
     st = mock.state()
     assert st.players[BLUE].hand == [KNIGHT, MINIONS, CANNON, GIANT]
+    split = building_tap_arms_differ(rust, mock)
     dis: collections.Counter = collections.Counter()
     seen: collections.Counter = collections.Counter()
     for team in (BLUE, RED):
@@ -665,6 +690,12 @@ def legality_disagreements(rust, mock, tower_hp) -> tuple[collections.Counter, c
                 rs, ms = rust.check_deploy(c), mock.check_deploy(c)
                 seen[DeployStatus(ms).name] += 1
                 if rs != ms:
+                    placement = mock.cards()[st.players[team].hand[slot]].placement
+                    if split is not None and allowed_building_split(
+                        placement, DeployStatus(ms).name, DeployStatus(rs).name
+                    ):
+                        seen["BUILDING RELOCATED RATHER THAN REFUSED"] += 1
+                        continue
                     dis[(team, slot, DeployStatus(ms).name, DeployStatus(rs).name, x, y)] += 1
     return dis, seen
 
@@ -742,6 +773,7 @@ def territory_disagreements(rust, mock, oracle, tower_hp) -> tuple[collections.C
     st = mock.state()
     assert st.players[BLUE].hand == [KNIGHT, MINIONS, CANNON, GIANT]
     a = mock.arena()
+    split = building_tap_arms_differ(rust, mock)
     xs, ys = every_half_cell_point(a)
     dis: collections.Counter = collections.Counter()
     pocket: dict[int, set[tuple[int, int]]] = {}
@@ -760,7 +792,17 @@ def territory_disagreements(rust, mock, oracle, tower_hp) -> tuple[collections.C
                 c = DeployCommand(team, slot, x, y)
                 ms, rs = mock.check_deploy(c), rust.check_deploy(c)
                 SEEN_TERRITORY_STATUSES[DeployStatus(ms).name] += 1
-                if not (bool(m) == (ms == DeployStatus.OK) == (rs == DeployStatus.OK)) or ms != rs:
+                # The mask is built from MockEngine's rules, so it must track MockEngine
+                # exactly. The compiled engine is allowed exactly the one stated
+                # difference: it relocates a building whose ground is taken.
+                split_here = split is not None and allowed_building_split(
+                    card.placement, DeployStatus(ms).name, DeployStatus(rs).name
+                )
+                if split_here:
+                    SEEN_TERRITORY_STATUSES["BUILDING RELOCATED RATHER THAN REFUSED"] += 1
+                if not split_here and (
+                    not (bool(m) == (ms == DeployStatus.OK) == (rs == DeployStatus.OK)) or ms != rs
+                ):
                     dis[
                         (
                             team,
@@ -801,9 +843,12 @@ def test_troop_territory_mask_mock_and_rust_agree_on_every_half_cell(rust, mock,
     # Vacuity: every point checked, and every position reason reached (measured on
     # red_left_down 2026-09-13: OK 11549, OUT_OF_TERRITORY 11298, NO_DEPLOY 2268,
     # WATER 1542, OUT_OF_ARENA 1200, OCCUPIED 397 of 28254).
-    assert (
-        sum(SEEN_TERRITORY_STATUSES.values()) == 2 * 3 * every_half_cell_point(mock.arena())[0].size
+    counted = sum(
+        n
+        for k, n in SEEN_TERRITORY_STATUSES.items()
+        if k != "BUILDING RELOCATED RATHER THAN REFUSED"
     )
+    assert counted == 2 * 3 * every_half_cell_point(mock.arena())[0].size
     for reason in ("OK", "OUT_OF_TERRITORY", "NO_DEPLOY", "WATER", "OUT_OF_ARENA", "OCCUPIED"):
         assert SEEN_TERRITORY_STATUSES[reason] >= 100, dict(SEEN_TERRITORY_STATUSES)
     hp = TERRITORY_STATES[towers]

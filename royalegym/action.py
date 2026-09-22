@@ -43,11 +43,27 @@ HOW THE MASK IS COMPUTED, AND WHY INDEPENDENTLY OF THE ENGINE
     TWO KINDS OF RULE, AS IN THE RUST ENGINE (arena.rs ``deploy_zone``)
     CELL rules (water, no-deploy, the river band closed to troops, buildings'
     own half) are grids over half-cells, and a point needs every cell it
-    touches. POINT rules are tested on the point itself: building footprints,
-    and the closed NoDeploySize rect of every alive enemy crown tower
+    touches. POINT rules are tested on the point itself: the bodies already on
+    the board, and the closed NoDeploySize rect of every alive enemy crown tower
     (``DeployRules``). The rect rule equals a cell rule only while every rect
     edge lies on a half-cell boundary (the shipped sizes do); testing the point
     keeps the mask right if a regenerated cards.json ever breaks that.
+
+    A BUILDING IS ASKED A DIFFERENT QUESTION, AND IT IS NOT "DOES IT FIT HERE"
+    A building stands on a square of TILES, and a tap that does not fit is not
+    refused: the game moves the building to the nearest place it does fit. So
+    for a building card the mask answers "will a tap here build anything",
+    which stops depending on what is already on the board -- nothing can be in
+    the way, because being in the way relocates rather than refuses. Only the
+    cell rules remain. What a tap actually BUILDS, and where, is the engine's
+    ``building_placement``, and the mask is not the place to ask it: an action
+    space over 2 304 tiles cannot say "here, but two tiles left" anyway.
+
+    Measured against the engine on 2026-09-22, tile centres, both seats, a board
+    with buildings and towers standing: the cell rules alone reproduce
+    ``check_deploy`` for a Cannon on all 576 cells, where the old
+    body-overlap rule missed 18 of them. Before relocation shipped, those 18 were
+    right; a building really was refused for touching another body.
 """
 
 from __future__ import annotations
@@ -97,6 +113,10 @@ class PlacementOracle:
         self.arena = arena
         self.rules = rules
         self.cards = list(cards)
+        # True when the engine relocates a building whose box does not fit rather than
+        # refusing it. Then nothing on the board can make a building tap illegal, so the
+        # bodies already standing are not a rule for buildings at all.
+        self.buildings_relocate = rules.illegal_building_tap == "relocate_first_fitting_ring"
         grid = np.asarray(arena.grid, dtype=np.int64)  # [hy, hx]
         self.water = (grid & BIT_WATER) != 0
         self.nodeploy = (grid & BIT_NO_DEPLOY) != 0
@@ -117,6 +137,17 @@ class PlacementOracle:
         self._grids: dict[tuple[Any, ...], np.ndarray] = {}
         self.grid_hits = 0
         self.grid_misses = 0
+
+    def _bodies_block(self, placement: int) -> bool:
+        """Whether the bodies already on the board are a rule for this placement.
+
+        Always for a troop. For a BUILDING only while the engine refuses a tap whose
+        box does not fit; once it relocates instead, no board state can make a building
+        tap illegal and including the bodies would mask legal cells away.
+        """
+        if placement == Placement.TROOP:
+            return True
+        return placement == Placement.BUILDING and not self.buildings_relocate
 
     # -- static + tower-dependent part, at half-cell resolution --------------
 
@@ -172,7 +203,7 @@ class PlacementOracle:
         if card.placement in (Placement.TROOP, Placement.ROLLING):
             for x0, y0, x1, y1 in self.enemy_rects(state, team):
                 ok &= ~((px >= x0) & (px <= x1) & (py >= y0) & (py <= y1))
-        if card.placement in (Placement.TROOP, Placement.BUILDING):
+        if self._bodies_block(card.placement):
             extra = card.radius if card.placement == Placement.BUILDING else 0
             for e in state.entities:
                 if e.kind == EntityKind.TROOP:
@@ -229,14 +260,10 @@ class PlacementOracle:
             if placement in (Placement.TROOP, Placement.ROLLING)
             else ()
         )
-        if placement in (Placement.TROOP, Placement.BUILDING):
+        if self._bodies_block(placement):
             extra = card.radius if placement == Placement.BUILDING else 0
             blockers = tuple(
-                sorted(
-                    (e.x, e.y, e.radius)
-                    for e in state.entities
-                    if e.kind != EntityKind.TROOP
-                )
+                sorted((e.x, e.y, e.radius) for e in state.entities if e.kind != EntityKind.TROOP)
             )
         else:
             extra, blockers = 0, ()
@@ -292,7 +319,7 @@ class PlacementOracle:
                 inx = (xs >= x0) & (xs <= x1)
                 if iny.any() and inx.any():
                     ok &= ~(iny[:, None] & inx[None, :])
-        if card.placement in (Placement.TROOP, Placement.BUILDING):
+        if self._bodies_block(card.placement):
             extra = card.radius if card.placement == Placement.BUILDING else 0
             for e in state.entities:
                 if e.kind == EntityKind.TROOP:

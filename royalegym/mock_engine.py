@@ -97,13 +97,21 @@ RAW_CARD_PACK = "retroroyale-2018"
 OVERTIME_TIEBREAK_RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction", "none_draw")
 
 # The ground a building stands on, as this engine models it: the CollisionRadius circle
-# and nothing else. A building card is OCCUPIED within the sum of its radius and that of
-# any building or tower, and a troop card within that building's or tower's own radius
+# and nothing else. A troop card is OCCUPIED within a building's or tower's own radius
 # (``_check``). No entity carries a box, so every ``EntityState.footprint`` it reports
-# is None. An engine that places buildings by a tile box reports that box
-# instead; tests/test_building_footprint.py compares the two statements and skips,
-# naming both, while they differ.
+# is None. An engine that places buildings by a tile box reports that box instead;
+# tests/test_building_footprint.py compares the two statements and skips, naming both,
+# while they differ.
+#
+# WHAT THIS ENGINE DOES NOT DO, STATED RATHER THAN IMPLIED. It does not RELOCATE a
+# building whose ground is taken: it refuses the tap. The ledger's
+# ``placement.ILLEGAL_TAP`` describes an engine that moves the building to the nearest
+# place it fits instead, and this one has nowhere to move it to, having no tile box. So
+# ``rules()`` reports ``illegal_building_tap="refuse"`` whatever the ledger says, and the
+# mask asks the engine rather than the ledger. Two engines, two rules, each stated;
+# tests/test_building_footprint.py skips the comparison LOUDLY, naming both.
 FOOTPRINT_MODEL = "collision_radius_circle"
+ILLEGAL_BUILDING_TAP = "refuse"
 
 # The card subset the mock supports. A mock design choice (a spread of placement
 # types, air/ground, splash, building-targeters), not a physics constant.
@@ -349,7 +357,11 @@ class MockEngine:
         cal = calibration or default_calibration()
         self.calibration = cal
         self._arena = Arena.load(cal, arena_path)
-        self._rules = DeployRules.load(cal)
+        # Say what this engine does, not what the ledger describes: it refuses a
+        # building tap it cannot honour, having no box to move (``FOOTPRINT_MODEL``).
+        self._rules = msgspec.structs.replace(
+            DeployRules.load(cal), illegal_building_tap=ILLEGAL_BUILDING_TAP
+        )
         g = load_globals_csv()
 
         # ---- every constant, and where it comes from --------------------

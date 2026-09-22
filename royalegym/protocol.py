@@ -651,6 +651,8 @@ def princess_centres_from_arena(
 
 
 TERRITORY_MODELS = ("enemy_tower_no_deploy_rects",)
+#: What an engine does with a building tap whose point is legal but whose box does not fit.
+ILLEGAL_BUILDING_TAP = ("refuse", "relocate_first_fitting_ring")
 KING_TOWER_NAME = "KingTower"
 PRINCESS_TOWER_NAME = "PrincessTower"
 
@@ -772,6 +774,13 @@ class DeployRules(msgspec.Struct, frozen=True):
     king_no_deploy_size: tuple[int, int]
     princess_no_deploy_size: tuple[int, int]
     footprint_model: str
+    # What the engine does with a building tap whose POINT is legal but whose tile box
+    # does not fit: "relocate_first_fitting_ring" moves it to the nearest place it
+    # fits, so nothing on the board can make such a tap illegal, and "refuse" turns it
+    # down. The mask asks this rather than assuming, because the two answers give a
+    # building card different legal cells on the same board. Trailing and defaulted:
+    # an engine that states nothing is the pre-relocation one.
+    illegal_building_tap: str = "refuse"
 
     @classmethod
     def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
@@ -784,6 +793,14 @@ class DeployRules(msgspec.Struct, frozen=True):
         if territory not in TERRITORY_MODELS:
             raise NotImplementedError(
                 f"TERRITORY_MODEL={territory!r}: only {TERRITORY_MODELS} is implemented"
+            )
+        try:
+            illegal_tap = str(calibration.value("placement.ILLEGAL_TAP"))
+        except KeyError:
+            illegal_tap = "refuse"
+        if illegal_tap not in ILLEGAL_BUILDING_TAP:
+            raise NotImplementedError(
+                f"ILLEGAL_TAP={illegal_tap!r}: only {sorted(ILLEGAL_BUILDING_TAP)} are implemented"
             )
         subtile = calibration.int("representation.SUBTILE_PER_TILE")
         sizes = load_tower_no_deploy_sizes(cards_path)
@@ -803,6 +820,7 @@ class DeployRules(msgspec.Struct, frozen=True):
             king_no_deploy_size=in_subtiles(KING_TOWER_NAME),
             princess_no_deploy_size=in_subtiles(PRINCESS_TOWER_NAME),
             footprint_model=model,
+            illegal_building_tap=illegal_tap,
         )
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:

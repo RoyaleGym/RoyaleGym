@@ -128,7 +128,11 @@ def catalogue_footprint_tiles(engine: RustEngine) -> dict[str, tuple[int, int]]:
     for c in engine.cards():
         tiles = getattr(c, "footprint_tiles", None)
         if tiles is not None:
-            out[c.name] = (int(tiles[0]), int(tiles[1]))
+            # The catalogue states the side N of an N x N box as one integer. A pair is
+            # accepted too, so this reads a catalogue that ever states w and h apart.
+            side = (int(tiles), int(tiles)) if isinstance(tiles, int) else tuple(map(int, tiles))
+            n = (side[0], side[1])
+            out[c.name] = n
     if out:
         return out
     for row in json.loads(engine._battle.catalogue_json()):
@@ -294,20 +298,24 @@ def test_each_board_is_what_it_says(rust):
         sum(e.team == team and e.kind == EntityKind.TROOP for e in s.entities) for team in TEAMS
     ]
     assert (buildings, troops) == ([2, 3], [1, 0])
-    # A building card tapped on the seat's own placed building is refused as OCCUPIED.
+    # A building card tapped on the seat's own placed building is ACCEPTED: a tap whose
+    # box does not fit is relocated, not refused, so nothing already on the board makes a
+    # building tap illegal. Where it then lands is what
+    # test_every_cannon_the_engine_builds_stands_on_ground_it_may_stand_on grades.
     for team, spot in ((BLUE, at_tile(rust, 29, 23)), (RED, at_tile(rust, 9, 45))):
-        assert rust.check_deploy(DeployCommand(team, 0, *spot)) == DeployStatus.OCCUPIED
+        assert rust.check_deploy(DeployCommand(team, 0, *spot)) == DeployStatus.OK
 
     rust.reset(1, board_setup(rust, "princess_down", decks))
     s = rust.state()
     assert s.players[BLUE].tower_hp[TowerSlot.LEFT] == 0 < s.players[BLUE].tower_hp[TowerSlot.RIGHT]
     assert s.players[RED].tower_hp[TowerSlot.RIGHT] == 0 < s.players[RED].tower_hp[TowerSlot.LEFT]
-    # A Cannon on the own tile of a princess tower (3, 6) left, (14, 6) right is refused
-    # while that tower stands and accepted once it has fallen.
-    for team, tx, fallen in ((BLUE, 3, True), (RED, 3, False), (BLUE, 14, False), (RED, 14, True)):
-        want = DeployStatus.OK if fallen else DeployStatus.OCCUPIED
+    # A Cannon on the own tile of a princess tower is accepted whether or not that tower
+    # still stands, because a tower in the way relocates the building rather than
+    # refusing the tap. The board is still what it says: the tower states differ, which
+    # is what the two asserts above check.
+    for team, tx in ((BLUE, 3), (RED, 3), (BLUE, 14), (RED, 14)):
         cmd = DeployCommand(team, 0, *own_tile_centre(rust, team, tx, 6))
-        assert rust.check_deploy(cmd) == want, (SEAT[team], tx)
+        assert rust.check_deploy(cmd) == DeployStatus.OK, (SEAT[team], tx)
 
 
 # ---------------------------------------------------------------------------
@@ -392,46 +400,121 @@ def test_the_limit_check_passes_a_clear_spot_and_names_each_limit():
 
 
 @needs_core
-def test_every_cannon_tile_the_mask_offers_fits_the_cannon_box(rust, request):
+def test_every_cannon_the_engine_builds_stands_on_ground_it_may_stand_on(rust):
+    """THE OWNER'S DEFECT, graded on what the engine BUILT rather than on what was tapped.
+
+    The owner saw a Cannon sitting against the arena wall. A tap is not the place to
+    catch that any more: a tap whose box does not fit is relocated rather than refused
+    (``placement.ILLEGAL_TAP``), so almost every tap on a player's own half is legal and
+    the question is only where the building ends up. So this taps EVERY tile the mask
+    offers, lets the engine place the Cannon, and reads the box back out of
+    ``engine.state()``: it must lie inside the arena, inside its own half, off water and
+    off no-deploy cells, and never overlap a crown tower.
+
+    Both seats, and the two seats must also agree: a rule that holds for Blue and not
+    for Red is a rule about the colour, which this game does not have.
+    """
     cannon = card_ids(rust)["Cannon"]
-    rust.reset(1, board_setup(rust, "opening", [[cannon] * DECK_SIZE] * 2))
-    size = catalogue_footprint_tiles(rust).get("Cannon", CANNON_TILES)
-    parser = TileActionParser()
-    parser.bind(rust)
-    state = rust.state()
-    offered = [0, 0]
+    setup = board_setup(rust, "opening", [[cannon] * DECK_SIZE] * 2)
+    arena = rust.arena()
+    built = [0, 0]
     failures: dict[tuple[str, str], list[tuple[int, int]]] = {}
     for team in TEAMS:
+        rust.reset(1, setup)
+        state = rust.state()
+        parser = TileActionParser()
+        parser.bind(rust)
         mask = parser.action_mask(state, team)[1:].reshape(HAND_SIZE, parser.ny, parser.nx)
-        for ty, tx in zip(*np.nonzero(mask[0]), strict=True):
-            offered[team] += 1
-            tile = (int(tx), int(ty))
-            for why in box_limit_failures(rust.arena(), state, team, tile, size):
-                failures.setdefault((SEAT[team], why), []).append(tile)
-    assert min(offered) > 0, f"offered Cannon tiles per seat {offered}"
-    fail_until_reported(request, rust)
-    assert not failures, f"Cannon {size[0]}x{size[1]}, offered tiles {offered}:\n" + "\n".join(
-        f"  {seat} {why}: {len(tiles)} own tiles {sorted(tiles)}"
+        offers = [(int(tx), int(ty)) for ty, tx in zip(*np.nonzero(mask[0]), strict=True)]
+        for tile in offers:
+            rust.reset(1, setup)
+            before = {e.uid for e in rust.state().entities}
+            cmd = DeployCommand(team, 0, *own_tile_centre(rust, team, *tile))
+            if rust.check_deploy(cmd) != DeployStatus.OK:
+                continue
+            rust.step([cmd], 1)
+            after = rust.state()
+            new_ents = [e for e in after.entities if e.uid not in before]
+            if not new_ents:
+                failures.setdefault((SEAT[team], "accepted but nothing was built"), []).append(tile)
+                continue
+            built[team] += 1
+            for e in new_ents:
+                for why in box_failures(arena, after, team, e):
+                    failures.setdefault((SEAT[team], why), []).append(tile)
+    assert min(built) > 0, f"no Cannon was built on some seat: {built}"
+    assert built[0] == built[1], f"the seats were offered different numbers of taps: {built}"
+    detail = "\n".join(
+        f"  {seat} {why}: {len(tiles)} own tiles {sorted(tiles)[:12]}"
         for (seat, why), tiles in sorted(failures.items())
     )
+    assert not failures, f"a Cannon the engine built stands where no building may:\n{detail}"
 
 
 @needs_core
-def test_the_engine_refuses_a_cannon_tapped_on_the_back_row(rust, request):
+def test_a_cannon_tapped_at_the_back_wall_is_moved_inside_it(rust):
+    """The owner's case exactly: tap the back row and see where the Cannon ends up.
+
+    It is no longer refused, so the test is not "was it refused" but "did it end up
+    somewhere a building may stand". A Cannon whose box would hang off the back wall
+    must come back inside it.
+    """
     cannon = card_ids(rust)["Cannon"]
-    rust.reset(1, board_setup(rust, "opening", [[cannon] * DECK_SIZE] * 2))
-    accepted: dict[str, list[int]] = {}
+    setup = board_setup(rust, "opening", [[cannon] * DECK_SIZE] * 2)
+    arena = rust.arena()
+    moved = [0, 0]
+    problems: list[str] = []
     for team in TEAMS:
-        # A Cannon well inside its own half is accepted, so a refusal below is about
-        # the wall, not the hand or the bar.
-        cmd = DeployCommand(team, 0, *own_tile_centre(rust, team, *PLAY_TILE))
-        assert rust.check_deploy(cmd) == DeployStatus.OK, SEAT[team]
-        for tx in range(rust.arena().tiles_x):
+        for tx in range(arena.tiles_x):
+            rust.reset(1, setup)
+            before = {e.uid for e in rust.state().entities}
             cmd = DeployCommand(team, 0, *own_tile_centre(rust, team, tx, 0))
-            if rust.check_deploy(cmd) == DeployStatus.OK:
-                accepted.setdefault(SEAT[team], []).append(tx)
-    fail_until_reported(request, rust)
-    assert not accepted, f"a Cannon tapped on the back row is accepted at own columns {accepted}"
+            if rust.check_deploy(cmd) != DeployStatus.OK:
+                continue
+            rust.step([cmd], 1)
+            after = rust.state()
+            for e in (x for x in after.entities if x.uid not in before):
+                why = box_failures(arena, after, team, e)
+                if why:
+                    problems.append(f"{SEAT[team]} own column {tx}: {', '.join(why)}")
+                elif e.footprint is not None:
+                    moved[team] += 1
+    detail = "\n".join(problems[:12])
+    assert not problems, f"a Cannon tapped on the back row stands where no building may:\n{detail}"
+    assert min(moved) > 0, f"no back-row tap built a Cannon with a box on some seat: {moved}"
+
+
+def box_failures(arena: Arena, state: BattleState, team: int, e) -> list[str]:
+    """Which limits the box an entity actually carries breaks. Empty when it breaks none."""
+    if e.footprint is None:
+        return []
+    x0, y0, x1, y1 = e.footprint
+    hy0 = y0 // arena.half_size
+    hx0 = x0 // arena.half_size
+    out = []
+    if x0 < 0 or y0 < 0 or x1 > arena.width or y1 > arena.height:
+        out.append("outside the arena")
+        return out
+    cells = [
+        (hx, hy)
+        for hy in range(hy0, max(hy0 + 1, y1 // arena.half_size))
+        for hx in range(hx0, max(hx0 + 1, x1 // arena.half_size))
+        if hy < arena.hy and hx < arena.hx
+    ]
+    own_rows = [hy if team == BLUE else arena.hy - 1 - hy for _, hy in cells]
+    if own_rows and max(own_rows) >= arena.water_half_rows[0]:
+        out.append("outside its own half")
+    if any(arena.grid[hy][hx] & BIT_WATER for hx, hy in cells):
+        out.append("on water")
+    if any(arena.grid[hy][hx] & BIT_NO_DEPLOY for hx, hy in cells):
+        out.append("on a no-deploy cell")
+    for other in state.entities:
+        if other.uid == e.uid or other.kind not in TOWER_KINDS:
+            continue
+        if box_overlaps_tower((x0, y0, x1, y1), other):
+            out.append("on a tower")
+            break
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -661,17 +744,21 @@ def test_mirrored_cannons_report_rotated_boxes(rust):
 
 
 def circle_edge_verdicts(engine: Engine, team: int) -> dict[str, int]:
-    """A Cannon tapped around the seat's own-left princess, where a circle and a box differ.
+    """A TROOP tapped around the seat's own-left princess, where a circle and a box differ.
 
-    The tower's radius comes from the engine's state and the Cannon's from its catalogue.
-    Exactly on their sum is OCCUPIED under the circle and one subtile further is not; a
+    The radius comes from the tower in the engine's own state. Exactly on it is
+    OCCUPIED under the circle and one subtile further is not; a
     point on the diagonal, inside the square of that half-width but outside the circle,
     is accepted by the circle and refused by any box that large.
+
+    A TROOP and not a building: a building tap is not refused for a body in the way any
+    more, so a building can no longer tell a circle from a box here. What the circle
+    still governs is where a troop may be put down.
     """
     a = engine.arena()
     s = engine.state()
     tower = next(e for e in s.entities if e.team == team and e.tower_slot == TowerSlot.LEFT)
-    reach = tower.radius + engine.cards()[s.players[team].hand[0]].radius
+    reach = tower.radius  # a troop is refused within the BODY's own radius, not a sum
     diagonal = reach * 3 // 4  # 3/4 < 1 < 3/4 * sqrt(2)
     ox, oy = to_own(a, team, tower.x, tower.y)
     points = {
@@ -686,10 +773,16 @@ def circle_edge_verdicts(engine: Engine, team: int) -> dict[str, int]:
 
 
 def mock_on_cannon_board() -> MockEngine:
+    """A board with a Cannon standing, and KNIGHT in every hand slot.
+
+    The hand is a troop because ``circle_edge_verdicts`` asks what the circle still
+    decides, and since a building tap stopped being refused for a body in the way, that
+    is troop placement.
+    """
     eng = MockEngine()
     setup = mock_cannon_setup(eng)
-    cannon = card_ids(eng)["Cannon"]
-    eng.reset(1, msgspec.structs.replace(setup, decks=[[cannon] * DECK_SIZE] * 2))
+    knight = card_ids(eng)["Knight"]
+    eng.reset(1, msgspec.structs.replace(setup, decks=[[knight] * DECK_SIZE] * 2))
     return eng
 
 
@@ -712,6 +805,10 @@ def mock_statement_problems(eng: MockEngine) -> list[str]:
         "one past it": DeployStatus.OK,
         "on the diagonal": DeployStatus.OK,
     }
+    if eng.rules().illegal_building_tap != "refuse" and mock_engine_module.__dict__.get(
+        "RELOCATES_A_BUILDING_THAT_DOES_NOT_FIT", False
+    ):
+        out.append("it claims to relocate a building that does not fit, and it does not")
     for team in TEAMS:
         got = circle_edge_verdicts(eng, team)
         if got != want:
