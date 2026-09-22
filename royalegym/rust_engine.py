@@ -199,10 +199,24 @@ def catalogue_vintage_split(
     Returned as a ready reason string so a test can skip on it and SAY SO. A skip is
     not a pass: the comparison that skipped still has to run somewhere.
     """
-    differences: dict[str, list[str]] = {}
     if len(rust_cards) != len(mock_cards):
-        differences["catalogue size"] = [f"{len(rust_cards)}/{len(mock_cards)} cards"]
-    for a, b in zip(rust_cards, mock_cards, strict=False):
+        # STOP HERE. The rows are compared position-wise, so two catalogues of
+        # different SCOPE produce field differences that read as data corruption:
+        # card 3 against card 3 gives "name: MiniPekka Pekka/MiniPekka", which is not
+        # a claim about MiniPekka and has sent at least one reader hunting a data bug
+        # that was not there. Different lengths mean the two engines were built over
+        # different card SETS, which is a caller error, not a vintage split.
+        return (
+            f"the two engines hold different NUMBERS of cards, {len(rust_cards)} and "
+            f"{len(mock_cards)}, so they were built over different card sets rather "
+            f"than different tables. Construct both over the same names -- "
+            f"RustEngine(card_names=...) and MockEngine(card_names=...) -- and this "
+            f"comparison measures the engines. Comparing the two DEFAULT catalogues is "
+            f"not a vintage check: MockEngine ships a thin slice and RustEngine's "
+            f"default is every registered card in the table."
+        )
+    differences: dict[str, list[str]] = {}
+    for a, b in zip(rust_cards, mock_cards, strict=True):
         for field in CARD_DATA_FIELDS:
             if getattr(a, field) != getattr(b, field):
                 differences.setdefault(field, []).append(

@@ -341,10 +341,15 @@ def test_catalogue_vintage_split_names_the_field_the_card_and_both_vintages():
     assert "A SKIP IS NOT A PASS" in why
     assert mock_engine.RAW_CARD_PACK in why
     assert protocol.derived_cards_vintage() in why
-    # a catalogue of a different SIZE is the same split, said plainly
+    # Different LENGTHS are a different thing and must not be reported as field
+    # differences: rows are compared position-wise, so two catalogues of different
+    # scope give "name: X Y/X", which reads as data corruption and is not.
     short = catalogue_vintage_split(rust, mock[:1])
     assert short is not None
-    assert "2/1 cards" in short
+    assert "different NUMBERS of cards" in short
+    assert "2 and 1" in short
+    assert "Goblins" not in short, "a length mismatch must not also report field noise"
+    assert "card_names" in short, "say how to fix it"
 
 
 def test_derived_cards_vintage_reads_the_provenance_the_extractor_wrote(tmp_path):
