@@ -358,11 +358,18 @@ closed, a training run spends more time describing the battle than playing it.
     It left a checkpoint with the network, the advantage scaler and the ladder's pool under
     `runs/smoke-85b4ce0a1d6e8f1d/checkpoints/`.
 
-    Read what that proves narrowly. `smoke.json` runs on `MockEngine`, the pure-Python stand-in,
-    with a `timestep_limit` of 96. It is a self-test that the loop closes, not a training run
-    and not the real engine. `laptop.json` and `workstation.json` are the real thing:
-    `RustEngine` and a limit of 100,000,000 timesteps. **Nobody has run one of those to the
-    end.** If you do, you will be the first, and the project would like to hear what happened.
+    Read what that proves narrowly. `smoke.json` runs on `MockEngine`, the pure-Python
+    stand-in, with a `timestep_limit` of 96. It is a self-test that the loop closes, not a
+    training run and not the real engine.
+
+    **The real profile does not currently run.** `laptop.json` uses `RustEngine` and a limit
+    of 100,000,000 timesteps. Run it and it clears every start-up gate and then stops in the
+    first collection round with `AssertionError: mask[NOOP] must be True on every row`. That
+    is a known open defect and someone is bisecting it. Checked here, not taken on report.
+
+    So the state tonight is: the self-test runs end to end, and the configuration you would
+    actually train with has a bug in front of it. Nothing on this page can tell you what a
+    real run costs, because nobody has been able to do one.
 
 Source for this section: RoyaleLearn's own README and its owner, on 2026-09-22.
 
@@ -381,10 +388,21 @@ Start with the middle two, not the last one.
 
 - `config` writes out a config file with sensible settings so you have something to edit rather
   than a blank page. The profiles will be `laptop`, `workstation` and `many-core`.
-- `doctor` builds one environment and checks it. It prints which engine build you have and the
-  shapes of everything, checks the list of legal moves against the engine exhaustively, works out
-  how much memory your run will need and refuses to start a run that will not fit. It takes
-  seconds and it catches most first-run failures.
+- `doctor` builds one environment and runs the start-up gates on it. These are the same gates
+  `train` runs before it begins, so this is what they look like, copied from a real run:
+
+        mask gate     4608 actions checked, 0 disagreements
+        no-op gate    1000 sampled states and a finished battle, all legal
+        action layout 2304 actions exhaustive, mask planes checked on 1000 states
+        engine build  calibration dbd052b6cdce build c3f431117e93 catalogue d6170aa68d21
+        memory        projected total                  3292 MB
+        geometry      3 workers x 32 battles = 96 battles, 192 slots, 144 of them learner rows
+        iteration     228 cycles for 32768 timesteps; credit horizon 38.6 s
+
+  It checks every legal move against the engine exhaustively rather than sampling, prints the
+  three build digests so you can tell whether your engine matches your data, and projects the
+  memory a run will need so it can refuse one that will not fit. Run it first; it is quick, and
+  it is where a mismatched build shows up.
 - `bench` measures how fast your own machine is, so you can plan a run against your number
   instead of the table above. Budget time for it. It forks a farm of worker processes and
   prints nothing while it works: on a 4-core laptop with other jobs running it had produced no
