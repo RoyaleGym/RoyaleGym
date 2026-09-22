@@ -180,17 +180,24 @@ def catalogue_vintage_split(
 ) -> str | None:
     """Why the two engines are reading DIFFERENT card tables, or None.
 
-    The compiled engine carries the catalogue it was built with; MockEngine reads the
-    raw CSVs on disk. In a public checkout those are the same vintage by
-    construction -- the newer client packs are not redistributed, so the extractor
-    can only build the tracked one -- and any difference here is a real defect. On a
-    machine that HAS a newer pack and regenerated cards.json from it, the two are
-    simply different tables, and every cross-engine comparison is then measuring the
-    data rather than the engines.
+    The compiled engine carries the catalogue it was BUILT with; MockEngine reads the
+    raw CSVs on disk, every time. In a public checkout that is built there, the two are
+    the same vintage by construction: the newer client packs are not redistributed, so
+    the extractor can only produce the tracked table, and any difference here is then a
+    real defect. On a machine that HAS a newer pack and regenerated cards.json from it,
+    the two are simply different tables and every cross-engine comparison is measuring
+    the data rather than the engines.
+
+    THE TWO HALVES MOVE AT DIFFERENT TIMES, which is the part that catches people out.
+    Pointing ``ROYALESIM_DATA_DIR`` at a 2018 data directory moves MockEngine's half
+    immediately and does not move the compiled half at all -- measured: with a pure 2018
+    data dir the extension still reported 95 cards and Goblins at 4. So getting the two
+    to agree needs a BUILD in that checkout, not just its data. ``stale_build_differences``
+    does not cover this: it compares calibration.json and arena.json, deliberately not
+    the card table, and the skip is what handles the catalogue instead.
 
     Returned as a ready reason string so a test can skip on it and SAY SO. A skip is
-    not a pass: the comparison that skipped still has to run somewhere, which for
-    this one is a checkout without the private pack.
+    not a pass: the comparison that skipped still has to run somewhere.
     """
     differences: dict[str, list[str]] = {}
     if len(rust_cards) != len(mock_cards):
@@ -206,10 +213,12 @@ def catalogue_vintage_split(
     detail = "; ".join(f"{f}: {', '.join(v[:4])}" for f, v in sorted(differences.items()))
     return (
         "the two engines are reading different card tables, so this comparison would "
-        "measure the DATA and not the engines. A SKIP IS NOT A PASS -- run it in a "
-        "checkout without the private client pack, where both sides read the tracked "
-        f"table. cards.json vintage {derived_cards_vintage()!r} vs MockEngine's "
-        f"{RAW_CARD_PACK!r}. Differences (rust/mock) -- {detail}"
+        "measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, use a "
+        "checkout with no private client pack AND BUILD royalesim IN IT: the compiled "
+        "engine carries the table it was built with, so changing the data on disk alone "
+        "moves only MockEngine's half and these will still skip. cards.json vintage "
+        f"{derived_cards_vintage()!r} vs MockEngine's {RAW_CARD_PACK!r}. "
+        f"Differences (rust/mock) -- {detail}"
     )
 
 

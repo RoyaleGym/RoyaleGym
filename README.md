@@ -168,10 +168,14 @@ Without the engine built the Rust-backed tests skip; an engine build older than 
 fails them rather than skipping.
 
 **On a checkout that has a private client pack, the two-engine agreement gate does not run.** It
-skips, loudly and with its reason, and a skip is not a pass — but it means the machine most likely
-to be running this suite is the one machine not checking that contract. If you have
-`RoyaleSim/data/raw/cr-*/` and a `cards.json` generated from it, run the comparison somewhere that
-does not, or regenerate `cards.json` with `--vintage 2018` first.
+skips, loudly and with its reason, and a skip is not a pass. It means the machine most likely to be
+running this suite is the one machine not checking that contract.
+
+Getting it to run takes a data directory without the private pack **and a `royalesim` built in that
+checkout**. The compiled engine carries the card table it was built with, so regenerating
+`cards.json` or repointing `ROYALESIM_DATA_DIR` moves only `MockEngine`'s half and the tests still
+skip. Measured: with a pure 2018 data directory, an extension built from the newer pack still
+reported 95 cards with Goblins at 4.
 
 The six SKIPS on 2026-09-21 are a card-table vintage split, and they cannot happen in a public
 checkout: only the oldest raw client pack is tracked, so the extractor builds the same table the
