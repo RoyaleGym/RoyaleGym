@@ -811,11 +811,69 @@ def _build_component(spec: Any) -> Any:
     return factory(**dict(kwargs))
 
 
+#: Constructor arguments that carry per-battle state. One INSTANCE of any of these
+#: cannot be shared between environments, and ``make_gym_vec_env`` refuses to.
+UNSHAREABLE = (
+    "engine",
+    "obs_builder",
+    "action_parser",
+    "reward_fn",
+    "termination_cond",
+    "truncation_cond",
+    "recorder",
+    "viser",
+)
+
+
 def make_gym_vec_env(
-    num_envs: int, autoreset_mode: AutoresetMode = AutoresetMode.NEXT_STEP, **env_kwargs: Any
+    num_envs: int,
+    autoreset_mode: AutoresetMode = AutoresetMode.NEXT_STEP,
+    **env_kwargs: Any,
 ) -> gym.vector.SyncVectorEnv:
-    """Stock SyncVectorEnv of ClashGymEnv. Masks: ``np.stack(vec.call("action_masks"))``."""
+    """Stock SyncVectorEnv of ClashGymEnv. Masks: ``np.stack(vec.call("action_masks"))``.
+
+    REFUSES A SHARED COMPONENT, because the signature invites one. ``**env_kwargs``
+    is evaluated once and handed to every environment, so
+    ``make_gym_vec_env(3, engine=MockEngine())`` gives three environments one engine
+    and nothing anywhere says so. Measured before this check existed: after a single
+    vector step the three sat at ticks 10, 20 and 30 -- three windows onto ONE
+    battle, each stepping it again, with every reward computed against another
+    environment's previous state. No exception, no warning, and a training run
+    collecting it would see only that learning did not work.
+
+    The same holds for every piece that carries state. An ObsBuilder now remembers
+    the match (``MatchMemory``); an ActionParser caches placement grids; a
+    ``StepLimitCondition`` counts steps; ``CombinedReward`` keeps a breakdown per
+    team. Sharing any of them silently crosses the wires between environments.
+
+    So pass a CLASS or a factory instead of an instance, and each environment builds
+    its own::
+
+        make_gym_vec_env(8, engine=MockEngine)                 # the class
+        make_gym_vec_env(8, engine=lambda: RustEngine(card_names=SHARED))
+
+    ``decision_ms``, ``agent``, ``render_mode`` and an ``opponent`` hold no
+    per-battle state and pass through unchanged.
+    """
+    shared = [
+        f"{name}={type(env_kwargs[name]).__name__}(...)"
+        for name in UNSHAREABLE
+        if name in env_kwargs and not callable(env_kwargs[name])
+    ]
+    if shared:
+        raise TypeError(
+            "make_gym_vec_env builds every environment from the same arguments, so "
+            f"these would be ONE object shared by all {num_envs}: {', '.join(shared)}. "
+            "Each carries per-battle state -- an engine IS the battle, a builder "
+            "remembers the match, a step limit counts steps -- so the environments "
+            "would silently step each other's. Pass the class or a factory instead: "
+            "make_gym_vec_env(n, engine=MockEngine) or engine=lambda: RustEngine(...)."
+        )
+
+    def build() -> ClashGymEnv:
+        made = {k: (v() if k in UNSHAREABLE and callable(v) else v) for k, v in env_kwargs.items()}
+        return ClashGymEnv(**made)
+
     return gym.vector.SyncVectorEnv(
-        [lambda: ClashGymEnv(**env_kwargs) for _ in range(num_envs)],
-        autoreset_mode=autoreset_mode,
+        [build for _ in range(num_envs)], autoreset_mode=autoreset_mode
     )

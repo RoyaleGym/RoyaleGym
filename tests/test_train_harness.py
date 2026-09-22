@@ -35,12 +35,14 @@ from royalegym.env import (
     ClashParallelEnv,
     ClashSelfPlayVecEnv,
     EnvFactory,
+    make_gym_vec_env,
 )
 from royalegym.mock_engine import MockEngine
 from royalegym.obs import EntityListObsBuilder, Reveal, SpatialObsBuilder
 from royalegym.protocol import MatchSetup, TowerSlot, calibration_digest
 from royalegym.reward import CombinedReward, CrownReward, TowerHPReward, WinLossReward
 from royalegym.rust_engine import core_available
+from royalegym.selfplay import NoopOpponent
 from royalegym.state_mutator import DefaultStateMutator
 from royalegym.viser import ENV_VAR, ViserPublisher
 
@@ -475,3 +477,53 @@ def test_the_episode_says_whether_its_counted_features_were_trustworthy():
         if not env.agents:
             break
     assert infos["blue"]["elixir_count_exact"] is False
+
+
+# ---------------------------------------------------------------------------
+# 7. a vector env may not share one component between its environments
+# ---------------------------------------------------------------------------
+
+
+def test_make_gym_vec_env_refuses_a_shared_component():
+    """The signature invites the mistake, so it has to refuse it.
+
+    ``**env_kwargs`` is evaluated once and handed to every environment. Before this
+    check, ``make_gym_vec_env(3, engine=MockEngine())`` gave three environments ONE
+    engine: after a single vector step they sat at ticks 10, 20 and 30, three
+    windows onto one battle, each stepping it again, with every reward computed
+    against another environment's previous state. Silently.
+    """
+    for kwargs in (
+        {"engine": MockEngine()},
+        {"obs_builder": SpatialObsBuilder()},
+        {"truncation_cond": StepLimitCondition(5)},
+        {"reward_fn": CombinedReward([(WinLossReward(), 1.0)])},
+    ):
+        name = next(iter(kwargs))
+        with pytest.raises(TypeError, match=name):
+            make_gym_vec_env(3, **kwargs)
+
+
+def test_make_gym_vec_env_builds_one_component_per_environment():
+    """A class or a factory is the supported form, and each env gets its own."""
+    for spec in (MockEngine, lambda: MockEngine()):
+        vec = make_gym_vec_env(3, engine=spec)
+        engines = [e.unwrapped.parallel.engine for e in vec.envs]
+        assert len({id(e) for e in engines}) == 3
+        vec.reset(seed=0)
+        vec.step(np.zeros(3, dtype=np.int64))
+        ticks = [e.unwrapped.parallel.battle_state.tick for e in vec.envs]
+        assert len(set(ticks)) == 1, f"the envs stepped each other's battle: {ticks}"
+        assert ticks[0] > 0
+        vec.close()
+
+
+def test_make_gym_vec_env_still_passes_through_what_is_safe_to_share():
+    """Things that hold no per-battle state are not refused and are not rebuilt."""
+    vec = make_gym_vec_env(2, decision_ms=250, agent="red", opponent=NoopOpponent())
+    assert [e.unwrapped.parallel.decision_ms for e in vec.envs] == [250, 250]
+    assert all(e.unwrapped.agent == "red" for e in vec.envs)
+    vec.close()
+    plain = make_gym_vec_env(2)
+    assert len(plain.envs) == 2
+    plain.close()
