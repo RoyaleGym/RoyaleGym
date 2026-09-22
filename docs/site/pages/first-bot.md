@@ -368,24 +368,24 @@ closed, a training run spends more time describing the battle than playing it.
     is fixed with a regression test. Checked here rather than taken on report: it now collects
     full rounds.
 
-    **The first round of a run is much slower than the ones after it**, because the workers are
-    spawning and nothing is warm. Do not size a run off it. The same 228-cycle round, measured
-    across three runs on one laptop:
+    **The first round of a run is much slower than the ones after it.** That, and not your
+    hardware, is the thing to know before you time anything. The workers are spawning and
+    nothing is warm yet. The same 228-cycle round, across six measurements on one laptop:
 
-    | what else the machine was doing | first round | later rounds |
+    | | how long | spread |
     |---|---|---|
-    | a great deal | 179 s | |
-    | some | 79 s, 46 s | 19 s |
-    | very little | | 13 s |
+    | first round of a run | 46 s, 79 s, 179 s | 3.9x |
+    | every round after | 12.6 s, 13 s, 19 s | 1.5x |
 
-    So expect a couple of minutes at the start and seconds a round afterwards. The other thing
-    that table shows is that the absolute numbers move by an order of magnitude with machine
-    load, so treat any timing here as a shape rather than a promise.
+    Read the right-hand column. Once a run is warm it is fairly steady even on a busy machine,
+    and the first round is between 2.4 and 14 times the steady one depending on what else is
+    happening. So wait for the second round before you believe any number, including the ones
+    on this page.
 
     Its author reports two complete iterations with metrics rows, at 518 s and 544 s. That is
-    the first time anything real has trained in this project. About nine minutes an iteration,
-    and it is a best case: the same config on the same machine took over forty minutes for one
-    iteration with other work resident.
+    the first time anything real has trained in this project. About nine minutes an iteration
+    on an idle machine, and it degrades badly under contention: one iteration sharing eight
+    processors with a second training run had still not finished after 46 minutes.
 
     Two iterations is a loop that works. It is not a result about learning, and a useful run
     is many hours. So the honest state is that the machinery runs end to end and nobody yet
