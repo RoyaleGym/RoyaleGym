@@ -323,6 +323,7 @@ class RustEngine:
         arena_path: Path | None = None,
         path_search: str | None = None,
         ground_y_clamp: str | None = None,
+        ground_deploy_point: str | None = None,
     ) -> None:
         """``path_search``: None = the ledger's ``pathfinding.PATH_SEARCH`` (the game's own
         search, measured on client 16.402 (RoyaleLive traces), which is NOT seat-symmetric:
@@ -340,7 +341,16 @@ class RustEngine:
         the river and half a row shorter at the back edge). ``deploy_column_range_own_frame``
         is the seat-symmetric arm; ``none`` disables the clamp. It does NOT ride along with
         ``path_search``: the three knockback keys do, but the clamp is independent, so
-        ``SymmetricRustEngine`` asks for it by name."""
+        ``SymmetricRustEngine`` asks for it by name.
+
+        ``ground_deploy_point``: None = the ledger's ``formation.GROUND_DEPLOY_POINT``
+        (``client16402_one_unit``, the game's own, measured): a GROUND summon's ring is
+        laid on a point one native unit off the tap -- in x when the tap is on the
+        arena's LEFT half, either seat, and in y when the owner is side 1, either half.
+        A FLYING summon's ring is laid on the tap itself. Two offsets keyed two
+        different ways, so the shipped arm is neither seat-symmetric nor frame-symmetric.
+        ``none`` lays every ring on the tap. Like the clamp it is independent of
+        ``path_search`` and has to be asked for by name."""
         if _core is None:
             raise ImportError(CORE_IMPORT_ERROR)
         cal = calibration or default_calibration()
@@ -356,11 +366,13 @@ class RustEngine:
         self.slot_of_k = _derive_slot_of_k(self._arena)
         self.path_search = path_search
         self.ground_y_clamp = ground_y_clamp
+        self.ground_deploy_point = ground_deploy_point
         self._battle = _core.Battle(
             list(card_names) if card_names is not None else None,
             self.slot_of_k,
             path_search,
             ground_y_clamp,
+            ground_deploy_point,
         )
         terr = territory_differences(self._battle, self._rules, self._arena, self.slot_of_k)
         if terr:
@@ -500,6 +512,7 @@ class RustEngine:
             "card_level": self.card_level,
             "path_search": self.path_search,
             "ground_y_clamp": self.ground_y_clamp,
+            "ground_deploy_point": self.ground_deploy_point,
             "calibration_digest": calibration_digest(self.calibration),
         }
 
@@ -624,6 +637,7 @@ class SymmetricRustEngine(RustEngine):
     def __init__(self, *args, **kwargs) -> None:
         kwargs.setdefault("path_search", "trace_fitted_astar")
         kwargs.setdefault("ground_y_clamp", "deploy_column_range_own_frame")
+        kwargs.setdefault("ground_deploy_point", "none")
         self._probe_args = (args, dict(kwargs))
         super().__init__(*args, **kwargs)
 
