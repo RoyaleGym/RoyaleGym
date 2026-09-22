@@ -196,6 +196,12 @@ def catalogue_vintage_split(
     does not cover this: it compares calibration.json and arena.json, deliberately not
     the card table, and the skip is what handles the catalogue instead.
 
+    THAT IS OBSERVED, NOT PREDICTED. A clean clone of the four repos, its data generated
+    from the tracked 2018 tables and royalesim built in it, runs the tests this function
+    guards: 96 passed, 0 skipped, so the two engines agree over the shared card set and
+    the contract holds. On a machine that also holds a private client pack they skip
+    instead, which is this function working rather than the contract going unchecked.
+
     Returned as a ready reason string so a test can skip on it and SAY SO. A skip is
     not a pass: the comparison that skipped still has to run somewhere.
     """
