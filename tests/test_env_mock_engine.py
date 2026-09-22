@@ -244,7 +244,8 @@ def test_plant_bridge_check_sees_units_walking_on_water(monkeypatch):
 
 
 def test_mirrored_knights_trade_symmetrically():
-    """Invariant 2. The predecessor let Blue's Knight win this trade every time."""
+    """Invariant 2. Two identical Knights in rotated positions must kill each other on the
+    same tick: any rule that breaks the tie on slot or spawn order hands one seat the trade."""
     eng = MockEngine()
     a = eng.arena()
     x = a.subtile * 7 // 2

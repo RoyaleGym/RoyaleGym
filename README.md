@@ -74,9 +74,9 @@ shape is the one the Rocket League community settled on with RLGym over RocketSi
 RLGym-PPO and watched in rlviser: a fast deterministic engine
 ([RoyaleSim](https://github.com/RoyaleGym/RoyaleSim), Rust), an environment API over it (this
 repo), a training harness on top ([RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn)), a
-viewer beside them ([RoyaleViser](https://github.com/RoyaleGym/RoyaleViser)), and a private
-client instrument (RoyaleLive) that records real battles, against which the engine is
-calibrated. Dependencies run one way, RoyaleLearn to RoyaleGym to RoyaleSim: the engine knows
+viewer beside them ([RoyaleViser](https://github.com/RoyaleGym/RoyaleViser)), and a client
+instrument (RoyaleLive) that records ground-truth traces from the real game, against which the
+engine is calibrated. Dependencies run one way, RoyaleLearn to RoyaleGym to RoyaleSim: the engine knows
 nothing about rewards or observations, this repo knows nothing about PPO.
 
 | Repo | What it is | To this repo |
@@ -85,7 +85,7 @@ nothing about rewards or observations, this repo knows nothing about PPO.
 | **RoyaleGym** (this repo) | the environment API: observations, actions, rewards; Gymnasium, PettingZoo and self-play envs | package `royalegym`, which composes the five pieces into the envs |
 | [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | the consumer of these envs (designed, not yet written) |
 | [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | the viewer: recordings, engine traces and running environments in its own window | reads this package's traces and its UDP frame stream; the still above is its window |
-| RoyaleLive | the private client instrument that records real battles | nothing directly: its recordings calibrate RoyaleSim, and the fidelity reaches the envs through the engine |
+| RoyaleLive | the client instrument that records ground-truth traces from the real game | nothing directly: its recordings calibrate RoyaleSim, and the fidelity reaches the envs through the engine |
 
 What flows in: the compiled engine module `royalesim`, and RoyaleSim's data files (its table
 of calibrated constants and the derived arena and card tables), found at `../RoyaleSim/data`

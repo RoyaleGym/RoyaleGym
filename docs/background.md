@@ -26,9 +26,9 @@ pathfinder, and no amount of reasoning about the old one recovers it.
 
 The answer the project settled on is to treat the real game as the oracle: per-tick
 recordings of real battles — entity state, targets and each unit's planned path nodes — turn
-"work out the pathfinder" into a differential test. RoyaleLive, a private sibling repo, is
-the client instrument that records those ground-truth traces; RoyaleSim's `tools/oracle_diff.py`
-diffs the engine against one. Every constant that comes out of that process lands in
+"work out the pathfinder" into a differential test. RoyaleLive, the client instrument that records those
+ground-truth traces, produces them; RoyaleSim's `tools/oracle_diff.py` diffs the engine against
+one. Every constant that comes out of that process lands in
 `RoyaleSim/data/calibration.json` with the client version it was measured on, because a
 monthly client update can move it.
 
