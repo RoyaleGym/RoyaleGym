@@ -587,6 +587,14 @@ def measure_variability(
     on a dead one depending only on how much of the observation happens to be
     static.
 
+    THE SAME STATES IS A CONSTRAINT, NOT A CONVENIENCE. With 0.4% of cells moving,
+    the baseline is dominated by which states were sampled: boards that differ only
+    in elixir barely move the number, a board with a tower down moves it much more.
+    Two people measuring the SAME encoder against baselines taken on different state
+    sets will disagree about that encoder, and both will be right about what they
+    measured. Take the baseline on the states the encoding was measured on, or the
+    two numbers are not a pair.
+
     WHAT THIS IS NOT FOR: comparing two DIFFERENT builders with each other. The
     number is built to compare one representation against ITSELF -- an encoding
     against the input it came from, on the same states, as a ratio. Across builders
