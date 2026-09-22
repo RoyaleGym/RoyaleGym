@@ -173,7 +173,10 @@ class OpponentPool:
         """Record one game. ``score_a`` is 1 (a won), 0.5 (draw) or 0 (b won).
 
         Returns the new (elo_a, elo_b). The update is zero-sum: the pool's total
-        Elo is conserved, which the tests check.
+        Elo is conserved, checked by
+        ``tests/test_selfplay_pool.py::test_the_elo_update_is_zero_sum``. It was not
+        checked by anything for the life of this class, while this line said it was --
+        which is worse than saying nothing, because it stops the next reader looking.
         """
         if score_a not in (0.0, 0.5, 1.0):
             raise ValueError("score_a must be 0, 0.5 or 1")

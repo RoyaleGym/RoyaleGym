@@ -40,8 +40,12 @@ from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
 
 REPO = Path(__file__).resolve().parents[1]
 README = REPO / "README.md"
-#: The vintage the printed output was recorded against. A different catalogue is a
-#: different battle, which is a skip with the reason rather than a failure.
+#: The vintage the printed output was recorded against. Named so the failure message
+#: can say it: a different catalogue is the first thing to suspect when the battle
+#: changes. It is NOT a skip -- a printed result that is wrong for the reader's
+#: catalogue is wrong, and skipping would hide it. Both vintages on this machine
+#: produce the same battle, which is the README's point about naming cards rather than
+#: numbering them, and it is checked rather than assumed.
 RECORDED_VINTAGE = "retroroyale-2018"
 
 pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
@@ -85,6 +89,39 @@ def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
         f"recorded against {RECORDED_VINTAGE!r}. It held on both when it was written, so "
         "a difference means one of the eight named cards has changed, and the README's "
         "printed battle is now wrong for whoever has this catalogue."
+    )
+
+
+def test_the_badge_count_matches_what_the_suite_collects() -> None:
+    """The front page says how many tests pass. Make that a checkable claim.
+
+    It was stated in two places -- the badge and a comment in the command block -- and
+    they disagreed with each other by fifty and with the suite by more. Two copies of a
+    number is a machine for producing a wrong one: whoever updates it updates the copy
+    they are looking at.
+
+    There is one copy now, and this compares it against collection rather than against
+    a run: ``--collect-only`` is quick, does not execute anything, and passed + skipped
+    is exactly what gets collected. So adding a test without touching the badge turns
+    this red, which is the friction that keeps the number true.
+    """
+    badge = re.search(r"pytest-(\d+)%20passed%2C%20(\d+)%20skipped", README.read_text("utf-8"))
+    assert badge, "no pytest badge in README.md"
+    claimed = int(badge.group(1)) + int(badge.group(2))
+
+    done = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q"],
+        capture_output=True,
+        text=True,
+        timeout=600,
+        cwd=REPO,
+    )
+    found = re.search(r"(\d+) tests? collected", done.stdout)
+    assert found, f"could not read a collected count:\n{done.stdout[-800:]}"
+    collected = int(found.group(1))
+    assert claimed == collected, (
+        f"the README badge says {badge.group(1)} passed and {badge.group(2)} skipped, "
+        f"which is {claimed} tests, and pytest collects {collected}."
     )
 
 

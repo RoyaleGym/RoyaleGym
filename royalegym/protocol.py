@@ -87,6 +87,35 @@ def data_dir() -> Path:
     return p
 
 
+def require_data_file(p: Path, *commands: str, generated: bool = True) -> Path:
+    """Return ``p``, or raise a FileNotFoundError that says how to produce it.
+
+    A fresh clone has calibration.json and raw/, and nothing under derived/: those files
+    are generated, and RoyaleSim does not track them. So the first thing every entry
+    point here did on a fresh clone was raise a bare path and stop. A path is not an
+    instruction, and it arrives at the exact moment the reader has nothing else to go
+    on -- they have just run the first line of the README.
+
+    One helper rather than a message per call site, because there were four of these and
+    only one had been written. That one was not even reachable: ``Arena.load`` runs
+    before it in both engines, so nobody ever saw the good message about cards.json.
+    """
+    if p.exists():
+        return p
+    how = "".join(f"\n    python {c}" for c in commands)
+    why = (
+        "It is generated, and the generated files are not in the repository."
+        if generated
+        else "It ships with the repository, so this usually means the data directory is wrong."
+    )
+    raise FileNotFoundError(
+        f"{p} is absent. {why} In the sibling RoyaleSim checkout run:{how}\n"
+        f"The README's Install section has every step in order, and the data has to be "
+        f"extracted BEFORE the engine is built. "
+        f"(data dir: {DATA_DIR_ENV} or {DEFAULT_DATA_DIR})"
+    )
+
+
 class Calibration:
     """Read-only view of data/calibration.json.
 
@@ -101,6 +130,7 @@ class Calibration:
     @classmethod
     def load(cls, path: Path | None = None) -> Calibration:
         p = path if path is not None else data_dir() / "calibration.json"
+        require_data_file(p, "tools/extract_arena.py", generated=False)
         return cls(json.loads(p.read_text(encoding="utf-8")))
 
     def entry(self, key: str) -> dict[str, Any]:
@@ -142,6 +172,7 @@ class Calibration:
 def load_globals_csv(path: Path | None = None) -> dict[str, tuple[int | None, bool | None]]:
     """globals.csv as name -> (NumberValue, BooleanValue). Datamined, 2018 vintage."""
     p = path or data_dir() / "raw" / "retroroyale-2018" / "csv_logic" / "globals.csv"
+    require_data_file(p, "tools/extract_globals.py", generated=False)
     out: dict[str, tuple[int | None, bool | None]] = {}
     with p.open(encoding="utf-8-sig") as fh:
         rows = list(csv.reader(fh))
@@ -486,6 +517,9 @@ class Arena(msgspec.Struct, frozen=True):
     @classmethod
     def load(cls, calibration: Calibration, path: Path | None = None) -> Arena:
         p = path or data_dir() / "derived" / "arena.json"
+        # THE FIRST file every entry point touches, so this is the message a fresh
+        # clone actually gets -- ahead of the cards.json one, which nobody reached.
+        require_data_file(p, "tools/extract_arena.py")
         a = json.loads(p.read_text(encoding="utf-8"))
         expected_bits = {
             "LANE_LEFT": BIT_LANE_LEFT,
@@ -565,16 +599,13 @@ def load_tower_no_deploy_sizes(path: Path | None = None) -> dict[str, tuple[int,
     (the family's data gate: stop copying constants -- parse them).
     """
     p = path or data_dir() / "derived" / "cards.json"
-    if not p.exists():
-        raise FileNotFoundError(
-            f"{p} is absent. In the sibling RoyaleSim checkout run the commands from "
-            f"its README's Install section, which are:\n"
-            f"    python tools/extract_cards.py --vintage 2018\n"
-            f"    python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json\n"
-            f"--vintage 2018 is not optional on a public clone: without it the extractor "
-            f"wants a client asset pack that is not redistributed, and fails. "
-            f"(data dir: {DATA_DIR_ENV} or {DEFAULT_DATA_DIR})"
-        )
+    # --vintage 2018 is not optional on a public clone: without it the extractor
+    # wants a client asset pack that is not redistributed, and fails.
+    require_data_file(
+        p,
+        "tools/extract_cards.py --vintage 2018",
+        "tools/extract_cards.py --vintage 2018 --out data/derived/cards.json",
+    )
     raw = json.loads(p.read_text(encoding="utf-8"))
     out: dict[str, tuple[int, int]] = {}
     for t in raw.get("towers", []):

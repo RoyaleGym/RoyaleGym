@@ -116,29 +116,48 @@ EPISODE_STAT_KEYS = (
 MASK_KEYS = ("action_mask", "mask_planes")
 
 
-def warn_engine_not_chosen(stacklevel: int = 2) -> None:
-    """Say that nobody chose an engine, so this one is the reference implementation.
+#: Why it matters, in one place. Every entry point that can default says this, so a
+#: reader cannot get a different account of the problem depending on which door they
+#: came in by. MockEngine reads the arena and card tables RoyaleSim generates, so "no
+#: build" is the accurate claim and "no data" would not be.
+ENGINE_NOT_CHOSEN = (
+    "No engine given, so this is MockEngine: a readable reference implementation, NOT "
+    "the game. Different card table, spells that resolve instantly rather than "
+    "travelling, no stuns or knockback. Fine for learning the API; a bot trained "
+    "against it has not been trained against the game."
+)
+
+#: The REMEDY, which differs by entry point because the right answer differs. Getting
+#: this wrong is worse than saying nothing: the first version told every caller to pass
+#: ``engine=RustEngine()``, which is right for one env and a TypeError at the two places
+#: that build several -- ``ClashSelfPlayVecEnv`` takes no ``engine`` at all, and
+#: ``make_gym_vec_env`` refuses a shared instance on purpose. A remedy that raises is a
+#: message that fires exactly when somebody is stuck and then wastes their next ten
+#: minutes. ``tests/test_gym_ids.py`` RUNS each of these rather than reading them.
+ENGINE_REMEDY_ONE_ENV = (
+    " Pass engine=RustEngine() for the real one -- or engine=RustEngine, the class, when "
+    "something builds several environments from one set of arguments, as "
+    "make_gym_vec_env does. The gym ids royalegym/ClashRoyaleRust-v0 and "
+    "royalegym/ClashRoyaleMock-v0 say which engine they are in their names. Any of "
+    "those silences this."
+)
+ENGINE_REMEDY_ENV_FN = (
+    " Pass an env_fn that builds one: env_fn=lambda: ClashParallelEnv(engine="
+    "RustEngine()). This class takes no engine argument, because each of its games "
+    "needs its own. That silences this."
+)
+
+
+def warn_engine_not_chosen(remedy: str, stacklevel: int = 2) -> None:
+    """Say that nobody chose an engine, and how to choose one HERE.
 
     The warning is about the SILENCE, not about the mock. MockEngine is the right
-    default for learning the API -- it needs no build and no data -- and the wrong thing
-    to train a bot against believing it is the game. A result from it does not look
-    wrong; it just does not transfer, and before this there was nothing anywhere that
-    would have told a reader which one they had been running.
-
-    One message, raised from every entry point that can default, so a reader cannot get
-    a different explanation depending on which door they came in by.
+    default for learning the API and the wrong thing to train a bot against believing
+    it is the game. A result from it does not look wrong; it just does not transfer,
+    and before this there was nothing anywhere that would have told a reader which one
+    they had been running.
     """
-    warnings.warn(
-        "No engine given, so this is MockEngine: a readable reference implementation, "
-        "NOT the game. Different card table, spells that resolve instantly rather than "
-        "travelling, no stuns or knockback. Fine for learning the API; a bot trained "
-        "against it has not been trained against the game. Pass engine=RustEngine() for "
-        "the real one, or use the gym ids that say which they are, "
-        "royalegym/ClashRoyaleRust-v0 and royalegym/ClashRoyaleMock-v0. Either "
-        "silences this.",
-        UserWarning,
-        stacklevel=stacklevel,
-    )
+    warnings.warn(ENGINE_NOT_CHOSEN + remedy, UserWarning, stacklevel=stacklevel)
 
 
 def class_name(obj: Any) -> str:
@@ -664,7 +683,7 @@ class ClashGymEnv(gym.Env[dict[str, np.ndarray], int]):
         if agent not in AGENTS:
             raise ValueError(f"agent must be one of {AGENTS}")
         if "engine" not in parallel_kwargs:
-            warn_engine_not_chosen(stacklevel=3)
+            warn_engine_not_chosen(ENGINE_REMEDY_ONE_ENV, stacklevel=3)
         self.parallel = ClashParallelEnv(render_mode=render_mode, **parallel_kwargs)
         self.agent = agent
         self.other = AGENTS[1 - AGENTS.index(agent)]
@@ -775,7 +794,7 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
         if env_fn is ClashParallelEnv:
             # The self-play training entry point, so the most important place to say it:
             # a run that gets here has not chosen an engine and is about to train.
-            warn_engine_not_chosen(stacklevel=3)
+            warn_engine_not_chosen(ENGINE_REMEDY_ENV_FN, stacklevel=3)
         self.autoreset_seed_fn = autoreset_seed_fn
         # Episodes STARTED per game, not finished: the seed of the next one is
         # fn(game, ordinal) and the counter moves after it is used. Checkpoint it.

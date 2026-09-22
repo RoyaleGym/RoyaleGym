@@ -647,8 +647,15 @@ def test_placement_depth_ignores_refused_commands_and_the_other_team():
     assert term.get_reward(RED, state, state, [accepted]) == 0.0
 
 
-def test_a_zero_weight_term_cannot_change_the_default_reward():
-    """PlacementDepthReward ships unweighted: whether to push is what a bot learns."""
+def test_the_positional_term_stays_out_of_the_default_reward():
+    """PlacementDepthReward is not in the shipped composition at any weight.
+
+    Named for what it checks. The old name said "a zero weight term cannot change the
+    default reward", which described a term present at weight zero -- and the class
+    docstring said the same thing, and neither was true: it is absent, which is
+    stronger and simpler. A test whose name misdescribes it teaches the wrong fact to
+    everyone who greps for the behaviour instead of reading the assertion.
+    """
     from royalegym.reward import PlacementDepthReward, default_reward
 
     assert not any(

@@ -300,6 +300,37 @@ def test_every_image_the_readme_shows_is_described() -> None:
     assert not thin, f"README.md images whose alt says almost nothing: {thin}"
 
 
+def test_a_fresh_clone_is_told_how_to_generate_the_data(tmp_path, monkeypatch) -> None:
+    """The first error on a fresh clone names a command, not just a path.
+
+    A clone has calibration.json and raw/ and nothing under derived/, because those are
+    generated and RoyaleSim does not track them. Every entry point here reads
+    arena.json first, and until 2026-09-22 that was a bare ``FileNotFoundError`` with a
+    path in it -- at the exact moment the reader has nothing else to go on, having just
+    run the first line of the README.
+
+    The good message that did exist, for cards.json, was unreachable: arena.json is
+    always read first.
+    """
+    from royalegym import protocol
+
+    (tmp_path / "raw").mkdir()
+    real = protocol.data_dir() / "calibration.json"
+    if real.exists():
+        (tmp_path / "calibration.json").write_bytes(real.read_bytes())
+    monkeypatch.setenv(protocol.DATA_DIR_ENV, str(tmp_path))
+
+    with pytest.raises(FileNotFoundError) as raised:
+        protocol.Arena.load(protocol.default_calibration())
+    message = str(raised.value)
+    assert "arena.json" in message
+    assert "python tools/extract_arena.py" in message, f"no command in:\n{message}"
+    assert INSTALL_SECTION in message
+    # And it says the order, which is the part that strands people: maturin succeeds
+    # without the data and leaves an engine with no cards.
+    assert "BEFORE the engine is built" in message
+
+
 def test_the_build_command_in_the_error_matches_the_one_in_the_readme() -> None:
     """The message tells a reader to run what the README tells them to run.
 

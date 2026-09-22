@@ -62,15 +62,30 @@ def test_fraction_is_exact_not_a_rounded_percentage():
 
 
 def test_absolute_and_fraction_can_disagree_on_a_king_versus_a_princess():
+    """The two rules return DIFFERENT winners on one board. Both verdicts written out.
+
+    This is the only test in the file that distinguishes the rules, so it is the only
+    thing standing between ``lowest_tower_hp_fraction`` and being silently replaced by
+    the absolute rule.
+
+    It did not distinguish them before. It computed what to expect from ``500 * p >
+    600 * k`` -- the same cross-multiplication the fraction rule itself performs -- so
+    the assertion restated the implementation and held whatever the rule returned. On
+    this arena the BLUE branch was unreachable (it needs princess_max > 1.2 *
+    king_max), both rules in fact returned RED, and aliasing fraction to absolute left
+    all thirteen tests in this file green.
+
+    The board that separates them: each side's weakest tower is a different KIND.
+    Blue's is a princess on 500 of 1400, which is low in hp and 36% of its pool. Red's
+    is the king on 700 of 2400, which is higher in hp and 29% of its pool. So absolute
+    calls Blue's the weaker and fraction calls Red's, and the rules pick opposite
+    losers. No arithmetic here repeats theirs: the two expected winners are constants.
+    """
     k, p = tower_max()
-    assert verdict("lowest_tower_hp_absolute", [500, p, p], [k, 600, p]) == Winner.RED
-    if 500 * p > 600 * k:
-        expect = Winner.BLUE
-    elif 500 * p < 600 * k:
-        expect = Winner.RED
-    else:
-        expect = Winner.DRAW
-    assert verdict("lowest_tower_hp_fraction", [500, p, p], [k, 600, p]) == expect
+    blue = [k, 500, p]  # full king, one badly damaged princess
+    red = [700, p, p]  # damaged king, both princesses full
+    assert verdict("lowest_tower_hp_absolute", blue, red) == Winner.RED
+    assert verdict("lowest_tower_hp_fraction", blue, red) == Winner.BLUE
 
 
 @pytest.mark.parametrize("rule", RULES)

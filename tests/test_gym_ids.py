@@ -29,7 +29,13 @@ import gymnasium as gym
 import pytest
 
 import royalegym
-from royalegym.env import ClashParallelEnv, ClashSelfPlayVecEnv
+from royalegym import env as env_module
+from royalegym.env import (
+    ClashGymEnv,
+    ClashParallelEnv,
+    ClashSelfPlayVecEnv,
+    make_gym_vec_env,
+)
 from royalegym.mock_engine import MockEngine
 from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
 
@@ -124,17 +130,90 @@ def test_an_env_fn_silences_the_self_play_warning() -> None:
 
 
 def test_both_entry_points_give_the_same_explanation() -> None:
-    """One message, so a reader does not get a different story per door.
+    """One account of the PROBLEM, so a reader does not get a different story per door.
 
-    Two hand-written copies of an explanation is how they drift, and the one that
-    drifts is always the one nobody reads.
+    The remedy differs by door and has to; the explanation must not.
     """
     _, from_gym = made(royalegym.GYM_ENV_ID)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         ClashSelfPlayVecEnv(1, viser=None).close()
     from_vec = [w for w in caught if issubclass(w.category, UserWarning)]
-    assert str(from_gym[0].message) == str(from_vec[0].message)
+    for message in (from_gym[0].message, from_vec[0].message):
+        assert str(message).startswith(env_module.ENGINE_NOT_CHOSEN)
+
+
+def test_the_remedy_each_warning_offers_actually_works() -> None:
+    """RUN the advice, do not read it.
+
+    This is the test that was missing. The first version of the warning told every
+    caller to pass ``engine=RustEngine()``. That is right for one environment and a
+    TypeError at both places that build several: ``ClashSelfPlayVecEnv`` takes no
+    ``engine`` argument at all, and ``make_gym_vec_env`` refuses a shared instance on
+    purpose, because one engine behind several environments gives you several windows
+    onto one battle. So two of the three doors answered a warning with a crash.
+
+    Nothing caught it, because the message was checked for the words it contained
+    rather than for whether following it worked.
+    """
+    # one env: the instance form
+    ClashGymEnv(engine=MockEngine()).close()
+    # several envs from one set of arguments: the CLASS form, as the message says
+    make_gym_vec_env(2, engine=MockEngine).close()
+    # self-play: an env_fn, as its own message says
+    ClashSelfPlayVecEnv(
+        2, lambda: ClashParallelEnv(engine=MockEngine()), viser=None
+    ).close()
+
+
+#: (name, how to trigger the warning, the constructors whose parameters the advice may
+#: name). ClashGymEnv forwards **parallel_kwargs, so ClashParallelEnv's arguments are
+#: fair game there.
+WARNING_SITES = (
+    ("ClashGymEnv", lambda: ClashGymEnv(), (ClashGymEnv, ClashParallelEnv)),
+    (
+        "ClashSelfPlayVecEnv",
+        lambda: ClashSelfPlayVecEnv(1, viser=None),
+        (ClashSelfPlayVecEnv,),
+    ),
+)
+
+
+@pytest.mark.parametrize(("site", "trigger", "accepts"), WARNING_SITES, ids=lambda v: str(v)[:24])
+def test_the_argument_a_warning_tells_you_to_pass_is_one_that_call_site_takes(
+    site, trigger, accepts
+) -> None:
+    """Read the advice out of the WARNING THAT FIRED, not out of a named constant.
+
+    The first version of this took the constant by name and asked whether it was
+    consistent with a class chosen in the same table -- so swapping which constant a
+    call site raises changed nothing, and the planted defect passed. It was checking
+    that two things I had written agreed with each other, which they did, rather than
+    that the site raises the right one.
+
+    This triggers each warning for real and reads the keyword out of the message that
+    came back. That is the exact shape of the defect it exists for: "engine=" in a
+    message raised by a class whose ``__init__`` has no ``engine`` parameter.
+    """
+    import inspect
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        obj = trigger()
+    user = [w for w in caught if issubclass(w.category, UserWarning)]
+    assert len(user) == 1, f"{site} did not warn exactly once: {[str(w.message) for w in caught]}"
+
+    remedy = str(user[0].message)[len(env_module.ENGINE_NOT_CHOSEN) :]
+    told_to_pass = re.search(r"\b([a-z]\w*)=", remedy)
+    assert told_to_pass, f"{site}'s warning offers no argument to pass:\n{remedy}"
+
+    params = set().union(*(set(inspect.signature(c.__init__).parameters) for c in accepts))
+    name = told_to_pass.group(1)
+    assert name in params, (
+        f"{site}'s warning tells the caller to pass {name}=, and the thing it is raised "
+        f"from takes {sorted(params - {'self'})}. Following that advice raises TypeError."
+    )
+    getattr(obj, "close", lambda: None)()
 
 
 def test_every_id_the_warning_names_exists() -> None:

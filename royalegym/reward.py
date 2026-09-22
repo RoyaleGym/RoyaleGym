@@ -232,11 +232,12 @@ class PlacementDepthReward(RewardFunction):
     far end is 1 and at your own back line is -1. ``weight`` on the aggressive side
     is the knob; a NEGATIVE weight rewards defending at home.
 
-    SHIPPED AT ZERO WEIGHT in ``default_reward``, on purpose. Whether pushing or
-    defending is better is the thing a bot is supposed to learn, and a shaping term
-    that answers it in advance is the weight-drift this module's docstring warns
-    about. It is here to be copied and to prove the coordinates arrive, not to be
-    switched on untested.
+    NOT IN ``default_reward`` AT ALL, on purpose -- not at zero weight, not at any
+    weight. Whether pushing or defending is better is the thing a bot is supposed to
+    learn, and a shaping term that answers it in advance is the weight-drift this
+    module's docstring warns about. It is here to be copied and to prove the
+    coordinates arrive, not to be switched on untested.
+    ``test_the_positional_term_stays_out_of_the_default_reward`` keeps it out.
 
     Antisymmetric between the seats on a mirrored transition, like the terms above:
     the own frame flips with the seat, so the same placement scores +d for one

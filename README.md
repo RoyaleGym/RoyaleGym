@@ -220,7 +220,7 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="pytest" src="https://img.shields.io/badge/pytest-427%20passed%2C%206%20skipped-2ea043?style=flat-square">
+  <img alt="pytest" src="https://img.shields.io/badge/pytest-454%20passed%2C%206%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
@@ -300,8 +300,8 @@ Open:
 Tests:
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 368 passed, 6 skipped (2026-09-22)
-..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q
+..\.venv\Scripts\python -m ruff check royalegym tests examples
 ```
 
 Without the engine built, the Rust-backed tests skip. An engine build older than the data

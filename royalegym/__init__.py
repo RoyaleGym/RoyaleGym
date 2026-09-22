@@ -3,7 +3,8 @@
 Components (each an ABC with swappable implementations):
     ObsBuilder        obs.py           SpatialObsBuilder, EntityListObsBuilder
     ActionParser      action.py        TileActionParser (Discrete 2305), HalfTileActionParser
-    RewardFunction    reward.py        WinLoss, Crown, TowerHP, ElixirTrade, ElixirLeak, Combined
+    RewardFunction    reward.py        WinLoss, Crown, TowerHP, ElixirTrade, ElixirLeak, Combined;
+                                       IllegalAction and PlacementDepth ship unused, as templates
     DoneCondition     done_condition.py  GameOver, FirstCrown (terminations); StepLimit,
                                          TickLimit (truncations); Any, All (either role)
     StateMutator      state_mutator.py   Default, MidGame, ScriptedBoard, Snapshot, Weighted
@@ -55,6 +56,7 @@ from .reward import (
     ElixirLeakPenalty,
     ElixirTradeReward,
     IllegalActionPenalty,
+    PlacementDepthReward,
     RewardFunction,
     TowerHPReward,
     WinLossReward,
@@ -64,7 +66,12 @@ from .reward import (
 # The Rust engine is optional: rust_engine.py imports without the compiled
 # extension and RustEngine() raises ImportError naming the build command.
 from .rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
-from .selfplay import NoopOpponent, OpponentPool, RandomLegalOpponent
+from .selfplay import (
+    CallableOpponent,
+    NoopOpponent,
+    OpponentPool,
+    RandomLegalOpponent,
+)
 from .state_mutator import (
     DefaultStateMutator,
     DefaultStateSetter,
@@ -115,6 +122,7 @@ __all__ = [
     "ActionParser",
     "AllCondition",
     "AnyCondition",
+    "CallableOpponent",
     "ClashGymEnv",
     "ClashParallelEnv",
     "ClashSelfPlayVecEnv",
@@ -137,6 +145,7 @@ __all__ = [
     "NoopOpponent",
     "ObsBuilder",
     "OpponentPool",
+    "PlacementDepthReward",
     "PlacementOracle",
     "RandomLegalOpponent",
     "ReplayRecorder",
