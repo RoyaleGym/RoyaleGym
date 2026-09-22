@@ -326,6 +326,43 @@ the run. Nothing is sent while nobody is listening.
 
 ---
 
+### Is it actually better?
+
+This is the question you ask after every change, and it is the one a hand-written loop gets
+wrong. A loop plays your bot in one seat, prints a bare percentage, and counts a battle the
+step limit cut short as a draw. `evaluate` plays both seats and gives you an interval.
+
+```
+python examples/07_is_this_bot_better.py
+```
+
+```
+greedy vs noop: 20-0-0 over 20 games. win rate 100.0% (83.9% to 100.0% at 95%) -- greedy is better. seat gap +0.0%, mean 2405 ticks.
+    as blue 10-0-0
+    as red  10-0-0
+greedy vs random: 8-12-0 over 20 games. win rate 40.0% (21.9% to 61.3% at 95%) -- too close to call. seat gap -20.0%, mean 3310 ticks.
+    as blue 3-7-0
+    as red  5-5-0
+```
+
+Two things to read off that, and the second is the one people get wrong.
+
+**"Too close to call" is not a tie.** It means the interval still covers 50%, so the games you
+played cannot separate the two bots. Play more and ask again. A bare "40%" would have told you
+the opposite of the truth here.
+
+**A large seat gap means you measured the colour, not the skill.** Blue and Red are not the same
+job: whoever is behind has to attack. `evaluate` plays every pairing both ways and reports the
+gap, so you can see when that is what your number is made of.
+
+!!! tip "How many games is enough? More than you think"
+    RoyaleGym's own maintainer ran a 40-game round robin over the six shipped opponents. It
+    established exactly two orderings: the do-nothing opponent loses to everything, and the
+    patient one beats random 27 to 13. The three in the middle, which are described in
+    increasing order of sophistication, came out 19-19, 20-19 and 20-19. Forty games could not
+    tell them apart. If you change your reward function and see a five point move over twenty
+    games, you have seen noise.
+
 ## How long a run will take
 
 Two numbers, and they are different on purpose. Both were measured on a four core Windows laptop
