@@ -56,7 +56,7 @@ from royalegym.done_condition import (
     TruncationCondition,
 )
 from royalegym.env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv, make_gym_vec_env
-from royalegym.obs import vector_fields
+from royalegym.obs import vector_offsets
 from royalegym.protocol import DeployStatus, MatchSetup, ShuffleMode
 from royalegym.selfplay import NoopOpponent, RandomLegalOpponent
 from royalegym.state_mutator import StateMutator
@@ -427,17 +427,13 @@ def test_plant_opponent_with_hidden_state_breaks_the_replay():
 # --------------------------------------------------------------------------
 
 
-def _vector_offset(field_prefix: str) -> int:
+def _vector_offset(key: str) -> int:
+    """Where a named field starts. The layout is self-describing, so no test counts slots."""
     n_cards = len(ClashParallelEnv().engine.cards())
-    offset = 0
-    for name, size in vector_fields(n_cards):
-        if name.startswith(field_prefix):
-            return offset
-        offset += size
-    raise KeyError(field_prefix)
+    return vector_offsets(n_cards)[key].start
 
 
-REGULATION_LEFT = _vector_offset("regulation time remaining")
+REGULATION_LEFT = _vector_offset("clock")  # first slot of the clock block
 
 
 def test_selfplay_vec_env_is_seeded_masked_and_autoresets_same_step():

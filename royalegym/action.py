@@ -244,6 +244,20 @@ class ActionParser(ABC):
     def action_mask(self, state: BattleState, team: int) -> np.ndarray:
         """int8 array of shape (space.n,): 1 = the engine will accept this action now."""
 
+    def mask_plane_shape(self) -> tuple[int, int, int] | None:
+        """Shape the mask MINUS the no-op reshapes to, or None if it does not.
+
+        ``obs.py`` hands the policy the mask twice: flat for the head, and as
+        ``mask_planes`` for a convolutional trunk, which is only meaningful when
+        the action space is a grid. A parser whose space is not one returns None
+        and no ``mask_planes`` key appears in the observation.
+        """
+        return None
+
+    def config(self) -> dict[str, object]:
+        """Constructor state, JSON-able, for ``ClashParallelEnv.config()``."""
+        return {}
+
     @abstractmethod
     def parse(self, action: int, state: BattleState, team: int) -> DeployCommand | None:
         """None means no-op."""
@@ -268,6 +282,18 @@ class GridActionParser(ActionParser):
     @property
     def space(self) -> spaces.Discrete:
         return self._space
+
+    def mask_plane_shape(self) -> tuple[int, int, int] | None:
+        """[hand slot, y, x]: the mask without index 0, in the acting seat's own frame.
+
+        ``encode`` lays the space out as ``1 + slot * ny * nx + y * nx + x``, so
+        ``mask[1:].reshape(HAND_SIZE, ny, nx)`` is that same mask with no
+        arithmetic -- a view, not a copy.
+        """
+        return (HAND_SIZE, self.ny, self.nx)
+
+    def config(self) -> dict[str, object]:
+        return {"pitch_div": self.pitch_div, "n_actions": self.n_actions}
 
     def encode(self, slot: int, x_idx: int, y_idx: int) -> int:
         return 1 + slot * self.nx * self.ny + y_idx * self.nx + x_idx

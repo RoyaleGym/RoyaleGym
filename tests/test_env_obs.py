@@ -8,15 +8,22 @@ import pytest
 
 from royalegym import obs as obs_mod
 from royalegym.action import TileActionParser
+from royalegym.done_condition import StepLimitCondition
+from royalegym.env import AGENT_TEAM, AGENTS, ClashParallelEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.obs import (
-    SPATIAL_CHANNELS,
+    DECK_SIZE,
     EntityListObsBuilder,
+    Reveal,
     SpatialObsBuilder,
+    spatial_channels,
     vector_fields,
+    vector_layout,
+    vector_offsets,
 )
 from royalegym.protocol import (
     BLUE,
+    HAND_SIZE,
     RED,
     DeployCommand,
     DeployStatus,
@@ -26,12 +33,25 @@ from royalegym.protocol import (
     SpawnSpec,
     SpellMotion,
     SpellState,
+    TowerSlot,
     mirror_state,
     to_own,
 )
+from royalegym.state_mutator import DefaultStateMutator
 
 DECK = [0, 3, 10, 14, 11, 13, 7, 9]
-CHANNEL = {name: i for i, (name, _) in enumerate(SPATIAL_CHANNELS)}
+# The FAIR channel set. Every reveal appends its channels after these, so a fair
+# channel's index is the same whatever the Reveal (obs.py, vector_layout).
+CHANNEL = {name: i for i, (name, _) in enumerate(spatial_channels())}
+# Everything an enabled Reveal opens, used to build "the most revealing builder"
+# wherever a test wants to exercise a revealed channel or slot.
+ALL_REVEALED = Reveal(
+    enemy_elixir=True,
+    enemy_hand=True,
+    enemy_next_card=True,
+    enemy_deck=True,
+    enemy_spell_aim=True,
+)
 
 
 def _states(n_steps: int = 400):
@@ -85,11 +105,12 @@ def _states(n_steps: int = 400):
 
 ENG, PARSER, MOCK_STATES = _states()
 
+# The spell/status channels a FAIR builder writes. ``enemy_spell_aim`` is not one
+# of them: where the opponent's spell will land is a Reveal (obs.py).
 SPELL_STATUS_CHANNELS = [
     "own_spells",
     "enemy_spells",
     "own_spell_aim",
-    "enemy_spell_aim",
     "own_stunned",
     "enemy_stunned",
 ]
@@ -223,26 +244,32 @@ def test_the_two_seats_do_not_see_the_same_thing_on_an_asymmetric_board():
     assert not np.array_equal(ob["vector"], orr["vector"])
 
 
-def unseen_channels(states) -> list[str]:
+def unseen_channels(states, reveal: Reveal | None = None) -> list[str]:
     """Spatial channels that are all-zero, from Blue's seat, in every state given."""
-    b = SpatialObsBuilder()
+    b = SpatialObsBuilder(reveal=reveal)
     b.bind(ENG, PARSER)
-    seen = np.zeros(len(SPATIAL_CHANNELS), dtype=bool)
+    names = b.channel_names()
+    seen = np.zeros(len(names), dtype=bool)
     for s in states:
         o = b.build(s, BLUE, PARSER.action_mask(s, BLUE))
-        seen |= o["spatial"].reshape(len(SPATIAL_CHANNELS), -1).any(axis=1)
-    return [SPATIAL_CHANNELS[i][0] for i in np.flatnonzero(~seen)]
+        seen |= o["spatial"].reshape(len(names), -1).any(axis=1)
+    return [names[i] for i in np.flatnonzero(~seen)]
 
 
-def test_every_spatial_channel_is_documented_and_vector_layout_adds_up():
-    b = SpatialObsBuilder()
+@pytest.mark.parametrize("reveal", [None, ALL_REVEALED])
+def test_every_spatial_channel_is_documented_and_vector_layout_adds_up(reveal):
+    b = SpatialObsBuilder(reveal=reveal)
     b.bind(ENG, PARSER)
     space = b.observation_space()
-    assert space["spatial"].shape == (len(SPATIAL_CHANNELS), 32, 18)
-    assert space["vector"].shape == (sum(n for _, n in vector_fields(len(ENG.cards()))),)
+    channels = spatial_channels(reveal)
+    assert b.channel_names() == [name for name, _ in channels]
+    assert space["spatial"].shape == (len(channels), 32, 18)
+    assert space["vector"].shape == (
+        sum(n for _, n in vector_fields(len(ENG.cards()), reveal)),
+    )
     # Vacuity guard: every channel carries information in at least one sampled
     # state, so the flip and containment tests above exercise all of them.
-    assert unseen_channels(STATES) == []
+    assert unseen_channels(STATES, reveal) == []
 
 
 def test_plant_sample_set_without_deploying_entities_trips_the_coverage_guard():
@@ -268,15 +295,22 @@ def test_plant_sample_set_without_spells_or_stuns_trips_the_coverage_guard():
 
 
 def spell_channel_errors(builder: SpatialObsBuilder) -> list[str]:
-    """Channels 15..20, cell by cell, against the rows, for both seats and every
-    synthetic spell state."""
+    """The spell and status channels, cell by cell, against the rows, for both seats
+    and every synthetic spell state.
+
+    Only the channels THIS builder writes: a fair builder has no
+    ``enemy_spell_aim`` plane at all, and the reveal-on builder does, so the same
+    check grades both without either being given a pass.
+    """
     builder.bind(ENG, PARSER)
     a = ENG.arena()
+    index = {name: i for i, name in enumerate(builder.channel_names())}
+    checked = [k for k in (*SPELL_STATUS_CHANNELS, "enemy_spell_aim") if k in index]
     errors = []
     for i, s in enumerate(STATES[len(MOCK_STATES) :]):
         for seat in (BLUE, RED):
             sp = builder.build(s, seat, PARSER.action_mask(s, seat))["spatial"]
-            want = {k: np.zeros((32, 18)) for k in SPELL_STATUS_CHANNELS}
+            want = {k: np.zeros((32, 18)) for k in checked}
 
             def cell(x, y, seat=seat):
                 ox, oy = to_own(a, seat, x, y)
@@ -285,20 +319,22 @@ def spell_channel_errors(builder: SpatialObsBuilder) -> list[str]:
             for q in s.spells:
                 side = "own" if q.team == seat else "enemy"
                 want[f"{side}_spells"][cell(q.x, q.y)] += 1
-                want[f"{side}_spell_aim"][cell(q.aim_x, q.aim_y)] += 1
+                if f"{side}_spell_aim" in want:
+                    want[f"{side}_spell_aim"][cell(q.aim_x, q.aim_y)] += 1
             for e in s.entities:
                 if e.stun_ticks:
                     want["own_stunned" if e.team == seat else "enemy_stunned"][cell(e.x, e.y)] += 1
             errors += [
                 f"state {i} seat {seat}: {k}"
                 for k, g in want.items()
-                if not np.array_equal(sp[CHANNEL[k]], g)
+                if not np.array_equal(sp[index[k]], g)
             ]
     return errors
 
 
-def test_spell_and_stun_channels_mark_the_right_team_at_the_right_own_frame_tile():
-    assert spell_channel_errors(SpatialObsBuilder()) == []
+@pytest.mark.parametrize("reveal", [None, ALL_REVEALED])
+def test_spell_and_stun_channels_mark_the_right_team_at_the_right_own_frame_tile(reveal):
+    assert spell_channel_errors(SpatialObsBuilder(reveal=reveal)) == []
 
 
 def test_plant_spell_aim_read_in_the_engine_frame_is_caught(monkeypatch):
@@ -315,13 +351,19 @@ def test_plant_spell_aim_read_in_the_engine_frame_is_caught(monkeypatch):
         return orig(msgspec.structs.replace(state, spells=moved), team, arena)
 
     orig = obs_mod.spell_channels
-    assert spell_channel_errors(SpatialObsBuilder()) == [], "baseline must be green"
+    # The plant moves an ENEMY aim point, so it has to be graded by a builder that
+    # writes one: the fair builder does not, and would pass the plant for the right
+    # reason. tests below hold that channel's absence separately.
+    def builder():
+        return SpatialObsBuilder(reveal=ALL_REVEALED)
+
+    assert spell_channel_errors(builder()) == [], "baseline must be green"
     monkeypatch.setattr(obs_mod, "spell_channels", engine_frame_aim)
     assert obs_mod.spell_channels is engine_frame_aim, "plant did not land"
-    errors = spell_channel_errors(SpatialObsBuilder())
+    errors = spell_channel_errors(builder())
     assert errors, "PLANT DID NOT LAND: an engine-frame aim point passed the cell check"
     assert all("spell_aim" in m for m in errors), errors
-    assert flip_mismatches(SpatialObsBuilder), "PLANT DID NOT LAND on the seat-flip test"
+    assert flip_mismatches(builder), "PLANT DID NOT LAND on the seat-flip test"
 
 
 # --- the deploying channels, cell by cell ------------------------------------------
@@ -408,11 +450,10 @@ def test_own_tower_hp_is_own_frame_for_red():
     b.bind(ENG, PARSER)
     s = STATES[0]
     v_red = b.build(s, RED, PARSER.action_mask(s, RED))["vector"]
-    n = len(ENG.cards()) + 1
-    own_towers = 2 + 4 * n + 4 + 4 + n
+    own = v_red[vector_offsets(len(ENG.cards()))["own_tower_hp"]]
     # Red started with its own-LEFT princess destroyed.
-    assert v_red[own_towers + 1] == 0.0
-    assert v_red[own_towers + 2] == np.float32(1100 / 1400)
+    assert own[1] == 0.0
+    assert own[2] == np.float32(1100 / 1400)
 
 
 # --- entity list order: engine-private, so no observation may depend on it -----------
@@ -567,11 +608,16 @@ def _float_order_channels(entities, team, arena):
         ox, oy = to_own(arena, team, e.x, e.y)
         tx = min(max(ox // arena.subtile, 0), arena.tiles_x - 1)
         ty = min(max(oy // arena.subtile, 0), arena.tiles_y - 1)
-        base = 0 if e.team == team else 4
-        sp[base + (1 if e.flying else 0) if e.kind == EntityKind.TROOP else base + 2, ty, tx] += 1
-        sp[base + 3, ty, tx] += e.hp / obs_mod.HP_SCALE
+        base = 0 if e.team == team else obs_mod.TEAM_STRIDE
+        if e.kind == EntityKind.TROOP:
+            sp[base + (1 if e.flying else 0), ty, tx] += 1
+        elif e.kind == EntityKind.BUILDING:
+            sp[base + 2, ty, tx] += 1
+        else:
+            sp[base + 3, ty, tx] += 1
+        sp[base + 4, ty, tx] += e.hp / obs_mod.HP_SCALE
         if e.deploy_ticks > 0:
-            sp[8 if e.team == team else 9, ty, tx] += 1
+            sp[10 if e.team == team else 11, ty, tx] += 1
     return sp
 
 
@@ -613,3 +659,580 @@ def test_plant_spell_sort_key_without_aim_and_hits_is_caught(monkeypatch):
     bad = entity_order_mismatches(EntityListObsBuilder)
     assert bad, "PLANT DID NOT LAND: a spell tie kept engine order unseen"
     assert all(m.endswith(": spells") for m in bad), bad
+
+
+# --- the layout: widths, and what a Reveal does to them -----------------------
+
+
+def test_the_fair_vector_is_12n_plus_37_wide_and_the_layout_says_so():
+    """The width, asserted rather than derived.
+
+    The spec this rewrite was built to called it 12n + 36. It is 12n + 37, and the
+    extra slot is real: the fair block is the old 5n + 30 with the reveal-gated
+    enemy-elixir slot kept (it now holds the COUNT) plus 7n + 7 of new features --
+    deck n, cycle 6-8 3(n+1), last card n+1, cards seen n, possible hand n, and
+    three scalars (ticks since own play, elixir leaked, enemy plays). The test is
+    the arithmetic; the docstring is only the reason.
+    """
+    n = len(ENG.cards())
+    fields = vector_layout(n)
+    assert all(f.fair for f in fields)
+    assert sum(f.size for f in fields) == 12 * n + 37
+    b = SpatialObsBuilder()
+    b.bind(ENG, PARSER)
+    assert b.vec_size == 12 * n + 37
+    assert b.observation_space()["vector"].shape == (12 * n + 37,)
+
+
+def test_the_layout_is_self_describing_and_gapless():
+    """Every slot belongs to exactly one named field, for both builders."""
+    n = len(ENG.cards())
+    for reveal in (None, ALL_REVEALED):
+        fields = vector_layout(n, reveal)
+        offsets = vector_offsets(n, reveal)
+        assert [f.key for f in fields] == list(offsets)
+        assert len({f.key for f in fields}) == len(fields), "duplicate field key"
+        at = 0
+        for f in fields:
+            assert offsets[f.key] == slice(at, at + f.size), f.key
+            at += f.size
+        assert at == sum(s for _, s in vector_fields(n, reveal))
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["enemy_elixir", "enemy_hand", "enemy_next_card", "enemy_deck", "enemy_spell_aim"],
+)
+def test_a_reveal_adds_slots_and_never_moves_a_fair_one(field):
+    """Rule (a): an enabled field ADDS; it is never present-but-zero.
+
+    ``enemy_elixir`` is the stated exception -- it swaps the SOURCE of a slot that
+    already holds the counted value -- so it is the one field whose width does not
+    grow, and the test says so explicitly rather than skipping it.
+    """
+    n = len(ENG.cards())
+    fair = vector_offsets(n)
+    one = Reveal(**{field: True})
+    revealed = vector_offsets(n, one)
+    for key, sl in fair.items():
+        assert revealed[key] == sl, f"{field} moved the fair field {key}"
+    added = [k for k in revealed if k not in fair]
+    fair_width = sum(f.size for f in vector_layout(n))
+    width = sum(f.size for f in vector_layout(n, one))
+    if field == "enemy_elixir":
+        assert added == []
+        assert width == fair_width
+        assert "counted" not in dict(vector_fields(n, one))  # the doc text changed
+    elif field == "enemy_spell_aim":
+        assert added == []  # it adds a CHANNEL, not a slot
+        assert width == fair_width
+    else:
+        assert added
+        assert width > fair_width
+        assert all(not f.fair for f in vector_layout(n, one) if f.key in added)
+
+
+def test_only_a_reveal_writes_the_enemy_spell_aim_channel():
+    fair = SpatialObsBuilder()
+    fair.bind(ENG, PARSER)
+    assert "enemy_spell_aim" not in fair.channel_names()
+    assert "own_spell_aim" in fair.channel_names(), "the player chose where to throw their own"
+    seen = SpatialObsBuilder(reveal=Reveal(enemy_spell_aim=True))
+    seen.bind(ENG, PARSER)
+    assert seen.channel_names() == [*fair.channel_names(), "enemy_spell_aim"]
+    # And the fair builder really has no plane carrying it: on a state with an
+    # enemy spell in flight, nothing it writes equals that spell's aim tile.
+    s = STATES[-1]
+    enemy_aims = [q for q in s.spells if q.team != BLUE]
+    assert enemy_aims, "fixture must carry an enemy spell"
+    fair_sp = fair.build(s, BLUE, PARSER.action_mask(s, BLUE))["spatial"]
+    seen_sp = seen.build(s, BLUE, PARSER.action_mask(s, BLUE))["spatial"]
+    assert np.array_equal(fair_sp, seen_sp[: fair_sp.shape[0]])
+    assert seen_sp[-1].any(), "the revealed channel must carry something here"
+
+
+def test_the_entity_list_builder_hides_the_enemy_aim_point_too():
+    s = STATES[-1]
+    rows = {}
+    for reveal in (None, Reveal(enemy_spell_aim=True)):
+        b = EntityListObsBuilder(reveal=reveal)
+        b.bind(ENG, PARSER)
+        rows[bool(reveal)] = b.build(s, BLUE, PARSER.action_mask(s, BLUE))["spells"]
+    enemy = rows[True][:, 2] > 0
+    assert enemy.any(), "fixture must carry an enemy spell row"
+    aim = slice(9, 11)
+    assert rows[True][enemy][:, aim].any(), "the revealed rows must carry an aim point"
+    assert not rows[False][enemy][:, aim].any()
+    # Own rows are untouched, and so is row ORDER: the sort key reads engine data,
+    # not the observation, so hiding a column cannot reorder the array.
+    own = (rows[True][:, 1] > 0) & (rows[True][:, 0] > 0)
+    assert own.any()
+    assert np.array_equal(rows[False][own], rows[True][own])
+    assert np.array_equal(rows[False][:, :9], rows[True][:, :9])
+
+
+# --- crown towers are their own channels --------------------------------------
+
+
+def test_crown_towers_are_counted_apart_from_buildings():
+    b = SpatialObsBuilder()
+    b.bind(ENG, PARSER)
+    names = b.channel_names()
+    assert "own_towers" in names
+    assert "enemy_towers" in names
+    assert "own_troop_zone" not in names, "the mask already says this"
+    assert "own_building_zone" not in names
+    assert "enemy_troop_zone" in names, "not in any mask, so it stays"
+    for s in STATES:
+        for seat in (BLUE, RED):
+            sp = b.build(s, seat, PARSER.action_mask(s, seat))["spatial"]
+            for side, team in (("own", seat), ("enemy", 1 - seat)):
+                towers = sum(
+                    1
+                    for e in s.entities
+                    if e.team == team
+                    and e.kind in (EntityKind.KING_TOWER, EntityKind.PRINCESS_TOWER)
+                )
+                builds = sum(
+                    1 for e in s.entities if e.team == team and e.kind == EntityKind.BUILDING
+                )
+                assert sp[CHANNEL[f"{side}_towers"]].sum() == towers
+                assert sp[CHANNEL[f"{side}_buildings"]].sum() == builds
+    # Vacuity: the sampled states really do have towers standing.
+    assert b.build(STATES[0], BLUE, PARSER.action_mask(STATES[0], BLUE))["spatial"][
+        CHANNEL["own_towers"]
+    ].sum() > 0
+
+
+# --- mask planes ---------------------------------------------------------------
+
+
+@pytest.mark.parametrize("builder_cls", [SpatialObsBuilder, EntityListObsBuilder])
+def test_mask_planes_are_the_flat_mask_without_the_no_op(builder_cls):
+    b = builder_cls()
+    b.bind(ENG, PARSER)
+    for s in STATES[:6]:
+        for seat in (BLUE, RED):
+            mask = PARSER.action_mask(s, seat)
+            o = b.build(s, seat, mask)
+            assert o["mask_planes"].shape == (HAND_SIZE, 32, 18)
+            assert o["mask_planes"].dtype == np.int8
+            assert np.array_equal(o["mask_planes"].reshape(-1), mask[1:])
+            # And the planes index the way the action space encodes: plane,row,col
+            # is exactly the action that plays that slot on that tile.
+            for slot in range(HAND_SIZE):
+                for ty, tx in ((0, 0), (5, 9), (31, 17)):
+                    assert o["mask_planes"][slot, ty, tx] == mask[PARSER.encode(slot, tx, ty)]
+    assert any(
+        b.build(s, BLUE, PARSER.action_mask(s, BLUE))["mask_planes"].any() for s in STATES[:6]
+    ), "vacuous: no legal placement in any sampled state"
+
+
+# --- what the builder remembers across a match --------------------------------
+#
+# The fair vector is stateful: the opponent's elixir is COUNTED, not read, and the
+# cycle features accumulate. Three things have to hold and each has a test here:
+# the count is exact (against the value the reveal reads), the memory follows the
+# game's cycle rule, and nothing survives a reset.
+
+
+def _rollout(env, steps, seed, deploy_prob=0.4, on_step=None):
+    """Random legal two-sided play through the env, resetting when an episode ends."""
+    obs, _ = env.reset(seed=seed)
+    rng = np.random.default_rng(seed)
+    for _ in range(steps):
+        if not env.agents:
+            obs, _ = env.reset()
+            continue
+        acts = {}
+        for a in env.agents:
+            legal = np.flatnonzero(obs[a]["action_mask"])[1:]
+            acts[a] = (
+                int(rng.choice(legal)) if legal.size and rng.random() < deploy_prob else 0
+            )
+        obs, _, _, _, _ = env.step(acts)
+        if on_step is not None:
+            on_step(env, obs)
+
+
+# Ticks between two scripted plays: long enough that the bar is back at the cap
+# (a card costs at most MAX_MANA, and 1x regeneration is one elixir per 56 ticks).
+TICKS_PER_PLAY = 400
+
+
+def _counting_env(**kwargs):
+    return ClashParallelEnv(
+        engine=MockEngine(),
+        state_mutator=DefaultStateMutator(decks=[DECK, DECK[::-1]]),
+        truncation_cond=StepLimitCondition(200),
+        **kwargs,
+    )
+
+
+def test_the_counted_enemy_elixir_equals_the_bar_the_engine_keeps():
+    """The whole reason the count is allowed in the fair set: it is EXACT.
+
+    Both directions are checked -- the count against the state, and the fair
+    vector slot against the same slot of a ``Reveal(enemy_elixir=True)`` builder --
+    because the first is the invariant and the second is what a policy sees.
+    """
+    env = _counting_env()
+    fair = env.obs_builder
+    cheat = SpatialObsBuilder(reveal=Reveal(enemy_elixir=True))
+    cheat.bind(env.engine, env.action_parser)
+    slot = vector_offsets(len(env.engine.cards()))["enemy_elixir"]
+    errors = []
+    seen = {"spent": 0, "at_cap": 0}
+    last = {"tick": -1}
+
+    def check(e, obs):
+        st = e.battle_state
+        if st.tick < last["tick"]:  # a reset happened: the cheat builder resets too
+            cheat.reset(st)
+        last["tick"] = st.tick
+        for agent, team in AGENT_TEAM.items():
+            mem = fair.memory[team]
+            want = st.players[1 - team].elixir_milli
+            if mem.enemy_elixir_milli() != want:
+                errors.append(f"tick {st.tick} seat {team}: counted {mem.enemy_elixir_milli()} "
+                              f"!= {want}")
+            if mem.own_elixir_milli() != st.players[team].elixir_milli:
+                errors.append(f"tick {st.tick} seat {team}: own bar drifted")
+            v = cheat.build(st, team, e.action_masks(agent).astype(np.int8))["vector"]
+            if not np.array_equal(v[slot], obs[agent]["vector"][slot]):
+                errors.append(f"tick {st.tick} seat {team}: fair slot != revealed slot")
+            if st.players[team].elixir_milli >= 1000 * fair.max_mana:
+                seen["at_cap"] += 1
+        seen["spent"] = max(seen["spent"], fair.memory[BLUE].foe_plays)
+
+    # Two games, because the count has two ways to be wrong and each needs one:
+    # a BUSY game exercises paying for plays seen, a QUIET one exercises the cap
+    # (1x regeneration is one elixir per 56 ticks, so a bar only fills while nobody
+    # is spending).
+    _rollout(env, 220, seed=3, deploy_prob=0.4, on_step=check)
+    _rollout(env, 150, seed=4, deploy_prob=0.03, on_step=check)
+    assert errors[:5] == [], f"{len(errors)} mismatches, first few shown"
+    assert seen["spent"] >= 5, seen
+    assert seen["at_cap"] >= 1, "no seat ever sat at full elixir: the cap is untested"
+
+
+class _UncappedLaw:
+    """``ElixirLaw`` with the cap removed, for the plant below."""
+
+    def __init__(self, law):
+        self._law = law
+
+    def __getattr__(self, name):
+        return getattr(self._law, name)
+
+    def advance(self, fine, spent, t0, t1, regular, overtime):
+        fine, leaked = self._law.advance(fine, spent, t0, t1, regular, overtime)
+        return fine + leaked, leaked
+
+
+def test_plant_a_counter_that_ignores_the_cap_is_caught():
+    """Without the clamp the count runs away as soon as a player sits at full.
+
+    Graded on a QUIET game (few plays), because that is when a bar sits at the cap
+    and regeneration is actually thrown away; a busy game spends the elixir before
+    the clamp ever bites and the plant would pass for the wrong reason.
+    """
+    env = _counting_env()
+    for mem in env.obs_builder.memory.values():
+        mem.law = _UncappedLaw(mem.law)
+    bad = []
+
+    def check(e, obs):
+        st = e.battle_state
+        for team in (BLUE, RED):
+            mem = e.obs_builder.memory[team]
+            if mem.enemy_elixir_milli() != st.players[1 - team].elixir_milli:
+                bad.append(st.tick)
+
+    _rollout(env, 120, seed=3, deploy_prob=0.05, on_step=check)
+    assert bad, "PLANT DID NOT LAND: an uncapped count still matched the engine"
+
+
+def test_the_cycle_behind_the_hand_is_deduced_from_the_plays_alone():
+    """Positions 6-8 start unknown and are learned one per play (obs.py MatchMemory)."""
+    eng = MockEngine()
+    parser = TileActionParser()
+    parser.bind(eng)
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    eng.reset(
+        4,
+        MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 10000]),
+    )
+    b.reset(eng.state())
+    mem = b.memory[BLUE]
+    assert mem.own_cycle[0] == DECK[4], "position 5 is next_card and is always known"
+    assert mem.own_cycle[1:] == [-1, -1, -1], "6-8 are not knowable at the start"
+    known = [3]
+    for _ in range(3):
+        st = eng.state()
+        legal = np.flatnonzero(parser.action_mask(st, BLUE))[1:]
+        per = parser.nx * parser.ny
+        slot0 = [a for a in legal if (a - 1) // per == 0]
+        assert slot0, "hand slot 0 must be playable"
+        eng.step([parser.parse(int(slot0[0]), st, BLUE)], TICKS_PER_PLAY)
+        b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))
+        known.append(sum(1 for c in mem.own_cycle if c == -1))
+    assert known == [3, 2, 1, 0], f"one position learned per play, got {known}"
+    # And what it learned is the engine's actual queue.
+    queue = list(eng._sim().queues[BLUE])
+    assert mem.own_cycle == queue
+    assert set(np.flatnonzero(mem.own_deck)) == set(DECK)
+
+
+def test_enemy_possible_hand_follows_the_eight_card_cycle_rule():
+    """A card played is out of hand for exactly four more plays, and no longer."""
+    eng = MockEngine()
+    parser = TileActionParser()
+    parser.bind(eng)
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    n = len(eng.cards())
+    eng.reset(
+        5,
+        MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 10000]),
+    )
+    b.reset(eng.state())
+    mem = b.memory[BLUE]  # Blue watching Red
+    assert mem.enemy_possible_hand().all(), "nothing seen yet: every card is possible"
+    played = []
+    for _ in range(6):
+        st = eng.state()
+        legal = np.flatnonzero(parser.action_mask(st, RED))[1:]
+        per = parser.nx * parser.ny
+        slot0 = [a for a in legal if (a - 1) // per == 0]
+        assert slot0
+        played.append(st.players[RED].hand[0])
+        eng.step([parser.parse(int(slot0[0]), st, RED)], TICKS_PER_PLAY)
+        b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))
+        possible = mem.enemy_possible_hand()
+        out = set(played[-(DECK_SIZE - HAND_SIZE) :])
+        assert set(np.flatnonzero(~possible)) == out, played
+        assert len(out) <= DECK_SIZE - HAND_SIZE
+        assert possible.sum() == n - len(out)
+    # Playing hand slot 0 every time walks the whole cycle, so the card played
+    # first comes round and is played AGAIN on play 6 -- which is the rule working,
+    # not an accident. The card that has come back into hand by now is played[1]:
+    # five plays old, and not replayed since.
+    assert played[5] == played[0], "fixture should have cycled all the way round"
+    assert mem.enemy_possible_hand()[played[1]]
+    assert not mem.enemy_possible_hand()[played[5]]
+    assert set(np.flatnonzero(mem.foe_seen)) == set(played)
+
+
+def test_two_episodes_in_the_same_env_do_not_leak_state_into_each_other():
+    """The strongest form: the same seed replayed in the SAME env is bit-identical.
+
+    A memory that survived ``reset`` would make the second episode's vector differ
+    from the first's on exactly the features that accumulate, so this grades every
+    one of them at once.
+    """
+    env = _counting_env()
+
+    def run(seed):
+        obs, _ = env.reset(seed=seed)
+        rng = np.random.default_rng(seed)
+        frames = [{a: obs[a]["vector"].copy() for a in AGENTS}]
+        for _ in range(40):
+            acts = {}
+            for a in env.agents:
+                legal = np.flatnonzero(obs[a]["action_mask"])[1:]
+                acts[a] = int(rng.choice(legal)) if legal.size and rng.random() < 0.5 else 0
+            obs, *_ = env.step(acts)
+            frames.append({a: obs[a]["vector"].copy() for a in AGENTS})
+        return frames
+
+    first = run(11)
+    _rollout(env, 60, seed=99)  # a different episode in between, to dirty the memory
+    second = run(11)
+    assert len(first) == len(second)
+    bad = [
+        (i, a)
+        for i, (f, s) in enumerate(zip(first, second, strict=True))
+        for a in AGENTS
+        if not np.array_equal(f[a], s[a])
+    ]
+    assert bad == []
+    # and the memory really is empty right after a reset
+    env.reset(seed=11)
+    for team in (BLUE, RED):
+        mem = env.obs_builder.memory[team]
+        assert mem.foe_plays == 0
+        assert not mem.foe_seen.any()
+        assert mem.foe_recent == []
+        assert mem.leak_fine == 0
+        assert mem.own_last_card == -1
+        assert mem.own_cycle[1:] == [-1, -1, -1]
+
+
+def test_a_builder_whose_reset_is_never_called_still_cannot_leak(monkeypatch):
+    """The second guard, on its own.
+
+    ``ObsBuilder.reset`` is one guard; the other is inside ``MatchMemory.observe``,
+    which re-seeds when the clock moves BACKWARDS, because that can only be a new
+    battle. With ``reset`` disabled the episodes must still replay identically --
+    that is the backwards-tick guard doing the work, and the plant below removes it
+    too to show the guards are what is holding this up.
+    """
+    monkeypatch.setattr(obs_mod.ObsBuilder, "reset", lambda self, state: None)
+    env = _counting_env()
+
+    def run(seed):
+        obs, _ = env.reset(seed=seed)
+        rng = np.random.default_rng(seed)
+        frames = [obs["blue"]["vector"].copy()]
+        for _ in range(40):
+            acts = {}
+            for a in env.agents:
+                legal = np.flatnonzero(obs[a]["action_mask"])[1:]
+                acts[a] = int(rng.choice(legal)) if legal.size and rng.random() < 0.5 else 0
+            obs, *_ = env.step(acts)
+            frames.append(obs["blue"]["vector"].copy())
+        return frames
+
+    first = run(11)
+    _rollout(env, 60, seed=99)
+    second = run(11)
+    assert all(np.array_equal(f, s) for f, s in zip(first, second, strict=True))
+
+
+def test_plant_a_builder_with_neither_guard_leaks_across_episodes(monkeypatch):
+    """Remove BOTH guards and the second episode is no longer the first."""
+    monkeypatch.setattr(obs_mod.ObsBuilder, "reset", lambda self, state: None)
+    original = obs_mod.MatchMemory.observe
+
+    def no_reseed(self, state, team):
+        if 0 <= state.tick < self.tick:  # the backwards-tick guard, removed
+            self.tick = state.tick
+            return
+        original(self, state, team)
+
+    monkeypatch.setattr(obs_mod.MatchMemory, "observe", no_reseed)
+    env = _counting_env()
+
+    def run(seed):
+        obs, _ = env.reset(seed=seed)
+        rng = np.random.default_rng(seed)
+        frames = [obs["blue"]["vector"].copy()]
+        for _ in range(40):
+            acts = {}
+            for a in env.agents:
+                legal = np.flatnonzero(obs[a]["action_mask"])[1:]
+                acts[a] = int(rng.choice(legal)) if legal.size and rng.random() < 0.5 else 0
+            obs, *_ = env.step(acts)
+            frames.append(obs["blue"]["vector"].copy())
+        return frames
+
+    first = run(11)
+    _rollout(env, 60, seed=99)
+    second = run(11)
+    assert any(
+        not np.array_equal(f, s) for f, s in zip(first, second, strict=True)
+    ), "PLANT DID NOT LAND: a builder that never forgets replayed the episode identically"
+
+
+def test_leak_and_last_play_features_move_with_the_match():
+    """The three scalar memory features are not constants."""
+    env = _counting_env()
+    off = vector_offsets(len(env.engine.cards()))
+    seen = {k: set() for k in ("own_elixir_leaked", "own_ticks_since_play", "enemy_plays")}
+
+    def note(e, obs):
+        for k in seen:
+            seen[k].add(float(obs["blue"]["vector"][off[k]][0]))
+
+    # Quiet play, so the bar fills and the leak feature has something to report.
+    _rollout(env, 190, seed=7, deploy_prob=0.05, on_step=note)
+    for k, values in seen.items():
+        assert len(values) > 1, f"{k} never changed: {values}"
+        assert max(values) > 0.0, f"{k} was always zero"
+
+
+def test_reveal_reports_whether_anything_is_open_and_refuses_a_bare_bool():
+    assert not Reveal().any_enabled
+    assert Reveal(enemy_hand=True).any_enabled
+    assert ALL_REVEALED.any_enabled
+    assert Reveal().as_dict() == dict.fromkeys(Reveal().as_dict(), False)
+    # The constructors used to take ``reveal_enemy_elixir: bool`` in this position.
+    with pytest.raises(TypeError, match="Reveal"):
+        SpatialObsBuilder(True)
+    with pytest.raises(TypeError, match="Reveal"):
+        EntityListObsBuilder(96, True)
+
+
+def test_the_memory_says_when_its_count_can_no_longer_be_exact():
+    """The count is checked against the ONE bar the memory is allowed to look at.
+
+    A deck with a repeated card is the case this catches: a play that swaps a card
+    for itself changes no hand slot, so it is unseen, and the count is wrong from
+    then on. It must not be wrong quietly.
+    """
+    env = _counting_env()
+    _rollout(env, 60, seed=3, deploy_prob=0.4)
+    assert all(m.exact for m in env.obs_builder.memory.values()), "a normal deck stays exact"
+
+    doubled = [0, 0, 3, 3, 10, 10, 14, 14]
+    env = ClashParallelEnv(
+        engine=MockEngine(),
+        state_mutator=DefaultStateMutator(decks=[doubled, doubled]),
+        truncation_cond=StepLimitCondition(400),
+    )
+    _rollout(env, 200, seed=3, deploy_prob=0.6)
+    assert not any(m.exact for m in env.obs_builder.memory.values()), (
+        "a deck that repeats a card hides plays, and the memory has to notice"
+    )
+
+
+@pytest.mark.parametrize("reveal", [None, ALL_REVEALED])
+def test_spatial_layout_names_every_plane_and_exactly_the_static_ones(reveal):
+    """A consumer that stores observations holds the static planes once, not per row.
+
+    The guard is the one that matters: a plane called static must really be the same
+    numbers in every state, and a plane NOT called static must vary in at least one
+    of them, or the label is doing nothing.
+    """
+    b = SpatialObsBuilder(reveal=reveal)
+    b.bind(ENG, PARSER)
+    layout = b.spatial_layout()
+    assert [name for name, _ in layout] == b.channel_names()
+    declared = {name for name, static in layout if static}
+    assert declared == {"water", "no_deploy"}
+    constant = set()
+    for seat in (BLUE, RED):
+        first = b.build(STATES[0], seat, PARSER.action_mask(STATES[0], seat))["spatial"]
+        same = np.ones(len(layout), dtype=bool)
+        for s in STATES:
+            sp = b.build(s, seat, PARSER.action_mask(s, seat))["spatial"]
+            same &= np.array([np.array_equal(sp[i], first[i]) for i in range(len(layout))])
+        constant |= {b.channel_names()[i] for i in np.flatnonzero(same)}
+    assert declared <= constant, f"declared static but varies: {declared - constant}"
+
+    # AND WHY THE DECLARATION IS NEEDED RATHER THAN SAMPLING. The tower planes look
+    # static on any sample in which no tower falls -- a crown tower never moves --
+    # so a consumer that decides staticness by sampling would hold them once and
+    # then never see a tower destroyed. They are not declared static, and here is
+    # the state that proves they must not be.
+    assert {"own_towers", "enemy_towers"} <= constant - declared
+    fallen = msgspec.structs.replace(
+        STATES[0],
+        entities=[e for e in STATES[0].entities if e.tower_slot != int(TowerSlot.LEFT)],
+    )
+    assert len(fallen.entities) < len(STATES[0].entities), "fixture must have a princess to drop"
+    for seat in (BLUE, RED):
+        before = b.build(STATES[0], seat, PARSER.action_mask(STATES[0], seat))["spatial"]
+        after = b.build(fallen, seat, PARSER.action_mask(fallen, seat))["spatial"]
+        idx = b.channel_names().index("own_towers")
+        jdx = b.channel_names().index("enemy_towers")
+        assert not np.array_equal(before[idx], after[idx]) or not np.array_equal(
+            before[jdx], after[jdx]
+        )
+
+    # EntityListObsBuilder has no spatial planes and says so rather than guessing.
+    e = EntityListObsBuilder()
+    e.bind(ENG, PARSER)
+    assert e.spatial_layout() == ()

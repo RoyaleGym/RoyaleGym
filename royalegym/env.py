@@ -69,6 +69,10 @@ from .viser import ViserPublisher, play_event
 AGENTS = ("blue", "red")
 AGENT_TEAM = {"blue": BLUE, "red": RED}
 NO_COMMAND = -1  # info["deploy_status"] when the agent chose no-op
+# Observation keys ``state()`` leaves out: the action mask in either of its shapes.
+# It is legality, not state, it is already an input to the policy, and a centralised
+# critic fed both shapes would carry 2 304 duplicated numbers per seat per step.
+MASK_KEYS = ("action_mask", "mask_planes")
 
 
 class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
@@ -317,8 +321,10 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         """Global state for centralised critics: Blue's observation, flattened.
 
         Layout is ``state_space`` (every non-mask key of the observation Dict, in
-        the Dict space's key order). It inherits Blue's imperfect information
-        (Red's elixir and hand are hidden unless the builder reveals them).
+        the Dict space's key order -- ``MASK_KEYS`` are left out). It inherits
+        Blue's imperfect information: Red's elixir is the count Blue's builder
+        keeps and Red's hand is not there at all, unless the builder's ``Reveal``
+        opens them.
         """
         obs = self._obs["blue"]
         return np.concatenate(
@@ -356,7 +362,7 @@ def _state_layout(obs_space: gym.spaces.Space[Any]) -> tuple[list[str], gym.spac
     """
     if not isinstance(obs_space, gym.spaces.Dict):
         raise TypeError("ObsBuilder.observation_space() must be a gymnasium Dict")
-    keys = [k for k in obs_space.spaces if k != "action_mask"]
+    keys = [k for k in obs_space.spaces if k not in MASK_KEYS]
     boxes = []
     for k in keys:
         box = obs_space.spaces[k]
