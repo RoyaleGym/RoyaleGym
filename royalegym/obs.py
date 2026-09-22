@@ -587,6 +587,24 @@ def measure_variability(
     on a dead one depending only on how much of the observation happens to be
     static.
 
+    WHAT THIS IS NOT FOR: comparing two DIFFERENT builders with each other. The
+    number is built to compare one representation against ITSELF -- an encoding
+    against the input it came from, on the same states, as a ratio. Across builders
+    it is not measuring the same property twice. ``EntityListObsBuilder`` is mostly
+    empty canonically-sorted rows where one unit moving can permute a whole row;
+    ``SpatialObsBuilder`` is a dense grid of counts where the same unit touches two
+    tiles. Different sparsity, different magnitudes, different response to a small
+    change in the state, so a lower cosine on one may mean it discriminates less or
+    may mean cosine reads a sorted sparse row-set differently from a dense grid, and
+    nothing in the scalar separates those. Measured, for the record: on eight boards
+    the entity-list builder scores 0.9997 on its moving cells against the spatial
+    builder's 0.9841, and that difference is NOT evidence that one is worse.
+
+    What would settle it is whether a policy trained on each can tell the boards
+    apart, which is a training question; a cheaper proxy is whether a small probe
+    can recover a known state variable from each, which measures usable information
+    rather than geometric spread. Neither is this function.
+
     The masks are excluded: they are legality, they are handed to the policy
     separately, and their variability says nothing about the representation.
     """

@@ -533,3 +533,35 @@ def test_measure_variability_refuses_what_it_cannot_measure(engine):
         measure_variability(b, [s], [parser.action_mask(s, BLUE)])
     with pytest.raises(ValueError, match="one action mask per state"):
         measure_variability(b, [s, s], [parser.action_mask(s, BLUE)])
+
+
+def test_the_two_builders_variability_numbers_are_not_comparable(engine):
+    """Recorded as a caution, not as a result.
+
+    Both builders are measured here and their numbers DIFFER substantially. That is
+    deliberately not asserted as one being worse: the metric compares a
+    representation against itself, and across two representations with different
+    sparsity and magnitude distributions it is not measuring the same property
+    twice. The test pins that both are measurable and that the caution is written
+    down, so nobody later reads the gap as a ranking.
+    """
+    from royalegym.obs import measure_variability
+
+    eng, parser = engine
+    sub = eng.arena().subtile
+    states = [
+        base_state(engine, spawns=[SpawnSpec(BLUE, 0, x * sub, y * sub)])
+        for x, y in ((4, 8), (6, 9), (9, 11), (13, 8))
+    ]
+    masks = [parser.action_mask(s, BLUE) for s in states]
+    numbers = {}
+    for cls in (SpatialObsBuilder, EntityListObsBuilder):
+        b = cls()
+        b.bind(eng, parser)
+        b.reset(states[0])
+        numbers[cls.__name__] = measure_variability(b, states, masks)
+    assert all(v.varying > 0 for v in numbers.values())
+    # the two representations really are different sizes, which is the point
+    sizes = {v.cells for v in numbers.values()}
+    assert len(sizes) == 2, f"both builders reported the same width: {sizes}"
+    assert "comparing two DIFFERENT builders" in measure_variability.__doc__
