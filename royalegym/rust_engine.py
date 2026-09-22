@@ -279,6 +279,7 @@ class RustEngine:
         card_names: Sequence[str] | None = None,
         arena_path: Path | None = None,
         path_search: str | None = None,
+        ground_y_clamp: str | None = None,
     ) -> None:
         """``path_search``: None = the ledger's ``pathfinding.PATH_SEARCH`` (the game's own
         search, measured on client 16.402 (RoyaleLive traces), which is NOT seat-symmetric:
@@ -288,7 +289,15 @@ class RustEngine:
         ``knockback.DISPLACEMENT_LAW`` ladder, client16402, has two absolute-frame points
         like the search: the zero-vector direction and the water resolution's tie); the
         rotation-mirror tests run under it so they keep measuring the symmetry of everything
-        else."""
+        else.
+
+        ``ground_y_clamp``: None = the ledger's ``formation.GROUND_Y_CLAMP``
+        (``client16402_deploy_column_range``, the game's own, measured per side and
+        DELIBERATELY not the rotation of itself -- the range is a native unit tighter at
+        the river and half a row shorter at the back edge). ``deploy_column_range_own_frame``
+        is the seat-symmetric arm; ``none`` disables the clamp. It does NOT ride along with
+        ``path_search``: the three knockback keys do, but the clamp is independent, so
+        ``SymmetricRustEngine`` asks for it by name."""
         if _core is None:
             raise ImportError(CORE_IMPORT_ERROR)
         cal = calibration or default_calibration()
@@ -303,8 +312,12 @@ class RustEngine:
         self._rules = DeployRules.load(cal)
         self.slot_of_k = _derive_slot_of_k(self._arena)
         self.path_search = path_search
+        self.ground_y_clamp = ground_y_clamp
         self._battle = _core.Battle(
-            list(card_names) if card_names is not None else None, self.slot_of_k, path_search
+            list(card_names) if card_names is not None else None,
+            self.slot_of_k,
+            path_search,
+            ground_y_clamp,
         )
         terr = territory_differences(self._battle, self._rules, self._arena, self.slot_of_k)
         if terr:
@@ -434,14 +447,16 @@ class RustEngine:
 
         Everything that makes two RustEngines run different battles from the same
         commands: which cards are in the catalogue, the level they run at, and which
-        pathfinder arm was selected (``SymmetricRustEngine`` is a different engine
-        for this purpose, and a checkpoint that does not say so is a checkpoint that
-        cannot be reproduced).
+        pathfinder and deploy-clamp arms were selected. ``SymmetricRustEngine`` is a
+        different engine for this purpose and a checkpoint that does not say so cannot
+        be reproduced -- and the clamp has to be named separately from the pathfinder,
+        because selecting one does not select the other.
         """
         return {
             "cards": [c.name for c in self._cards],
             "card_level": self.card_level,
             "path_search": self.path_search,
+            "ground_y_clamp": self.ground_y_clamp,
             "calibration_digest": calibration_digest(self.calibration),
         }
 
@@ -454,7 +469,9 @@ class RustEngine:
 
 class SymmetricRustEngine(RustEngine):
     """``RustEngine`` under the frame-planned pathfinder (``path_search="trace_fitted_astar"``),
-    which also selects the fixed-distance knockback (see ``RustEngine.__init__``).
+    which also selects the fixed-distance knockback, AND the own-frame deploy clamp
+    (``ground_y_clamp="deploy_column_range_own_frame"``), which it does not (see
+    ``RustEngine.__init__``).
 
     FOR ROTATION-MIRROR GATES ONLY. The shipped search is the game's own, measured on
     client 16.402 (RoyaleLive traces), and it is not seat-symmetric: its goal scan and
@@ -465,8 +482,18 @@ class SymmetricRustEngine(RustEngine):
     mirrored battle stays a rotation to the end exist to catch seat bias in the ENGINE'S
     OTHER SYSTEMS and in this adapter, so they run under this class, whose routes are
     exact rotations by construction.
+
+    THE DEPLOY CLAMP IS THE SAME KIND OF THING AND HAD TO BE ASKED FOR SEPARATELY.
+    ``formation.GROUND_Y_CLAMP``'s shipped arm is measured per side and is deliberately
+    not the rotation of itself, so a multi-unit card deployed at mirrored points does
+    not land at mirrored positions -- measured through the engine, Skeletons over the
+    230 legal mirrored tile centres broke the rotation 22 times under the shipped arm
+    and 0 times under the own-frame one. Until the core exposed the key this class set
+    only ``path_search``, so the rotation gates ran against the asymmetric clamp and
+    correctly reported an asymmetry that is real and intended.
     """
 
     def __init__(self, *args, **kwargs) -> None:
         kwargs.setdefault("path_search", "trace_fitted_astar")
+        kwargs.setdefault("ground_y_clamp", "deploy_column_range_own_frame")
         super().__init__(*args, **kwargs)
