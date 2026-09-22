@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="720" viewBox="0 0 1800 720" role="img" aria-label="The five Royale repos and how they depend on each other">
+<rect width="1800" height="720" rx="18" fill="#121826"/>
+<defs><marker id="a" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#9aa7bd"/></marker></defs>
+<line x1="460" y1="185" x2="694" y2="185" stroke="#9aa7bd" stroke-width="3" marker-end="url(#a)"/>
+<text x="580" y="166" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#9aa7bd">trains on</text>
+<line x1="1100" y1="185" x2="1334" y2="185" stroke="#9aa7bd" stroke-width="3" marker-end="url(#a)"/>
+<text x="1220" y="166" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#9aa7bd">steps the engine</text>
+<line x1="900" y1="260" x2="900" y2="434" stroke="#9aa7bd" stroke-width="3" marker-end="url(#a)"/>
+<text x="916" y="340" text-anchor="start" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#9aa7bd">traces, live stream</text>
+<line x1="1540" y1="440" x2="1540" y2="266" stroke="#9aa7bd" stroke-width="3" marker-end="url(#a)"/>
+<text x="1556" y="340" text-anchor="start" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#9aa7bd">recordings calibrate it</text>
+<line x1="1340" y1="515" x2="1106" y2="515" stroke="#9aa7bd" stroke-width="3" marker-end="url(#a)"/>
+<text x="1220" y="500" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#9aa7bd">replays</text>
+<rect x="60" y="110" width="400" height="150" rx="16" fill="#1e2735" stroke="#3a4a63" stroke-width="2"/>
+<text x="88" y="162" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#e8edf5">RoyaleLearn</text>
+<text x="88" y="198" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#e8edf5">the learner</text>
+<text x="88" y="230" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">self-play PPO, ladder, checkpoints</text>
+<rect x="700" y="110" width="400" height="150" rx="16" fill="#1e2735" stroke="#f2b634" stroke-width="4"/>
+<text x="728" y="162" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#e8edf5">RoyaleGym</text>
+<text x="728" y="198" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#f2b634">the environment API</text>
+<text x="728" y="230" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">obs, actions, rewards; Gymnasium, PettingZoo</text>
+<rect x="944" y="128" width="136" height="30" rx="15" fill="#f2b634" stroke="#3a4a63"/>
+<text x="1012.0" y="149" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#121826">this repo</text>
+<rect x="1340" y="110" width="400" height="150" rx="16" fill="#1e2735" stroke="#3a4a63" stroke-width="2"/>
+<text x="1368" y="162" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#e8edf5">RoyaleSim</text>
+<text x="1368" y="198" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#e8edf5">the engine</text>
+<text x="1368" y="230" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">deterministic battle engine, Rust</text>
+<rect x="700" y="440" width="400" height="150" rx="16" fill="#1e2735" stroke="#3a4a63" stroke-width="2"/>
+<text x="728" y="492" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#e8edf5">RoyaleViser</text>
+<text x="728" y="528" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#e8edf5">the viewer</text>
+<text x="728" y="560" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">replays, traces and live runs in a window</text>
+<rect x="1340" y="440" width="400" height="150" rx="16" fill="#1e2735" stroke="#3a4a63" stroke-width="2" stroke-dasharray="10 8"/>
+<text x="1368" y="492" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#e8edf5">RoyaleLive</text>
+<text x="1368" y="528" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#e8edf5">the client instrument</text>
+<text x="1368" y="560" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">records real battles (private)</text>
+<rect x="1608" y="458" width="112" height="30" rx="15" fill="#18202f" stroke="#3a4a63"/>
+<text x="1664.0" y="479" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="600" fill="#9aa7bd">private</text>
+<text x="60" y="680" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#9aa7bd">One workspace folder, one venv, five sibling repos. Arrows point at what each one uses.</text>
+</svg>
