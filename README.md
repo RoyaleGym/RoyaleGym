@@ -331,8 +331,11 @@ Read next:
 
 - [`examples/`](examples/) for seven programs that run, starting with one battle and ending
   with comparing two bots.
-- The documentation site under [`docs/site/pages/`](docs/site/pages/), which is longer than
-  anything here: [Your first bot](docs/site/pages/first-bot.md) walks a custom policy from
+- The documentation site, [royalegym.github.io/RoyaleGym](https://royalegym.github.io/RoyaleGym/),
+  which is longer than anything here. The same pages are in this repo under
+  [`docs/site/pages/`](docs/site/pages/), and you can build the site yourself with
+  `pip install -e "RoyaleGym[docs]"` and `mkdocs serve` from `docs/site`.
+  [Your first bot](docs/site/pages/first-bot.md) walks a custom policy from
   nothing to beating the random opponent, and there are pages on
   [installing](docs/site/pages/install.md),
   [writing a reward](docs/site/pages/rewards.md),

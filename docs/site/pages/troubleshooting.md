@@ -229,7 +229,7 @@ page.
 ```
 sssss                                                                    [100%]
 =========================== short test summary info ===========================
-SKIPPED [5] tests\test_rust_engine.py:562: the two engines are reading different card tables, so this comparison would measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, use a checkout with no private client pack AND BUILD royalesim IN IT: the compiled engine carries the table it was built with, so changing the data on disk alone moves only MockEngine's half and these will still skip. cards.json vintage '15.535.29 client (2026, LIVE build family)' vs MockEngine's 'retroroyale-2018'. Differences (rust/mock) -- count: Goblins 4/3
+SKIPPED [5] tests\test_rust_engine.py:562: the two engines are reading different card tables, so this comparison would measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, the engine's cards.json has to be the 2018 table: it reads data/derived/cards.json in the RoyaleSim checkout it was built in (C:\...\RoyaleSim\data\derived\cards.json), each time one is constructed, and ROYALESIM_DATA_DIR does not move it. Regenerate that file with `python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json` in that checkout; no rebuild is needed. cards.json vintage '15.535.29 client (2026, LIVE build family)' vs MockEngine's 'retroroyale-2018'. Differences (rust/mock) -- count: Goblins 4/3
 5 skipped, 73 deselected in 2.13s
 ```
 
@@ -245,7 +245,7 @@ Add `-rs` to any pytest run to see the reason for every skip. Without it you get
     engine, which is what makes comparing them worth anything. On the tracked 2018 table they
     agree across the measured set.
 
-    The one difference this check reports on a machine holding a private client pack is the
+    The one difference this check reports on a machine holding a newer card table is the
     **unit count of Goblins: 4 in the newer table, 3 in the tracked one.** That is a difference
     between the two card tables rather than between the two engines, which is exactly why the
     comparison steps aside instead of failing.
