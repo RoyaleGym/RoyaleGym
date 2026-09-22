@@ -169,10 +169,12 @@ Keep `--vintage 2018` on both `extract_cards.py` runs. Without that flag the ext
 card data that is not shipped with the repo, and a fresh clone does not have it. The 2018 card
 table is tracked, so that is the one that works everywhere.
 
-The order of those two lines matters, for a reason that is easy to miss. The card table is
-fixed when the engine is **built**, not when it is run. Pointing `ROYALESIM_DATA_DIR` at other
-data afterwards does not change what the compiled engine holds. So extract first, build second,
-and build again if you regenerate the data.
+The order of those two lines matters. The build copies the arena and the calibration constants
+into the engine, so the data has to exist first. The card table works differently. Every time
+you create an engine, it reads `data/derived/cards.json` from the RoyaleSim folder it was
+**built in**. Re-running `extract_cards.py` in that folder changes the cards with no rebuild.
+Pointing `ROYALESIM_DATA_DIR` at other data does not change which card table the engine reads.
+So extract first, build second, and build in the checkout whose data you want.
 
 One hazard if you keep more than one checkout. `maturin develop` installs the engine into the
 venv it is run from. Building from a second checkout that shares that venv swaps the engine out
@@ -183,8 +185,8 @@ If the Rust engine will not build on your machine, you can still start. `royaleg
 without it. `RustEngine()` then raises an `ImportError` that names the build command, and
 `MockEngine`, a plain Python stand-in, runs the whole API in the meantime.
 
-`RustEngine()` also refuses an engine build that is older than the data files on disk. Rebuild
-after you change either one.
+`RustEngine()` also refuses to start if the calibration or arena file on disk differs from the
+copy built into the engine. Rebuild after you change either one.
 
 ### The five repos
 
@@ -202,7 +204,7 @@ environment API over it (RLGym), a trainer on top (RLGym-PPO) and a viewer besid
 |---|---|---|
 | [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | the battle engine. Integer-only Rust. The same seed always gives the same battle. Its movement rules are measured against recordings of real battles | the engine `RustEngine` drives, and where the arena and card data comes from |
 | **RoyaleGym** (this repo) | the environment API: what the bot sees, what its moves mean, what it is rewarded for. Gymnasium, PettingZoo and self-play envs | package `royalegym`, which puts the five pieces together into the envs |
-| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | it trains on these envs, as of 2026-09-22. No bot has been trained with it yet |
+| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | it trains on these envs. Real training runs started on 2026-09-22, and none has produced a finished bot yet |
 | [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | the viewer: recordings, engine traces and running environments, drawn in its own window | reads this package's recordings and its live UDP frames. The picture above is its window |
 | RoyaleLive | records real matches. It is private | nothing directly. Its recordings are what RoyaleSim is calibrated against, so the accuracy reaches your envs through the engine |
 
@@ -211,8 +213,9 @@ nothing about rewards or observations. This repo knows nothing about PPO. That m
 change a reward without recompiling anything.
 
 What comes in: the compiled engine module `royalesim`, and RoyaleSim's data files, which are
-its table of calibrated constants and the arena and card tables built from it. They are found
-at `../RoyaleSim/data`, or wherever `ROYALESIM_DATA_DIR` points.
+its table of calibrated constants and the arena and card tables built from it. This package
+finds them at `../RoyaleSim/data`, or wherever `ROYALESIM_DATA_DIR` points. The engine itself
+reads its card table from the checkout it was built in, as [Install](#install) explains.
 
 What goes out: recordings (`.msgpack` or `.json`) for the viewer, the replay page and
 regression tests; one UDP frame per env step for a viewer that is listening; and env objects
@@ -221,20 +224,22 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="pytest" src="https://img.shields.io/badge/pytest-486%20passed%2C%206%20skipped-2ea043?style=flat-square">
+  <img alt="Tests on a fresh clone, 2026-09-22, debug engine build" src="https://img.shields.io/badge/fresh%20clone%2C%202026--09--22-385%20passed%2C%200%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on the project's own machine, 2026-09-22; its 6 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-486%20passed%2C%206%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
-  <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
-  <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
+  <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>
 
-**As of 2026-09-22.** The date is here rather than in the heading on purpose: a heading
-that carries a date gives its section a link that dies the next time the date moves, and
-a dead anchor on GitHub returns a perfectly good page scrolled to the top, which nobody
-notices.
+**As of 2026-09-22.** Here is what your clone should give you. That day the four repos were
+cloned fresh into an empty folder and set up with the [Install](#install) steps, with a debug
+build of the engine. This repo's tests there gave 385 passed, 0 skipped (RoyaleGym at commit
+`afb6d1e`). Nothing skipped, so every test ran. The suite has grown since (492 tests at commit
+`be58cac`), and has not been re-run from a fresh clone. The release build has not been timed
+from a fresh clone yet.
 
-The six skips are the two-engine comparisons on a machine that has the newer card
-data: they would be measuring the data rather than the engines, and they say so. On a
-clean checkout they run.
+The `pytest` badge is from the project's own machine, which also holds a newer card table that
+is not distributed. Six tests skip there because of that table. A clone built with the Install
+steps does not have it.
 
 Working:
 
@@ -273,8 +278,8 @@ alternating the two inside one process.** That ratio is the durable number here,
 whatever the machine is doing it does to both arms. An env step is one decision for each
 player, covering half a second of game time.
 
-The absolute rate is not durable and you should not plan against it. The same report on this
-one laptop has printed 953, 957, 859 and 1812 env steps per second depending on the hour and
+The absolute rate is not durable and you should not plan against it. The same report on one
+laptop has printed 953, 957, 859 and 1812 env steps per second depending on the hour and
 what else was running.
 
 How that was measured, and the rest of the numbers:
@@ -293,18 +298,15 @@ How that was measured, and the rest of the numbers:
   them does not.
 - The same report on 2026-09-22, with five other jobs running on the machine, printed 957 env
   steps per second on the Rust engine.
-- The Rust engine is not the landslide you might expect here. Alternated against `MockEngine`
-  in one process on a release build, it comes out 1.16 to 1.38 times as fast. The Python around
-  the engine is most of the cost, which is the first open item below.
 
 Open:
 
 - Default observations and rewards should be computed inside the engine, with the Python
   versions kept as the override for experiments. Until that is done, training time goes to
   building observations rather than to the battle.
-- RoyaleLearn now trains on these envs, as of 2026-09-22, and no bot has been trained with it
-  yet. The envs also expose `action_masks()` in the form sb3-contrib's MaskablePPO expects, if
-  you would rather bring your own trainer.
+- RoyaleLearn trains on these envs. Its first real training runs were on 2026-09-22, and none
+  has produced a finished bot yet. The envs also expose `action_masks()` in the form
+  sb3-contrib's MaskablePPO expects, if you would rather bring your own trainer.
 - `MockEngine` is a stand-in, not a second simulator. Spells resolve instantly, there are no
   stuns or knockbacks, and cards run at their base level. Anything about how faithful the game
   itself is belongs to RoyaleSim's status, not this repo's.
@@ -316,23 +318,14 @@ cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q
 ..\.venv\Scripts\python -m ruff check royalegym tests examples
 ```
 
-Without the engine built, the Rust-backed tests skip. An engine build older than the data
-files fails them instead of skipping.
+Without the engine built, the Rust-backed tests skip. An engine built from a different
+calibration or arena file than the one on disk fails them instead of skipping.
 
-Six tests skip here, and that is about this machine and not about the code. They are the
-check that the two engines agree with each other. For that check to mean anything, both
-engines have to be reading the same card table. This machine holds a private client pack and
-built its table from that, so the check would be grading the two card tables rather than the
-two engines. `rust_engine.catalogue_vintage_split` says so, and the
-tests skip on it and name both card tables. On a clean checkout, where both engines are built
-from the tracked table, the check runs and it passes: 96 passed, 0 skipped. A skip is not a
-pass, and this tells you which of the two you are looking at.
-
-There are no failures now. Five tests were failing earlier on 2026-09-21, and the cause was
-one missing keyword. The engine's deploy clamp is measured per side and is deliberately not the
-rotation of itself, and its seat-symmetric arm had no way through to Python. So
-`SymmetricRustEngine` ran the rotation gates against the asymmetric one, and they correctly
-reported an asymmetry that is real and intended.
+With the whole Install recipe done, expect no skips. A few tests do skip if Node.js is not on
+your PATH or RoyaleViser is not installed. Add `-rs` to the pytest line to read the reason for
+each skip. A skip is not a pass.
+[Troubleshooting](docs/site/pages/troubleshooting.md#6-tests-that-skip-instead-of-failing)
+says which skips are expected and why.
 
 Read next:
 

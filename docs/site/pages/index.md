@@ -5,7 +5,7 @@
   <img alt="Engine: Rust, same seed same battle" src="https://img.shields.io/badge/engine-Rust%2C%20same%20seed%20same%20battle-DEA584?style=flat-square&logo=rust&logoColor=white">
   <img alt="APIs: Gymnasium and PettingZoo" src="https://img.shields.io/badge/APIs-Gymnasium%20%2B%20PettingZoo-0b7285?style=flat-square">
   <img alt="Engine, environments and viewer: working" src="https://img.shields.io/badge/engine%2C%20envs%2C%20viewer-working-2ea043?style=flat-square">
-  <img alt="Trainer: runs, no bot trained yet" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
+  <img alt="Trainer: runs, no finished bot yet" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
   <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/badge/discord-join%20the%20server-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
 </p>
 
@@ -29,17 +29,17 @@ for over a network. You need Python and a compiler.
     the exact list of moves it is allowed to make, and a reward. The viewer draws any of it.
     You can run all of that tonight.
 
-    **New on 2026-09-22, and nobody has trained a bot with it yet.** The training harness
-    closed its loop that day and the real profile has since completed iterations on the real
-    engine. An iteration takes about nine minutes on an otherwise idle laptop and several
-    times that on a busy one, so a useful run is many hours. What exists is machinery that
+    **New on 2026-09-22, and no finished bot yet.** The training harness closed its loop that
+    day. Its laptop settings have since completed training iterations on the real engine. An
+    iteration is one round of playing battles and then learning from them. An iteration takes
+    about nine minutes on an otherwise idle laptop and several times that on a busy one, so a useful run is many hours. What exists is machinery that
     works rather than any result about learning. Training
     needs the torch extra, which the plain install does not pull in.
 
     So today this is a very fast Clash Royale sandbox with a standard bot interface on it. If you
     want to write your own training loop, or wire it into a library you already use, you can start
-    now. If you wanted `train --config` to just work, wait a while, or come and ask in the
-    [Discord](https://discord.gg/4D2BS5JBHP).
+    now. If you wanted `train --config` to hand you a good bot, nobody has got one out of it
+    yet. Wait a while, or come and ask in the [Discord](https://discord.gg/4D2BS5JBHP).
 
 <p align="center"><img src="media/whole-battle.gif" width="100%" alt="A whole battle between two players choosing at random among their legal moves, played back in the RoyaleViser window"></p>
 
@@ -118,11 +118,11 @@ in one go. Most of the time you only think about one of them.
 |---|---|---|
 | [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | The battle engine, written in Rust. It plays the match: elixir, hands, deploys, walking, targeting, fighting, spells, towers, overtime and the crowns. | Once, to build it. After that only if you want to know how accurate it is, or you want to drive a battle directly from Python without an environment around it. |
 | [RoyaleGym](https://github.com/RoyaleGym/RoyaleGym) | The environments. What your bot sees, what its moves mean, what it is rewarded for. It speaks Gymnasium and PettingZoo, the two standard Python interfaces for this. | Most of the time. Your reward function goes here, and this is the API your training code talks to. |
-| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | The training harness: self play, PPO, a ladder of past opponents to measure against, checkpoints. | When you want to train rather than drive the environments yourself. It runs, and no bot has been trained with it yet, so you would be early. It needs the torch extra. |
+| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | The training harness: self play, PPO, a ladder of past opponents to measure against, checkpoints. | When you want to train rather than drive the environments yourself. It trains. Real runs started on 2026-09-22, and none has produced a finished bot yet, so you would be early. It needs the torch extra. |
 | [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | The viewer. It opens a saved battle, an engine trace, or a training run that is happening right now, in its own window. | Whenever you want to see what your bot did instead of reading numbers off a table. It is optional and it needs no engine build. |
 
-There is a fifth repository, RoyaleLive. It records real matches, it is private, and it always
-will be. Its recordings are what the engine's movement and combat rules were measured against.
+There is a fifth repository, RoyaleLive. It records real matches, and it is private. Its
+recordings are what the engine's movement and combat rules were measured against.
 You never install it. Its accuracy reaches you through the engine.
 
 Each layer only talks downwards. RoyaleLearn talks to RoyaleGym, which talks to RoyaleSim. The

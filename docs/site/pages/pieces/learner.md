@@ -17,9 +17,11 @@ pip install -e "RoyaleLearn[torch]"
 python -m royalelearn train --config examples/configs/smoke.json
 ```
 
-The only run so far was a three-iteration smoke test to prove the loop closes. So nothing is
-known about how long a useful run takes, what it costs, or whether the bot it produces is any
-good.
+Every run so far has been a short test. An iteration is one round of playing battles and then
+learning from them. As of 2026-09-22 the longest run on the real engine had ten iterations,
+each a quarter of the usual size, and the smoke test that proves the loop closes has three. So
+nothing is known about how long a useful run takes, what it costs, or whether the bot it
+produces is any good.
 
 Around the loop is the boring half you would otherwise write yourself, and it has been tested
 far longer than the loop has: the settings file and its sanity checks, the run identity that a
@@ -27,12 +29,12 @@ resume is checked against, the networks, the code that turns an observation into
 buffer that holds experience, the workers that collect battles, the ladder that rates one
 policy against another, the metrics output and the checkpoint store.
 
-!!! tip "You do not have to wait"
-    You can train a bot today by pointing an existing library at [the environments](environments.md).
-    They expose `action_masks()` in the form sb3-contrib's MaskablePPO expects.
-    [Your first bot](../first-bot.md) walks through it.
+!!! tip "You can also use a library you already know"
+    You can point an existing library at [the environments](environments.md) instead of using
+    RoyaleLearn. They expose `action_masks()` in the form sb3-contrib's MaskablePPO expects.
+    No page here walks through that, so you would be working from that library's own docs.
 
-## What is it for, when it lands
+## What it is for
 
 One job: turn battles into a bot that is actually better than the one before it.
 
@@ -86,9 +88,9 @@ python -c "import royalelearn, sys; print(royalelearn.RunConfig, 'torch' in sys.
 Under that, everything runs: the engine, the environments, the legal-move mask, seeding from end
 to end, the opponent-pool bookkeeping, and the viewer stream.
 
-## The commands that will exist
+## The commands
 
-These are the plan. Do not try them tonight.
+All four run today. `config` works without torch; the other three need the torch extra.
 
 !!! note "Run here, not from a clean install"
     These commands were run on a machine that already had everything built. Nobody has yet gone
@@ -104,11 +106,14 @@ python -m royalelearn bench                                   # this machine's t
 
 `doctor` is the one worth knowing about in advance. It builds one environment, prints the engine
 build fingerprint and the observation shapes, checks the legal-move mask against the engine
-exhaustively, works out how much memory the run will need, and refuses to start a run that will
-not fit. `bench` measures your own machine instead of quoting somebody else's.
+exhaustively, and works out how much memory the run will need. It refuses a run that is over the
+memory budget in your config, and warns when a run needs more than is free right now. `bench`
+measures your own machine instead of quoting somebody else's.
 
-There will also be `examples/train_1v1.py`, which is about fifteen lines: load a config, change
-a couple of fields, run it.
+There is also `examples/train_1v1.py`, which is about fifteen lines: load the laptop config,
+change a few fields, run it. Weights & Biases, an online dashboard for training numbers, is off
+in it. To use it, set `USE_WANDB = True` at the top, install the `wandb` extra and sign in to a
+W&B account.
 
 ## Changing the reward
 
@@ -116,8 +121,8 @@ This is the thing most people will want, so here is where it lives. The reward f
 `royalelearn/rewards.py` and is assembled in `default_potential_reward()`. You change it by
 writing a `RewardFunction` subclass, which is RoyaleGym's base class, and naming it in the
 config's env block. Naming it in the config means it gets recorded in the checkpoint, so months
-later the file still says what the bot was trained to want. `examples/custom_reward.py` will
-show it.
+later the file still says what the bot was trained to want. `examples/custom_reward.py` shows
+it: it adds one term to the shipped reward and names the result in the config.
 
 [Writing a reward function](../rewards.md) is the page for this, and it works today against the
 environments.
@@ -132,12 +137,11 @@ environments.
 
 ## When you would touch it
 
-- You want to train a bot properly, with self-play, a ladder and checkpoints, once the loop
-  lands.
+- You want to train a bot properly, with self-play, a ladder and checkpoints.
 - You want a different rating scheme, a different way of sampling opponents from the pool, or
   your metrics somewhere other than where they go by default. Each of those is a base class with
   a default, so you replace one without forking the training loop.
-- You want to read the design before it is built. That is the point of
+- You want to read why it is built the way it is. That is the point of
   [`docs/design.md`](https://github.com/RoyaleGym/RoyaleLearn/blob/main/docs/design.md), which
   carries the reasoning rather than just the plan.
 
@@ -145,7 +149,7 @@ environments.
 
 | You want to | Go here instead |
 |---|---|
-| train something today | [Your first bot](../first-bot.md), with an off-the-shelf library |
+| train with a library you already know, such as MaskablePPO | [The environments](environments.md) |
 | change what the bot wants | [Writing a reward function](../rewards.md) |
 | change what it sees or what its moves mean | [The environments](environments.md) |
 | fix how the battle behaves | [The engine](engine.md) |
@@ -161,10 +165,10 @@ tide people over. The layers underneath were finished to a standard, and a half-
 would be the thing everyone used forever.
 
 **Nothing types a number that the environment already knows.** Every shape, every width, every
-field position is read off a running environment at startup. The card catalogue on this machine
-went from 65 to 95 cards one morning and no code noticed, which is exactly the point. If you
-ever see a page or a config with an observation width written into it, that page is already
-wrong.
+field position is read off a running environment at startup. The card catalogue on the
+maintainer's machine once went from 65 to 95 cards in a morning and no code noticed, which is
+exactly the point. If you ever see a page or a config with an observation width written into
+it, that page is already wrong.
 
 ## Where the detail is
 

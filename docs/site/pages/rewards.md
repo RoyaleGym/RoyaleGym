@@ -2,10 +2,10 @@
 
 <p align="center">
   <img alt="Interface" src="https://img.shields.io/badge/interface-one%20method-0b7285?style=flat-square">
-  <img alt="Terms" src="https://img.shields.io/badge/shipped%20terms-6-555?style=flat-square">
+  <img alt="Terms" src="https://img.shields.io/badge/shipped%20terms-7-555?style=flat-square">
   <img alt="Recompile" src="https://img.shields.io/badge/recompile%20needed-no-2ea043?style=flat-square">
   <img alt="Blocks" src="https://img.shields.io/badge/code%20blocks%20on%20this%20page-all%20run-2ea043?style=flat-square">
-  <img alt="Training" src="https://img.shields.io/badge/training%20loop-not%20written%20yet-orange?style=flat-square">
+  <img alt="Training loop: runs, no finished bot yet" src="https://img.shields.io/badge/training%20loop-runs%3B%20no%20finished%20bot%20yet-orange?style=flat-square">
 </p>
 
 The reward function is the one piece you are expected to write. It says what your bot
@@ -196,7 +196,7 @@ play(TowerDamageReward())
 TowerDamageReward: blue total -0.360  over 480 steps, 56 of them non-zero
 ```
 
-Same battle, same bots, and now 50 steps carry a number instead of 1. That is what
+Same battle, same bots, and now 56 steps carry a number instead of 2. That is what
 people mean when they call a reward *dense*. The bot gets told it is getting warmer
 long before anything falls over.
 
@@ -246,6 +246,7 @@ reward function at all.
 | `TowerHPReward` | tower hitpoints taken minus lost, as fractions of full | 0.1 |
 | `ElixirTradeReward` | elixir value of enemy units killed minus your own lost | 0.02 |
 | `ElixirLeakPenalty` | sitting at full elixir, which wastes the regeneration | not in the default |
+| `PlacementDepthReward` | how far up the board your cards land, from -1 at your back line to +1 at the far end | not in the default, on purpose |
 | `IllegalActionPenalty` | a move the engine refused. Should always be zero | not in the default |
 
 Running the shipped default on the same battle:
@@ -330,9 +331,10 @@ CrownReward: blue +0.000  red +0.000  sum +0.000
 TowerDamageReward: blue -0.360  red +0.360  sum +0.000
 ```
 
-Every shipped term except `ElixirLeakPenalty` is meant to add to zero like this.
-`ElixirLeakPenalty` is deliberately the exception: both players really can waste elixir at
-the same time.
+Every shipped term is meant to add to zero like this, except three that score only one
+player's own play. `ElixirLeakPenalty` is one on purpose: both players really can waste elixir
+at the same time. `PlacementDepthReward` scores each seat's own placements. `IllegalActionPenalty`
+should be zero for both seats anyway.
 
 The suite does not check all of them. One term, `TowerHPReward`, has its breakdown asserted
 antisymmetric across the seats in `tests/test_train_harness.py`. For the rest it is a design
@@ -342,8 +344,8 @@ intent, and the program above is how you confirm it for a term of your own.
 
 This is the part that saves you weeks.
 
-Every shaping term that ships measures one quantity before the step and again after, and
-pays the difference. Add those differences up across a whole battle and everything in
+`CrownReward` and `TowerHPReward` each measure one quantity before the step and again
+after, and pay the difference. Add those differences up across a whole battle and everything in
 the middle cancels out. What is left is the score at the end minus the score at the
 start. So the shaping makes the signal louder without changing which way of playing is
 best. It hurries the bot along the same road.
@@ -351,7 +353,15 @@ best. It hurries the bot along the same road.
 A term you invent that is not a before-and-after difference of one quantity does not
 have that property. It can pay your bot for something that is not winning, and your bot
 will happily take the payment. A bot that farms elixir trades and never pushes is the
-classic result.
+classic result. The shipped `PlacementDepthReward` is a term like that. It pays for where you
+play, which decides in advance whether pushing or defending is better. That is for your bot to
+learn, so the term ships as an example to copy and stays out of the default.
+
+`ElixirTradeReward`, the third shaping term in the default, does not fit the rule either. It
+pays when units die, not for the change in one quantity. A player who never plays a card still
+collects when enemy units die at its towers, so it can pay for sitting back. Keep its weight
+small, as the default does (0.02). RoyaleLearn's own default reward swaps it for a term that
+does fit.
 
 Then the rule, and it is from the person who designed the training harness:
 
@@ -371,19 +381,18 @@ Two more habits worth having:
 
 ## What this page cannot show you yet
 
-Nobody can show you that a reward function *trains* anything, and that is no longer because
-the loop is missing. RoyaleLearn closed its training loop on 2026-09-22 and
-`python -m royalelearn train` runs end to end, with the torch extra installed. What has not
-happened is a real run. The only one so far was three iterations long, a smoke test to prove
-the loop closes.
+Nobody can show you yet that a reward function *trains* anything. The loop is not what is
+missing. RoyaleLearn closed its training loop on 2026-09-22, and `python -m royalelearn train`
+runs end to end with the torch extra installed. Real training runs started that day. None has
+run long enough to produce a finished bot.
 
 So what you have is a reward function that runs on a real battle, on both seats, and gives
-back numbers you can look at, and a trainer that will consume it and has consumed nothing
-yet. If you write a reward function and train on it, you will be the first person to learn
-whether any of this works, and the project would very much like to hear what happened.
+back numbers you can look at, and a trainer that consumes it. If you write a reward function
+and train on it until a bot comes out, you will be among the first to learn whether any of
+this works, and the project would very much like to hear what happened.
 
-When the loop lands, a custom reward is named in the run's config rather than pasted
-into the trainer, so the checkpoint records it:
+A custom reward is named in the run's config rather than pasted into the trainer, so the
+checkpoint records it:
 
 !!! warning "UNVERIFIED"
     This particular snippet has not been run here. The command line and the training loop both
@@ -394,9 +403,9 @@ into the trainer, so the checkpoint records it:
 python -m royalelearn train --config examples/configs/laptop.json
 ```
 
-Until then, judge a reward function the way this page does. Play a battle with it. Count
-how many steps it actually said something on. Check it adds to zero across the seats.
-Print the breakdown.
+Before you spend hours training, judge a reward function the way this page does. Play a
+battle with it. Count how many steps it actually said something on. Check it adds to zero
+across the seats. Print the breakdown.
 
 ## Read next
 
@@ -405,6 +414,6 @@ Print the breakdown.
 - [The environments](pieces/environments.md), for the five swappable pieces this one
   belongs to.
 - [`royalegym/reward.py`](https://github.com/RoyaleGym/RoyaleGym/blob/main/royalegym/reward.py)
-  for all six shipped terms. They are short, and they are the best examples there are.
+  for all seven shipped terms. They are short, and they are the best examples there are.
 - The [Discord](https://discord.gg/4D2BS5JBHP) if your reward function does something
   odd. Bring the term breakdown.

@@ -17,8 +17,8 @@ For what the viewer is for and how to open one, read [The viewer](../pieces/view
 
 ## Saving pictures with no window
 
-`capture` is how the pictures in this project's READMEs are made. It needs no display and no
-clock, and the same source and arguments give you the same bytes every time.
+`capture` is how many of the pictures in this project's READMEs are made. It needs no display and
+no clock, and the same source and arguments give you the same bytes every time.
 
 ::: royaleviser.capture
 

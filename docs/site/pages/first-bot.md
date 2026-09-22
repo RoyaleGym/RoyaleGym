@@ -2,7 +2,7 @@
 
 <p align="center">
   <img alt="Works today" src="https://img.shields.io/badge/part_1-works_today-2ea043?style=flat-square">
-  <img alt="Not yet" src="https://img.shields.io/badge/part_2-new,_barely_tested-d29922?style=flat-square">
+  <img alt="New, barely tested" src="https://img.shields.io/badge/part_2-new,_barely_tested-d29922?style=flat-square">
   <img alt="No GPU" src="https://img.shields.io/badge/GPU-not_needed_to_start-2ea043?style=flat-square">
   <img alt="No cloud" src="https://img.shields.io/badge/cloud-not_needed-2ea043?style=flat-square">
   <img alt="Python" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
@@ -11,10 +11,12 @@
 
 !!! warning "Read this before you scroll"
     **Training started working on 2026-09-22, and nobody has trained a bot with it yet.** Keep
-    both halves of that in mind. `python -m royalelearn train` runs end to end now, and the only
-    run anyone has done was three iterations long, a smoke test to prove the loop closes. So
-    nothing on this page can tell you how long a real run takes or whether the bot comes out any
-    good. You would be the first to find out.
+    both halves of that in mind. `python -m royalelearn train` runs end to end now, but every run
+    so far has been a short test. An iteration is one round of playing battles and then learning
+    from them. As of 2026-09-22 the longest run on the real engine had ten iterations, each a
+    quarter of the usual size, and the smoke test that proves the loop closes has three. So
+    nothing on this page can tell you how long a useful run takes or whether the bot comes out
+    any good. You would be the first to find out.
 
     **Training needs torch, and it is an extra rather than part of the plain install.** Run
     `pip install -e "RoyaleLearn[torch]"` before you try to train. Skip it and `train`, `doctor`
@@ -25,17 +27,19 @@
 
     This page has two halves. Part 1 is code that runs on your machine today, and every block in
     it was run to write this page, with the real output underneath. Part 2 is the training run
-    itself. Its commands are real now, but they are new, and this page has not run them.
+    itself. Its commands are real now, but they are new. This page ran them only briefly, and
+    it says which results it checked and which it took from the people who wrote them.
 
 What you get out of Part 1 is a program that plays a whole Clash Royale battle, a bot of your own
-that is better than random, and a window you can watch it in. That is the whole scaffolding a
-learner will plug into. When the loop lands, the only thing you add is a reward function.
+that is better than random, and a window you can watch it in. That is the whole scaffolding the
+learner plugs into. The one piece you are expected to write for training is a reward function.
 
 ## What you need first
 
 The [Install](install.md) page. You need the folder called `Royale` with `RoyaleSim` and
 `RoyaleGym` cloned inside it, one virtual environment at the root, and the engine built. The
 viewer section below also wants `RoyaleViser` installed, which is one more `pip install -e` line.
+Part 2 wants `RoyaleLearn` with its torch extra, as the box at the top says.
 
 Every command on this page is run from inside a repo folder, and the Python is
 `..\.venv\Scripts\python`. On macOS and Linux it is `../.venv/bin/python`.
@@ -50,10 +54,12 @@ Here is a complete program. It builds a battle, plays it to the end with both pl
 random among their legal moves, and prints who won.
 
 !!! note "About the deck"
-    These eight cards are here so the battle comes out the same on your machine as it did on
-    ours. They are an example, not a recommendation. All eight are from the 18 whose behaviour
-    is checked against recordings, which `cards.json` lists under `thin_slice`, so the example
-    leans on the best-measured part of the engine. Any eight will do, and if you leave the deck
+    These eight cards are here so the battle comes out the same every time you run it. Your
+    numbers can still differ from ours. The output on this page came from the 15.535 card table,
+    and a fresh clone builds the 2018 one, where card stats differ. The eight cards are an
+    example, not a recommendation. All eight are from the 18 whose behaviour is checked against
+    recordings, which `cards.json` lists under `thin_slice`, so the example leans on the
+    best-measured part of the engine. Any eight will do, and if you leave the deck
     out each team is dealt a random eight, which is the default.
 
 ```python
@@ -84,8 +90,9 @@ winner 1  crowns [1, 1]  tick 4800
 
 Blue is player 0. A *tick* is the game's own 50 ms step and there are 20 in a second, so tick
 3600 is three minutes and tick 4800 adds the full sixty seconds of overtime. Each player took
-one of the other's princess towers, so the crowns finished level and the match was decided on
-which king tower had taken more damage. Red's was healthier, so Red won.
+one of the other's princess towers, so the crowns finished level and the match went to the
+tiebreak. In the tiebreak, the side whose weakest standing tower has less health left loses.
+Blue's weakest tower was lower than Red's, so Red won.
 
 One env step is half a second of game time, which is 10 ticks. So each player made 480 decisions
 in that battle. It took about half a second of real time.
@@ -105,8 +112,8 @@ Two things to know about the numbering:
 
 - Action `0` is the no-op. It means "play nothing this step". Waiting is a legal move and a good
   one, so it has its own number.
-- Every other action is one card in your hand on one tile. There are 2305 of them. The action
-  parser turns a hand slot and a tile into that number for you with
+- Every other action is one card in your hand on one tile. There are 2304 of those, so 2305
+  actions in all. The action parser turns a hand slot and a tile into that number for you with
   `parser.encode(slot, x, y)`, so you never have to do the arithmetic.
 
 The `action_mask` in the observation is an array of 0s and 1s, one per action, and a 1 means the
@@ -300,8 +307,8 @@ frames sent 203  dropped 0
 ```
 
 The `time.sleep` is there because a battle otherwise finishes in half a second and you would see
-nothing. 203 frames rather than 360 because the viewer in that check was only attached for part of
-the run. Nothing is sent while nobody is listening.
+nothing. It sent 203 frames, not one for every step, because the viewer in that check was only
+attached for part of the run. Nothing is sent while nobody is listening.
 
 !!! warning "One env does not read the `ROYALEVISER` variable. This trips people up."
     You may have seen `set ROYALEVISER=127.0.0.1:9870` written as the way to switch the viewer on.
@@ -356,12 +363,12 @@ job: whoever is behind has to attack. `evaluate` plays every pairing both ways a
 gap, so you can see when that is what your number is made of.
 
 !!! tip "How many games is enough? More than you think"
-    RoyaleGym's own maintainer ran a 40-game round robin over the six shipped opponents. It
-    established exactly two orderings: the do-nothing opponent loses to everything, and the
-    patient one beats random 27 to 13. The three in the middle, which are described in
-    increasing order of sophistication, came out 19-19, 20-19 and 20-19. Forty games could not
-    tell them apart. If you change your reward function and see a five point move over twenty
-    games, you have seen noise.
+    RoyaleGym's own maintainer ran a 40-game round robin over the six shipped opponents, on the
+    pure-Python stand-in engine. It established exactly two orderings: the do-nothing opponent
+    loses to everything, and the patient one beats random 27 to 13. The three in the middle,
+    which are described in increasing order of sophistication, came out 19-19, 20-19 and 20-19.
+    Forty games could not tell them apart. If you change your reward function and see a five
+    point move over twenty games, you have seen noise.
 
 ## How long a run will take
 
@@ -371,10 +378,15 @@ with 7.8 GB of RAM and several other jobs running, so both are pessimistic.
 | What is being measured | Ticks per second | What that means for you |
 |---|---|---|
 | The engine on its own, driven straight from Python | 51,582 | about **51,000 whole battles an hour** on one core |
-| The engine through a RoyaleGym environment | 20,219 | about **20,000 battles an hour** on one core, and this is the one a training run gets |
+| The engine through a RoyaleGym environment | 9,570 | about **9,600 battles an hour** on one core |
 
-The arithmetic is exact rather than a trick. A three minute battle is 3,600 ticks and an hour is
-3,600 seconds, so a ticks-per-second figure is also a battles-per-hour figure for one process.
+The second row is RoyaleGym's own throughput test on 2026-09-22: 957 environment steps a
+second, and each step is 10 ticks. The same test has printed as much as 1,812 steps a second on
+that laptop, depending on the hour and what else was running.
+
+The arithmetic is exact rather than a trick. A three minute battle is 3,600 ticks and an hour
+is 3,600 seconds, so a ticks-per-second figure is also a battles-per-hour figure for one
+process.
 
 The gap between the two rows is Python. On every step the environment builds both players'
 observations and works out the full list of legal moves. That is real work and it happens outside
@@ -383,7 +395,7 @@ the engine. Closing that gap is the first open item in
 closed, a training run spends more time describing the battle than playing it.
 
 !!! danger "Nobody knows how many battles a good bot needs"
-    The loop runs and a couple of iterations have gone through it. Nothing has been trained to
+    The loop runs and a few short runs have gone through it. Nothing has been trained to
     the point of being good, or of being measured against anything that would tell you. So
     there is no honest answer to "how long until my bot is good", and anyone who gives you one
     is guessing. What you can take from the table above is the cost of a battle, not the number
@@ -391,7 +403,7 @@ closed, a training run spends more time describing the battle than playing it.
 
 ---
 
-## Part 2: the plan
+## Part 2: training
 
 !!! note "What has and has not been run here"
     `train` was run for this page and it completed:
@@ -410,10 +422,15 @@ closed, a training run spends more time describing the battle than playing it.
     training run and not the real engine.
 
     **The real profile now runs, and nobody has trained a bot with it.** `laptop.json` uses
-    `RustEngine` and a limit of 100,000,000 timesteps. Until a few hours ago it stopped in its
-    first collection round on a mask assertion; that was a worker failure being misread, and it
-    is fixed with a regression test. Checked here rather than taken on report: it now collects
-    full rounds.
+    `RustEngine` and a limit of 100,000,000 timesteps. An earlier bug stopped it in its first
+    collection round. That bug is fixed, and a test now guards against it. Checked here rather
+    than taken on report: it collects full rounds.
+
+    **A long run stops itself today (2026-09-22).** After a few iterations `laptop.json` raises
+    `MixtureDrifted`, a self-check comparing how many collected rows were thrown away against
+    how many the opponent mixture says should be. It is a real disagreement in the harness, not
+    your setup, and it is being fixed. Short runs and the smoke profile are unaffected. If you
+    hit it, that is the known one.
 
     **The first round of a run is much slower than the ones after it.** That, and not your
     hardware, is the thing to know before you time anything. The workers are spawning and
@@ -455,7 +472,8 @@ python -m royalelearn train --config run.json               # the training run i
 Start with the middle two, not the last one.
 
 - `config` writes out a config file with sensible settings so you have something to edit rather
-  than a blank page. The profiles will be `laptop`, `workstation` and `many-core`.
+  than a blank page. The profiles are `laptop`, `workstation` and `many_core`. Every training run
+  so far, as of 2026-09-22, used `laptop`. No run has used the other two yet.
 - `doctor` builds one environment and runs the start-up gates on it. These are the same gates
   `train` runs before it begins, so this is what they look like, copied from a real run:
 
@@ -471,25 +489,31 @@ Start with the middle two, not the last one.
 
   It checks every legal move against the engine exhaustively rather than sampling, prints the
   three build digests so you can tell whether your engine matches your data, and projects the
-  memory a run will need so it can refuse one that will not fit. Run it first; it is quick, and
-  it is where a mismatched build shows up.
+  memory a run will need. It refuses a run that is over the memory budget in your config, and
+  it warns, as above, when a run needs more than is free right now. Run it first; it is quick,
+  and it is where a mismatched build shows up.
 - `bench` measures how fast your own machine is, so you can plan a run against your number
-  instead of the table above. Budget time for it. It forks a farm of worker processes and
-  prints nothing while it works: on a 4-core laptop with other jobs running it had produced no
-  output after fifteen minutes, at which point it was stopped rather than left to finish, so
-  what it finally prints is not recorded here. Run it when you can leave the machine alone.
+  instead of the table above. Budget time for it. It starts a set of worker processes, runs at
+  least one whole training iteration whatever `--seconds` says, and prints nothing while it
+  works. On a 4-core laptop with other jobs running it had produced no output after fifteen
+  minutes, at which point it was stopped rather than left to finish, so what it finally prints
+  is not recorded here. Run it when you can leave the machine alone.
 - `train` is the run.
 
-There will also be a script for people who would rather edit Python than a command line.
-
-`examples/train_1v1.py` exists. This is the shape of it, not a transcript: it loads the laptop
-config, changes a couple of fields, and hands it to the coordinator.
+There is also a script, `examples/train_1v1.py`, for people who would rather edit Python than a
+command line. It loads `examples/configs/laptop.json`, gives the run a name, changes one
+learning setting, and hands the result to the coordinator. This is the shape of it, not a
+transcript:
 
 ```python
-# examples/train_1v1.py, about fifteen lines: load a config, change a couple of fields, then
-with LearningCoordinator(cfg) as run:
-    run.learn()
+# examples/train_1v1.py, about fifteen lines: load a config, change a few fields, then
+with LearningCoordinator(config) as run:
+    run.learn(until_timesteps=100_000_000)
 ```
+
+Weights & Biases, an online dashboard for training numbers, is off in the script. To use it, set
+`USE_WANDB = True` at the top, install the `wandb` extra and sign in to a W&B account. Either way,
+the run's numbers go to the console and to a `metrics.jsonl` file in the run's folder.
 
 The command line and the script go through the same object. Neither is a wrapper around the other.
 
@@ -498,12 +522,13 @@ The command line and the script go through the same object. Neither is a wrapper
 This is the one piece a bot creator is expected to change, and it is the reason this project
 exists. A reward function says what your bot should want.
 
-It will live in `royalelearn/rewards.py`, composed in a function called
+It lives in `royalelearn/rewards.py`, composed in a function called
 `default_potential_reward()`. To change it you write a subclass of `RewardFunction`, which is
 RoyaleGym's base class, and you name your class in the config's `env` block. Naming it in the
 config rather than editing the default means the checkpoint records which reward the bot was
 trained on, so you can never lose track of what a saved bot was trying to do.
-`examples/custom_reward.py` will show that.
+`examples/custom_reward.py` shows the whole thing. It adds one new term to the shipped four,
+names it in the config, and adds the one line that lets the worker processes import your file.
 
 The shipped composition is four terms. The objective is winning. The other three are there to make
 the first hour of a run readable: crowns, tower hitpoints, and elixir you have committed to the
@@ -529,11 +554,11 @@ else's machine.
 
 ## How to tell whether it is working
 
-When the loop lands it will report a lot of numbers. Here are the ones to watch and what they mean
-for you. The metric names come from RoyaleLearn's metric schema and alarm table, which are written
-and tested. What no one can tell you yet is what healthy numbers look like on a real run, because
-there has not been one. Treat the thresholds below as the code's own defaults, not as measured
-facts.
+A training run reports a lot of numbers. Here are the ones to watch and what they mean for you.
+The metric names come from RoyaleLearn's metric schema and alarm table, which are written and
+tested. What no one can tell you yet is what healthy numbers look like on a real run, because no
+run has gone long enough to show it. Treat the thresholds below as the code's own defaults, not
+as measured facts.
 
 ### Good signs
 
@@ -583,7 +608,7 @@ things it cannot have.
 !!! note "Which of this is measured and which is judgement"
     The metric names, the alarms and the thresholds are real. They are in RoyaleLearn's code and
     they are tested. **The advice under "what to do" is judgement, not measurement.** No run has
-    tripped any of these alarms in anger yet, so nobody has confirmed which fix works.
+    gone long enough yet for anyone to try these fixes and see which one works.
 
 ---
 

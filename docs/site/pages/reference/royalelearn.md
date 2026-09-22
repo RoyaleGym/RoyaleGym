@@ -5,12 +5,14 @@ The training harness.
 !!! warning "New, and barely tested"
 
     The training loop closed on 2026-09-22. `python -m royalelearn train` runs end to end, and
-    it needs the torch extra. The only run so far was three iterations long, so treat anything
-    below that touches the loop itself as young code. See [The learner](../pieces/learner.md)
-    for what that means in practice.
+    it needs the torch extra. Every run so far has been a short test, ten iterations at most as
+    of 2026-09-22, so treat anything below that touches the loop itself as young code. See
+    [The learner](../pieces/learner.md) for what that means in practice.
 
 Everything on this page is generated from the docstrings in the code, so it shows what exists
-rather than what is planned. A name that is missing from this page has not been written yet.
+rather than what is planned. It covers the main modules, not every one. `LearningCoordinator`,
+the object that runs a training run, lives in `royalelearn.coordinator`, which is not on this
+page. Read its docstrings in the code.
 
 Some of these need torch, which is an optional extra: `pip install -e "RoyaleLearn[torch]"`. The
 configuration tree, the run identity and the rollout workers are deliberately torch-free, and

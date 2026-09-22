@@ -3,7 +3,10 @@
 The environment layer. This is the package you import to get a battle your bot can play in.
 
 Everything on this page is generated from the docstrings in the code, so it cannot drift from
-what the package actually does. If something here is wrong, the docstring is wrong.
+what the package actually does. If something here is wrong, the docstring is wrong. It covers
+the main modules, not every one. `royalegym.evaluate`, which scores one bot against another,
+and `royalegym.opponents`, the scripted opponents, are not on this page. Read their docstrings
+in the code.
 
 If you are looking for where to start rather than what a name does, read
 [Your first bot](../first-bot.md) and [Writing a reward function](../rewards.md) first.

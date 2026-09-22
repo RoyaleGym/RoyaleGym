@@ -87,9 +87,9 @@ The filenames below are examples. Put your own in their place. The command you r
 same command with a file that ships with the repo.
 
 ```
-python -m royaleviser frames-demo-20260920-120752-A.jsonl.gz       # a recording of a real battle
-python -m royaleviser battle.msgpack --start-tick 900              # a trace saved from the engine
-python -m royaleviser --stream 127.0.0.1:9870                      # an environment running right now
+python -m royaleviser frames-my-match.jsonl.gz         # a recording, like the two in tests/fixtures
+python -m royaleviser battle.msgpack --start-tick 900  # a trace saved from the engine
+python -m royaleviser --stream 127.0.0.1:9870          # an environment running right now
 ```
 
 For the stream, set `ROYALEVISER=127.0.0.1:9870` before your training run starts and change no
@@ -154,7 +154,7 @@ capture(source, out, *, ticks=None, scale=24, view=None, crop="full", fps=20,
 - `compare` ghosts a second source at the same tick. `view` carries the seat, the overlays, and
   `hover_uid`, which pins a unit in the inspector.
 - PNG needs nothing extra. mp4 and gif are encoded by ffmpeg, which arrives with the optional
-  `media` extra. The gif above worked here, so that extra is installed in this venv.
+  `media` extra. The gif above was made with that extra installed.
 
 ## When you would touch it
 
@@ -192,9 +192,12 @@ to draw something.
   its card. There are no rage, poison or freeze zones.
 - A recording holds only the recording player's hand. The opponent's shows as
   `hand: not in this source`.
-- No real training run has filled the learning panel yet. The path is tested end to end and the
-  screenshot in the repo is a genuine live stream, but the numbers in it come from a stand-in
-  script. What is proven is the road, not the traffic.
+- The picture of the learning panel in RoyaleViser's README is not from a training run. It is a
+  genuine live stream, but its numbers come from a test script that stands in for a learner. A
+  real run's status messages have reached the viewer: on 2026-09-22, a run on the laptop
+  profile sent one after each training iteration. The picture has not been retaken from a run
+  like that. A status arrives only once per iteration, so the panel shows how old the last one
+  is beside its heading.
 
 ## Where the detail is
 

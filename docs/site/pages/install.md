@@ -3,7 +3,7 @@
 <p align="center">
   <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
   <img alt="Rust 1.80+" src="https://img.shields.io/badge/rust-1.80+-DEA584?style=flat-square&logo=rust&logoColor=white">
-  <img alt="Python half: run from clean clones" src="https://img.shields.io/badge/python%20half-run%20from%20clean%20clones-2ea043?style=flat-square">
+  <img alt="Recipe with a debug build: run from fresh clones, 2026-09-22" src="https://img.shields.io/badge/recipe%2C%20debug%20build-run%20from%20fresh%20clones-2ea043?style=flat-square">
   <img alt="Release build: unmeasured" src="https://img.shields.io/badge/release%20build-unmeasured-orange?style=flat-square">
   <img alt="Tested on Windows" src="https://img.shields.io/badge/commands%20tested%20on-Windows-0078D4?style=flat-square">
 </p>
@@ -24,21 +24,22 @@ short list of commands to check that it worked, with the output you should see.
 
 This matters more than it sounds, so it is near the top rather than in a footnote.
 
-!!! success "The Python half was run from clean clones, and it works"
+!!! success "The recipe works from fresh clones, with a debug build"
 
-    Somebody cloned all four repositories fresh into an empty directory, with no build leftovers
-    and no files that git ignores, and ran the recipe below: the clones, the virtual environment,
-    the four extract commands and the `pip install -e` lines. RoyaleGym's test suite then passed
-    there, 342 passed and 6 skipped in 56 seconds.
+    On 2026-09-22 all four repositories were cloned fresh into an empty folder, with no build
+    leftovers and no files that git ignores. The recipe below was then run as written, except
+    that the engine was built in debug mode (`maturin develop` without `--release`). That build
+    took **2 minutes 38 seconds**. RoyaleGym's test suite in that clone gave **385 passed,
+    0 skipped** (RoyaleGym at commit `afb6d1e`).
 
-!!! warning "The release build has never been run from a clean clone"
+    Nothing skipped, so every test ran. The suite has grown since (492 tests at commit
+    `be58cac`), and has not been re-run from a fresh clone.
+
+!!! warning "The release build has not been run from a fresh clone yet"
 
     `maturin develop --release` is the one step nobody has done end to end from a fresh clone.
-    A **debug** build was done in that clean clone, and it took **36 seconds** on a machine with
-    about **1.5 GB of memory free**. That is the only build measurement that exists.
-
-    How long the **release** build takes, how much memory it needs, and whether
-    `import royalesim` works immediately afterwards with no further step, are all unmeasured.
+    How long it takes there, how much memory it needs, and whether `import royalesim` works
+    straight afterwards with no further step, are all unmeasured.
     If you run it, the [Discord](https://discord.gg/4D2BS5JBHP) would like the numbers.
 
 Everything below that has not been run carries a box saying so.
@@ -134,10 +135,11 @@ with no flag fails. This is the real message you get:
 missing .../data/raw/cr-15.535.29/csv_logic: decode the 15.535.29 assets first
 ```
 
-That is not a broken install. It is the tool telling you it needs files that are not there and
-will not be there. `--vintage 2018` builds the card table from the 2018 files instead, and those
-**are** in the repository, 24 tracked files, along with the calibration data. So the 2018 path is
-self contained and it is the one that works for everybody.
+That is not a broken install. It is the tool telling you it needs files that are not there,
+because they are not distributed. `--vintage 2018` builds the card table from the 2018 files
+instead, and those **are** in the repository: 23 tracked files (counted on 2026-09-22), along
+with the calibration data. So the 2018 path is self contained and it is the one that works for
+everybody.
 
 ### Why `extract_cards.py` runs twice
 
@@ -147,33 +149,40 @@ things read it by name.
 | The run | Writes | Read by |
 |---|---|---|
 | `--vintage 2018` | `data/derived/cards-2018.json` | one of the engine's own Rust tests, which loads it by that exact filename |
-| `--vintage 2018 --out data\derived\cards.json` | `data/derived/cards.json` | the engine itself, every time it starts |
+| `--vintage 2018 --out data\derived\cards.json` | `data/derived/cards.json` | the engine itself, every time you create one |
 
 Leave either one out and something later goes looking for a file that is not there.
 
 ### The order matters: extract first, build second
 
-!!! danger "The card table is fixed when the engine is built, not when it runs"
+!!! danger "The engine reads its card table from the folder it was built in"
 
-    Pointing the `ROYALESIM_DATA_DIR` environment variable at a different data folder afterwards
-    does **not** change the card table a compiled engine holds. This was tried. An engine built
-    elsewhere, pointed at a 2018 only checkout, still reported the other card table.
+    The build copies the arena and the calibration constants into the engine, so it needs
+    `data/derived/arena.json` to exist first. The card table works differently. Every time you
+    create an engine, it reads `data/derived/cards.json` from the RoyaleSim folder it was
+    **built in**.
 
-    So: extract, then build. And if you ever regenerate the data, build again. Otherwise you get
-    an engine quietly disagreeing with the files next to it, and card counts that change for no
-    visible reason.
+    Two things follow. Re-running `extract_cards.py` in that folder changes the cards the
+    engine uses, with no rebuild. And pointing the `ROYALESIM_DATA_DIR` environment variable at
+    a different data folder does **not** change the card table the engine reads. This was tried.
+    An engine built elsewhere, pointed at a 2018 only checkout, still reported the other card
+    table.
 
-RoyaleGym helps you here. `RustEngine()` refuses an engine build that is older than the data files
-on disk, rather than running with a mismatch.
+    So: extract, then build, and build in the checkout whose data you want. If you change the
+    calibration file or regenerate the arena, build again.
+
+RoyaleGym helps you here. `RustEngine()` refuses to start if the calibration or arena file on
+disk differs from the copy built into the engine, rather than running with a mismatch. The card
+table is not part of that check.
 
 ## Step 3: build the engine
 
 !!! warning "UNVERIFIED"
 
-    Nobody has run this from a clean install yet. Only a debug build has been done from a clean
-    clone, and that took 36 seconds on a machine with about 1.5 GB of memory free. The release
-    build's time and memory are unmeasured, and so is whether `import royalesim` works
-    immediately after it with no further step.
+    The release build has not been run from a fresh clone yet. A debug build has: on
+    2026-09-22 it took 2 minutes 38 seconds, and the tests passed against it. The release
+    build's time and memory on a fresh clone are unmeasured, and so is whether
+    `import royalesim` works straight after it with no further step.
 
 === "Windows"
 
@@ -194,7 +203,8 @@ on disk, rather than running with a mismatch.
 This compiles the Rust engine and installs it into the shared virtual environment as a Python
 module called `royalesim`. It is a first build of a Rust project, so expect it to take a while
 and to use a good chunk of memory. If your machine is short on memory, drop `--release` and take
-a slower engine for now. The debug build is the one that has actually been done from a clean
+a slower engine for now. On 2026-09-22 a debug engine played battle ticks about 17 times slower
+than a release one on the same laptop. The debug build is the one that has actually been done from a fresh
 clone.
 
 !!! warning "One hazard if you keep more than one checkout"
@@ -363,7 +373,8 @@ cd RoyaleSim
 108 passed in 134.27s (0:02:14)
 ```
 
-Give this one a couple of minutes.
+Give this one a couple of minutes. That output is from an earlier run. Counted on 2026-09-22,
+the suite has 112 tests, so expect a bigger count.
 
 ### How fast is it on your machine
 
@@ -381,7 +392,7 @@ Read that as: 957 env steps per second, which is 957 decisions per player per se
 Rust engine. That run had five other jobs going on the machine.
 
 Your number will be different, and the spread is much wider than you would expect. The same
-command on this one laptop has printed anywhere from about 350 to about 960 env steps per
+command on one laptop has printed anywhere from about 350 to about 960 env steps per
 second on the same day, depending on what else was running. Do not read anything into the
 figure itself. The thing to check is that the line prints at all and that `rust` is not
 dramatically below `mock`, which would mean you are running a debug build.
@@ -401,13 +412,15 @@ cd RoyaleGym
 ..\.venv\Scripts\python -m pytest -q
 ```
 
-On the clean clones this printed **342 passed, 6 skipped, in 56 s**. Six skips is normal and a
-skip is not a failure. If you built the engine, the two Rust backed test files on their own were
-**96 passed in 148 s** on that clean clone, on the debug build.
+On fresh clones with a debug engine build, on 2026-09-22, this printed **385 passed,
+0 skipped**. The suite has grown since (492 tests at commit `be58cac`), so expect a bigger
+count. Expect no skips either, unless Node.js is not on your PATH or you left RoyaleViser out:
+a few tests need one of those and skip without it. Add `-rs` to read the reason for any skip,
+and see [tests that skip](troubleshooting.md#6-tests-that-skip-instead-of-failing).
 
-Without the engine built, the Rust backed tests skip instead of failing. An engine build that is
-older than the data files fails them instead of skipping, which is the reminder to go back and
-redo Step 3.
+Without the engine built, the Rust backed tests skip instead of failing. An engine built from a
+different calibration or arena file than the one on disk fails them instead of skipping, which
+is the reminder to go back and redo Step 3.
 
 ## Where to go next
 

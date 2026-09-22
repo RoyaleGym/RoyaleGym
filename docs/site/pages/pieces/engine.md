@@ -39,8 +39,8 @@ Your bot talks to [the environments](environments.md), and the environments talk
 
     About 16,100 three-minute battles an hour from one worker process, and about 65,000 from
     six of them. Add cores and you add battles. The engine stepped on its own, with nothing
-    built on top, goes about three times faster again, which is the point: the slow part of
-    training is the Python around the engine, not the engine.
+    built on top, goes about three times faster again. That is the point: when a training run
+    plays battles, the slow part is the Python around the engine, not the engine.
 
 -   **The movement rules were measured**
 
@@ -139,23 +139,31 @@ Four reasons, and they are all "the battle itself is wrong or missing something"
 building sits in the wrong place. That is engine behaviour, so it is fixed here.
 
 **A mechanic is not modelled.** These are the ones the engine does not do yet, in plain words:
-dash and morph, air units doing anything cleverer than flying straight at their target,
-evolutions, champion abilities and tower troops. Only the 18 cards in `thin_slice` are checked
-against recordings. The other 126 carry data that no test covers.
+dash and morph, jump attacks like the Mega Knight's, the Rage and Heal spells, air units doing
+anything cleverer than flying straight at their target, evolutions, champion abilities and tower
+troops. Only the 18 cards in `thin_slice` are checked against recordings. The rest of the card
+table is not. That is 60 more cards in the 2018 table a fresh clone builds.
 
-**You want a constant changed.** Every number the engine uses lives in `data/calibration.json`
-with a status attached, from guess to measured, and the name of the recording that pinned it. You
+**You want a constant changed.** The engine's constants live in `data/calibration.json`. Each
+one has a status, from guess to measured, and nearly all of them say where they came from. You
 can change one and rebuild.
 
 **You want to help close the accuracy gap.** The two biggest sources of error are where
 multi-unit cards put their units and how units push each other apart on contact. Together those
 are 63% of what is left. Both are open work.
 
-!!! warning "Rebuild after you change data"
-    The engine compiles `data/calibration.json` and `data/derived/arena.json` into itself, and
-    the card table is fixed when the engine is **built**, not when it is run. So change data
-    first, build second. RoyaleGym refuses an engine build that is older than the data on disk,
-    which is the error you will see if you forget.
+!!! warning "Rebuild after you change the constants or the arena"
+    The engine compiles `data/calibration.json` and `data/derived/arena.json` into itself. So
+    change those first and build second. RoyaleGym refuses an engine whose built-in copies do not
+    match the files on disk, which is the error you will see if you forget.
+
+    The card table works differently. Every time you create an engine, a `RustEngine` or a
+    `royalesim.Battle`, it reads `data/derived/cards.json` fresh from the RoyaleSim folder it was
+    built in. So re-running `tools/extract_cards.py` in that folder changes the cards of every
+    engine you create after that, with no rebuild. RoyaleGym's rebuild check does not look at
+    the card table, so nothing warns you. The `ROYALESIM_DATA_DIR` setting, which tells
+    RoyaleGym where to find RoyaleSim's data, does not change which card table the engine reads.
+    Build in the folder whose card data you want.
 
 ## When you would not
 
@@ -198,16 +206,18 @@ What that means for you: overnight rather than a fortnight, on a laptop, for a r
 people usually reach for. Nobody has trained a bot yet, so that is arithmetic on the battle rate
 rather than experience.
 
-**Accuracy.** Real matches are replayed in the engine and compared tick by tick. Leaving the six
-towers out, because towers do not move and counting them flatters the result: a unit is within a
-quarter of a tile of where it really was 49.4% of the time, and its hitpoints are exactly right
-81.4% of the time. Single units are much better than swarms. A Knight is within a quarter tile
-82.5% of the time. Goblins manage 42.5%.
+**Accuracy.** Real matches are replayed in the engine and compared tick by tick. The six towers
+are left out, because towers do not move and counting them flatters the result. Without them, a
+unit is within a quarter of a tile of where it really was 49.4% of the time, and its hitpoints
+are exactly right 81.4% of the time. Single units are much better than swarms. A Knight is
+within a quarter tile 82.5% of the time. Goblins manage 42.5%.
 
 Check [How accurate is the engine](../accuracy.md) before you rely on a specific interaction, and
 check it again in a month, because these numbers are moving.
 
-**Tests.** The engine's Python suite here was 108 passed in 134 seconds.
+**Tests.** The engine's Python suite was 112 passed in 192 seconds on the maintainer's laptop on
+the morning of 2026-09-22. Nobody has run it from a fresh clone yet, and tests are still being
+added, so your count may differ.
 
 ## Where the detail is
 

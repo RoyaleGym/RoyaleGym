@@ -20,7 +20,7 @@ The rest of this page is the exact detail, all of it printed by programs that we
 
 !!! warning "Your widths will not match these widths"
     Several numbers below depend on how many cards are in your card catalogue, and that
-    is decided when you build the engine. The machine that produced this page had 95
+    depends on the card table your engine reads. The machine that produced this page had 95
     cards. A clean public checkout builds the 2018 card table and will report something
     else. Nothing in RoyaleGym or RoyaleLearn types these widths in. They are read from
     the environment at startup, and you should do the same. Never treat a width on this

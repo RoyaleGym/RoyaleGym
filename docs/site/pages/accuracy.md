@@ -2,8 +2,8 @@
 
 <p align="center">
   <img alt="Measured" src="https://img.shields.io/badge/accuracy-measured%2C%20not%20guessed-0b7285?style=flat-square">
-  <img alt="Positions" src="https://img.shields.io/badge/positions%20exact-49.4%25-orange?style=flat-square">
-  <img alt="Hitpoints" src="https://img.shields.io/badge/hitpoints%20exact-81.4%25-2ea043?style=flat-square">
+  <img alt="Position within a quarter tile, towers left out" src="https://img.shields.io/badge/position%20match%2C%20no%20towers-49.4%25-orange?style=flat-square">
+  <img alt="Hitpoints exact, towers left out" src="https://img.shields.io/badge/hitpoints%20exact%2C%20no%20towers-81.4%25-2ea043?style=flat-square">
   <img alt="Corpus" src="https://img.shields.io/badge/corpus-67%20recorded%20battles-555?style=flat-square">
   <img alt="Moving" src="https://img.shields.io/badge/expect%20it%20to-keep%20moving-8957e5?style=flat-square">
 </p>
@@ -20,7 +20,9 @@ Real matches are recorded. The same match is then replayed in the engine, and ev
 position and hitpoints are compared against the recording, on every tick. A tick is 50 ms of
 game time, so a three minute battle is 3,600 comparisons per unit.
 
-There are 67 battles in the corpus that the numbers below come from.
+There are 67 recorded battles behind the numbers below, all from the run of 2026-09-21. 25 are
+scored from start to finish. The other 42 are scored up to the first card the engine cannot play
+yet.
 
 !!! note "You cannot re-run this one yourself"
     The recordings of real matches are private, so the accuracy measurement is not something a
@@ -53,8 +55,8 @@ in the right place to your eye and still be counted as a miss here.
 
     ---
 
-    Within a quarter of a tile 82.5% of the time, and walking the exact same path 74.9% of the
-    time. Close to solved.
+    Within a quarter of a tile 82.5% of the time. While it walks to a tower untouched, it is on
+    the game's own path, to a fiftieth of a tile, on 74.9% of those ticks. Close to solved.
 
 -   __Goblins__
 
@@ -78,7 +80,7 @@ So the gap is not spread evenly. It is almost all in swarms.
 The same run that produces the table above also reports what went wrong first in every battle.
 That is the useful table, because it says what to fix:
 
-| cause of the first divergence | share of the error |
+| cause of the first divergence | share of all the misses, in battles that went wrong this way first |
 |---|---|
 | where a spawner or a multi-unit card puts its units | 32.5% |
 | how units push each other apart on contact | 31.0% |
@@ -86,15 +88,16 @@ That is the useful table, because it says what to fix:
 | attack timing | 13.9% |
 | walking | 0.4% |
 
-Two causes are 63% of what is left. Both of them are being worked on right now: where a
-multi-unit card drops its units, and how units push each other apart when they touch.
+Battles that went wrong first in one of the top two ways hold 63.5% of the misses. Both of
+those causes are being worked on right now: where a multi-unit card drops its units, and how
+units push each other apart when they touch.
 
 Walking is the smallest row at 0.4%, which matches the Knight number above. A single unit
 choosing its route and walking it is the part that is nearly right.
 
 25 of the 67 battles in the corpus never diverge at all, though most of those are short ones.
 
-These numbers are today's, not the target. The target is that a swarm fight does not diverge
+These numbers are from 2026-09-21, not the target. The target is that a swarm fight does not diverge
 either. Expect the table to move.
 
 ## What this means for your bot
@@ -133,7 +136,7 @@ exactly how wrong it is and where.
 ## Read next
 
 - [The engine](pieces/engine.md) for what the engine does and how you drive it.
-- [`docs/replay-parity.md`](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/replay-parity.md) in RoyaleSim's own docs
+- [`docs/replay-parity.md`](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/replay-parity.md)
   in RoyaleSim's own docs. That page has the per-card breakdown, what is scored, what is not
   scored, and the exact commands. Everything on this page is a summary of it.
 - [Troubleshooting](troubleshooting.md) if something on your machine is not doing what this site

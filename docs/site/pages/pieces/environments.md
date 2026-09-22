@@ -101,9 +101,10 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 winner 1  crowns [1, 1]  tick 4800
 ```
 
-Blue, player 0, took one of Red's princess towers. Tick 3600 is the full three minutes, so this
-this one went the full three minutes plus sixty seconds of overtime, finished with the crowns
-level, and was decided on king-tower damage.
+Blue is player 0, and each side took one of the other's princess towers. Tick 3600 is the full
+three minutes, so this one went the full three minutes plus sixty seconds of overtime and
+finished with the crowns level. It was decided by the tiebreak: the side whose weakest standing
+tower has less health left loses, and that was Blue.
 
 One env step is half a second of game time, which is 10 ticks. That battle was 480 steps, so
 each player made 480 decisions. It takes well under a second of real time.
@@ -150,11 +151,11 @@ print(f"steps {steps}  reward {total:.3f}  terminated {terminated}")
 
 ```
 legal moves on the first step: 1267 of 2305
-steps 315  reward -1.476  terminated True
+steps 333  reward -1.417  terminated True
 ```
 
-Blue lost. 315 steps is 3,150 ticks, so the match was over before the three minutes were up, and
-`terminated True` says it ended for real rather than being cut short. The reward is negative
+Blue lost. 333 steps is about 3,330 ticks, so the match was over before the three minutes were
+up, and `terminated True` says it ended for real rather than being cut short. The reward is negative
 because `default_reward()` pays 1.0 for a win and charges 1.0 for a loss, with the crown and
 tower terms on top.
 
@@ -235,18 +236,22 @@ The durable figure is a ratio: the Rust engine runs **1.16 to 1.38 times** the p
 stand-in, measured by alternating the two inside one process so that whatever the machine is
 doing it does to both. An env step is one decision for each player.
 
-Absolute rates on this hardware have ranged from 859 to 1812 env steps per second within a
-day, so take any single figure as an illustration rather than a target.
+Absolute rates on the maintainer's laptop have ranged from 859 to 1812 env steps per second,
+depending on the hour and what else was running. At 10 ticks a step, that is roughly 8,600 to
+18,100 three-minute battles an hour in one process. Take any single figure as an illustration
+rather than a target.
 
 Stepped directly, the same engine does tens of thousands of ticks a second. The gap is Python:
 on every single step it builds both players' observations and both players' legal-move lists.
 
 That gap is the project's first open item, and the fix is to move the default observation into
-the engine. Until that lands, a lot of your training time goes into building observations rather
-than into playing battles. Nobody is pretending otherwise.
+the engine. Until that lands, most of the time it takes to play a battle through an environment
+goes into building observations and legal-move lists rather than into the battle itself.
+Nobody is pretending otherwise.
 
-The Rust engine is also not the landslide you might expect over `MockEngine`, the pure-Python
-stand-in. Alternated in one process it comes out 1.16 to 1.38 times as fast, for the same reason.
+That is also why the Rust engine is only 1.16 to 1.38 times as fast as `MockEngine`, the
+pure-Python stand-in, and not the landslide you might expect. The Python around both engines is
+most of the cost.
 
 ## Two more things that are easy to miss
 

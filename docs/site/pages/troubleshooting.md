@@ -40,29 +40,37 @@ build it. So the build carries a copy. If you edit `data/calibration.json`, or r
 `data/derived/arena.json`, the copy inside the engine and the file on disk stop agreeing.
 RoyaleGym refuses to start rather than run a battle whose rules are half old and half new.
 
-There is a second version of this with the same cause, about the tiles a tower forbids:
+There is a second error that looks like this one, about the tiles a tower forbids:
 
 ```
 RuntimeError: the Rust engine and the action mask disagree on troop territory; rebuild with
 `maturin develop --release` after regenerating cards.json:
 ```
 
-**What to do.** Build again. From your `RoyaleSim` folder:
+That one has a different cause. The engine and RoyaleGym are reading two different
+`cards.json` files. The engine reads the one in the RoyaleSim folder it was built in. RoyaleGym
+reads the one under `ROYALESIM_DATA_DIR`, or under `../RoyaleSim/data` when that is not set. Make
+them the same file: point `ROYALESIM_DATA_DIR` at the data folder of the checkout the engine was
+built in, or build the engine in the checkout whose data you want.
+
+**What to do.** For the first error, build again. From your `RoyaleSim` folder:
 
 !!! warning "UNVERIFIED"
-    Nobody has run this from a clean install yet. The release build has not been timed or run
-    end to end by anyone on this project, so treat the minute and the memory figure below as the
-    rough shape rather than a measurement.
+    The release build has not been timed from a fresh clone yet, so there is no measured figure
+    for how long it takes or how much memory it needs there.
 
 ```
 ..\.venv\Scripts\maturin develop --release
 ```
 
-The install notes in the READMEs put that at about a minute and about 1.5 GB of RAM.
+The READMEs say to give it a few minutes and some free memory. A debug build from fresh clones
+took 2 minutes 38 seconds on 2026-09-22.
 
-Order matters here and it catches people out. Generate the data first, build second. The card
-table is fixed when the engine is **built**, not when it is run. Pointing `ROYALESIM_DATA_DIR`
-somewhere else afterwards does not change what the compiled engine holds.
+Order matters here and it catches people out. Generate the data first, build second, because
+the build copies the arena file into the engine. The card table is different. Every time you
+create an engine, it reads `data/derived/cards.json` from the RoyaleSim folder it was **built
+in**. Re-running `extract_cards.py` there changes the cards with no rebuild. Pointing
+`ROYALESIM_DATA_DIR` somewhere else does not change which card table the engine reads.
 
 ## 2. The data files were never generated
 
@@ -92,9 +100,9 @@ one. This was checked on clean clones of all four repos.
 ..\.venv\Scripts\python tools\extract_globals.py
 ```
 
-Then build the engine, as in problem 1. Those four commands were run on a clean clone of the
-four repos by another session, and RoyaleGym's suite passed against the result: 342 passed, 6
-skipped, in 56 s.
+Then build the engine, as in problem 1. These commands were run on fresh clones of the four
+repos on 2026-09-22, followed by a debug build, and RoyaleGym's suite passed against the result:
+385 passed, 0 skipped.
 
 !!! warning "Keep `--vintage 2018` on BOTH `extract_cards.py` lines"
     They are not a typo of each other. One writes `data/derived/cards-2018.json`, which a Rust
@@ -112,9 +120,9 @@ missing .../data/raw/cr-15.535.29/csv_logic: decode the 15.535.29 assets first
 The `...` is your folder path.
 
 **What it means.** With no flag the extractor builds the newer of the two card tables, and that
-one needs a client asset pack that is not redistributed. A public clone does not have it and
-never will. The 2018 tables ARE tracked in the repo, 24 files of them, so `--vintage 2018` is
-self-contained and works everywhere.
+one needs a client asset pack that is not redistributed. A public clone does not have it. The
+2018 tables ARE tracked in the repo, 23 files of them (counted on 2026-09-22), so
+`--vintage 2018` is self-contained and works everywhere.
 
 **What to do.** Add `--vintage 2018`, as in problem 2.
 
@@ -188,10 +196,10 @@ into. Note that `import royalegym` itself still works. The package is designed t
 the engine.
 
 !!! tip "Read the middle clause, not just the command"
-    The part people skip is that the card data has to be extracted **before** the build.
-    `maturin develop --release` on its own succeeds and hands you an engine with no cards,
-    which fails later and further away. If you have already built, extract the data and build
-    again.
+    The part people skip is that the data has to be generated **before** the build. The build
+    copies `arena.json` into the engine, so on a clone with no generated data it stops. With
+    the arena generated but not the cards, the build works and the engine fails later, when it
+    looks for `cards.json`. Either way, run the four commands in problem 2 first, then build.
 
 **What to do.** Either build it, which is the `maturin develop --release` line in problem 1, or
 carry on without it for now:
@@ -248,12 +256,16 @@ Add `-rs` to any pytest run to see the reason for every skip. Without it you get
     behaviour is checked against recordings, and Goblins is not one of them.
 
 **What to do.** On a normal clone, nothing. Both engines come from the tracked 2018 table there,
-the check runs, and it passes. That has been confirmed on a clean clone of all four repos: 96
-passed, 0 skipped over the two Rust-backed test files.
+the check runs, and it passes. That was confirmed on fresh clones of all four repos on
+2026-09-22: RoyaleGym's whole suite gave 385 passed, 0 skipped, on a debug engine build.
+
+The project's own machine does hold a newer card table, so six tests skip there in exactly this
+way. If you see a result with 6 skipped quoted somewhere in the docs, that is where it came from.
 
 If you see skips you did not expect, read the reason before you trust the green. Skips also
-happen when the engine is not built at all, which is problem 5, and when a test needs recordings
-of real matches, which are private and not distributed.
+happen when the engine is not built at all, which is problem 5. A few tests skip when Node.js is
+not on your PATH or RoyaleViser is not installed. And some skip when a test needs recordings of
+real matches, which are private and not distributed.
 
 ## 7. One venv, two checkouts, and the card count changes under you
 
@@ -284,8 +296,10 @@ in a throwaway venv instead of installing into the shared one:
 ..\.venv\Scripts\maturin build --release
 ```
 
-The build hash at the top of this page is the cheap check. Print it at the start of a run and
-again at the end. If it changed, something rebuilt the engine underneath you.
+The build hash at the top of this page is the cheap check, but it only covers the calibration
+and arena built into the engine. It does not cover the card table. So print the hash and the
+card count above at the start of a run, and again at the end. If either changed, something
+changed underneath you.
 
 ## Still stuck
 
