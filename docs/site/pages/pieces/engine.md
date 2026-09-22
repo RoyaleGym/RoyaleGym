@@ -1,9 +1,9 @@
 # The engine
 
 [![repo](https://img.shields.io/badge/repo-RoyaleSim-DEA584?style=flat-square&logo=rust&logoColor=white)](https://github.com/RoyaleGym/RoyaleSim)
-![cards](https://img.shields.io/badge/cards-144-555?style=flat-square)
+![cards](https://img.shields.io/badge/cards-78%20public%2C%20144%20full-555?style=flat-square)
 ![tick](https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square)
-![speed](https://img.shields.io/badge/one%20core-~51%2C000%20battles%2Fhour-2ea043?style=flat-square)
+![speed](https://img.shields.io/badge/one%20worker-16%2C100%20battles%2Fhour-2ea043?style=flat-square)
 ![same seed](https://img.shields.io/badge/same%20seed-same%20battle-2ea043?style=flat-square)
 
 **This is the thing the battle actually happens in.** You play a card, a Giant walks out, a tower
@@ -37,8 +37,10 @@ Your bot talks to [the environments](environments.md), and the environments talk
 
     ---
 
-    About 51,000 three-minute battles an hour on one core. Add cores and you add battles. The
-    slow part of training is the Python around the engine, not the engine.
+    About 16,100 three-minute battles an hour from one worker process, and about 65,000 from
+    six of them. Add cores and you add battles. The engine stepped on its own, with nothing
+    built on top, goes about three times faster again, which is the point: the slow part of
+    training is the Python around the engine, not the engine.
 
 -   **The movement rules were measured**
 
@@ -121,8 +123,9 @@ troops: 61
 EVERY GATE GREEN.
 ```
 
-The battle itself changes every run, because the tool picks a random seed unless you give it one.
-The checks are the reproducible part. `--seed N --open` fixes the battle and opens the page.
+You get that battle, not a different one: `--seed` defaults to 1. Only the timings move, so a
+difference in the result is a signal rather than noise. Pass `--seed N` for another battle and
+`--open` to open the page in a browser.
 
 ## When you would touch it
 
@@ -208,7 +211,7 @@ The engine has its own docs, and they go far deeper than this page.
   for what is modelled, what is not, and the two known collision defects.
 - [`docs/calibration.md`](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/calibration.md)
   for the constants file and what each status word means.
-- [`docs/replay-parity.md`](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/replay-parity.md)
+- `docs/replay-parity.md` in the RoyaleSim checkout
   for the full accuracy table and how it is produced.
 
 Engine questions and calibration work happen in [the Discord](https://discord.gg/4D2BS5JBHP).

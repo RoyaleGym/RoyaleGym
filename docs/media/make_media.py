@@ -369,6 +369,21 @@ def live_training_env() -> None:
                 pub.kill()
 
 
+def site_hero() -> None:
+    """The documentation site's own hero, which has to be its own file.
+
+    MkDocs copies only what is under its docs_dir, and the site's docs_dir is
+    docs/site/pages, so it cannot reach docs/media. Rather than keep a second copy of the
+    README's 2.7 MB gif, the site gets a smaller one: the same battle, drawn at a smaller
+    scale and sampled sparser, because a docs front page is read on a phone more often
+    than a README is.
+    """
+    src = trace()
+    d = SIBLING["RoyaleGym"] / "docs" / "site" / "pages" / "media"
+    d.mkdir(parents=True, exist_ok=True)
+    shot(src, d / "whole-battle.gif", ticks=(0, src.length, 24), scale=12, crop="left", fps=18)
+
+
 # The drawn figures live one to a module, so several people can work on them at once.
 FIGURES = {
     "deploy_legality": ("RoyaleSim", "deploy-legality.png"),
@@ -402,6 +417,7 @@ SHOTS = {
     "compare-ghost": compare_ghost,
     "replay-scrubbed": replay_scrubbed,
     "live-training-env": live_training_env,
+    "site-hero": site_hero,
     **{n.replace("_", "-"): _figure(n) for n in FIGURES},
 }
 

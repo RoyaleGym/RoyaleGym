@@ -336,9 +336,10 @@ EVERY GATE GREEN.
 
 That took 2.07 seconds, a whole three minute match and five checks on it.
 
-Your battle will not be that battle. The tool picks a random seed unless you give it one, so the
-winner, the crowns and the troop count change every run. The five `[OK ]` lines are the part that
-should be the same. They say, in order: the battle replayed on a fresh engine and every board
+You should get that battle. The tool's `--seed` defaults to 1, so the winner, the crowns and
+the troop count above are what a fresh install produces, and a difference means something is
+wrong rather than nothing. Only the timing moves. Pass `--seed 7` for a different battle.
+The five `[OK ]` lines say, In order: the battle replayed on a fresh engine and every board
 hash came back identical, both sides actually deployed and fought rather than standing still, the
 arena the battle was played on matches the arena file, ground units stayed out of the water, and
 the HTML page it wrote holds every frame and needs nothing else to open.
@@ -372,8 +373,13 @@ cd RoyaleGym
 ```
 
 Read that as: 957 env steps per second, which is 957 decisions per player per second, with the
-Rust engine. That run had five other jobs going on the machine. Your number will be different,
-and machine load moves it by a third either way, so do not worry if it is not 957.
+Rust engine. That run had five other jobs going on the machine.
+
+Your number will be different, and the spread is much wider than you would expect. The same
+command on this one laptop has printed anywhere from about 350 to about 960 env steps per
+second on the same day, depending on what else was running. Do not read anything into the
+figure itself. The thing to check is that the line prints at all and that `rust` is not
+dramatically below `mock`, which would mean you are running a debug build.
 
 The last figure is worth knowing about. 20219 engine ticks per second is also roughly 20,219
 battles per hour for one process, and that is exact arithmetic rather than a coincidence: a three

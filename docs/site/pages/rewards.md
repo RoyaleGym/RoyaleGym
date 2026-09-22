@@ -327,9 +327,13 @@ CrownReward: blue +1.000  red -1.000  sum +0.000
 TowerDamageReward: blue +0.792  red -0.792  sum +0.000
 ```
 
-Every shipped term except `ElixirLeakPenalty` adds to zero like this, and the test suite
-checks it. `ElixirLeakPenalty` is deliberately the exception: both players really can
-waste elixir at the same time.
+Every shipped term except `ElixirLeakPenalty` is meant to add to zero like this.
+`ElixirLeakPenalty` is deliberately the exception: both players really can waste elixir at
+the same time.
+
+The suite does not check all of them. One term, `TowerHPReward`, has its breakdown asserted
+antisymmetric across the seats in `tests/test_train_harness.py`. For the rest it is a design
+intent, and the program above is how you confirm it for a term of your own.
 
 ## What not to do
 
@@ -366,7 +370,8 @@ Two more habits worth having:
 
 Nobody can show you that a reward function *trains* anything, because the training loop
 is still being written. RoyaleLearn has its configuration, its networks, its rollout
-workers, its ladder of opponents and its checkpoint store, with 478 tests over them. The
+workers, its ladder of opponents and its checkpoint store, with 375 tests over them, or 478 once
+you install the torch extra. The
 PPO update and the coordinator that ties them into a loop are in progress.
 
 So what you have tonight is real but partial. Your reward function runs on a real

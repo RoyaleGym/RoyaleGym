@@ -2,7 +2,7 @@
 
 [![repo](https://img.shields.io/badge/repo-RoyaleLearn-3776AB?style=flat-square&logo=python&logoColor=white)](https://github.com/RoyaleGym/RoyaleLearn)
 ![status](https://img.shields.io/badge/training%20loop-being%20written-orange?style=flat-square)
-![tests](https://img.shields.io/badge/tests-478%20passed-2ea043?style=flat-square)
+![tests](https://img.shields.io/badge/tests-375%20passed%2C%20478%20with%20torch-2ea043?style=flat-square)
 ![torch](https://img.shields.io/badge/torch-optional%20extra-555?style=flat-square)
 
 **RoyaleLearn cannot train a bot yet.** There is no command you can type tonight that starts a
@@ -12,7 +12,8 @@ What does work is everything around the training loop, and most of it is the bor
 would otherwise write yourself. The settings file and its sanity checks, the run identity that a
 resume is checked against, the networks, the code that turns an observation into numbers, the
 buffer that holds experience, the workers that collect battles, the ladder that rates one policy
-against another, the metrics output and the checkpoint store. That is 478 passing tests.
+against another, the metrics output and the checkpoint store. That is 375 passing tests in a
+venv without torch, and 478 once you install the torch extra.
 
 What is missing is the two pieces in the middle: the PPO update itself, and the coordinator that
 ties the rest into a loop. Both are being written now.

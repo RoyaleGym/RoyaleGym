@@ -441,7 +441,8 @@ facts.
 What you would see: `ladder/score_vs_random_legal` flat for a long stretch, and
 `ladder/consecutive_gate_failures` climbing. There is an alarm for this called `gate_starved`,
 described in the code as the plateau signal stated as an event. The usual company it keeps is
-`low_explained_variance`, which means the critic is not predicting the outcome at all.
+`ev_negative`, which fires on `ppo/explained_variance` and means the critic is not predicting
+the outcome at all.
 
 What to do: this is the ordinary shape of a run that has found a local habit and stuck in it. The
 first thing to look at is the reward function, not the learning rate. Watch a few battles in the
