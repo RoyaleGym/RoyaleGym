@@ -117,10 +117,11 @@ If you leave the deck out, each side is dealt eight random cards from whatever c
 machine built, and the same seed then gives you a different battle from the one above. Look
 cards up by name and your battle matches this one.
 
-There are six runnable programs in [`examples/`](examples/), in the order they are worth
-reading: this battle, one seat against a scripted opponent, batched self-play, writing
-your own reward, recording and proving a replay, and resuming a run where it stopped. The
-test suite runs all six and checks each one printed the thing it exists to show.
+There are seven runnable programs in [`examples/`](examples/), in the order they are
+worth reading: this battle, one seat against a scripted opponent, batched self-play,
+writing your own reward, recording and proving a replay, resuming a run where it stopped,
+and comparing two bots. The test suite runs all seven and checks each one printed the
+thing it exists to show.
 
 If you would rather start from Gymnasium's single-agent API, that is one line, and the id
 says which engine you are getting:
@@ -220,7 +221,7 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="pytest" src="https://img.shields.io/badge/pytest-454%20passed%2C%206%20skipped-2ea043?style=flat-square">
+  <img alt="pytest" src="https://img.shields.io/badge/pytest-471%20passed%2C%206%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
@@ -246,6 +247,11 @@ Working:
   ([`docs/architecture.md`](docs/architecture.md)).
 - Recording, verification, the replay page and the viewer stream. None of them are in the tick
   loop.
+- An answer to "is this bot better than that one". `evaluate` plays the pair on both seats,
+  half the games each way, and reports the win rate with a confidence interval, so a 55-45
+  result over 100 games reads as "too close to call" rather than as a win. It also counts a
+  battle the step limit cut short as unfinished rather than drawn, and reports the two seats
+  separately, because a gap between them means part of what you measured was the colour.
 - An observation that is fair by default. What your bot sees is what a person watching the
   match could write down, including a COUNT of the opponent's elixir that is exact against the
   engine's own bar. Anything hidden is opened one field at a time with a `Reveal`. Turning one

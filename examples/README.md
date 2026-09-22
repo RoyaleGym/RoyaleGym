@@ -1,6 +1,6 @@
 # Examples
 
-Six programs, in the order they are worth reading. Each one runs on its own and prints
+Seven programs, in the order they are worth reading. Each one runs on its own and prints
 something you can check. They need the engine built, which the repository README covers
 under "Install".
 
@@ -16,6 +16,7 @@ python examples/01_one_battle.py
 | [`04_your_own_reward.py`](04_your_own_reward.py) | Writing the one piece you are expected to write, and reading the per-term breakdown that says which term your bot is chasing. |
 | [`05_record_and_replay.py`](05_record_and_replay.py) | Record a battle, re-run it on a fresh engine to prove it, and turn it into a page you can double-click. |
 | [`06_resume_a_run.py`](06_resume_a_run.py) | Stopping a run and starting it again so it continues the same battles rather than replaying old ones. |
+| [`07_is_this_bot_better.py`](07_is_this_bot_better.py) | Comparing two bots on both seats, with an error bar, so "better" is a claim the sample supports. |
 
 Every one of them is run by the test suite, and each is checked for the line that proves
 it did the thing it exists to show rather than merely reaching the end of the file

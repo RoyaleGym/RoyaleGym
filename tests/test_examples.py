@@ -42,6 +42,7 @@ PROOF = {
     "04_your_own_reward.py": "% of the signal",
     "05_record_and_replay.py": "re-run on a fresh engine: 0 divergences",
     "06_resume_a_run.py": "resumed run matches the original row for row: True",
+    "07_is_this_bot_better.py": "too close to call",
 }
 
 

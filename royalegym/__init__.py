@@ -19,6 +19,11 @@ ClashSelfPlayVecEnv (vectorised self-play). Engine contract: protocol.Engine;
 MockEngine is the pure-Python reference implementation; RustEngine
 (rust_engine.py) drives the compiled Rust core through the same protocol.
 
+Comparing bots: evaluate.py plays two Opponents head to head on both seats and
+reports a win rate with a Wilson interval, so "A is better" is a claim with an error
+bar rather than a percentage. selfplay.py's OpponentPool keeps Elo across many such
+results.
+
 Replays: replay.py records and re-verifies traces; render.py turns one into a
 self-contained HTML viewer (``python -m royalegym.render trace.msgpack -o out.html``).
 render is deliberately NOT imported here: importing it from the package would make
@@ -39,6 +44,7 @@ from .done_condition import (
     TruncationCondition,
 )
 from .env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv, make_gym_vec_env
+from .evaluate import MatchResult, SeatResult, evaluate
 from .mock_engine import MockEngine
 from .obs import (
     EntityListObsBuilder,
@@ -139,6 +145,7 @@ __all__ = [
     "GameOverCondition",
     "HalfTileActionParser",
     "IllegalActionPenalty",
+    "MatchResult",
     "MidGameStateMutator",
     "MidGameStateSetter",
     "MockEngine",
@@ -154,6 +161,7 @@ __all__ = [
     "RustEngine",
     "ScriptedBoardStateMutator",
     "ScriptedBoardStateSetter",
+    "SeatResult",
     "SnapshotStateMutator",
     "SnapshotStateSetter",
     "SpatialObsBuilder",
@@ -172,6 +180,7 @@ __all__ = [
     "WinLossReward",
     "core_available",
     "default_reward",
+    "evaluate",
     "load_trace",
     "make_gym_vec_env",
     "measure_variability",
