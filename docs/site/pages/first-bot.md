@@ -447,10 +447,19 @@ closed, a training run spends more time describing the battle than playing it.
     happening. So wait for the second round before you believe any number, including the ones
     on this page.
 
-    Its author reports two complete iterations with metrics rows, at 518 s and 544 s. That is
-    the first time anything real has trained in this project. About nine minutes an iteration
-    on an idle machine, and it degrades badly under contention: one iteration sharing eight
-    processors with a second training run had still not finished after 46 minutes.
+    Its author reports two complete iterations with metrics rows, at 518 s and 544 s. Read that
+    with its settings attached: 2026-09-22, the laptop profile at **minibatch 512**, which is
+    not what ships any more. The default is 256 now, because 512 does not fit a 4 GB card and
+    spills into system memory. Nobody has timed a full laptop-profile iteration at 256, so
+    treat the nine minutes as the last measured figure rather than as what you will see. It
+    also degrades badly under contention: one iteration sharing eight processors with a second
+    training run had still not finished after 46 minutes.
+
+    What does hold across every run so far, at a smaller geometry (2 workers, 24 battles each,
+    8,192 timesteps an iteration, minibatch 256, about a hundred iterations over three runs on
+    an RTX 3050): the learning step is 71 to 83 percent of each iteration. Training time on a
+    machine like that is graphics-card time, not battle-simulation time. Making the engine
+    faster would buy you nothing there.
 
     Two iterations is a loop that works. It is not a result about learning, and a useful run
     is many hours. So the honest state is that the machinery runs end to end and nobody yet

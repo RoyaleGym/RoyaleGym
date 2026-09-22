@@ -31,8 +31,10 @@ for over a network. You need Python and a compiler.
 
     **New on 2026-09-22, and no finished bot yet.** The training harness closed its loop that
     day. Its laptop settings have since completed training iterations on the real engine. An
-    iteration is one round of playing battles and then learning from them. An iteration takes
-    about nine minutes on an otherwise idle laptop and several times that on a busy one, so a useful run is many hours. What exists is machinery that
+    iteration is one round of playing battles and then learning from them. One iteration took
+    about nine minutes on an otherwise idle laptop, measured on 2026-09-22 at a minibatch of
+    512 that no longer ships, and several times that on a busy one. Nobody has timed the
+    current settings, so a useful run is many hours and nobody can yet tell you how many. What exists is machinery that
     works rather than any result about learning. Training
     needs the torch extra, which the plain install does not pull in.
 
@@ -82,7 +84,7 @@ the environments, so you have something to play against from your first minute.
 
     Every observation tells your bot which of the 2305 card and tile moves it can actually
     play right now. How many that is depends on the deck and on what is in hand: on the first
-    step of the Try-it battle it is 1605 for each player, and with randomly dealt decks it was
+    step of the Try-it battle it is 1623 for each player, and with randomly dealt decks it was
     691 for one seat and 1259 for the other. Your bot never wastes a decision on a card it
     cannot afford.
 
