@@ -47,6 +47,10 @@ class StateMutator(ABC):
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup | Snapshot:
         """Describe the next episode's starting state."""
 
+    def config(self) -> dict[str, object]:
+        """Constructor state, JSON-able, for ``ClashParallelEnv.config()``."""
+        return {}
+
 
 def random_deck(rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[int]:
     if len(cards) < DECK_SIZE:
@@ -71,6 +75,9 @@ class DefaultStateMutator(StateMutator):
         self.decks = [list(d) for d in decks] if decks is not None else None
         self.shuffle = shuffle
         self.mirror = mirror
+
+    def config(self) -> dict[str, object]:
+        return {"decks": self.decks, "shuffle": int(self.shuffle), "mirror": self.mirror}
 
     def _decks(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[list[int]]:
         if self.decks is not None:
@@ -113,6 +120,16 @@ class MidGameStateMutator(DefaultStateMutator):
         self.hp_pct = tower_hp_percent
         self.down_prob = tower_down_prob
 
+    def config(self) -> dict[str, object]:
+        return {
+            **super().config(),
+            "tick_range": list(self.tick_range),
+            "elixir_milli_range": list(self.elixir_range),
+            "max_tower_hp": list(self.max_tower_hp),
+            "tower_hp_percent": list(self.hp_pct),
+            "tower_down_prob": self.down_prob,
+        }
+
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup:
         base = super().build(rng, cards)
         tick = int(rng.integers(self.tick_range[0], self.tick_range[1] + 1))
@@ -154,6 +171,15 @@ class ScriptedBoardStateMutator(DefaultStateMutator):
         self.tower_hp = [list(r) for r in tower_hp] if tower_hp is not None else None
         self.start_tick = start_tick
 
+    def config(self) -> dict[str, object]:
+        return {
+            **super().config(),
+            "spawns": len(self.spawns),
+            "elixir_milli": self.elixir,
+            "tower_hp": self.tower_hp,
+            "start_tick": self.start_tick,
+        }
+
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup:
         base = super().build(rng, cards)
         return MatchSetup(
@@ -174,6 +200,9 @@ class SnapshotStateMutator(StateMutator):
             raise ValueError("SnapshotStateMutator needs at least one snapshot")
         self.blobs = list(blobs)
 
+    def config(self) -> dict[str, object]:
+        return {"snapshots": len(self.blobs)}
+
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> Snapshot:
         return Snapshot(self.blobs[int(rng.integers(len(self.blobs)))])
 
@@ -188,6 +217,14 @@ class WeightedStateMutator(StateMutator):
     def __init__(self, mutators: Sequence[tuple[StateMutator, float]]) -> None:
         self.mutators = [m for m, _ in mutators]
         self.set_weights([w for _, w in mutators])
+
+    def config(self) -> dict[str, object]:
+        return {
+            "mutators": [
+                {"class": type(m).__name__, "weight": float(p), "params": m.config()}
+                for m, p in zip(self.mutators, self.p, strict=True)
+            ]
+        }
 
     def set_weights(self, weights: Sequence[float]) -> None:
         w = np.asarray(weights, dtype=np.float64)

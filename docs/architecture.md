@@ -106,15 +106,21 @@ there is no `MutatorSequence` here. Before the rename (2026-09-21) the same obje
 
 | Piece | Shipped implementations |
 |---|---|
-| `ObsBuilder` | `SpatialObsBuilder` (21-channel board + a 355-float vector + the mask), `EntityListObsBuilder` |
+| `ObsBuilder` | `SpatialObsBuilder` (20-channel board + `mask_planes` + a `12n + 37`-float vector + the mask), `EntityListObsBuilder` |
 | `ActionParser` | `TileActionParser` (`Discrete(2305)`), `HalfTileActionParser` (`Discrete(9217)`) |
 | `RewardFunction` | `WinLoss`, `Crown`, `TowerHP`, `ElixirTrade`, `ElixirLeak`, `IllegalAction`, `Combined`; `default_reward()` is WinLoss 1.0 + Crown 0.2 + TowerHP 0.1 + ElixirTrade 0.02 |
 | `StateMutator` | `Default`, `MidGame`, `ScriptedBoard`, `Snapshot`, `Weighted` (curriculum lives here) |
 | `DoneCondition` | `GameOver`, `FirstCrown` (terminations); `StepLimit`, `TickLimit` (truncations); `Any`, `All` (either role) |
 
-Imperfect information is the default: the opponent's elixir and hand are absent from every
-shipped observation, as the live game hides them. `SpatialObsBuilder(reveal_enemy_elixir=True)`
-exists for curricula and debugging, not as a faithful setting.
+Imperfect information is the default, and it is the default in the form a player actually
+plays in: the opponent's hand is absent, and their elixir is a COUNT the builder keeps from
+the plays it saw and the regeneration rate everyone knows — exact, and checked against the
+engine's own bar every step of a played-out battle. `Reveal(enemy_hand=True, ...)` opens one
+half of the hidden state at a time for curricula, distillation and debugging; an enabled
+field ADDS channels and slots rather than filling zeroed ones, so a fair observation and a
+cheating one are not even the same width, and `ClashParallelEnv.config()` records the
+`Reveal` so a checkpoint says which one produced it. Every channel and every slot, with its
+range and whether it is fair, is in [observation-spec.md](observation-spec.md).
 
 The design rationale for each family lives with the code:
 
@@ -151,9 +157,13 @@ building footprints and the no-deploy rectangle around each living enemy crown t
 Measured at `reset(seed=0)` with the default random decks: 691 of 2305 actions are legal on
 the first step on `RustEngine`, 1235 on `MockEngine` (whose cards run at CSV level 1). Every
 observation dict carries the mask as `int8` (what PettingZoo's `parallel_api_test` and
-Gymnasium's `Discrete.sample(mask=...)` expect); `action_masks()` returns it as `bool`, the
-form MaskablePPO calls for. An action the engine rejects becomes a no-op and is reported in
-`info["deploy_status"]`.
+Gymnasium's `Discrete.sample(mask=...)` expect), and `mask_planes` — the same mask minus the
+no-op, reshaped to `[4, 32, 18]` for a convolutional trunk — beside it; `action_masks()`
+returns it as `bool`, the form MaskablePPO calls for. An action the engine rejects becomes a
+no-op and is reported in `info["deploy_status"]`. Because the mask already states per-slot,
+per-tile legality exactly, the observation has no placement-zone channels for the acting
+player: they restated it more coarsely and cost three `PlacementOracle.point_grid` calls per
+seat per step (measured on MockEngine, removing them took `env.step` from 783/s to 1238/s).
 
 ## Constants are read, never copied
 

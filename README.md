@@ -30,7 +30,7 @@ recorded, replayed and re-verified bit for bit.
   <tr>
     <td width="33%" align="center"><img width="100%" src="docs/media/replay-page.svg" alt=""><br><b>A replay page, no server</b><br><sub>A trace becomes one self-contained HTML file you double-click: 3.3 MB and 4130 frames for the battle above.</sub></td>
     <td width="33%" align="center"><img width="100%" src="docs/media/battle-in-viewer.png" alt="The Try-it battle at tick 4120 in RoyaleViser"><br><b>Watch it in the viewer</b><br><sub>RoyaleViser draws a trace in a window or watches a running env live; this is the Try-it battle at tick 4120.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt=""><br><b>Hidden information, as in the game</b><br><sub>The opponent's elixir and hand are left out of the observation by default, as the real game hides them.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/hidden-information.svg" alt=""><br><b>Hidden information, as in the game</b><br><sub>The opponent's hand is left out and their elixir is counted from the plays you saw, as a player would; revealing either is opt-in and is recorded in the checkpoint.</sub></td>
   </tr>
 </table>
 
@@ -126,6 +126,12 @@ Working:
   bottom), so a battle rotated 180 degrees gives the other seat the same view. Its mirror drifts
   apart: 80 of 144 multi-unit deploys diverged ([`docs/architecture.md`](docs/architecture.md)).
 - Recording, verification, the replay page and the viewer stream, all off the per-tick path.
+- An observation that is fair by construction: what it writes by default is what a person
+  watching the match could write down, including a COUNT of the opponent's elixir that is
+  exact against the engine's own bar. Anything hidden is opened one field at a time by a
+  `Reveal`, which changes the observation's WIDTH rather than filling zeroed slots, and which
+  `ClashParallelEnv.config()` records so a checkpoint says whether the policy was cheating
+  ([`docs/observation-spec.md`](docs/observation-spec.md)).
 - The RLGym v2 names: `StateMutator`, and `TerminationCondition` / `TruncationCondition` so
   that a decided outcome and a time-out are different things. The earlier names still import
   as aliases.
@@ -134,6 +140,9 @@ Speed, in plain words: on 2026-09-21 the test suite's throughput report printed 
 per second on the Rust engine at 10 ticks per step, and about 32 000 engine ticks per second
 when the engine is stepped 20 ticks at a time. The gap between the two is Python, which builds
 both players' observations and masks on every step; closing it is the first open item below.
+Later the same day, dropping the observation's placement-zone channels — the action mask
+already states that legality exactly — took the Python side from 783 to 1238 env steps per
+second on `MockEngine`, which is the arm that can be measured without a fresh engine build.
 
 Open:
 
@@ -158,6 +167,8 @@ fails them rather than skipping.
 
 Read next: [`docs/architecture.md`](docs/architecture.md) (the layers, the engine contract, the
 action space, the module map, the conventions and why each is there),
+[`docs/observation-spec.md`](docs/observation-spec.md) (every channel and every vector slot,
+its range, and whether it is fair or a reveal),
 [`docs/background.md`](docs/background.md) (what is publicly known about the game's rules and
 why the engine is measured against recordings rather than reasoned out), then the
 [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) and

@@ -30,6 +30,10 @@ class DoneCondition(ABC):
         """Called at episode start. Optional."""
         del state
 
+    def config(self) -> dict[str, object]:
+        """Constructor state, JSON-able, for ``ClashParallelEnv.config()``."""
+        return {}
+
     @abstractmethod
     def is_done(self, state: BattleState) -> bool:
         """Whether the episode is over as of ``state``. Called once per env step."""
@@ -57,6 +61,9 @@ class StepLimitCondition(TruncationCondition):
         self.max_steps = max_steps
         self.steps = 0
 
+    def config(self) -> dict[str, object]:
+        return {"max_steps": self.max_steps}
+
     def reset(self, state: BattleState) -> None:
         self.steps = 0
 
@@ -70,6 +77,9 @@ class TickLimitCondition(TruncationCondition):
 
     def __init__(self, max_tick: int) -> None:
         self.max_tick = max_tick
+
+    def config(self) -> dict[str, object]:
+        return {"max_tick": self.max_tick}
 
     def is_done(self, state: BattleState) -> bool:
         return state.tick >= self.max_tick
@@ -93,11 +103,22 @@ class FirstCrownCondition(TerminationCondition):
         return now != self.start or state.game_over
 
 
-class AnyCondition(DoneCondition):
-    """OR of several conditions. Every child is checked every step (so counters advance)."""
+class _CompositeCondition(DoneCondition, ABC):
+    """Shared plumbing of ``AnyCondition`` / ``AllCondition``."""
 
     def __init__(self, conditions: Sequence[DoneCondition]) -> None:
         self.conditions = list(conditions)
+
+    def config(self) -> dict[str, object]:
+        return {
+            "conditions": [
+                {"class": type(c).__name__, "params": c.config()} for c in self.conditions
+            ]
+        }
+
+
+class AnyCondition(_CompositeCondition):
+    """OR of several conditions. Every child is checked every step (so counters advance)."""
 
     def reset(self, state: BattleState) -> None:
         for c in self.conditions:
@@ -110,11 +131,8 @@ class AnyCondition(DoneCondition):
         return done
 
 
-class AllCondition(DoneCondition):
+class AllCondition(_CompositeCondition):
     """AND of several conditions. Every child is checked every step (so counters advance)."""
-
-    def __init__(self, conditions: Sequence[DoneCondition]) -> None:
-        self.conditions = list(conditions)
 
     def reset(self, state: BattleState) -> None:
         for c in self.conditions:

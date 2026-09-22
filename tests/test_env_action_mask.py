@@ -398,4 +398,9 @@ def test_action_masks_method_matches_obs_for_maskable_ppo():
         assert m.dtype == np.bool_
         assert m.shape == (env.action_space(agent).n,)
         assert np.array_equal(m, obs[agent]["action_mask"].astype(bool))
-        assert np.array_equal(info[agent]["action_mask"], obs[agent]["action_mask"])
+        # The mask reaches the policy through the OBSERVATION, in both shapes, and
+        # the info dict no longer repeats it (env.py, ACTION MASKS).
+        assert "action_mask" not in info[agent]
+        planes = obs[agent]["mask_planes"]
+        assert planes.shape == (4, 32, 18)
+        assert np.array_equal(planes.reshape(-1), obs[agent]["action_mask"][1:])

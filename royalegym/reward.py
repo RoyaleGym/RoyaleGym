@@ -38,6 +38,10 @@ class RewardFunction(ABC):
         """Called at episode start. Optional."""
         del state
 
+    def config(self) -> dict[str, object]:
+        """Constructor state, JSON-able, for ``ClashParallelEnv.config()``."""
+        return {}
+
     @abstractmethod
     def get_reward(
         self,
@@ -53,6 +57,9 @@ class WinLossReward(RewardFunction):
 
     def __init__(self, draw: float = 0.0) -> None:
         self.draw = draw
+
+    def config(self) -> dict[str, object]:
+        return {"draw": self.draw}
 
     def get_reward(
         self,
@@ -98,6 +105,12 @@ class TowerHPReward(RewardFunction):
             TowerSlot.RIGHT: princess_weight,
         }
 
+    def config(self) -> dict[str, object]:
+        return {
+            "king_weight": self.w[TowerSlot.KING],
+            "princess_weight": self.w[TowerSlot.LEFT],
+        }
+
     def _potential(self, state: BattleState, team: int) -> float:
         p = state.players[team]
         return sum(self.w[s] * p.tower_hp[s] / max(1, p.tower_max_hp[s]) for s in TowerSlot)
@@ -135,6 +148,9 @@ class ElixirTradeReward(RewardFunction):
         self.scale = scale
         self.value: dict[int, Fraction] = {}
 
+    def config(self) -> dict[str, object]:
+        return {"scale": self.scale}
+
     def bind(self, engine: Engine) -> None:
         cards: Sequence[CardInfo] = engine.cards()
         self.value = {c.card_id: Fraction(c.elixir, max(1, c.count)) for c in cards}
@@ -165,6 +181,9 @@ class ElixirLeakPenalty(RewardFunction):
 
     def __init__(self, max_milli: int | None = None) -> None:
         self.max_milli = max_milli
+
+    def config(self) -> dict[str, object]:
+        return {"max_milli": self.max_milli}
 
     def bind(self, engine: Engine) -> None:
         if self.max_milli is None:
@@ -205,17 +224,38 @@ class IllegalActionPenalty(RewardFunction):
 
 
 class CombinedReward(RewardFunction):
-    """Weighted sum of terms. ``last_terms`` keeps each weighted term for logging."""
+    """Weighted sum of terms. ``last_terms`` keeps each weighted term for logging.
+
+    KEYED BY TEAM, because the env calls ``get_reward`` once PER SEAT on the same
+    transition. A single flat breakdown was cleared at the top of every call, so
+    the first seat's numbers were destroyed by the second and whatever a training
+    run logged as "the reward breakdown" was only ever Red's -- while the scalar
+    rewards, which are returned rather than stored, were right for both. Read one
+    seat's with ``terms_for(team)``.
+    """
 
     def __init__(self, terms: Sequence[tuple[RewardFunction, float]]) -> None:
         self.terms = list(terms)
-        self.last_terms: dict[str, float] = {}
+        self.last_terms: dict[int, dict[str, float]] = {}
+
+    def terms_for(self, team: int) -> dict[str, float]:
+        """The weighted breakdown of ``team``'s last reward; empty before the first."""
+        return self.last_terms.get(team, {})
+
+    def config(self) -> dict[str, object]:
+        return {
+            "terms": [
+                {"class": type(t).__name__, "weight": w, "params": t.config()}
+                for t, w in self.terms
+            ]
+        }
 
     def bind(self, engine: Engine) -> None:
         for t, _ in self.terms:
             t.bind(engine)
 
     def reset(self, state: BattleState) -> None:
+        self.last_terms = {}
         for t, _ in self.terms:
             t.reset(state)
 
@@ -227,10 +267,11 @@ class CombinedReward(RewardFunction):
         results: Sequence[DeployResult],
     ) -> float:
         total = 0.0
-        self.last_terms = {}
+        breakdown: dict[str, float] = {}
+        self.last_terms[team] = breakdown
         for t, w in self.terms:
             v = w * t.get_reward(team, prev, state, results)
-            self.last_terms[type(t).__name__] = v
+            breakdown[type(t).__name__] = v
             total += v
         return total
 

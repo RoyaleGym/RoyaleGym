@@ -342,6 +342,24 @@ class MockEngine:
         self._enc = msgspec.msgpack.Encoder()
         self._dec = msgspec.msgpack.Decoder(_Sim)
 
+    # msgspec's codecs are C objects with no pickle support, and they are the only
+    # thing in a MockEngine that has none. They hold no state -- they are a
+    # compiled schema -- so dropping and rebuilding them is an exact round trip,
+    # and it is what makes a whole ClashParallelEnv on this engine picklable
+    # (env.py, EnvFactory: a built env is still not the thing to send to a
+    # subprocess worker, but it must not be a TypeError either).
+
+    def __getstate__(self) -> dict[str, object]:
+        state = dict(self.__dict__)
+        del state["_enc"]
+        del state["_dec"]
+        return state
+
+    def __setstate__(self, state: dict[str, object]) -> None:
+        self.__dict__.update(state)
+        self._enc = msgspec.msgpack.Encoder()
+        self._dec = msgspec.msgpack.Decoder(_Sim)
+
     # ------------------------------------------------------------------ data
 
     def _milli(self, v: int) -> int:

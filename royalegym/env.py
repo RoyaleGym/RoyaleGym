@@ -21,16 +21,33 @@ TIMING
 
 ACTION MASKS
     Every observation dict carries ``action_mask`` (int8, as pettingzoo's
-    ``parallel_api_test`` and gymnasium ``Discrete.sample(mask=...)`` expect) and
-    every info dict carries it too. ``action_masks()`` returns the bool array
-    sb3-contrib's MaskablePPO calls for. An action the engine rejects is turned
-    into a no-op and reported in ``info["deploy_status"]``.
+    ``parallel_api_test`` and gymnasium ``Discrete.sample(mask=...)`` expect), and
+    ``mask_planes`` -- the same mask without the no-op, as [4, 32, 18] -- beside
+    it. ``action_masks()`` returns the bool array sb3-contrib's MaskablePPO calls
+    for. An action the engine rejects is turned into a no-op and reported in
+    ``info["deploy_status"]``. The info dict does NOT repeat the mask: it was the
+    same array the observation already carried, batched a second time by every
+    vector env for nothing.
+
+EPISODE STATISTICS
+    The info dict of the LAST step of an episode carries how that episode went --
+    length, crowns, tower hp, elixir leaked -- so a training run reads it out of
+    ``infos["final_info"]`` instead of keeping a shadow copy of the state.
+    ``EPISODE_STAT_KEYS`` names them. ``outcome`` and ``winner`` are there too, as
+    before, but only when the engine ended the battle: a truncation has no winner.
+
+THE VIEWER
+    ``ClashParallelEnv`` publishes only when it is HANDED a publisher, and reads no
+    environment variable of its own: N envs each binding the viewer's one fixed UDP
+    port is an OSError, not a feature. ``ClashSelfPlayVecEnv`` owns that decision
+    instead and hands one publisher to one game (see its ``viser`` argument).
 """
 
 from __future__ import annotations
 
 import copy
-from collections.abc import Callable, Sequence
+import pickle
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, ClassVar
 
 import gymnasium as gym
@@ -53,12 +70,16 @@ from .obs import ObsBuilder, SpatialObsBuilder
 from .protocol import (
     BLUE,
     RED,
+    TEAMS,
     BattleState,
     DeployCommand,
     DeployResult,
     DeployStatus,
     Engine,
+    TowerSlot,
     Winner,
+    calibration_digest,
+    default_calibration,
 )
 from .replay import ReplayRecorder
 from .reward import RewardFunction, default_reward
@@ -69,10 +90,64 @@ from .viser import ViserPublisher, play_event
 AGENTS = ("blue", "red")
 AGENT_TEAM = {"blue": BLUE, "red": RED}
 NO_COMMAND = -1  # info["deploy_status"] when the agent chose no-op
+# Keys ``ClashParallelEnv.episode_stats`` writes into the LAST info of an episode.
+EPISODE_STAT_KEYS = (
+    "episode_steps",
+    "episode_ticks",
+    "own_crowns",
+    "enemy_crowns",
+    "own_tower_hp_frac",
+    "enemy_tower_hp_frac",
+    "elixir_leak_steps",
+)
 # Observation keys ``state()`` leaves out: the action mask in either of its shapes.
 # It is legality, not state, it is already an input to the policy, and a centralised
 # critic fed both shapes would carry 2 304 duplicated numbers per seat per step.
 MASK_KEYS = ("action_mask", "mask_planes")
+
+
+def class_name(obj: Any) -> str:
+    return f"{type(obj).__module__}.{type(obj).__name__}"
+
+
+def component_config(obj: Any) -> dict[str, Any] | None:
+    """``{class, params}`` for one env component, for ``ClashParallelEnv.config()``.
+
+    ``params`` is whatever the component's own ``config()`` returns; a component
+    that has none reports its class name and an empty dict rather than guessing at
+    its constructor, so the record never claims to describe something it cannot.
+    """
+    if obj is None:
+        return None
+    cfg = getattr(obj, "config", None)
+    return {"class": class_name(obj), "params": dict(cfg()) if callable(cfg) else {}}
+
+
+def engine_build_digest(engine: Engine) -> str | None:
+    """The engine's ``build_digest()`` if it has one (rust_engine.py), else None."""
+    fn = getattr(engine, "build_digest", None)
+    if not callable(fn):
+        return None
+    try:
+        return str(fn())
+    except ImportError:
+        return None
+
+
+def tower_hp_frac(state: BattleState, team: int) -> float:
+    """Mean of ``team``'s three crown towers' hp fractions, in [0, 1].
+
+    The MEAN of the per-tower fractions, not total hp over total max hp, so that it
+    is exactly ``TowerHPReward``'s potential (reward.py) divided by three: what a run
+    logs about an episode and what its shaping term optimised are then the same
+    number, rather than two plausible summaries that drift apart. The difference is
+    real -- total-over-total weights the king by its much larger hp pool, the mean
+    weights each tower equally, and losing a princess is worth more than the hp says.
+    """
+    p = state.players[team]
+    return sum(
+        max(0, p.tower_hp[s]) / max(1, p.tower_max_hp[s]) for s in TowerSlot
+    ) / len(TowerSlot)
 
 
 class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
@@ -128,9 +203,14 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self.render_mode = render_mode
         self.recorder = recorder
         # RoyaleViser (viser.py): one publish per reset/step, and only while a viewer is
-        # attached; None (the default, unless ROYALEVISER=host:port is set) costs one ``if``.
-        self.viser = viser if viser is not None else ViserPublisher.from_env()
+        # attached; None (the default) costs one ``if``. This env NEVER builds its own
+        # publisher -- see the module doc, THE VIEWER.
+        self.viser = viser
         self._decks: list[list[int]] | None = None
+        # The builder's calibration when it has one (every shipped ObsBuilder does),
+        # so an env and its observation cannot read two different ledgers.
+        self.calibration = getattr(self.obs_builder, "calibration", None) or default_calibration()
+        self.full_elixir_milli = 1000 * self.calibration.int("match.MAX_MANA")
 
         self.possible_agents = list(AGENTS)
         self.agents: list[str] = []
@@ -147,6 +227,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self._obs: dict[str, dict[str, np.ndarray]] = {}
         self.decision_ticks = 1
         self.last_results: list[DeployResult] = []
+        self._episode_steps = 0
+        self._start_tick = 0
+        self._leak_steps = dict.fromkeys(TEAMS, 0)
 
     # -- spaces -------------------------------------------------------------
 
@@ -195,13 +278,16 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             self.truncation.reset(state)
         self.agents = list(self.possible_agents)
         self.last_results = []
+        self._episode_steps = 0
+        self._start_tick = state.tick
+        self._leak_steps = dict.fromkeys(TEAMS, 0)
         if self.recorder is not None:
             self.recorder.begin(self.engine, engine_seed, init)
         if self.viser is not None:
             self._decks = None if isinstance(init, Snapshot) else [list(d) for d in init.decks]
             self.viser.publish(state, cards, self.engine.arena(), self._decks)
         self._refresh(state)
-        infos = {a: self._info(a, state, NO_COMMAND) for a in self.agents}
+        infos = {a: self._info(a, state, NO_COMMAND, terminal=False) for a in self.agents}
         return dict(self._obs), infos
 
     def step(
@@ -227,6 +313,11 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         state = self.engine.state()
         self._state = state
         self.last_results = results
+        self._episode_steps += 1
+        full = self.full_elixir_milli
+        for team in TEAMS:
+            if prev.players[team].elixir_milli >= full and state.players[team].elixir_milli >= full:
+                self._leak_steps[team] += 1
         terminated = self.termination.is_done(state)
         truncated = self.truncation is not None and self.truncation.is_done(state)
         truncated = truncated and not terminated
@@ -240,7 +331,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self._refresh(state)
         live = list(self.agents)
         obs = {a: self._obs[a] for a in live}
-        infos = {a: self._info(a, state, status[a]) for a in live}
+        infos = {a: self._info(a, state, status[a], terminated or truncated) for a in live}
         terms = dict.fromkeys(live, terminated)
         truncs = dict.fromkeys(live, truncated)
         if terminated or truncated:
@@ -299,17 +390,68 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             self._masks[agent] = mask
             self._obs[agent] = self.obs_builder.build(state, team, mask)
 
-    def _info(self, agent: str, state: BattleState, status: int) -> dict[str, Any]:
-        info: dict[str, Any] = {
-            "action_mask": self._masks[agent],
-            "deploy_status": status,
-            "tick": state.tick,
-        }
+    def _info(
+        self, agent: str, state: BattleState, status: int, terminal: bool
+    ) -> dict[str, Any]:
+        info: dict[str, Any] = {"deploy_status": status, "tick": state.tick}
+        team = AGENT_TEAM[agent]
         if state.game_over:
             w = state.winner
             info["winner"] = w
-            info["outcome"] = 0 if w == Winner.DRAW else (1 if w == AGENT_TEAM[agent] else -1)
+            info["outcome"] = 0 if w == Winner.DRAW else (1 if w == team else -1)
+        if terminal:
+            info.update(self.episode_stats(state, team))
         return info
+
+    def episode_stats(self, state: BattleState, team: int) -> dict[str, Any]:
+        """How the episode that just ended went, from ``team``'s seat.
+
+        Written only on the terminal step, so a rollout buffer carries one of these
+        per EPISODE rather than one per step; ``EPISODE_STAT_KEYS`` is the key list.
+        Tower hp is the fraction of TOTAL tower hp left (king and both princesses),
+        which is the number that says how close the match was: crowns alone cannot
+        tell a tower left at 1 hp from a tower never touched.
+        """
+        return {
+            "episode_steps": self._episode_steps,
+            "episode_ticks": state.tick - self._start_tick,
+            "own_crowns": state.players[team].crowns,
+            "enemy_crowns": state.players[1 - team].crowns,
+            "own_tower_hp_frac": tower_hp_frac(state, team),
+            "enemy_tower_hp_frac": tower_hp_frac(state, 1 - team),
+            "elixir_leak_steps": self._leak_steps[team],
+        }
+
+    def config(self) -> dict[str, Any]:
+        """What this env IS, as a JSON-able dict, for a checkpoint to record.
+
+        Class names and constructor kwargs of every component, the decision
+        granularity, the ``Reveal`` the observation was built with, and digests of
+        the data underneath: calibration.json as it is on disk, plus the copy the
+        compiled engine was built with when there is one. A checkpoint that pins
+        this can say whether a policy is being evaluated on the env it was trained
+        on -- including whether it was trained with hidden information revealed,
+        which nothing about a weights file would otherwise show.
+
+        A description, not a constructor: ``EnvFactory`` is the picklable recipe
+        that BUILDS one.
+        """
+        reveal = getattr(self.obs_builder, "reveal", None)
+        return {
+            "env": class_name(self),
+            "decision_ms": self.decision_ms,
+            "decision_ticks": self.decision_ticks,
+            "reveal": reveal.as_dict() if reveal is not None else None,
+            "engine": component_config(self.engine),
+            "obs_builder": component_config(self.obs_builder),
+            "action_parser": component_config(self.action_parser),
+            "reward_fn": component_config(self.reward_fn),
+            "termination_cond": component_config(self.termination),
+            "truncation_cond": component_config(self.truncation),
+            "state_mutator": component_config(self.state_mutator),
+            "calibration_digest": calibration_digest(self.calibration),
+            "build_digest": engine_build_digest(self.engine),
+        }
 
     # -- extras ---------------------------------------------------------------
 
@@ -460,15 +602,32 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
     players' experience in self-play. Autoreset is SAME_STEP: when a game ends,
     the returned observation is already the next game's first one, and the final
     observation / info are in ``infos["final_obs"]`` / ``infos["final_info"]``
-    (masked by ``infos["_final_obs"]``).
+    (masked by ``infos["_final_obs"]``). ``final_info`` is where an episode's
+    statistics arrive -- ``EPISODE_STAT_KEYS``.
+
+    THE VIEWER, and why it is decided here. A viewer watches ONE battle: it has
+    one fixed UDP port, and N envs each binding it is ``OSError 10048``, which is
+    what ``ClashSelfPlayVecEnv(num_games>1)`` used to raise the moment ROYALEVISER
+    was set. So the publisher is bound once, here, and handed to game 0 only.
+    ``viser="env"`` (the default) means ``ViserPublisher.from_env()``: a publisher
+    when ROYALEVISER=host:port is set, and None -- costing nothing -- when it is
+    not. Pass a ``ViserPublisher`` to bind one explicitly, or None never to
+    publish.
     """
 
     def __init__(
         self,
         num_games: int,
         env_fn: Callable[[], ClashParallelEnv] = ClashParallelEnv,
+        *,
+        viser: str | ViserPublisher | None = "env",
     ) -> None:
         self.envs = [env_fn() for _ in range(num_games)]
+        self.viser = ViserPublisher.from_env() if viser == "env" else viser
+        if self.viser is not None:
+            if not self.envs:
+                raise ValueError("a viser publisher needs at least one game to watch")
+            self.envs[0].viser = self.viser
         self.num_games = num_games
         self.num_envs = 2 * num_games
         self.single_observation_space = self.envs[0].observation_space("blue")
@@ -502,7 +661,9 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
 
     def step(self, actions: Any) -> tuple[Any, np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
         actions = np.asarray(actions).reshape(self.num_envs)
-        rewards = np.zeros(self.num_envs, dtype=np.float64)
+        # float32: the batch goes straight into a policy's buffers, which are
+        # float32, so float64 here was a copy per step and nothing else.
+        rewards = np.zeros(self.num_envs, dtype=np.float32)
         terms = np.zeros(self.num_envs, dtype=np.bool_)
         truncs = np.zeros(self.num_envs, dtype=np.bool_)
         infos: dict[str, Any] = {}
@@ -535,6 +696,92 @@ class ClashSelfPlayVecEnv(VectorEnv[Any, Any, Any]):
     def close_extras(self, **kwargs: Any) -> None:
         for env in self.envs:
             env.close()
+
+
+class EnvFactory:
+    """A picklable recipe for a ``ClashParallelEnv``, for subprocess rollout workers.
+
+    WHY A RECIPE AND NOT THE ENV. A built env cannot be pickled, and the reason is
+    the ENGINE: MockEngine carried two msgspec codecs, which are compiled objects
+    with no pickle support (that one is fixed -- they are stateless and are now
+    dropped and rebuilt, so a MockEngine env does pickle), and RustEngine holds a
+    live PyO3 ``Battle``, which pickle cannot reach at all. That could be worked
+    around -- the engine can already ``save_state()`` to bytes -- but it would be
+    the wrong thing to ship: it cannot be verified in a tree whose extension is
+    not built, and sending a whole battle down a pipe at every worker spawn is not
+    what a worker wants anyway. It wants a build recipe, which is also what
+    gymnasium's own ``AsyncVectorEnv`` asks for.
+
+    Every component is given as its CLASS (or any importable callable) and its
+    kwargs, never as a built instance::
+
+        factory = EnvFactory(
+            engine=MockEngine,
+            obs_builder=(SpatialObsBuilder, {"reveal": Reveal(enemy_elixir=True)}),
+            decision_ms=250,
+        )
+        env = factory()                       # in the worker
+        gym.vector.AsyncVectorEnv([factory] * 8)
+
+    The spec is checked with ``pickle.dumps`` at construction, so a lambda or a
+    locally-defined class fails HERE, naming the key, rather than at worker spawn
+    with a traceback from inside multiprocessing.
+    """
+
+    COMPONENTS: ClassVar[tuple[str, ...]] = (
+        "engine",
+        "obs_builder",
+        "action_parser",
+        "reward_fn",
+        "termination_cond",
+        "truncation_cond",
+        "state_mutator",
+        "recorder",
+        "viser",
+    )
+
+    def __init__(self, **spec: Any) -> None:
+        #: component name -> class, or (class, kwargs). Names are ClashParallelEnv's.
+        self.components: Mapping[str, Any] = {
+            k: v for k, v in spec.items() if k in self.COMPONENTS
+        }
+        #: plain constructor arguments, passed through (decision_ms, render_mode, ...).
+        self.kwargs: Mapping[str, Any] = {
+            k: v for k, v in spec.items() if k not in self.COMPONENTS
+        }
+        for key, value in spec.items():
+            try:
+                pickle.dumps(value)
+            except (TypeError, AttributeError, pickle.PicklingError) as exc:
+                raise TypeError(
+                    f"EnvFactory({key}=...) does not pickle, so a subprocess worker could "
+                    f"never be handed it: pass an importable class or function, not a lambda "
+                    f"or a locally defined class ({exc})"
+                ) from exc
+
+    def __call__(self) -> ClashParallelEnv:
+        built = {name: _build_component(spec) for name, spec in self.components.items()}
+        return ClashParallelEnv(**built, **dict(self.kwargs))
+
+    def __repr__(self) -> str:
+        return f"EnvFactory({self.components!r}, {self.kwargs!r})"
+
+    def config(self) -> dict[str, Any]:
+        """The recipe as a JSON-able dict, beside ``ClashParallelEnv.config()``."""
+        out: dict[str, Any] = {"kwargs": dict(self.kwargs), "components": {}}
+        for name, spec in self.components.items():
+            factory, kwargs = spec if isinstance(spec, tuple) else (spec, {})
+            out["components"][name] = {
+                "class": getattr(factory, "__qualname__", str(factory)),
+                "module": getattr(factory, "__module__", None),
+                "kwargs": {k: repr(v) for k, v in dict(kwargs).items()},
+            }
+        return out
+
+
+def _build_component(spec: Any) -> Any:
+    factory, kwargs = spec if isinstance(spec, tuple) else (spec, {})
+    return factory(**dict(kwargs))
 
 
 def make_gym_vec_env(

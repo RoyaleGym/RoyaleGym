@@ -61,6 +61,7 @@ WHAT DIFFERS FROM MockEngine ON PURPOSE (engine mechanics, not adapter choices)
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Sequence
 from pathlib import Path
@@ -84,6 +85,7 @@ from .protocol import (
     MatchSetup,
     Placement,
     TowerSlot,
+    calibration_values,
     data_dir,
     default_calibration,
     validate_setup,
@@ -118,16 +120,27 @@ def core_available() -> bool:
     return _core is not None
 
 
-def _calibration_values(raw: dict[str, Any]) -> dict[str, Any]:
-    """Every ``section.KEY -> value`` in a calibration document (prose excluded)."""
-    out: dict[str, Any] = {}
-    for section, entries in raw.items():
-        if not isinstance(entries, dict):
-            continue
-        for key, entry in entries.items():
-            if isinstance(entry, dict) and "value" in entry:
-                out[f"{section}.{key}"] = entry["value"]
-    return out
+def build_digest() -> str:
+    """A short hash of the data the loaded extension was COMPILED with.
+
+    The same hash ``protocol.calibration_digest`` takes of calibration.json on
+    disk, over the copy compiled into the extension, plus the arena it was built
+    with. A checkpoint pins this next to the on-disk digest: equal means the
+    policy was trained on an engine built from the data that is there now, and
+    unequal says which way to look without needing the two files side by side.
+    Module-level and also reachable as ``RustEngine.build_digest`` so it can be
+    read without constructing an engine -- construction is exactly what refuses
+    on a stale build.
+    """
+    if _core is None:
+        raise ImportError(CORE_IMPORT_ERROR)
+    values = calibration_values(json.loads(_core.EMBEDDED_CALIBRATION_JSON))
+    arena = json.loads(_core.EMBEDDED_ARENA_JSON)
+    arena.pop("provenance", None)
+    blob = json.dumps(
+        {"calibration": values, "arena": arena}, sort_keys=True, separators=(",", ":")
+    )
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
 def stale_build_differences(calibration: Calibration, arena_path: Path | None = None) -> list[str]:
@@ -135,8 +148,8 @@ def stale_build_differences(calibration: Calibration, arena_path: Path | None = 
     if _core is None:
         raise ImportError(CORE_IMPORT_ERROR)
     diffs = []
-    built = _calibration_values(json.loads(_core.EMBEDDED_CALIBRATION_JSON))
-    now = _calibration_values(calibration.raw)
+    built = calibration_values(json.loads(_core.EMBEDDED_CALIBRATION_JSON))
+    now = calibration_values(calibration.raw)
     for key in sorted(set(built) | set(now)):
         if built.get(key, "<absent>") != now.get(key, "<absent>"):
             diffs.append(
@@ -368,6 +381,8 @@ class RustEngine:
                 f"engine reported {_core.DEPLOY_REASONS[reason]} for a slot command"  # type: ignore[union-attr]
             )
         return status
+
+    build_digest = staticmethod(build_digest)
 
     def debug_nudge(self, uid: int, dx: int, dy: int) -> bool:
         """TEST-ONLY: move a live entity by (dx, dy) subtiles."""
