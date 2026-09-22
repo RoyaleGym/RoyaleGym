@@ -246,8 +246,8 @@ clone.
     ```
 
 You can stop after the RoyaleGym line. RoyaleViser is the viewer and it is optional, though it is
-small and it needs no engine build of its own. RoyaleLearn is the training harness and it cannot
-train anything yet, so there is no hurry.
+small and it needs no engine build of its own. RoyaleLearn is the training harness. It trains,
+and it needs the torch extra, which is a large download. Leave it until you want it.
 
 ## If the build will not work
 

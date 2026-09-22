@@ -338,9 +338,11 @@ the engine. Closing that gap is the first open item in
 closed, a training run spends more time describing the battle than playing it.
 
 !!! danger "Nobody knows how many battles a good bot needs"
-    No training run has happened. Not one. So there is no honest answer to "how long until my bot
-    is good", and anyone who gives you one is guessing. What you can take from the table above is
-    the cost of a battle, not the number of battles required.
+    The loop runs and a couple of iterations have gone through it. Nothing has been trained to
+    the point of being good, or of being measured against anything that would tell you. So
+    there is no honest answer to "how long until my bot is good", and anyone who gives you one
+    is guessing. What you can take from the table above is the cost of a battle, not the number
+    of battles required.
 
 ---
 

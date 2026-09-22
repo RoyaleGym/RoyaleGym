@@ -250,9 +250,9 @@ raises an error that names the build command, and `MockEngine` runs the whole AP
 meantime. It is a stand-in and not a second simulator: spells resolve instantly, there are no
 stuns or knockbacks, and cards run at base level. Fine for writing code, wrong for judging a bot.
 
-**Nothing trains on these environments out of the box yet.** [The learner](learner.md) is
-designed and partly written. The environments do expose `action_masks()` in the form MaskablePPO
-expects, so you can point an existing library at them today.
+**[The learner](learner.md) trains on these environments, as of 2026-09-22, and no bot has
+been trained with it yet.** The environments also expose `action_masks()` in the form
+MaskablePPO expects, so you can point an existing library at them instead if you prefer.
 
 ## Where the detail is
 
