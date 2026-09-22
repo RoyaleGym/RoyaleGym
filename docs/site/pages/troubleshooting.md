@@ -70,7 +70,7 @@ somewhere else afterwards does not change what the compiled engine holds.
 
 ```
 FileNotFoundError: ...\data\derived\cards.json is absent. In the sibling RoyaleSim checkout run
-its README's Setup block, which is:
+the commands from its README's Install section, which are:
     python tools/extract_cards.py --vintage 2018
     python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json
 --vintage 2018 is not optional on a public clone: without it the extractor wants a client asset
