@@ -128,6 +128,7 @@ cd RoyaleSim && ..\.venv\Scripts\maturin develop --release && cd ..     # builds
 .venv\Scripts\python -m pip install -e RoyaleGym
 .venv\Scripts\python -m pip install -e RoyaleViser
 .venv\Scripts\python -m pip install -e RoyaleLearn
+.venv\Scripts\python -m pip install -e "RoyaleLearn[torch]"   # only if you want to train; it is a big download
 ```
 
 You can stop after the `pip install -e RoyaleGym` line. RoyaleViser is optional. It is the
@@ -189,10 +190,10 @@ for the learner.
 ## Status (2026-09-21)
 
 <p align="center">
-  <img alt="pytest" src="https://img.shields.io/badge/pytest-368%20passed%2C%206%20skipped-2ea043?style=flat-square">
+  <img alt="pytest" src="https://img.shields.io/badge/pytest-green%2C%206%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
-  <img alt="Trainer" src="https://img.shields.io/badge/trainer-designed%2C%20not%20written-orange?style=flat-square">
+  <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%20as%20of%202026--09--22-d29922?style=flat-square">
 </p>
 
 Working:

@@ -233,6 +233,7 @@ clone.
     .venv\Scripts\python -m pip install -e RoyaleGym
     .venv\Scripts\python -m pip install -e RoyaleViser
     .venv\Scripts\python -m pip install -e RoyaleLearn
+    .venv\Scripts\python -m pip install -e "RoyaleLearn[torch]"
     ```
 
 === "macOS and Linux"
@@ -241,6 +242,7 @@ clone.
     .venv/bin/python -m pip install -e RoyaleGym
     .venv/bin/python -m pip install -e RoyaleViser
     .venv/bin/python -m pip install -e RoyaleLearn
+    .venv/bin/python -m pip install -e "RoyaleLearn[torch]"
     ```
 
 You can stop after the RoyaleGym line. RoyaleViser is the viewer and it is optional, though it is

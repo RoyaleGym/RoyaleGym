@@ -5,7 +5,7 @@
   <img alt="Engine: Rust, same seed same battle" src="https://img.shields.io/badge/engine-Rust%2C%20same%20seed%20same%20battle-DEA584?style=flat-square&logo=rust&logoColor=white">
   <img alt="APIs: Gymnasium and PettingZoo" src="https://img.shields.io/badge/APIs-Gymnasium%20%2B%20PettingZoo-0b7285?style=flat-square">
   <img alt="Engine, environments and viewer: working" src="https://img.shields.io/badge/engine%2C%20envs%2C%20viewer-working-2ea043?style=flat-square">
-  <img alt="Trainer: being written" src="https://img.shields.io/badge/trainer-being%20written-orange?style=flat-square">
+  <img alt="Trainer: being written" src="https://img.shields.io/badge/trainer-runs%2C%20barely%20tested-d29922?style=flat-square">
   <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/badge/discord-join%20the%20server-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
 </p>
 
@@ -29,9 +29,11 @@ for over a network. You need Python and a compiler.
     the exact list of moves it is allowed to make, and a reward. The viewer draws any of it.
     You can run all of that tonight.
 
-    **Not working yet.** The training harness, RoyaleLearn, is still being written. There is no
-    command you can type that trains a bot. The pieces under it run and are tested, and the
-    learning loop itself is the part being written right now.
+    **New tonight, and barely tested.** The training harness, RoyaleLearn, closed its loop on
+    2026-09-22. `python -m royalelearn train --config examples/configs/smoke.json` runs end to
+    end, and it needs the torch extra, which the plain install does not pull in. The only run
+    so far was three iterations long. So the command works and nobody has trained a bot with
+    it, which are two different things.
 
     So today this is a very fast Clash Royale sandbox with a standard bot interface on it. If you
     want to write your own training loop, or wire it into a library you already use, you can start

@@ -368,15 +368,16 @@ Two more habits worth having:
 
 ## What this page cannot show you yet
 
-Nobody can show you that a reward function *trains* anything, because the training loop
-is still being written. RoyaleLearn has its configuration, its networks, its rollout
-workers, its ladder of opponents and its checkpoint store, with 375 tests over them, or 478 once
-you install the torch extra. The
-PPO update and the coordinator that ties them into a loop are in progress.
+Nobody can show you that a reward function *trains* anything, and that is no longer because
+the loop is missing. RoyaleLearn closed its training loop on 2026-09-22 and
+`python -m royalelearn train` runs end to end, with the torch extra installed. What has not
+happened is a real run. The only one so far was three iterations long, a smoke test to prove
+the loop closes.
 
-So what you have tonight is real but partial. Your reward function runs on a real
-battle, on both seats, and gives back numbers you can look at. Nobody has yet pointed a
-learner at it.
+So what you have is a reward function that runs on a real battle, on both seats, and gives
+back numbers you can look at, and a trainer that will consume it and has consumed nothing
+yet. If you write a reward function and train on it, you will be the first person to learn
+whether any of this works, and the project would very much like to hear what happened.
 
 When the loop lands, a custom reward is named in the run's config rather than pasted
 into the trainer, so the checkpoint records it:

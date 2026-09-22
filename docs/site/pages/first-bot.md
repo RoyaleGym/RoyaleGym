@@ -2,7 +2,7 @@
 
 <p align="center">
   <img alt="Works today" src="https://img.shields.io/badge/part_1-works_today-2ea043?style=flat-square">
-  <img alt="Not yet" src="https://img.shields.io/badge/part_2-not_written_yet-orange?style=flat-square">
+  <img alt="Not yet" src="https://img.shields.io/badge/part_2-new,_barely_tested-d29922?style=flat-square">
   <img alt="No GPU" src="https://img.shields.io/badge/GPU-not_needed_to_start-2ea043?style=flat-square">
   <img alt="No cloud" src="https://img.shields.io/badge/cloud-not_needed-2ea043?style=flat-square">
   <img alt="Python" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
@@ -10,15 +10,19 @@
 </p>
 
 !!! warning "Read this before you scroll"
-    **You cannot train a bot tonight.** The training harness is not finished. The configuration,
-    the networks, the rollout workers, the ladder and the checkpoints are written and tested. The
-    PPO update and the loop that ties them together are being written right now.
+    **Training started working on 2026-09-22, and nobody has trained a bot with it yet.** Keep
+    both halves of that in mind. `python -m royalelearn train` runs end to end now, and the only
+    run anyone has done was three iterations long, a smoke test to prove the loop closes. So
+    nothing on this page can tell you how long a real run takes or whether the bot comes out any
+    good. You would be the first to find out.
 
-    So this page has two halves. Part 1 is code that runs on your machine today. Every block in
-    it was run to write this page and the output below it is the real output. Part 2 is the plan.
-    Nothing in Part 2 works yet, and every block there says so on the line above it.
+    **Training needs torch, and the install page does not give it to you by default.** Run
+    `pip install -e "RoyaleLearn[torch]"` first. Without it, `train`, `doctor` and `bench` all
+    stop with `ModuleNotFoundError: No module named 'torch'`.
 
-    Source: RoyaleLearn's README, section "What you will type, once the loop lands".
+    This page has two halves. Part 1 is code that runs on your machine today, and every block in
+    it was run to write this page, with the real output underneath. Part 2 is the training run
+    itself. Its commands are real now, but they are new, and this page has not run them.
 
 What you get out of Part 1 is a program that plays a whole Clash Royale battle, a bot of your own
 that is better than random, and a window you can watch it in. That is the whole scaffolding a
@@ -339,13 +343,16 @@ closed, a training run spends more time describing the battle than playing it.
 
 ## Part 2: the plan
 
-!!! warning "UNVERIFIED"
-    Nobody has run anything in this section, because it does not exist yet. The PPO update and the
-    coordinator that drives the loop are being written now. Everything below is written down so
-    you can see the shape of it and tell us it is wrong before it is finished.
+!!! warning "UNVERIFIED on this machine"
+    These commands exist and they run. What has not happened here is a training run: this venv
+    has no torch, so the commands below were checked as far as the point where they ask for it,
+    and no further. Their author reports the loop closing end to end in commit 5685cad, for
+    three iterations.
 
-Source for this whole section: RoyaleLearn's README and the facts gathered from its owner on
-2026-09-22.
+    So treat the shape of this section as solid and any claim about what a run produces as
+    untested. If you run one, the project would like to hear what happened.
+
+Source for this section: RoyaleLearn's own README and its owner, on 2026-09-22.
 
 ### The four commands
 

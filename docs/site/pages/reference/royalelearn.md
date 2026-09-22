@@ -2,11 +2,12 @@
 
 The training harness.
 
-!!! warning "This cannot train a bot yet"
+!!! warning "New, and barely tested"
 
-    The pieces below are built and tested. The PPO update and the coordinator that ties them
-    into a training loop are being written now, so nothing you can type here starts a run. See
-    [The learner](../pieces/learner.md) for what works today and what is coming.
+    The training loop closed on 2026-09-22. `python -m royalelearn train` runs end to end, and
+    it needs the torch extra. The only run so far was three iterations long, so treat anything
+    below that touches the loop itself as young code. See [The learner](../pieces/learner.md)
+    for what that means in practice.
 
 Everything on this page is generated from the docstrings in the code, so it shows what exists
 rather than what is planned. A name that is missing from this page has not been written yet.
