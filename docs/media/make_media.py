@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 r"""Generate the pictures and videos the four public READMEs embed.
 
-Everything here is drawn from the engine or from the repos' own data. Nothing needs a
-screen or a recording of a real match, so it runs on any checkout that has
-the engine built.
+Everything here is drawn from the engine or from the repos' own data. Nothing outside this
+checkout is involved and nothing needs a display, so it runs anywhere the engine is built.
 
     ..\.venv\Scripts\python RoyaleGym\docs\media\make_media.py --list
     ..\.venv\Scripts\python RoyaleGym\docs\media\make_media.py            # everything

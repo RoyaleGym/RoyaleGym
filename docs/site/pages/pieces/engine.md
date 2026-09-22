@@ -211,7 +211,7 @@ The engine has its own docs, and they go far deeper than this page.
   for what is modelled, what is not, and the two known collision defects.
 - [`docs/calibration.md`](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/calibration.md)
   for the constants file and what each status word means.
-- `docs/replay-parity.md` in the RoyaleSim checkout
+- [`docs/replay-parity.md`](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/replay-parity.md)
   for the full accuracy table and how it is produced.
 
 Engine questions and calibration work happen in [the Discord](https://discord.gg/4D2BS5JBHP).

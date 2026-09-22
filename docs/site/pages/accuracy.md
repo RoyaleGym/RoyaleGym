@@ -133,7 +133,7 @@ exactly how wrong it is and where.
 ## Read next
 
 - [The engine](pieces/engine.md) for what the engine does and how you drive it.
-- `docs/replay-parity.md` in RoyaleSim's own docs
+- [`docs/replay-parity.md`](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/replay-parity.md) in RoyaleSim's own docs
   in RoyaleSim's own docs. That page has the per-card breakdown, what is scored, what is not
   scored, and the exact commands. Everything on this page is a summary of it.
 - [Troubleshooting](troubleshooting.md) if something on your machine is not doing what this site
