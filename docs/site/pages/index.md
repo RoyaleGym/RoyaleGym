@@ -31,8 +31,9 @@ for over a network. You need Python and a compiler.
 
     **New on 2026-09-22, and nobody has trained a bot with it yet.** The training harness
     closed its loop that day and the real profile has since completed iterations on the real
-    engine. An iteration takes about nine minutes on a laptop and a useful run is many hours,
-    so what exists is machinery that works rather than any result about learning. Training
+    engine. An iteration takes about nine minutes on an otherwise idle laptop and several
+    times that on a busy one, so a useful run is many hours. What exists is machinery that
+    works rather than any result about learning. Training
     needs the torch extra, which the plain install does not pull in.
 
     So today this is a very fast Clash Royale sandbox with a standard bot interface on it. If you

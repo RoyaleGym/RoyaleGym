@@ -366,13 +366,26 @@ closed, a training run spends more time describing the battle than playing it.
     `RustEngine` and a limit of 100,000,000 timesteps. Until a few hours ago it stopped in its
     first collection round on a mask assertion; that was a worker failure being misread, and it
     is fixed with a regression test. Checked here rather than taken on report: it now collects
-    a full round.
+    full rounds.
 
-        collected     228 cycles, 32832 timesteps in 178.8s (245 env steps/s); updating
+    **The first round of a run is much slower than the ones after it**, because the workers are
+    spawning and nothing is warm. Do not size a run off it. The same 228-cycle round, measured
+    across three runs on one laptop:
 
-    Its author reports two complete iterations with metrics rows, which is the first time
-    anything real has trained in this project, and an iteration at that geometry taking about
-    nine minutes on a machine like this one.
+    | what else the machine was doing | first round | later rounds |
+    |---|---|---|
+    | a great deal | 179 s | |
+    | some | 79 s, 46 s | 19 s |
+    | very little | | 13 s |
+
+    So expect a couple of minutes at the start and seconds a round afterwards. The other thing
+    that table shows is that the absolute numbers move by an order of magnitude with machine
+    load, so treat any timing here as a shape rather than a promise.
+
+    Its author reports two complete iterations with metrics rows, at 518 s and 544 s. That is
+    the first time anything real has trained in this project. About nine minutes an iteration,
+    and it is a best case: the same config on the same machine took over forty minutes for one
+    iteration with other work resident.
 
     Two iterations is a loop that works. It is not a result about learning, and a useful run
     is many hours. So the honest state is that the machinery runs end to end and nobody yet
