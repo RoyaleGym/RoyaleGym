@@ -567,8 +567,8 @@ def load_tower_no_deploy_sizes(path: Path | None = None) -> dict[str, tuple[int,
     p = path or data_dir() / "derived" / "cards.json"
     if not p.exists():
         raise FileNotFoundError(
-            f"{p} is absent. In the sibling RoyaleSim checkout run its README's Setup "
-            f"block, which is:\n"
+            f"{p} is absent. In the sibling RoyaleSim checkout run the commands from "
+            f"its README's Install section, which are:\n"
             f"    python tools/extract_cards.py --vintage 2018\n"
             f"    python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json\n"
             f"--vintage 2018 is not optional on a public clone: without it the extractor "

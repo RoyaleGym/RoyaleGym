@@ -107,7 +107,7 @@ except ImportError as _exc:  # pragma: no cover - exercised only on unbuilt tree
     _core = None
     # The one pointer a reader gets at the moment the engine has not built, which is
     # the moment they most need it to land somewhere. It names THIS repo's README and
-    # the heading it really has; test_rust_engine.py checks that the heading exists,
+    # the heading it really has; tests/test_install_pointers.py checks that the heading exists,
     # because a pointer nothing reads is a pointer that rots quietly.
     CORE_IMPORT_ERROR: str | None = (
         f"royalesim is not built ({_exc}); run `maturin develop --release` in the "

@@ -12,15 +12,26 @@ WHAT IT CATCHES
     build line and the error message's build line have to be the same command, and the
     data step has to come before it, which is what the message now promises.
 
+    The scan does not look for the phrasings this repo happens to use. It looks for a
+    capitalised word sitting in POINTER POSITION -- straight after ``README``, with at
+    most a comma, a colon, an ``'s`` or a quote in between. Any way of naming a section
+    lands there, because that is what naming a section looks like in English, so a
+    pointer written in a form nobody anticipated is caught by position rather than by
+    wording.
+
+    That is the second design. The first matched three spellings and reported clean on
+    a tree that had a fourth: ``protocol.py`` told a reader to run "its README's Setup
+    block", one function below a pointer the same file had just had corrected. Two
+    other people's sweeps missed it too. An instrument whose reach is narrower than the
+    question it appears to answer will report the difference as good news.
+
 WHAT IT CANNOT CATCH
-    A pointer written in a form the scan below does not recognise. It knows the shapes
-    this repo uses -- ``README.md, "X"``, the same without the comma, and ``the "X"
-    section of the <Repo> README.md`` -- and a fourth would slip past it silently.
-    That is why ``test_the_scan_finds_the_references_it_is_guarding`` pins the count: a
-    refactor that hides them all turns this file red instead of green-and-vacuous.
-    Writing the scan tripped on both of the holes it is guarding, which is the best
-    argument for the guard: it missed test_parity_hardening.py, whose pointer has no
-    comma, and it read the f-string placeholder in rust_engine.py as a heading name.
+    A section named somewhere other than next to the word README -- "see the install
+    section" with the file named two sentences earlier reads as prose here.
+
+    A multi-word section name written without quotes: only the first word is captured,
+    so ``README.md What you get`` is checked as "What". It fails loudly rather than
+    passing, which is the right way round, but the message will be confusing.
 
     A pointer into another repo's README. RoyaleViser's does have a "Setup", at ``###``
     -- which is how the original report of this defect overstated itself, from a sweep
@@ -42,42 +53,73 @@ from royalegym.rust_engine import INSTALL_POINTER, INSTALL_SECTION
 REPO = Path(__file__).resolve().parents[1]
 README = REPO / "README.md"
 
-# The shapes this repo writes a section pointer in. Deliberately strict: a loose
-# pattern would match prose about READMEs and fail on a sentence, which is worse than
-# missing a form, because a guard that cries wolf gets switched off.
+# A section name in POINTER POSITION: straight after README, past at most a comma, a
+# colon, an "'s" and a quote. Position rather than phrasing, so a pointer written in a
+# form nobody anticipated is still caught. A capital is required because the word after
+# README is otherwise ordinary prose -- "no README here ever had that heading" must not
+# read as a pointer to a section called "here".
 POINTER_FORMS = (
-    re.compile(r'README\.md,?\s*"([^"]{2,40})"'),
+    re.compile(r"README(?:\.md)?(?:'s)?[,:]?\s+\"([A-Z][A-Za-z ]{1,30})\""),
+    re.compile(r"README(?:\.md)?(?:'s)?[,:]?\s+([A-Z][A-Za-z]{1,20})\b"),
     re.compile(r'the "([^"]{2,40})" section of the \w+ README\.md'),
 )
 
-SOURCES = sorted((REPO / "royalegym").glob("*.py")) + sorted((REPO / "tests").glob("*.py"))
+# This file is left out of its own scan. It quotes the defect it exists for, in its
+# docstring and in the plant below, and a scan that reads its own explanation of a
+# wrong pointer as a wrong pointer is no use to anyone.
+SOURCES = [
+    p
+    for p in sorted((REPO / "royalegym").glob("*.py")) + sorted((REPO / "tests").glob("*.py"))
+    if p.name != Path(__file__).name
+]
 
 
-def readme_headings() -> set[str]:
-    """Every heading in README.md, at any level.
+def readme_headings(repo: str = "RoyaleGym") -> set[str] | None:
+    """Every heading in a repo's README, at any level, or None if it is not checked out.
 
     At ANY level on purpose: a scan that reads ``##`` only cannot see a ``###`` section
-    and will report it missing.
+    and will report it missing. Three people made that mistake on one evening.
+
+    None rather than an empty set for a missing sibling, so "no headings" and "no
+    repository" cannot be confused -- an empty set would fail every pointer into it and
+    look like a swarm of findings.
     """
+    path = README if repo == "RoyaleGym" else REPO.parent / repo / "README.md"
+    if not path.exists():
+        return None
     return {
         m.group(1).strip()
-        for m in re.finditer(r"^#{1,6} +(.+?)\s*$", README.read_text(encoding="utf-8"), re.M)
+        for m in re.finditer(r"^#{1,6} +(.+?)\s*$", path.read_text(encoding="utf-8"), re.M)
     }
 
 
-def pointers() -> list[tuple[Path, str]]:
-    """(file, section name) for every literal section pointer in the package.
+def pointers() -> list[tuple[Path, str, str]]:
+    """(file, target repo, section name) for every literal section pointer.
 
-    A capture holding a ``{`` is a pointer built at runtime from a constant, not a
-    heading name; it is skipped here and checked resolved by the first test below.
+    The repo is whichever ``Royale*`` is named in the same SENTENCE as the pointer,
+    defaulting to this one. protocol.py's data-missing error sends a reader to
+    RoyaleSim's README, not to this one, and checking it here passed only because both
+    repos happen to call the section Install. A pointer checked against the wrong
+    document is a pointer that is not checked.
+
+    Sentence-scoped rather than "the nearest name within N characters", which was the
+    first attempt and read the workspace-layout comment -- a list of all five repos
+    ending in RoyaleLearn, then a semicolon, then a pointer at THIS repo's README -- as
+    a pointer into RoyaleLearn. Proximity is not reference.
+
+    A capture holding a ``{`` is built at runtime from a constant, not a heading name;
+    it is skipped here and checked resolved by the first test below.
     """
     found = []
     for path in SOURCES:
         text = path.read_text(encoding="utf-8")
         for form in POINTER_FORMS:
-            found.extend(
-                (path, m.group(1)) for m in form.finditer(text) if "{" not in m.group(1)
-            )
+            for m in form.finditer(text):
+                if "{" in m.group(1):
+                    continue
+                sentence = re.split(r"[.;]", text[max(0, m.start() - 300) : m.start()])[-1]
+                named = re.findall(r"\bRoyale[A-Z]\w+", sentence)
+                found.append((path, named[-1] if named else "RoyaleGym", m.group(1)))
     return found
 
 
@@ -87,6 +129,7 @@ def test_the_install_section_named_by_the_import_error_exists() -> None:
     This is the assertion that would have been red for the whole life of the defect.
     """
     headings = readme_headings()
+    assert headings is not None
     assert INSTALL_SECTION in headings, (
         f"rust_engine.INSTALL_SECTION is {INSTALL_SECTION!r} and README.md has no such "
         f"heading. It has: {sorted(headings)}"
@@ -95,12 +138,20 @@ def test_the_install_section_named_by_the_import_error_exists() -> None:
     assert "README.md" in INSTALL_POINTER
 
 
-@pytest.mark.parametrize(("path", "section"), pointers(), ids=lambda v: getattr(v, "name", v))
-def test_every_section_pointer_in_the_source_names_a_real_heading(path: Path, section: str) -> None:
-    headings = readme_headings()
+@pytest.mark.parametrize(
+    ("path", "repo", "section"), pointers(), ids=lambda v: getattr(v, "name", v)
+)
+def test_every_section_pointer_in_the_source_names_a_real_heading(
+    path: Path, repo: str, section: str
+) -> None:
+    headings = readme_headings(repo)
+    if headings is None:
+        # Visible, with its reason. A silent skip here would read as a pass, which is
+        # the failure this whole file is about.
+        pytest.skip(f"{repo} is not checked out beside this repo, so its README cannot be read")
     assert section in headings, (
-        f"{path.relative_to(REPO)} points at README.md section {section!r}, which does "
-        f"not exist. README.md has: {sorted(headings)}"
+        f"{path.relative_to(REPO)} points at {repo}'s README section {section!r}, which "
+        f"does not exist. That README has: {sorted(headings)}"
     )
 
 
@@ -108,14 +159,19 @@ def test_the_scan_finds_the_references_it_is_guarding() -> None:
     """The vacuity guard.
 
     Find zero pointers and every parametrised case above vanishes, leaving a file that
-    passes by testing nothing. Two literal ones are there today: protocol.py's
-    workspace-layout comment and test_parity_hardening.py's module docstring. The
-    import error's own is built from a constant, so it carries a placeholder here and
-    is checked resolved, one test up.
+    passes by testing nothing. Three literal ones are there today: protocol.py's
+    workspace-layout comment, protocol.py's data-missing error -- which points into
+    RoyaleSim -- and test_parity_hardening.py's module docstring. The import error's own
+    is built from a constant, so it carries a placeholder here and is checked resolved,
+    one test up.
+
+    It also pins that a pointer into ANOTHER repo is still seen. The scan was scoped to
+    this repo's README once, and the cross-repo pointer passed under it by coincidence.
     """
     found = pointers()
-    assert len(found) >= 2, f"expected the known literal pointers, found {found}"
-    assert {p.name for p, _ in found} >= {"protocol.py", "test_parity_hardening.py"}
+    assert len(found) >= 3, f"expected the known literal pointers, found {found}"
+    assert {p.name for p, _, _ in found} >= {"protocol.py", "test_parity_hardening.py"}
+    assert {repo for _, repo, _ in found} >= {"RoyaleGym", "RoyaleSim"}
 
 
 def test_the_build_command_in_the_error_matches_the_one_in_the_readme() -> None:
