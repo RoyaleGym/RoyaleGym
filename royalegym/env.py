@@ -36,6 +36,14 @@ EPISODE STATISTICS
     ``EPISODE_STAT_KEYS`` names them. ``outcome`` and ``winner`` are there too, as
     before, but only when the engine ended the battle: a truncation has no winner.
 
+    It also carries the reward TERM BY TERM, as ``reward_sum/<TermName>`` summed
+    over the episode for that seat. That is the number which says which term a
+    policy is actually chasing, and without it a run logs one scalar and cannot tell
+    a win from a well-farmed shaping term. Those keys follow the reward function's
+    own terms rather than a fixed list, which is why they are not in
+    ``EPISODE_STAT_KEYS``. ``log_reward_terms=True`` adds the same breakdown every
+    STEP as ``reward/<TermName>``, for watching one battle rather than training.
+
 THE VIEWER
     ``ClashParallelEnv`` publishes only when it is HANDED a publisher, and reads no
     environment variable of its own: N envs each binding the viewer's one fixed UDP
@@ -180,6 +188,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         truncation_cond: DoneCondition | None = None,
         state_mutator: StateMutator | None = None,
         decision_ms: int = 500,
+        log_reward_terms: bool = False,
         render_mode: str | None = None,
         recorder: ReplayRecorder | None = None,
         viser: ViserPublisher | None = None,
@@ -212,6 +221,10 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self.truncation: DoneCondition | None = truncation_cond
         self.state_mutator = state_mutator or DefaultStateMutator()
         self.decision_ms = decision_ms
+        # Per-STEP reward terms in info. The per-episode sums are always there and
+        # cost nothing; this adds one key per term per step, which a beginner
+        # watching a battle wants and a training run at scale does not.
+        self.log_reward_terms = log_reward_terms
         self.render_mode = render_mode
         self.recorder = recorder
         # RoyaleViser (viser.py): one publish per reset/step, and only while a viewer is
@@ -245,6 +258,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self._episode_steps = 0
         self._start_tick = 0
         self._leak_steps = dict.fromkeys(TEAMS, 0)
+        self._term_sums: dict[int, dict[str, float]] = {t: {} for t in TEAMS}
 
     # -- spaces -------------------------------------------------------------
 
@@ -296,6 +310,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self._episode_steps = 0
         self._start_tick = state.tick
         self._leak_steps = dict.fromkeys(TEAMS, 0)
+        self._term_sums = {t: {} for t in TEAMS}
         if self.recorder is not None:
             self.recorder.begin(self.engine, engine_seed, init)
         if self.viser is not None:
@@ -343,6 +358,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             a: float(self.reward_fn.get_reward(AGENT_TEAM[a], prev, state, results))
             for a in self.agents
         }
+        self._accumulate_terms()
         self._refresh(state)
         live = list(self.agents)
         obs = {a: self._obs[a] for a in live}
@@ -410,6 +426,13 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
     ) -> dict[str, Any]:
         info: dict[str, Any] = {"deploy_status": status, "tick": state.tick}
         team = AGENT_TEAM[agent]
+        if self.log_reward_terms:
+            terms_for = getattr(self.reward_fn, "terms_for", None)
+            step_terms = terms_for(team) if callable(terms_for) else {}
+            # Present at reset too, as zeros, so the key set does not change between
+            # reset and step -- gymnasium's info batching is happier that way.
+            for name in self._term_sums[team] or step_terms:
+                info[f"reward/{name}"] = float(step_terms.get(name, 0.0))
         if state.game_over:
             w = state.winner
             info["winner"] = w
@@ -417,6 +440,33 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         if terminal:
             info.update(self.episode_stats(state, team))
         return info
+
+    def _accumulate_terms(self) -> None:
+        """Sum this step's reward breakdown into the episode's, per seat.
+
+        A no-op for a reward that keeps no breakdown. ``CombinedReward`` keys its by
+        team (reward.py), which it has to: the env asks it once per seat on the same
+        transition, and a single flat dict would hold only the second seat's.
+        """
+        terms_for = getattr(self.reward_fn, "terms_for", None)
+        if not callable(terms_for):
+            return
+        for team in TEAMS:
+            into = self._term_sums[team]
+            for name, value in terms_for(team).items():
+                into[name] = into.get(name, 0.0) + float(value)
+
+    def reward_terms(self, team: int) -> dict[str, float]:
+        """This episode's reward, term by term, for one seat.
+
+        The number a training run plots and the one that says WHICH term a policy is
+        actually chasing. It reaches a trainer through the terminal info as
+        ``reward_sum/<TermName>`` -- and through ``final_info`` after an autoreset,
+        which is the only place it survives -- so nothing has to reach into the env
+        to get it. The keys follow the reward's own terms, so they are not in
+        ``EPISODE_STAT_KEYS``; the reward function is the authority on the set.
+        """
+        return dict(self._term_sums[team])
 
     def episode_stats(self, state: BattleState, team: int) -> dict[str, Any]:
         """How the episode that just ended went, from ``team``'s seat.
@@ -437,6 +487,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             "enemy_tower_hp_frac": tower_hp_frac(state, 1 - team),
             "elixir_leak_steps": self._leak_steps[team],
             "elixir_count_exact": _counts_are_exact(self.obs_builder, team),
+            **{f"reward_sum/{k}": v for k, v in self._term_sums[team].items()},
         }
 
     def config(self) -> dict[str, Any]:
@@ -458,6 +509,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             "env": class_name(self),
             "decision_ms": self.decision_ms,
             "decision_ticks": self.decision_ticks,
+            "log_reward_terms": self.log_reward_terms,
             "reveal": reveal.as_dict() if reveal is not None else None,
             "engine": component_config(self.engine),
             "obs_builder": component_config(self.obs_builder),

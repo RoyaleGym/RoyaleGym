@@ -30,6 +30,7 @@ import pytest
 
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import (
+    AGENT_TEAM,
     AGENTS,
     EPISODE_STAT_KEYS,
     ClashParallelEnv,
@@ -653,3 +654,110 @@ def test_a_zero_weight_term_cannot_change_the_default_reward():
     assert not any(
         isinstance(t, PlacementDepthReward) for t, _ in default_reward().terms
     ), "the shipped default must not answer the question the bot is meant to learn"
+
+
+# ---------------------------------------------------------------------------
+# 9. the reward breakdown reaches the trainer
+# ---------------------------------------------------------------------------
+
+
+def _played_out(**kwargs):
+    """A battle with real reward in it: towers take damage, so terms are non-zero."""
+    env = ClashParallelEnv(
+        engine=MockEngine(),
+        state_mutator=DefaultStateMutator(decks=[DECK, list(reversed(DECK))]),
+        truncation_cond=StepLimitCondition(120),
+        **kwargs,
+    )
+    obs, _ = env.reset(seed=5)
+    rng = np.random.default_rng(5)
+    totals = dict.fromkeys(AGENTS, 0.0)
+    infos = {}
+    while env.agents:
+        acts = {}
+        for a in env.agents:
+            legal = np.flatnonzero(obs[a]["action_mask"])[1:]
+            acts[a] = int(rng.choice(legal)) if legal.size and rng.random() < 0.45 else 0
+        obs, rew, _, _, infos = env.step(acts)
+        for a in AGENTS:
+            totals[a] += rew[a]
+    return env, totals, infos
+
+
+def test_the_episode_reward_breakdown_sums_to_the_return():
+    """One scalar cannot tell a win from a well-farmed shaping term."""
+    env, totals, infos = _played_out()
+    for agent, team in AGENT_TEAM.items():
+        terms = {k[len("reward_sum/") :]: v for k, v in infos[agent].items()
+                 if k.startswith("reward_sum/")}
+        assert terms, "no breakdown reached the terminal info"
+        assert set(terms) == {
+            "WinLossReward",
+            "CrownReward",
+            "TowerHPReward",
+            "ElixirTradeReward",
+        }
+        assert sum(terms.values()) == pytest.approx(totals[agent], abs=1e-6)
+        assert env.reward_terms(team) == pytest.approx(terms)
+    # vacuity: the battle really did produce reward, and not all from one term
+    blue = {k: v for k, v in infos["blue"].items() if k.startswith("reward_sum/")}
+    assert any(abs(v) > 1e-9 for v in blue.values()), f"nothing happened: {blue}"
+    assert sum(abs(v) > 1e-9 for v in blue.values()) >= 2, f"only one term moved: {blue}"
+
+
+def test_the_breakdown_is_per_seat_and_not_one_seat_twice():
+    _, _, infos = _played_out()
+    blue = {k: v for k, v in infos["blue"].items() if k.startswith("reward_sum/")}
+    red = {k: v for k, v in infos["red"].items() if k.startswith("reward_sum/")}
+    assert blue != red, "both seats reported the same breakdown"
+    # TowerHPReward is antisymmetric, so the two seats are negatives of each other
+    assert blue["reward_sum/TowerHPReward"] == pytest.approx(
+        -red["reward_sum/TowerHPReward"], abs=1e-6
+    )
+
+
+def test_the_breakdown_survives_autoreset_in_final_info():
+    """The only place it survives, which is where a training run reads it."""
+    vec = ClashSelfPlayVecEnv(
+        2,
+        lambda: ClashParallelEnv(
+            engine=MockEngine(),
+            state_mutator=DefaultStateMutator(decks=[DECK, DECK]),
+            truncation_cond=StepLimitCondition(4),
+        ),
+        viser=None,
+    )
+    vec.reset(seed=3)
+    for _ in range(4):
+        _, _, _, _, infos = vec.step(np.zeros(vec.num_envs, dtype=np.int64))
+    final = infos["final_info"]
+    keys = [k for k in final if k.startswith("reward_sum/")]
+    assert keys, sorted(final)
+    for key in keys:
+        assert final[key].shape == (vec.num_envs,)
+    vec.close()
+
+
+def test_per_step_terms_are_opt_in_and_stable_across_reset():
+    """A beginner watching one battle wants them; a training run does not pay for them."""
+    _, _, infos = _played_out()
+    assert not [k for k in infos["blue"] if k.startswith("reward/")]
+
+    env = ClashParallelEnv(
+        engine=MockEngine(),
+        state_mutator=DefaultStateMutator(decks=[DECK, DECK]),
+        truncation_cond=StepLimitCondition(4),
+        log_reward_terms=True,
+    )
+    _, at_reset = env.reset(seed=1)
+    _, _, _, _, after = env.step(dict.fromkeys(AGENTS, 0))
+    stepped = {k for k in after["blue"] if k.startswith("reward/")}
+    assert stepped == {
+        "reward/WinLossReward",
+        "reward/CrownReward",
+        "reward/TowerHPReward",
+        "reward/ElixirTradeReward",
+    }
+    # the key set must not appear and disappear between reset and step
+    assert {k for k in at_reset["blue"] if k.startswith("reward/")} in (set(), stepped)
+    assert env.config()["log_reward_terms"] is True
