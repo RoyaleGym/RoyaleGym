@@ -1,9 +1,9 @@
 # Observation spec
 
-Every channel and every vector slot a `royalegym` observation builder writes, what
-range it takes, and whether it is **fair** (something a person watching the match
-could write down) or a **reveal**, read out of the half of the state a player cannot
-see.
+This page is for contributors writing or reading observation code. It lists every
+channel and every vector slot a `royalegym` observation builder writes, the range each
+one takes, and whether it is **fair** (something a person watching the match could
+write down) or a **reveal**, read out of the half of the state a player cannot see.
 
 The code is `royalegym/obs.py`. This file is the reference. `vector_layout()`,
 `vector_offsets()`, `spatial_channels()` and `ObsBuilder.channel_names()` are the same
@@ -34,7 +34,7 @@ keep their indices, so turning a reveal on never moves a fair feature.
 
 | `Reveal` field | what it opens | cost |
 |---|---|---|
-| `enemy_elixir` | the opponent's bar, read from the state | **no new slot** — it swaps the source of the slot that already holds the count (§4) |
+| `enemy_elixir` | the opponent's bar, read from the state | **no new slot**: it swaps the source of the slot that already holds the count (§4) |
 | `enemy_hand` | the opponent's four hand slots | +4(n+1) vector slots |
 | `enemy_next_card` | the opponent's cycle position 5 | +(n+1) vector slots |
 | `enemy_deck` | as much of the opponent's deck as the state holds | +n vector slots |
@@ -44,17 +44,17 @@ keep their indices, so turning a reveal on never moves a fair feature.
 
 ---
 
-## 2. `SpatialObsBuilder` — `spatial`, float32 `[C, 32, 18]`
+## 2. `SpatialObsBuilder`: `spatial`, float32 `[C, 32, 18]`
 
 C = 20 fair, +1 with `Reveal.enemy_spell_aim`. Entities are rasterised into the tile
-containing their centre in the own frame; every plane is clipped to `[0, 64]`
+containing their centre in the own frame. Every plane is clipped to `[0, 64]`
 (`SPATIAL_CLIP`).
 
 | # | channel | range | meaning | fair? |
 |---|---|---|---|---|
 | 0 | `own_ground_troops` | 0..64 | count of own non-flying troops in the tile | fair |
 | 1 | `own_air_troops` | 0..64 | count of own flying troops | fair |
-| 2 | `own_buildings` | 0..64 | count of own **buildings** — crown towers excluded | fair |
+| 2 | `own_buildings` | 0..64 | count of own **buildings** (crown towers excluded) | fair |
 | 3 | `own_towers` | 0..64 | count of own crown towers by centre | fair |
 | 4 | `own_hp` | 0..64 | sum of own entity hp / 1000 | fair |
 | 5 | `enemy_ground_troops` | 0..64 | as 0, for the opponent | fair |
@@ -82,8 +82,8 @@ LIST ORDER).
 function of the arena alone (`water` and `no_deploy`, and nothing else), so a consumer
 that stores observations can hold those two once instead of once per transition. Read
 the declaration rather than deciding by sampling. `own_towers` and `enemy_towers` are
-constant on any sample in which no tower falls, because a crown tower never moves, and
-a consumer that concluded "static" from that would never see a tower destroyed. A test
+constant on any sample in which no tower falls, because a crown tower never moves. A
+consumer that concluded "static" from that would never see a tower destroyed. A test
 asserts exactly that.
 
 ### What is deliberately not here
@@ -91,9 +91,9 @@ asserts exactly that.
 * `own_troop_zone` and `own_building_zone` were deleted. The action space is
   `Discrete(2305)` = no-op + 4 hand slots × 18 × 32 tiles, so the **mask already
   states per-slot, per-tile legality exactly**. The zones were a coarser restatement
-  of it that cost two of the three `PlacementOracle.point_grid` calls the
+  of it. They cost two of the three `PlacementOracle.point_grid` calls the
   observation made per seat per step. Measured: 6.66 → 2.66 `point_grid` calls per
-  `env.step` (both seats). Measured by alternating the two trees three times in one session, because the absolute numbers move by a third with machine load while the comparison does not. The suite's own throughput report went 766 -> 953 `env.step`/s on the Rust engine and 475 -> 580 on `MockEngine` (medians of three rounds).
+  `env.step` (both seats). The measurement alternated the two trees three times in one session, because the absolute numbers move by a third with machine load while the comparison does not. The suite's own throughput report went 766 -> 953 `env.step`/s on the Rust engine and 475 -> 580 on `MockEngine` (medians of three rounds).
 * `enemy_troop_zone` stays. It is about the opponent's options and is in no mask.
 * A knockback channel. Under `knockback.DURATION_MS = 0` the push is instant and the
   timer reads 0 between ticks, so the plane would be a constant zero no coverage
@@ -113,14 +113,14 @@ last observation" is the feature a policy could actually use, but it is a differ
 thing: it depends on the decision rate and not only on the state. Recorded here rather
 than changed quietly.
 
-## 3. `mask_planes`, int8 `[4, 32, 18]` — both builders
+## 3. `mask_planes`, int8 `[4, 32, 18]`, both builders
 
 The flat `action_mask` with index 0 (the no-op) removed, reshaped. The action space
 is laid out as `1 + slot * ny * nx + y * nx + x`, so this is a **view**, not a
 recomputation: `mask_planes[slot, y, x] == action_mask[encode(slot, x, y)]`.
 
-`action_mask`, int8 `[2305]`, is still there for the policy head; the info dict no
-longer repeats it. Both are left out of `ClashParallelEnv.state()`. Legality is not
+`action_mask`, int8 `[2305]`, is still there for the policy head. The info dict no
+longer repeats it. `ClashParallelEnv.state()` leaves out both. Legality is not
 state, and a centralised critic does not need 2 304 duplicated numbers per seat.
 
 A parser whose action space is not a grid returns `None` from `mask_plane_shape()` and
@@ -133,12 +133,12 @@ the key is simply absent.
 All slots are clipped to `[0, 1]`. The offsets in the table are for n = 16, which is
 `MockEngine`'s default catalogue and what the test suite runs on. It is **not** the
 full card list, which is larger and gives a wider vector. Read offsets from
-`vector_offsets(n, reveal)`; never copy a number out of this table into code.
+`vector_offsets(n, reveal)`. Never copy a number out of this table into code.
 
 | slots (n=16) | field | size | range | meaning | fair? |
 |---|---|---|---|---|---|
 | 0 | `own_elixir` | 1 | 0..1 | own elixir / MAX_MANA | fair |
-| 1 | `enemy_elixir` | 1 | 0..1 | opponent's elixir / MAX_MANA — **counted**, see below | fair (source switches under `Reveal.enemy_elixir`) |
+| 1 | `enemy_elixir` | 1 | 0..1 | opponent's elixir / MAX_MANA (**counted**, see below) | fair (source switches under `Reveal.enemy_elixir`) |
 | 2–69 | `own_hand_cards` | 4(n+1) | 0/1 | hand slot card one-hot; index n = empty slot | fair |
 | 70–73 | `own_hand_cost` | 4 | 0..1 | hand slot elixir cost / MAX_MANA | fair |
 | 74–77 | `own_hand_affordable` | 4 | 0/1 | affordable right now | fair |
@@ -217,9 +217,9 @@ is not allowed to guess at. The moment the two disagree, `exact` goes False and 
 False for the match. Two things make that happen: a deck that repeats a card (a play
 that swaps a card for itself changes no hand slot, so it is unseen; a real deck is
 eight distinct cards), and an engine whose elixir law is not the one in
-`calibration.json`. The own bar is then resynced from the observed value so it stops
-drifting; the enemy count is left alone, because the only way to repair it would be to
-read it. A training run that wants the guarantee can assert `exact`.
+`calibration.json`. The builder then resyncs the own bar from the observed value so it
+stops drifting. It leaves the enemy count alone, because the only way to repair it
+would be to read it. A training run that wants the guarantee can assert `exact`.
 
 ### The cycle features
 
@@ -237,8 +237,8 @@ A card played goes to the back of an 8-card cycle. Hand is positions 1–4,
 ### The builder is stateful
 
 These features make the builder carry a `MatchMemory` per seat. Two guards keep one
-episode out of the next: `ObsBuilder.reset(state)`, which the env calls, re-seeds both
-seats; and `MatchMemory.observe` re-seeds whenever the clock moves **backwards**,
+episode out of the next. `ObsBuilder.reset(state)`, which the env calls, re-seeds both
+seats. And `MatchMemory.observe` re-seeds whenever the clock moves **backwards**,
 which can only be a new battle. `observe` is also idempotent by tick, so building the
 same state twice cannot drift. That is what lets the seat-flip and list-order gates
 build the same state dozens of times.
