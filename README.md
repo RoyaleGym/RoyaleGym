@@ -207,7 +207,7 @@ environment API over it (RLGym), a trainer on top (RLGym-PPO) and a viewer besid
 |---|---|---|
 | [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | the battle engine. Integer-only Rust. The same seed always gives the same battle. Its movement rules are measured against recordings of real battles | the engine `RustEngine` drives, and where the arena and card data comes from |
 | **RoyaleGym** (this repo) | the environment API: what the bot sees, what its moves mean, what it is rewarded for. Gymnasium, PettingZoo and self-play envs | package `royalegym`, which puts the five pieces together into the envs |
-| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | it runs on these envs. Real runs started on 2026-09-22. None has produced a bot yet, and no run so far shows a bot getting better |
+| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | it runs on these envs. Real runs started on 2026-09-22. None has produced a bot yet, and every run before that evening trained on a mis-aligned reward, which was fixed the same day |
 | [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | the viewer: recordings, engine traces and running environments, drawn in its own window | reads this package's recordings and its live UDP frames. The picture above is its window |
 | RoyaleLive | records real matches. It is private | nothing directly. Its recordings are what RoyaleSim is calibrated against, so the accuracy reaches your envs through the engine |
 
@@ -307,10 +307,12 @@ Open:
 - Default observations and rewards should be computed inside the engine, with the Python
   versions kept as the override for experiments. Until that is done, training time goes to
   building observations rather than to the battle.
-- RoyaleLearn runs on these envs. Its first real runs were on 2026-09-22. None has produced a bot
-  yet, and a defect in that harness, open on that date, means no run so far shows a bot getting
-  better. That is their side of the seam, not these envs, but it is the honest state of the only
-  trainer that uses them. The envs also expose `action_masks()` in the form
+- RoyaleLearn runs on these envs. Its first real runs were on 2026-09-22, and none has produced a
+  bot yet. On that day its authors found that a reward reached the learner one step after the move
+  that earned it, so every training number the project had produced described a different objective
+  than the one intended. It was fixed the same evening, and no run has been done since, so there is
+  still nothing to show. That is their side of the seam, not these envs, but it is the honest state
+  of the only trainer that uses them. The envs also expose `action_masks()` in the form
   sb3-contrib's MaskablePPO expects, if you would rather bring your own trainer.
 - `MockEngine` is a stand-in, not a second simulator. Spells resolve instantly, there are no
   stuns or knockbacks, and cards run at their base level. Anything about how faithful the game
