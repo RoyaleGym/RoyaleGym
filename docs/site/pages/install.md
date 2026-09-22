@@ -325,23 +325,26 @@ cd RoyaleSim
 
 ```
 winner: RED
-crowns: [0, 2]
-final_tick: 3600
-troops: 61
+crowns: [2, 3]
+final_tick: 2968
+troops: 46
 [OK ] determinism: re-simulated hash-for-hash on a fresh engine
-[OK ] vacuity: 3601 frames (floor 50); blue accepted 24 deploys; red accepted 23 deploys; ...
+[OK ] vacuity: 2969 frames (floor 50); blue accepted 18 deploys; red accepted 17 deploys; ...
 [OK ] arena: trace grid == data/derived/arena.json (64x36 half-cells)
-[OK ] dry: 138 of 37819 ground entity positions on water (the live game allows it; bound 5 %)
-[OK ] render: battle.html, 2440450 bytes, 3601 frames, self-contained
+[OK ] dry: 74 of 27489 ground entity positions on water (the live game allows it; bound 5 %)
+[OK ] render: battle.html, 1841257 bytes, 2969 frames, self-contained
 EVERY GATE GREEN.
 ```
 
-That took 2.07 seconds, a whole three minute match and five checks on it.
+That took about two seconds: a whole match and five checks on it.
 
-You should get that battle. The tool's `--seed` defaults to 1, so the winner, the crowns and
-the troop count above are what a fresh install produces, and a difference means something is
-wrong rather than nothing. Only the timing moves. Pass `--seed 7` for a different battle.
-The five `[OK ]` lines say, In order: the battle replayed on a fresh engine and every board
+**Do not expect the winner and the counts to match.** The tool deals each side a random deck out
+of the card table your clone built, so a `--vintage 2018` install plays a different battle from
+the one above, which used the 15.535 table. `--seed` defaults to 1, so the same checkout does
+repeat the same battle, and `--seed 7` gives you another.
+
+**The five `[OK ]` lines are the part that should be green on any install.** That is what to
+check. In order: the battle replayed on a fresh engine and every board
 hash came back identical, both sides actually deployed and fought rather than standing still, the
 arena the battle was played on matches the arena file, ground units stayed out of the water, and
 the HTML page it wrote holds every frame and needs nothing else to open.

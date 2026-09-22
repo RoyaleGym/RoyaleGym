@@ -391,7 +391,28 @@ FIGURES = {
     "snapshots": ("RoyaleSim", "snapshots.png"),
     "ledger": ("RoyaleSim", "ledger.png"),
     "action_mask": ("RoyaleLearn", "ppo-learner.png"),
+    # RoyaleGym's showcase grid, the eight tiles on its front page.
+    "two_apis": ("RoyaleGym", "two-apis.png"),
+    "legality_mask": ("RoyaleGym", "legality-mask.png"),
+    "self_play_batch": ("RoyaleGym", "self-play-batch.png"),
+    "five_pieces": ("RoyaleGym", "five-pieces.png"),
+    "start_anywhere": ("RoyaleGym", "start-anywhere.png"),
+    "record_and_verify": ("RoyaleGym", "record-and-verify.png"),
+    "replay_page": ("RoyaleGym", "replay-page.png"),
+    "hidden_information": ("RoyaleGym", "hidden-information.png"),
 }
+
+
+def unreachable() -> list[str]:
+    """Every _shot_ module on disk that nothing in FIGURES can reach.
+
+    Eight of these sat unreachable for hours. The modules existed, the READMEs embedded
+    the placeholders they were written to replace, and --list named neither, so nothing
+    anywhere said the work was undone. A registry that cannot report its own gaps is
+    worse than no registry.
+    """
+    on_disk = {q.stem[len("_shot_"):] for q in HERE.glob("_shot_*.py")}
+    return sorted(on_disk - set(FIGURES))
 
 
 def _figure(name: str):
@@ -447,6 +468,12 @@ def main(argv: list[str] | None = None) -> int:
         print("\nnot made here:")
         for name, why in NOT_MADE.items():
             print(f"  {name:20s} {why}")
+        orphans = unreachable()
+        if orphans:
+            print("")
+            print("WARNING: _shot_ modules nothing can reach, so nothing regenerates them:")
+            for name in orphans:
+                print(f"  _shot_{name}.py")
         return 0
 
     sys.path.insert(0, str(HERE))

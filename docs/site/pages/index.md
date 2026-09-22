@@ -80,9 +80,11 @@ the environments, so you have something to play against from your first minute.
 
     ---
 
-    Every observation tells your bot which of the 2305 card and tile moves it can actually play
-    right now. On the first step of a battle, 691 of the 2305 are. Your bot never wastes a
-    decision on a card it cannot afford.
+    Every observation tells your bot which of the 2305 card and tile moves it can actually
+    play right now. How many that is depends on the deck and on what is in hand: on the first
+    step of the Try-it battle it is 1605 for each player, and with randomly dealt decks it was
+    691 for one seat and 1259 for the other. Your bot never wastes a decision on a card it
+    cannot afford.
 
 -   **A battle you can watch, not guess at**
 

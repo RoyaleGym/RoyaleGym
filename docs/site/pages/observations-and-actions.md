@@ -219,13 +219,13 @@ and waiting is just picking index 0.
 The second half of that program printed this:
 
 ```
-step   1  legal actions  1605  elixir 5.00
-step  20  legal actions     1  elixir 2.39
-step  60  legal actions   459  elixir 3.54
+step   1  legal actions  1605  elixir 5.18
+step  20  legal actions     1  elixir 2.57
+step  60  legal actions   459  elixir 3.71
 ```
 
 Read the middle line. At step 20 exactly one action was legal, and that one is the wait
-action. The player had 2.39 elixir and the four cards in hand were Giant, Cannon, Minions
+action. The player had 2.57 elixir and the four cards in hand were Giant, Cannon, Minions
 and Archer, the cheapest of them 3. The deck does hold a 2 cost card, Zap, and it was not in
 hand at that moment, which is the whole point: what you can afford depends on the four cards
 you happen to be holding, not on the eight you chose. Without a mask your bot would spend

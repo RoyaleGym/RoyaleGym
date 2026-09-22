@@ -112,20 +112,24 @@ all five checks came back green:
 
 ```
 winner: RED
-crowns: [0, 2]
-final_tick: 3600
-troops: 61
+crowns: [2, 3]
+final_tick: 2968
+troops: 46
 [OK ] determinism: re-simulated hash-for-hash on a fresh engine
-[OK ] vacuity: 3601 frames (floor 50); blue accepted 24 deploys; red accepted 23 deploys; ...
+[OK ] vacuity: 2969 frames (floor 50); blue accepted 18 deploys; red accepted 17 deploys; ...
 [OK ] arena: trace grid == data/derived/arena.json (64x36 half-cells)
-[OK ] dry: 138 of 37819 ground entity positions on water (the live game allows it; bound 5 %)
-[OK ] render: battle.html, 2440450 bytes, 3601 frames, self-contained
+[OK ] dry: 74 of 27489 ground entity positions on water (the live game allows it; bound 5 %)
+[OK ] render: battle.html, 1841257 bytes, 2969 frames, self-contained
 EVERY GATE GREEN.
 ```
 
-You get that battle, not a different one: `--seed` defaults to 1. Only the timings move, so a
-difference in the result is a signal rather than noise. Pass `--seed N` for another battle and
-`--open` to open the page in a browser.
+Expect different numbers from these. The tool deals each side a random deck out of the card
+table your clone built, and the run above used the 15.535 table, so a `--vintage 2018` install
+plays a different battle. `--seed` defaults to 1, so one checkout repeats its own battle;
+`--seed N` gives another, and `--open` opens the page in a browser.
+
+The five `[OK ]` lines are the part that is the same everywhere, and they are what the tool is
+for.
 
 ## When you would touch it
 
