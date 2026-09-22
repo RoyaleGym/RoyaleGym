@@ -56,9 +56,9 @@ import msgspec
 # Paths and data loading
 # --------------------------------------------------------------------------
 
-# The folder holding the sibling checkouts (RoyaleSim, RoyaleGym, RoyaleViser, RoyaleLive,
-# RoyaleLearn side by side; README.md "Setup"). Since 2026-09-21 each is its own repo, so this
-# is the workspace, not a repo root.
+# The folder holding the sibling checkouts (RoyaleSim, RoyaleGym, RoyaleViser,
+# RoyaleLearn side by side; README.md, "Install"). Since 2026-09-21 each is its own
+# repo, so this is the workspace, not a repo root.
 WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 # The engine's data lives with the engine (the sibling RoyaleSim checkout's data/:
 # calibration.json, raw/, derived/), never as a copy in this package.

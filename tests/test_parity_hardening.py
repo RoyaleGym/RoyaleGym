@@ -26,7 +26,7 @@ WHAT IT CANNOT CATCH:
     way: parity cannot see a rule neither side implements.
 
 The Rust tests need the compiled extension (``maturin develop --release`` in the sibling
-RoyaleSim checkout, README.md "Setup") and are skipped with the import error as the reason when it
+RoyaleSim checkout, README.md "Install") and are skipped with the import error as the reason when it
 is absent -- the same convention as tests/test_rust_engine.py. A skip is not a pass.
 """
 

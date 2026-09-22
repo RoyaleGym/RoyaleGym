@@ -94,14 +94,26 @@ from .protocol import (
     validate_setup,
 )
 
+# The section of THIS repo's README that walks the install end to end. Spelled once,
+# so the message below and the test that checks the heading is really there cannot
+# drift apart. It was "Setup" until 2026-09-22 and no README here ever had that
+# heading -- a dead pointer in the one message a reader reads when nothing works.
+INSTALL_SECTION = "Install"
+INSTALL_POINTER = f'the "{INSTALL_SECTION}" section of the RoyaleGym README.md'
+
 try:  # the extension is optional: the package must import without it
     import royalesim as _core  # type: ignore[import-not-found]  # compiled, no stubs
 except ImportError as _exc:  # pragma: no cover - exercised only on unbuilt trees
     _core = None
+    # The one pointer a reader gets at the moment the engine has not built, which is
+    # the moment they most need it to land somewhere. It names THIS repo's README and
+    # the heading it really has; test_rust_engine.py checks that the heading exists,
+    # because a pointer nothing reads is a pointer that rots quietly.
     CORE_IMPORT_ERROR: str | None = (
         f"royalesim is not built ({_exc}); run `maturin develop --release` in the "
-        "sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active "
-        "(README.md, Setup)"
+        "sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active. "
+        f"The card data has to be extracted BEFORE that build; {INSTALL_POINTER} "
+        "has both steps in order."
     )
 else:
     CORE_IMPORT_ERROR = None
