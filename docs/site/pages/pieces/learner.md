@@ -1,12 +1,12 @@
 # The learner
 
 [![repo](https://img.shields.io/badge/repo-RoyaleLearn-3776AB?style=flat-square&logo=python&logoColor=white)](https://github.com/RoyaleGym/RoyaleLearn)
-![status](https://img.shields.io/badge/training%20loop-closes%20on%20the%20self--test%20only-d29922?style=flat-square)
+![status](https://img.shields.io/badge/training%20loop-runs%20on%20the%20real%20engine-d29922?style=flat-square)
 ![tests](https://img.shields.io/badge/tests-green%2C%20and%20growing%20fast-2ea043?style=flat-square)
 ![torch](https://img.shields.io/badge/torch-optional%20extra-555?style=flat-square)
 
-**RoyaleLearn closed its training loop on 2026-09-22, and the configuration you would train
-with does not run yet.** Both halves matter, so here they are in order.
+**RoyaleLearn closed its training loop on 2026-09-22, and nobody has trained a bot with it
+yet.** Both halves matter, so here they are in order.
 
 The command runs end to end: rollouts, gradient steps, a checkpoint with its manifest, a
 snapshot in the opponent pool, and a `resume` that reloads it in a fresh process. It needs

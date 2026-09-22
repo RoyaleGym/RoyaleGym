@@ -193,7 +193,7 @@ for the learner.
   <img alt="pytest" src="https://img.shields.io/badge/pytest-green%2C%206%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Two-engine gate on a clean checkout" src="https://img.shields.io/badge/clean%20checkout%20gate-96%20passed%2C%200%20skipped-2ea043?style=flat-square">
-  <img alt="Trainer" src="https://img.shields.io/badge/trainer-self--test%20runs%2C%20real%20profile%20broken-d29922?style=flat-square">
+  <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
 </p>
 
 Working:

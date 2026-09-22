@@ -362,14 +362,22 @@ closed, a training run spends more time describing the battle than playing it.
     stand-in, with a `timestep_limit` of 96. It is a self-test that the loop closes, not a
     training run and not the real engine.
 
-    **The real profile does not currently run.** `laptop.json` uses `RustEngine` and a limit
-    of 100,000,000 timesteps. Run it and it clears every start-up gate and then stops in the
-    first collection round with `AssertionError: mask[NOOP] must be True on every row`. That
-    is a known open defect and someone is bisecting it. Checked here, not taken on report.
+    **The real profile now runs, and nobody has trained a bot with it.** `laptop.json` uses
+    `RustEngine` and a limit of 100,000,000 timesteps. Until a few hours ago it stopped in its
+    first collection round on a mask assertion; that was a worker failure being misread, and it
+    is fixed with a regression test. Checked here rather than taken on report: it now collects
+    a full round.
 
-    So the state tonight is: the self-test runs end to end, and the configuration you would
-    actually train with has a bug in front of it. Nothing on this page can tell you what a
-    real run costs, because nobody has been able to do one.
+        collected     228 cycles, 32832 timesteps in 178.8s (245 env steps/s); updating
+
+    Its author reports two complete iterations with metrics rows, which is the first time
+    anything real has trained in this project, and an iteration at that geometry taking about
+    nine minutes on a machine like this one.
+
+    Two iterations is a loop that works. It is not a result about learning, and a useful run
+    is many hours. So the honest state is that the machinery runs end to end and nobody yet
+    knows whether the bot it produces is any good. That is the thing left to find out, and it
+    is available to whoever does it first.
 
 Source for this section: RoyaleLearn's own README and its owner, on 2026-09-22.
 
@@ -396,6 +404,8 @@ Start with the middle two, not the last one.
         action layout 2304 actions exhaustive, mask planes checked on 1000 states
         engine build  calibration dbd052b6cdce build c3f431117e93 catalogue d6170aa68d21
         memory        projected total                  3292 MB
+                      free right now                    429 MB
+                      WARNING: the projection is 2862 MB over what is free.
         geometry      3 workers x 32 battles = 96 battles, 192 slots, 144 of them learner rows
         iteration     228 cycles for 32768 timesteps; credit horizon 38.6 s
 

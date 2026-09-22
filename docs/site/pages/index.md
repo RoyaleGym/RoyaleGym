@@ -5,7 +5,7 @@
   <img alt="Engine: Rust, same seed same battle" src="https://img.shields.io/badge/engine-Rust%2C%20same%20seed%20same%20battle-DEA584?style=flat-square&logo=rust&logoColor=white">
   <img alt="APIs: Gymnasium and PettingZoo" src="https://img.shields.io/badge/APIs-Gymnasium%20%2B%20PettingZoo-0b7285?style=flat-square">
   <img alt="Engine, environments and viewer: working" src="https://img.shields.io/badge/engine%2C%20envs%2C%20viewer-working-2ea043?style=flat-square">
-  <img alt="Trainer: being written" src="https://img.shields.io/badge/trainer-self--test%20runs%2C%20real%20profile%20broken-d29922?style=flat-square">
+  <img alt="Trainer: being written" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
   <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/badge/discord-join%20the%20server-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
 </p>
 
@@ -29,12 +29,11 @@ for over a network. You need Python and a compiler.
     the exact list of moves it is allowed to make, and a reward. The viewer draws any of it.
     You can run all of that tonight.
 
-    **New tonight, and not working yet on the real engine.** The training harness closed its
-    loop on 2026-09-22. Its self-test config runs end to end, on the pure-Python stand-in
-    engine for 96 timesteps. The profile you would actually train with clears every start-up
-    gate and then stops in its first collection round on a known defect. So a loop exists, and
-    nobody has trained a bot. Training also needs the torch extra, which the plain install
-    does not pull in.
+    **New on 2026-09-22, and nobody has trained a bot with it yet.** The training harness
+    closed its loop that day and the real profile has since completed iterations on the real
+    engine. An iteration takes about nine minutes on a laptop and a useful run is many hours,
+    so what exists is machinery that works rather than any result about learning. Training
+    needs the torch extra, which the plain install does not pull in.
 
     So today this is a very fast Clash Royale sandbox with a standard bot interface on it. If you
     want to write your own training loop, or wire it into a library you already use, you can start
