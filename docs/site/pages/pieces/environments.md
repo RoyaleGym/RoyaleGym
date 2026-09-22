@@ -231,8 +231,12 @@ and every slot is in
 
 ## Speed, and the honest caveat
 
-The suite's own throughput report here printed **957 env steps per second** on the Rust engine,
-with other jobs running on the machine. An env step is one decision for each player.
+The durable figure is a ratio: the Rust engine runs **1.16 to 1.38 times** the pure-Python
+stand-in, measured by alternating the two inside one process so that whatever the machine is
+doing it does to both. An env step is one decision for each player.
+
+Absolute rates on this hardware have ranged from 859 to 1812 env steps per second within a
+day, so take any single figure as an illustration rather than a target.
 
 Stepped directly, the same engine does tens of thousands of ticks a second. The gap is Python:
 on every single step it builds both players' observations and both players' legal-move lists.

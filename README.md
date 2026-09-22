@@ -13,7 +13,7 @@
   <img alt="Engine" src="https://img.shields.io/badge/engine-Rust%2C%20deterministic-DEA584?style=flat-square&logo=rust&logoColor=white">
   <img alt="Tick" src="https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square">
   <img alt="Action space" src="https://img.shields.io/badge/action%20space-2305%20moves-555?style=flat-square">
-  <img alt="Speed" src="https://img.shields.io/badge/env%20steps%2Fs-953%20on%202026--09--21-2ea043?style=flat-square">
+  <img alt="Speed" src="https://img.shields.io/badge/rust%20over%20mock-1.16%20to%201.38x-2ea043?style=flat-square">
 </p>
 
 **Make a Clash Royale bot.** You write a reward function in Python, which says what your bot
@@ -251,9 +251,14 @@ Working:
   `TerminationCondition` / `TruncationCondition` so that a settled result and a time-out are
   different things. The earlier names still import as aliases.
 
-**Speed: the throughput report printed 953 env steps per second on the Rust engine on
-2026-09-21, and 957 on 2026-09-22 with five other jobs on the machine.** An env step is one
-decision for each player, covering half a second of game time.
+**Speed: the Rust engine runs 1.16 to 1.38 times the pure-Python stand-in, measured by
+alternating the two inside one process.** That ratio is the durable number here, because
+whatever the machine is doing it does to both arms. An env step is one decision for each
+player, covering half a second of game time.
+
+The absolute rate is not durable and you should not plan against it. The same report on this
+one laptop has printed 953, 957, 859 and 1812 env steps per second depending on the hour and
+what else was running.
 
 How that was measured, and the rest of the numbers:
 

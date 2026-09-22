@@ -71,8 +71,10 @@ the environments, so you have something to play against from your first minute.
 
     ---
 
-    On a four core laptop with 8 GB of RAM: about 16,100 battles an hour on one worker process,
-    about 65,200 on six. A run that needs a million battles is an overnight job, not a fortnight.
+    Six worker processes give about four times what one does, and the fall-off past four is a
+    four core laptop running out of cores. On that laptop, with other things running, one
+    worker did about 16,100 three-minute battles an hour. Treat any absolute rate here as an
+    illustration; the ratio is the part that should hold for you.
 
 -   **Moves that are always legal**
 

@@ -71,7 +71,7 @@ You need the install from [Install](../install.md) first, up to and including th
 ```python
 import json, royalesim
 
-deck = ["Giant", "Knight", "Archers", "Musketeer", "Fireball", "Arrows", "Minions", "Goblins"]
+deck = ["Giant", "Knight", "Archers", "Musketeer", "Fireball", "Arrows", "Minions", "Zap"]
 b = royalesim.Battle(card_names=deck, slot_of_k=[[0, 1, 2], [0, 1, 2]])
 b.reset(seed=1, decks=[list(range(8))] * 2, shuffle=0, start_tick=0,
         elixir_milli=[10_000, 10_000], tower_hp=None, spawns=[])
@@ -175,17 +175,24 @@ There is a piece of arithmetic here worth keeping. A three-minute battle is 3,60
 hour is 3,600 seconds. So a ticks-per-second figure is also a battles-per-hour figure for one
 process. 51,582 ticks a second is 51,582 whole battles an hour on one core.
 
-RoyaleSim's README measures the same thing across worker processes:
+RoyaleSim's README measures how that scales across worker processes. The scaling is the part
+that should hold on your machine:
 
-| workers | battles / hour |
+| workers | speed-up over one worker |
 |---|---|
-| 1 | 16,100 |
-| 2 | 31,100 |
-| 4 | 49,300 |
-| 6 | 65,200 |
+| 1 | 1.00x |
+| 2 | 1.93x |
+| 4 | 3.06x |
+| 6 | 4.05x |
 
-What that means for you: a bot that needs a million battles is a fifteen-hour run, not a
-fortnight. You can start one before bed.
+The fall-off past four workers is four cores running out. The absolute rates behind those
+ratios, on that laptop with other programs running, were about 16,100 battles an hour on one
+worker and 65,200 on six. Treat those as an illustration: the same measurement on this hardware
+has moved by a factor of two inside one evening.
+
+What that means for you: overnight rather than a fortnight, on a laptop, for a run of the size
+people usually reach for. Nobody has trained a bot yet, so that is arithmetic on the battle rate
+rather than experience.
 
 **Accuracy.** Real matches are replayed in the engine and compared tick by tick. Leaving the six
 towers out, because towers do not move and counting them flatters the result: a unit is within a
