@@ -95,6 +95,8 @@ winner 0  crowns [1, 0]  tick 3600
 That is a whole match. Blue, player 0, took one of Red's princess towers. Tick 3600 is the full
 three minutes, so this battle ended in regulation, on crowns.
 
+These eight cards are here so the battle comes out the same on your machine as it did on ours. They are an example, not a recommendation, and seven of the eight are from the 18 cards whose behaviour is checked against recordings (`thin_slice` in `cards.json`). Any eight will do. Leave the deck out entirely and each team is dealt a random eight, which is the default.
+
 One env step is half a second of game time, which is 10 ticks. So each player made 360
 decisions. The whole battle takes well under a second of real time, and how far under depends
 entirely on what else your machine is doing. Timed four times each on 2026-09-22, a quiet run

@@ -49,6 +49,9 @@ Every command on this page is run from inside a repo folder, and the Python is
 Here is a complete program. It builds a battle, plays it to the end with both players choosing at
 random among their legal moves, and prints who won.
 
+!!! note "About the deck"
+    These eight cards are here so the battle comes out the same on your machine as it did on ours. They are an example, not a recommendation, and seven of the eight are from the 18 cards whose behaviour is checked against recordings (`thin_slice` in `cards.json`). Any eight will do. Leave the deck out entirely and each team is dealt a random eight, which is the default.
+
 ```python
 import numpy as np
 from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponent, RustEngine)
