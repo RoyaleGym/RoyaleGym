@@ -160,7 +160,7 @@ Open:
 Tests:
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 323 passed, 6 skipped, 5 failed (2026-09-21)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 342 passed, 6 skipped (2026-09-21)
 ..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
 ```
 
@@ -180,9 +180,10 @@ table generated from it, so its two engines are reading different data and every
 comparison would measure that rather than the engines — `rust_engine.catalogue_vintage_split` says
 so and the tests skip on it, naming both vintages. A skip is not a pass.
 
-The five failures are in the engine, not in this layer, and all five fail the same way on the tree
-before this one: a deliberately asymmetric deploy clamp whose symmetric arm the engine does not yet
-expose to Python. Tracked in RoyaleSim.
+There are no failures. The five that stood earlier on 2026-09-21 were one missing keyword: the
+engine's deploy clamp is measured per side and is deliberately not the rotation of itself, and its
+seat-symmetric arm had no way through to Python, so `SymmetricRustEngine` ran the rotation gates
+against the asymmetric one and they correctly reported an asymmetry that is real and intended.
 
 Read next: [`docs/architecture.md`](docs/architecture.md) (the layers, the engine contract, the
 action space, the module map, the conventions and why each is there),
