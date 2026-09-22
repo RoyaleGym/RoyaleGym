@@ -1,12 +1,19 @@
-"""State setters: how each episode begins.
+"""State mutators: how each episode begins.
 
-A setter returns either a ``MatchSetup`` (the engine builds a fresh battle from
+A mutator returns either a ``MatchSetup`` (the engine builds a fresh battle from
 it) or a ``Snapshot`` (the engine loads an exact saved state). All randomness
 comes from the ``np.random.Generator`` the env passes in, which is itself seeded
 from ``env.reset(seed=...)``, so a seeded reset is reproducible end to end.
 
 Curriculum is expressed here, not in the engine: start mid-game with a tower
 already down, start from a scripted defensive board, replay a saved position.
+
+The name is RLGym v2's. One difference from RLGym's mutators: a battle here is
+described whole (``MatchSetup`` is the complete starting state) and then handed
+to the engine, rather than edited in place, so mutators compose by *choice*
+(``WeightedStateMutator`` picks one per episode) rather than by chaining, and
+there is no ``MutatorSequence``. Variations on a start are subclasses of
+``DefaultStateMutator`` that fill in more of the ``MatchSetup``.
 """
 
 from __future__ import annotations
@@ -35,7 +42,7 @@ class Snapshot:
     blob: bytes
 
 
-class StateSetter(ABC):
+class StateMutator(ABC):
     @abstractmethod
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup | Snapshot:
         """Describe the next episode's starting state."""
@@ -47,7 +54,7 @@ def random_deck(rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[int
     return [int(c) for c in rng.choice(len(cards), size=DECK_SIZE, replace=False)]
 
 
-class DefaultStateSetter(StateSetter):
+class DefaultStateMutator(StateMutator):
     """A normal battle from tick 0.
 
     ``decks``: fixed [blue, red] decks; None draws a random 8-card deck per team.
@@ -79,13 +86,13 @@ class DefaultStateSetter(StateSetter):
         return MatchSetup(decks=self._decks(rng, cards), shuffle=int(shuffle))
 
 
-class MidGameStateSetter(DefaultStateSetter):
+class MidGameStateMutator(DefaultStateMutator):
     """Start partway through the match with randomised elixir and tower damage.
 
     Ticks and elixir are given as inclusive integer ranges. ``tower_down_prob``
     is the chance each princess tower starts destroyed (awarding the crown).
     Tower HP ranges are fractions in PERCENT of the engine's default max HP, which
-    the setter does not know -- so it is expressed as ``tower_hp_percent`` and
+    the mutator does not know -- so it is expressed as ``tower_hp_percent`` and
     converted using ``max_tower_hp`` supplied by the caller.
     """
 
@@ -129,7 +136,7 @@ class MidGameStateSetter(DefaultStateSetter):
         )
 
 
-class ScriptedBoardStateSetter(DefaultStateSetter):
+class ScriptedBoardStateMutator(DefaultStateMutator):
     """A fixed board: units already on the field (e.g. a defensive drill)."""
 
     def __init__(
@@ -159,35 +166,44 @@ class ScriptedBoardStateSetter(DefaultStateSetter):
         )
 
 
-class SnapshotStateSetter(StateSetter):
+class SnapshotStateMutator(StateMutator):
     """Resume from saved positions, sampled uniformly (e.g. mined from replays)."""
 
     def __init__(self, blobs: Sequence[bytes]) -> None:
         if not blobs:
-            raise ValueError("SnapshotStateSetter needs at least one snapshot")
+            raise ValueError("SnapshotStateMutator needs at least one snapshot")
         self.blobs = list(blobs)
 
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> Snapshot:
         return Snapshot(self.blobs[int(rng.integers(len(self.blobs)))])
 
 
-class WeightedStateSetter(StateSetter):
-    """Curriculum mix: pick a child setter by weight each episode.
+class WeightedStateMutator(StateMutator):
+    """Curriculum mix: pick a child mutator by weight each episode.
 
     ``set_weights`` lets a training loop anneal the mix (e.g. from scripted drills
     toward full games) without rebuilding the env.
     """
 
-    def __init__(self, setters: Sequence[tuple[StateSetter, float]]) -> None:
-        self.setters = [s for s, _ in setters]
-        self.set_weights([w for _, w in setters])
+    def __init__(self, mutators: Sequence[tuple[StateMutator, float]]) -> None:
+        self.mutators = [m for m, _ in mutators]
+        self.set_weights([w for _, w in mutators])
 
     def set_weights(self, weights: Sequence[float]) -> None:
         w = np.asarray(weights, dtype=np.float64)
-        if w.shape != (len(self.setters),) or (w < 0).any() or w.sum() <= 0:
-            raise ValueError("weights must be non-negative, one per setter, not all zero")
+        if w.shape != (len(self.mutators),) or (w < 0).any() or w.sum() <= 0:
+            raise ValueError("weights must be non-negative, one per mutator, not all zero")
         self.p = w / w.sum()
 
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup | Snapshot:
-        i = int(rng.choice(len(self.setters), p=self.p))
-        return self.setters[i].build(rng, cards)
+        i = int(rng.choice(len(self.mutators), p=self.p))
+        return self.mutators[i].build(rng, cards)
+
+
+# Kept for callers written before the rename.
+StateSetter = StateMutator
+DefaultStateSetter = DefaultStateMutator
+MidGameStateSetter = MidGameStateMutator
+ScriptedBoardStateSetter = ScriptedBoardStateMutator
+SnapshotStateSetter = SnapshotStateMutator
+WeightedStateSetter = WeightedStateMutator

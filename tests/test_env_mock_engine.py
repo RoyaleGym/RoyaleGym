@@ -10,6 +10,7 @@ import pytest
 
 from royalegym import mock_engine
 from royalegym.action import TileActionParser
+from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
@@ -26,8 +27,7 @@ from royalegym.protocol import (
     mirror_state,
 )
 from royalegym.selfplay import RandomLegalOpponent
-from royalegym.state_setter import DefaultStateSetter
-from royalegym.terminal import GameOverCondition, StepLimitCondition
+from royalegym.state_mutator import DefaultStateMutator
 
 DECK = list(range(8))  # Knight Archer Goblins Giant MiniPekka Musketeer Skeletons Minions
 ALL_TYPES_DECK = [0, 3, 7, 9, 10, 11, 13, 14]  # troop, tank, air, splash, building, 3 spells
@@ -289,8 +289,9 @@ def first_mirror_divergence(seed: int, max_steps: int = 400, noop_prob: float = 
     to the end. Returns a description of the first asymmetry, or None.
     """
     env = ClashParallelEnv(
-        state_setter=DefaultStateSetter(decks=[ALL_TYPES_DECK, ALL_TYPES_DECK], mirror=True),
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(max_steps)],
+        state_mutator=DefaultStateMutator(decks=[ALL_TYPES_DECK, ALL_TYPES_DECK], mirror=True),
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(max_steps),
     )
     obs, _ = env.reset(seed=seed)
     pol = {a: RandomLegalOpponent(noop_prob) for a in env.agents}

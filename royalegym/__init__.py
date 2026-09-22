@@ -4,8 +4,14 @@ Components (each an ABC with swappable implementations):
     ObsBuilder        obs.py           SpatialObsBuilder, EntityListObsBuilder
     ActionParser      action.py        TileActionParser (Discrete 2305), HalfTileActionParser
     RewardFunction    reward.py        WinLoss, Crown, TowerHP, ElixirTrade, ElixirLeak, Combined
-    TerminalCondition terminal.py      GameOver, StepLimit, TickLimit, FirstCrown, AnyCondition
-    StateSetter       state_setter.py  Default, MidGame, ScriptedBoard, Snapshot, Weighted
+    DoneCondition     done_condition.py  GameOver, FirstCrown (terminations); StepLimit,
+                                         TickLimit (truncations); Any, All (either role)
+    StateMutator      state_mutator.py   Default, MidGame, ScriptedBoard, Snapshot, Weighted
+
+A DoneCondition is used in one of two roles, termination (the outcome is decided)
+or truncation (the episode is cut); TerminationCondition and TruncationCondition
+are the role-declaring subclasses, and the envs take termination_cond and
+truncation_cond. The names are RLGym v2's.
 
 Environments (env.py): ClashParallelEnv (PettingZoo), ClashGymEnv (Gymnasium),
 ClashSelfPlayVecEnv (vectorised self-play). Engine contract: protocol.Engine;
@@ -19,6 +25,18 @@ render is deliberately NOT imported here: importing it from the package would ma
 """
 
 from .action import ActionParser, HalfTileActionParser, PlacementOracle, TileActionParser
+from .done_condition import (
+    AllCondition,
+    AnyCondition,
+    DoneCondition,
+    FirstCrownCondition,
+    GameOverCondition,
+    StepLimitCondition,
+    TerminalCondition,
+    TerminationCondition,
+    TickLimitCondition,
+    TruncationCondition,
+)
 from .env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv, make_gym_vec_env
 from .mock_engine import MockEngine
 from .obs import EntityListObsBuilder, ObsBuilder, SpatialObsBuilder
@@ -40,21 +58,19 @@ from .reward import (
 # extension and RustEngine() raises ImportError naming the build command.
 from .rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 from .selfplay import NoopOpponent, OpponentPool, RandomLegalOpponent
-from .state_setter import (
+from .state_mutator import (
+    DefaultStateMutator,
     DefaultStateSetter,
+    MidGameStateMutator,
     MidGameStateSetter,
+    ScriptedBoardStateMutator,
     ScriptedBoardStateSetter,
+    SnapshotStateMutator,
     SnapshotStateSetter,
+    StateMutator,
     StateSetter,
+    WeightedStateMutator,
     WeightedStateSetter,
-)
-from .terminal import (
-    AnyCondition,
-    FirstCrownCondition,
-    GameOverCondition,
-    StepLimitCondition,
-    TerminalCondition,
-    TickLimitCondition,
 )
 
 GYM_ENV_ID = "royalegym/ClashRoyale-v0"
@@ -73,13 +89,16 @@ __all__ = [
     "CORE_IMPORT_ERROR",
     "GYM_ENV_ID",
     "ActionParser",
+    "AllCondition",
     "AnyCondition",
     "ClashGymEnv",
     "ClashParallelEnv",
     "ClashSelfPlayVecEnv",
     "CombinedReward",
     "CrownReward",
+    "DefaultStateMutator",
     "DefaultStateSetter",
+    "DoneCondition",
     "ElixirLeakPenalty",
     "ElixirTradeReward",
     "Engine",
@@ -88,6 +107,7 @@ __all__ = [
     "GameOverCondition",
     "HalfTileActionParser",
     "IllegalActionPenalty",
+    "MidGameStateMutator",
     "MidGameStateSetter",
     "MockEngine",
     "NoopOpponent",
@@ -98,15 +118,21 @@ __all__ = [
     "ReplayRecorder",
     "RewardFunction",
     "RustEngine",
+    "ScriptedBoardStateMutator",
     "ScriptedBoardStateSetter",
+    "SnapshotStateMutator",
     "SnapshotStateSetter",
     "SpatialObsBuilder",
+    "StateMutator",
     "StateSetter",
     "StepLimitCondition",
     "TerminalCondition",
+    "TerminationCondition",
     "TickLimitCondition",
     "TileActionParser",
     "TowerHPReward",
+    "TruncationCondition",
+    "WeightedStateMutator",
     "WeightedStateSetter",
     "WinLossReward",
     "core_available",

@@ -40,7 +40,7 @@ from .protocol import (
 )
 
 if TYPE_CHECKING:
-    from .state_setter import Snapshot
+    from .state_mutator import Snapshot
 
 TRACE_FORMAT = "royalegym-trace"
 TRACE_VERSION = 1

@@ -12,7 +12,7 @@ the same seams for Rocket League.)
 | Layer | Owns | Language |
 |---|---|---|
 | RoyaleSim | the battle: pathfinding, targeting, collision, combat, spells, elixir, win conditions | Rust, exposed as the PyO3 module `royalesim` |
-| RoyaleGym | the environment API: observations, actions, rewards, state setters, terminal conditions, the Gymnasium / PettingZoo / vectorised self-play envs | Python |
+| RoyaleGym | the environment API: observations, actions, rewards, state mutators, done conditions, the Gymnasium / PettingZoo / vectorised self-play envs | Python |
 | RoyaleLearn | the training harness: rollout workers, PPO, the frozen-pool ladder, checkpoints, metrics | Python |
 | RoyaleViser | drawing a battle, in a separate process | Python (pygame) |
 
@@ -85,10 +85,22 @@ assert that the rotation holds *and* that the reflection does not.
 ## Composition, not configuration
 
 Every user-facing behaviour is an abstract base class with swappable implementations:
-`ObsBuilder`, `ActionParser`, `RewardFunction`, `TerminalCondition`, `StateSetter`, and the
+`ObsBuilder`, `ActionParser`, `RewardFunction`, `DoneCondition`, `StateMutator`, and the
 opponent policies used for self-play. Defaults are provided and none of them is special — a
 default is just the implementation that ships. A new default lands with a test that holds it
 to both engines.
+
+The names are RLGym v2's, so a reader coming from there meets the vocabulary they know. A
+`DoneCondition` is used in one of two roles: the env takes a `termination_cond`, which sets
+Gymnasium's `terminated` (the outcome is settled and the next state is worth nothing), and a
+`truncation_cond`, which sets `truncated` (the episode was cut and the next state is still
+worth bootstrapping from). Confusing the two biases every value estimate near the cut, so
+the shipped conditions declare their role as `TerminationCondition` or `TruncationCondition`
+subclasses and the env refuses one in the wrong slot. A `StateMutator` describes the whole
+starting state (`MatchSetup`, or a `Snapshot` to resume) and hands it to the engine; because
+it describes rather than edits, mutators compose by choice (`WeightedStateMutator` picks one
+per episode, and a training loop anneals the weights) rather than by chaining, which is why
+there is no `MutatorSequence` here.
 
 The design rationale for each family lives with the code:
 

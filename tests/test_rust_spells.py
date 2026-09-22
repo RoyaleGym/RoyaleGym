@@ -55,6 +55,7 @@ import pytest
 
 from royalegym import rust_engine as rust_engine_module
 from royalegym.action import PlacementOracle
+from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.obs import EntityListObsBuilder, SpatialObsBuilder
@@ -75,8 +76,7 @@ from royalegym.render import build_view, extract_view, render_html
 from royalegym.replay import ReplayRecorder, verify_trace
 from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, SymmetricRustEngine, core_available
 from royalegym.selfplay import RandomLegalOpponent
-from royalegym.state_setter import DefaultStateSetter
-from royalegym.terminal import GameOverCondition, StepLimitCondition
+from royalegym.state_mutator import DefaultStateMutator
 from test_rust_engine import TERRITORY_STATES, every_half_cell_point, rotation_divergence
 
 pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
@@ -490,8 +490,9 @@ def test_full_thin_slice_masked_rollout_never_rejected_and_casts_every_spell():
     env = ClashParallelEnv(
         engine=engine,
         obs_builder=EntityListObsBuilder(),
-        state_setter=DefaultStateSetter(decks=[deck_a, deck_b]),
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(10_000)],
+        state_mutator=DefaultStateMutator(decks=[deck_a, deck_b]),
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(10_000),
         decision_ms=250,
     )
     rng = np.random.default_rng(11)
@@ -554,8 +555,9 @@ def test_spell_replay_on_rust_verifies_and_renders_spell_objects():
     env = ClashParallelEnv(
         engine=engine,
         recorder=rec,
-        state_setter=DefaultStateSetter(decks=[deck, deck[::-1]]),
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(160)],
+        state_mutator=DefaultStateMutator(decks=[deck, deck[::-1]]),
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(160),
     )
     obs, _ = env.reset(seed=7)
     rng = np.random.default_rng(7)

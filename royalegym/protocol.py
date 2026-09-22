@@ -351,7 +351,7 @@ class BattleState(msgspec.Struct, frozen=True):
 class SpawnSpec(msgspec.Struct, frozen=True):
     """A unit or building placed on the board at reset, bypassing hand and elixir.
 
-    Deploy zones (territory, no-deploy, footprints) do NOT apply: a state setter
+    Deploy zones (territory, no-deploy, footprints) do NOT apply: a state mutator
     may put a troop anywhere a unit could stand. What does apply is one POSITION
     rule and one HP rule, ``spawn_violation``, and EVERY engine must refuse a spec
     that breaks either with ``ValueError`` naming the reason. See that function.
@@ -375,7 +375,7 @@ class SpawnSpec(msgspec.Struct, frozen=True):
 
 
 class MatchSetup(msgspec.Struct, frozen=True):
-    """Everything needed to start a battle. StateSetters produce these.
+    """Everything needed to start a battle. StateMutators produce these.
 
     WHAT IS REFUSED, WHAT IS CLAMPED (``setup_violation`` is the rule; every engine
     raises ``ValueError`` with its reason and LEAVES THE RUNNING BATTLE UNTOUCHED):

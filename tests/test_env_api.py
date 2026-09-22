@@ -46,12 +46,20 @@ from pettingzoo.test.state_test import test_parallel_env as pettingzoo_state_che
 
 import royalegym
 from royalegym.action import NOOP
+from royalegym.done_condition import (
+    AnyCondition,
+    DoneCondition,
+    GameOverCondition,
+    StepLimitCondition,
+    TerminationCondition,
+    TickLimitCondition,
+    TruncationCondition,
+)
 from royalegym.env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv, make_gym_vec_env
 from royalegym.obs import vector_fields
 from royalegym.protocol import DeployStatus, MatchSetup, ShuffleMode
 from royalegym.selfplay import NoopOpponent, RandomLegalOpponent
-from royalegym.state_setter import StateSetter
-from royalegym.terminal import GameOverCondition, StepLimitCondition
+from royalegym.state_mutator import StateMutator
 
 
 def with_warnings(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[Any, list[str]]:
@@ -83,7 +91,7 @@ def test_gymnasium_check_env_passes_without_warnings(opponent):
     assert caught == []
 
 
-class DriftingDecks(StateSetter):
+class DriftingDecks(StateMutator):
     """PLANT: episode setup drifts with a hidden call counter instead of the seeded rng.
 
     Deck k is card ids [k, k+8), so decks from different calls differ element-wise
@@ -101,11 +109,11 @@ class DriftingDecks(StateSetter):
 
 
 def test_plant_unseeded_episode_setup_is_caught_by_check_env():
-    env = make_gym(state_setter=DriftingDecks())
+    env = make_gym(state_mutator=DriftingDecks())
     with pytest.raises(AssertionError, match=r"reset\(seed=123\)` is non-deterministic"):
         check_env(env)
-    # The plant really ran: the setter was consulted for more than one episode.
-    assert env.parallel.state_setter.calls >= 2
+    # The plant really ran: the mutator was consulted for more than one episode.
+    assert env.parallel.state_mutator.calls >= 2
 
 
 class CountingOpponent:
@@ -150,7 +158,7 @@ def test_plant_space_copied_per_call_is_caught_by_parallel_api_test():
         def observation_space(self, agent):
             return copy.deepcopy(super().observation_space(agent))
 
-    env = CopiesSpaces(terminal_conditions=[GameOverCondition(), StepLimitCondition(3)])
+    env = CopiesSpaces(termination_cond=GameOverCondition(), truncation_cond=StepLimitCondition(3))
     assert env.observation_space("blue") is not env.observation_space("blue")
     with pytest.raises(AssertionError, match="exact same space object"):
         parallel_api_test(env, num_cycles=5)
@@ -163,9 +171,76 @@ def test_plant_missing_info_key_is_only_a_warning_so_warnings_must_fail():
             info.pop("red", None)
             return obs, rew, term, trunc, info
 
-    env = DropsRedInfo(terminal_conditions=[GameOverCondition(), StepLimitCondition(3)])
+    env = DropsRedInfo(termination_cond=GameOverCondition(), truncation_cond=StepLimitCondition(3))
     _, caught = with_warnings(parallel_api_test, env, num_cycles=5)
     assert any("Live agent was not given info" in w for w in caught), caught
+
+
+def test_done_conditions_feed_gymnasium_flags_by_role():
+    """terminated comes from termination_cond, truncated from truncation_cond, exclusively."""
+    env = ClashParallelEnv(
+        termination_cond=GameOverCondition(), truncation_cond=StepLimitCondition(3)
+    )
+    env.reset(seed=0)
+    flags = []
+    while env.agents:
+        _, _, term, trunc, _ = env.step({a: NOOP for a in env.agents})
+        flags.append((term["blue"], trunc["blue"]))
+    assert flags == [(False, False), (False, False), (False, True)]
+
+    class EndsNow(DoneCondition):
+        def is_done(self, state):
+            return True
+
+    # Both fire on the same step: a real ending dominates the cut.
+    env = ClashParallelEnv(termination_cond=EndsNow(), truncation_cond=StepLimitCondition(1))
+    env.reset(seed=0)
+    _, _, term, trunc, _ = env.step({a: NOOP for a in env.agents})
+    assert (term["blue"], trunc["blue"]) == (True, False)
+
+    # No truncation condition: the flag is never set.
+    env = ClashParallelEnv(termination_cond=EndsNow())
+    env.reset(seed=0)
+    assert env.step({a: NOOP for a in env.agents})[3] == {"blue": False, "red": False}
+
+
+def test_done_condition_roles_are_declared_and_enforced():
+    assert issubclass(GameOverCondition, TerminationCondition)
+    assert issubclass(StepLimitCondition, TruncationCondition)
+    assert issubclass(TickLimitCondition, TruncationCondition)
+    with pytest.raises(TypeError, match="truncation, not a termination"):
+        ClashParallelEnv(termination_cond=StepLimitCondition(3))
+    with pytest.raises(TypeError, match="termination, not a truncation"):
+        ClashParallelEnv(truncation_cond=GameOverCondition())
+    # AnyCondition is role-neutral, so it is accepted in either slot.
+    env = ClashParallelEnv(
+        termination_cond=AnyCondition([GameOverCondition()]),
+        truncation_cond=AnyCondition([StepLimitCondition(2), TickLimitCondition(10**9)]),
+    )
+    env.reset(seed=0)
+    env.step({a: NOOP for a in env.agents})
+    assert env.step({a: NOOP for a in env.agents})[3]["blue"] is True
+
+
+def test_names_from_before_the_rename_still_work():
+    assert royalegym.StateSetter is royalegym.StateMutator
+    assert royalegym.DefaultStateSetter is royalegym.DefaultStateMutator
+    assert royalegym.TerminalCondition is royalegym.DoneCondition
+    # The old flat list is split by declared role: StepLimit truncates, GameOver terminates.
+    env = ClashParallelEnv(
+        terminal_conditions=[GameOverCondition(), StepLimitCondition(2)],
+        state_setter=royalegym.DefaultStateSetter(),
+    )
+    assert isinstance(env.termination, GameOverCondition)
+    assert isinstance(env.truncation, StepLimitCondition)
+    env.reset(seed=0)
+    env.step({a: NOOP for a in env.agents})
+    _, _, term, trunc, _ = env.step({a: NOOP for a in env.agents})
+    assert (term["blue"], trunc["blue"]) == (False, True)
+    with pytest.raises(TypeError):
+        ClashParallelEnv(
+            terminal_conditions=[GameOverCondition()], termination_cond=GameOverCondition()
+        )
 
 
 def test_pettingzoo_parallel_seed_test_passes():
@@ -264,7 +339,9 @@ def first_divergence(a: list[dict], b: list[dict]) -> str | None:
 
 
 def short_parallel_env() -> ClashParallelEnv:
-    return ClashParallelEnv(terminal_conditions=[GameOverCondition(), StepLimitCondition(60)])
+    return ClashParallelEnv(
+        termination_cond=GameOverCondition(), truncation_cond=StepLimitCondition(60)
+    )
 
 
 def test_parallel_env_seeded_reset_replays_identically():
@@ -365,7 +442,9 @@ REGULATION_LEFT = _vector_offset("regulation time remaining")
 
 def test_selfplay_vec_env_is_seeded_masked_and_autoresets_same_step():
     def env_fn() -> ClashParallelEnv:
-        return ClashParallelEnv(terminal_conditions=[GameOverCondition(), StepLimitCondition(5)])
+        return ClashParallelEnv(
+            termination_cond=GameOverCondition(), truncation_cond=StepLimitCondition(5)
+        )
 
     runs = []
     for _ in range(2):

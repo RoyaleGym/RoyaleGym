@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 from royalegym import render
+from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
@@ -36,8 +37,7 @@ from royalegym.protocol import (
 from royalegym.render import RenderError, build_view, extract_view, parse_page, render_html
 from royalegym.replay import ReplayRecorder, load_trace, save_trace, verify_trace
 from royalegym.selfplay import RandomLegalOpponent
-from royalegym.state_setter import DefaultStateSetter
-from royalegym.terminal import GameOverCondition, StepLimitCondition
+from royalegym.state_mutator import DefaultStateMutator
 
 ALL_TYPES = [0, 3, 7, 9, 10, 11, 13, 14]
 
@@ -46,8 +46,9 @@ def _record(steps: int = 60, frame_every_tick: bool = True):
     rec = ReplayRecorder(frame_every_tick=frame_every_tick)
     env = ClashParallelEnv(
         recorder=rec,
-        state_setter=DefaultStateSetter(decks=[ALL_TYPES, ALL_TYPES[::-1]]),
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(steps)],
+        state_mutator=DefaultStateMutator(decks=[ALL_TYPES, ALL_TYPES[::-1]]),
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(steps),
     )
     obs, _ = env.reset(seed=2026)
     rng = np.random.default_rng(0)

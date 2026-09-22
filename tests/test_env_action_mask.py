@@ -18,6 +18,7 @@ from royalegym.action import (
     TileActionParser,
     mask_disagreements,
 )
+from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
@@ -30,8 +31,7 @@ from royalegym.protocol import (
     SpawnSpec,
 )
 from royalegym.selfplay import RandomLegalOpponent
-from royalegym.state_setter import DefaultStateSetter
-from royalegym.terminal import GameOverCondition, StepLimitCondition
+from royalegym.state_mutator import DefaultStateMutator
 
 # Knight Giant Cannon Log | Fireball Zap Minions Valkyrie -- all four placement types
 CANNON = 10
@@ -55,8 +55,9 @@ def test_action_space_is_documented_size():
 def test_masked_legal_actions_are_never_rejected(parser_cls):
     env = ClashParallelEnv(
         action_parser=parser_cls(),
-        state_setter=DefaultStateSetter(decks=[MIXED, MIXED_BARREL]),
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(600)],
+        state_mutator=DefaultStateMutator(decks=[MIXED, MIXED_BARREL]),
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(600),
         decision_ms=250,
     )
     rejected = []
@@ -298,7 +299,7 @@ def test_plant_mask_ignores_building_footprints(monkeypatch):
 
 def test_unmasked_illegal_action_is_rejected_and_costs_nothing():
     env = ClashParallelEnv(
-        state_setter=DefaultStateSetter(decks=[MIXED, MIXED], shuffle=ShuffleMode.NONE)
+        state_mutator=DefaultStateMutator(decks=[MIXED, MIXED], shuffle=ShuffleMode.NONE)
     )
     obs, _ = env.reset(seed=0)
     parser = env.action_parser

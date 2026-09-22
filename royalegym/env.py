@@ -1,10 +1,17 @@
 """Environments: PettingZoo ParallelEnv, Gymnasium single-agent wrapper, vectorised self-play.
 
 DECOMPOSITION
-    ObsBuilder, ActionParser, RewardFunction, TerminalCondition and StateSetter
-    are constructor arguments. Changing a reward or an observation is a Python
-    edit and never a recompile of the simulator, because that is where most
-    research iteration happens.
+    ObsBuilder, ActionParser, RewardFunction, StateMutator and two DoneConditions
+    (one in the termination role, one in the truncation role) are constructor
+    arguments. Changing a reward or an observation is a Python edit and never a
+    recompile of the simulator, because that is where most research iteration
+    happens.
+
+DONE FLAGS
+    Gymnasium's ``terminated`` comes from ``termination_cond`` (default
+    ``GameOverCondition``) and ``truncated`` from ``truncation_cond`` (default
+    none). Both are consulted every step so counters advance; a termination on
+    the same step as a truncation is reported as a termination only.
 
 TIMING
     One env step = one decision = ``decision_ms`` of game time, rounded UP to a
@@ -34,6 +41,13 @@ from gymnasium.vector.utils import batch_space, concatenate, create_empty_array
 from pettingzoo import ParallelEnv
 
 from .action import NOOP, ActionParser, TileActionParser
+from .done_condition import (
+    AnyCondition,
+    DoneCondition,
+    GameOverCondition,
+    TerminationCondition,
+    TruncationCondition,
+)
 from .mock_engine import MockEngine
 from .obs import ObsBuilder, SpatialObsBuilder
 from .protocol import (
@@ -49,8 +63,7 @@ from .protocol import (
 from .replay import ReplayRecorder
 from .reward import RewardFunction, default_reward
 from .selfplay import NoopOpponent, Opponent
-from .state_setter import DefaultStateSetter, Snapshot, StateSetter
-from .terminal import AnyCondition, GameOverCondition, TerminalCondition
+from .state_mutator import DefaultStateMutator, Snapshot, StateMutator
 from .viser import ViserPublisher, play_event
 
 AGENTS = ("blue", "red")
@@ -72,15 +85,31 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         obs_builder: ObsBuilder | None = None,
         action_parser: ActionParser | None = None,
         reward_fn: RewardFunction | None = None,
-        terminal_conditions: Sequence[TerminalCondition] | None = None,
-        state_setter: StateSetter | None = None,
+        termination_cond: DoneCondition | None = None,
+        truncation_cond: DoneCondition | None = None,
+        state_mutator: StateMutator | None = None,
         decision_ms: int = 500,
         render_mode: str | None = None,
         recorder: ReplayRecorder | None = None,
         viser: ViserPublisher | None = None,
+        # Kept for callers written before the rename.
+        terminal_conditions: Sequence[DoneCondition] | None = None,
+        state_setter: StateMutator | None = None,
     ) -> None:
         if render_mode is not None and render_mode not in self.metadata["render_modes"]:
             raise ValueError(f"render_mode {render_mode!r} not supported")
+        if terminal_conditions is not None:
+            if termination_cond is not None or truncation_cond is not None:
+                raise TypeError("pass termination_cond/truncation_cond or terminal_conditions")
+            termination_cond, truncation_cond = _split_by_role(terminal_conditions)
+        if state_setter is not None:
+            if state_mutator is not None:
+                raise TypeError("pass state_mutator or state_setter, not both")
+            state_mutator = state_setter
+        if isinstance(termination_cond, TruncationCondition):
+            raise TypeError(f"{type(termination_cond).__name__} is a truncation, not a termination")
+        if isinstance(truncation_cond, TerminationCondition):
+            raise TypeError(f"{type(truncation_cond).__name__} is a termination, not a truncation")
         self.engine: Engine = engine if engine is not None else MockEngine()
         self.action_parser = action_parser or TileActionParser()
         self.action_parser.bind(self.engine)
@@ -88,8 +117,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self.obs_builder.bind(self.engine, self.action_parser)
         self.reward_fn = reward_fn or default_reward()
         self.reward_fn.bind(self.engine)
-        self.terminal = AnyCondition(list(terminal_conditions or [GameOverCondition()]))
-        self.state_setter = state_setter or DefaultStateSetter()
+        self.termination: DoneCondition = termination_cond or GameOverCondition()
+        self.truncation: DoneCondition | None = truncation_cond
+        self.state_mutator = state_mutator or DefaultStateMutator()
         self.decision_ms = decision_ms
         self.render_mode = render_mode
         self.recorder = recorder
@@ -143,7 +173,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         cards = self.engine.cards()
         init: Any = options.get("setup") or options.get("snapshot")
         if init is None:
-            init = self.state_setter.build(self._np_random, cards)
+            init = self.state_mutator.build(self._np_random, cards)
         elif isinstance(init, bytes):
             init = Snapshot(init)
         engine_seed = int(self._np_random.integers(0, 2**63 - 1))
@@ -156,7 +186,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self.decision_ticks = max(1, -(-self.decision_ms // state.tick_ms))
         self.obs_builder.reset(state)
         self.reward_fn.reset(state)
-        self.terminal.reset(state)
+        self.termination.reset(state)
+        if self.truncation is not None:
+            self.truncation.reset(state)
         self.agents = list(self.possible_agents)
         self.last_results = []
         if self.recorder is not None:
@@ -191,7 +223,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         state = self.engine.state()
         self._state = state
         self.last_results = results
-        terminated, truncated = self.terminal.check(state)
+        terminated = self.termination.is_done(state)
+        truncated = self.truncation is not None and self.truncation.is_done(state)
+        truncated = truncated and not terminated
         status = {a: NO_COMMAND for a in self.agents}
         for agent, res in zip(owner, results, strict=True):
             status[agent] = res.status
@@ -299,6 +333,19 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
     def close(self) -> None:
         if self.viser is not None:
             self.viser.close()
+
+
+def _split_by_role(
+    conditions: Sequence[DoneCondition],
+) -> tuple[DoneCondition | None, DoneCondition | None]:
+    """One flat list into the two slots: declared truncations truncate, the rest terminate."""
+    terms = [c for c in conditions if not isinstance(c, TruncationCondition)]
+    truncs = [c for c in conditions if isinstance(c, TruncationCondition)]
+
+    def one(cs: list[DoneCondition]) -> DoneCondition | None:
+        return None if not cs else cs[0] if len(cs) == 1 else AnyCondition(cs)
+
+    return one(terms), one(truncs)
 
 
 def _state_layout(obs_space: gym.spaces.Space[Any]) -> tuple[list[str], gym.spaces.Box]:

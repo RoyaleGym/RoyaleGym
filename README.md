@@ -1,7 +1,7 @@
 # RoyaleGym
 
 Reinforcement-learning environments for **Clash Royale**. You write the parts that decide
-*what* to train — observations, actions, rewards, starting states, terminal conditions — in
+*what* to train — observations, actions, rewards, starting states, done conditions — in
 Python. The battle itself runs in a deterministic, integer-only Rust engine
 ([RoyaleSim](https://github.com/RoyaleGym/RoyaleSim)) whose constants are measured against
 recordings of the real game rather than guessed.
@@ -120,8 +120,16 @@ teams, seven tower states — so a silently wrong mask fails a test instead of a
 | `ObsBuilder` | `SpatialObsBuilder` (21-channel board + vector + mask), `EntityListObsBuilder` |
 | `ActionParser` | `TileActionParser` (`Discrete(2305)`), `HalfTileActionParser` |
 | `RewardFunction` | `WinLoss`, `Crown`, `TowerHP`, `ElixirTrade`, `ElixirLeak`, `IllegalAction`, `Combined` |
-| `StateSetter` | `Default`, `MidGame`, `ScriptedBoard`, `Snapshot`, `Weighted` (curriculum lives here) |
-| `TerminalCondition` | `GameOver`, `StepLimit`, `TickLimit`, `FirstCrown`, `Any` |
+| `StateMutator` | `Default`, `MidGame`, `ScriptedBoard`, `Snapshot`, `Weighted` (curriculum lives here) |
+| `DoneCondition` | terminations `GameOver`, `FirstCrown`; truncations `StepLimit`, `TickLimit`; `Any`, `All` |
+
+A `DoneCondition` is used in one of two roles, and the env takes one of each:
+`termination_cond` decides Gymnasium's `terminated` (the outcome is settled: a king fell, the
+clock ran out, a curriculum goal was met) and `truncation_cond` decides `truncated` (a step
+or tick budget was spent and the next state is still worth bootstrapping from). The shipped
+conditions declare their role by subclassing `TerminationCondition` or `TruncationCondition`,
+and the env refuses one passed in the wrong slot, because a budget cut reported as an ending
+biases every value estimate near it. The vocabulary is RLGym v2's.
 
 Observations are always in the acting player's **own frame**, so a mirrored battle yields a
 bit-identical observation for the other seat and one policy can play both. The seat symmetry
@@ -166,7 +174,7 @@ divergences: []
 ```
 
 `save_state` / `load_state` round-trips exactly, RNG included, so a position can be resumed
-for curriculum starts or search — which is what `SnapshotStateSetter` does.
+for curriculum starts or search — which is what `SnapshotStateMutator` does.
 
 **Watch it, off the hot path.** Turn that trace into a self-contained page with no engine and
 no server:
@@ -243,7 +251,7 @@ are public; RoyaleLive is private.
 | Repo | What it does | Language | Package |
 |---|---|---|---|
 | [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | The battle: pathfinding, targeting, collision, combat, spells, elixir, win conditions, on a deterministic integer-only tick loop. Its rules were measured against recordings of the real client and are scored case by case: 751 of 752 published path node lists reproduced node for node, 0.9924 of unit-tick positions exact. Every constant in `data/calibration.json` carries the client version it was measured on. One PyO3 extension module, `royalesim`, that this repo's `RustEngine` wraps. | Rust + PyO3 | `royalesim` |
-| **RoyaleGym** (this repo) | The environment API. Compose `ObsBuilder`, `ActionParser`, `RewardFunction`, `StateSetter`, `TerminalCondition` and get Gymnasium / PettingZoo / vectorised self-play envs. Defaults are shipped for each, and the per-tick ones move into the engine so the common path never enters Python (see Status). | Python | `royalegym` |
+| **RoyaleGym** (this repo) | The environment API. Compose `ObsBuilder`, `ActionParser`, `RewardFunction`, `StateMutator`, `DoneCondition` and get Gymnasium / PettingZoo / vectorised self-play envs. Defaults are shipped for each, and the per-tick ones move into the engine so the common path never enters Python (see Status). | Python | `royalegym` |
 | [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | The training harness: vectorised self-play rollout workers, PPO learner, frozen-pool ladder with confidence intervals, checkpoints, metrics sink. | Python now; rollout workers move to Rust when they become the bottleneck | `royalelearn` |
 | [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | The viewer, a separate process never in the tick loop: replays recorded battles, engine traces and a running env (`python -m royaleviser`). The engine side is `royalegym.viser.ViserPublisher`. | Python (pygame) | `royaleviser` |
 | RoyaleLive (private) | The client instrument that records ground-truth traces from the real game, which calibrate RoyaleSim. | - | private |
@@ -268,27 +276,27 @@ out).
 
 ```
 royalegym/
-  protocol.py      the Engine contract (BattleState, MatchSetup, Calibration, Arena, DeployRules), data_dir()
-  env.py           ClashParallelEnv (PettingZoo), ClashGymEnv (Gymnasium, id royalegym/ClashRoyale-v0), ClashSelfPlayVecEnv
-  mock_engine.py   MockEngine, the pure-Python reference engine the RL layer is tested against
-  rust_engine.py   RustEngine over the compiled royalesim core; SymmetricRustEngine for the rotation-mirror gates
-  obs.py           ObsBuilder: SpatialObsBuilder, EntityListObsBuilder
-  action.py        ActionParser: TileActionParser (Discrete 2305), HalfTileActionParser; PlacementOracle (the legality mask)
-  reward.py        RewardFunction: WinLoss, Crown, TowerHP, ElixirTrade, ElixirLeak, IllegalAction, Combined
-  terminal.py      TerminalCondition: GameOver, StepLimit, TickLimit, FirstCrown, Any
-  state_setter.py  StateSetter: Default, MidGame, ScriptedBoard, Snapshot, Weighted
-  selfplay.py      OpponentPool, RandomLegalOpponent, NoopOpponent
-  replay.py        ReplayRecorder: records a trace; verify_trace re-runs it bit-for-bit
-  render.py        the offline HTML replay page (python -m royalegym.render trace.msgpack -o out.html)
-  viser.py         ViserPublisher, the engine side of RoyaleViser
-tests/             pytest: the env layer against MockEngine, and the Rust engine through RustEngine
-docs/              architecture.md (the design), background.md (what is known about the game's rules)
+  protocol.py       the Engine contract (BattleState, MatchSetup, Calibration, Arena, DeployRules), data_dir()
+  env.py            ClashParallelEnv (PettingZoo), ClashGymEnv (Gymnasium, id royalegym/ClashRoyale-v0), ClashSelfPlayVecEnv
+  mock_engine.py    MockEngine, the pure-Python reference engine the RL layer is tested against
+  rust_engine.py    RustEngine over the compiled royalesim core; SymmetricRustEngine for the rotation-mirror gates
+  obs.py            ObsBuilder: SpatialObsBuilder, EntityListObsBuilder
+  action.py         ActionParser: TileActionParser (Discrete 2305), HalfTileActionParser; PlacementOracle (the legality mask)
+  reward.py         RewardFunction: WinLoss, Crown, TowerHP, ElixirTrade, ElixirLeak, IllegalAction, Combined
+  done_condition.py DoneCondition: terminations GameOver, FirstCrown; truncations StepLimit, TickLimit; Any, All
+  state_mutator.py  StateMutator: Default, MidGame, ScriptedBoard, Snapshot, Weighted
+  selfplay.py       OpponentPool, RandomLegalOpponent, NoopOpponent
+  replay.py         ReplayRecorder: records a trace; verify_trace re-runs it bit-for-bit
+  render.py         the offline HTML replay page (python -m royalegym.render trace.msgpack -o out.html)
+  viser.py          ViserPublisher, the engine side of RoyaleViser
+tests/              pytest: the env layer against MockEngine, and the Rust engine through RustEngine
+docs/               architecture.md (the design), background.md (what is known about the game's rules)
 ```
 
 ## Tests
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 235 passed (~80 s; the Rust tests skip, not pass, without royalesim)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 238 passed (~80 s; the Rust tests skip, not pass, without royalesim)
 ..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
 ```
 
@@ -298,8 +306,8 @@ the viewer's decoder) and skips otherwise. A stale `royalesim` build is a failur
 ## Status
 
 Working: the full API shape (`ObsBuilder`, `ActionParser`, `RewardFunction`,
-`TerminalCondition`, `StateSetter`, the `Engine` protocol; the Gymnasium, PettingZoo and
-self-play vectorised envs), on both `MockEngine` and `RustEngine`, with the legality mask
+`DoneCondition` in its termination and truncation roles, `StateMutator`, the `Engine`
+protocol; the Gymnasium, PettingZoo and self-play vectorised envs), on both `MockEngine` and `RustEngine`, with the legality mask
 held to both engines at every half-cell.
 
 Open:
@@ -307,9 +315,6 @@ Open:
 - **Rust-backed default observations and rewards.** Today's defaults are Python, which caps
   throughput at roughly 520 env-steps/s against the engine's ~25 000 ticks/s. Until they move
   down into the engine, training spends its time in the observation builder.
-- **Naming.** `StateSetter` becomes `StateMutator`, and `TerminalCondition` splits into
-  `TerminationCondition` / `TruncationCondition` so that a natural end and a time-out stop
-  being the same thing. It is one rename pass with the tests, not a piecemeal change.
 
 ## Community
 

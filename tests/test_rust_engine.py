@@ -75,6 +75,7 @@ from royalegym.action import (
     TileActionParser,
     mask_disagreements,
 )
+from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
@@ -114,8 +115,7 @@ from royalegym.rust_engine import (
     territory_differences,
 )
 from royalegym.selfplay import RandomLegalOpponent
-from royalegym.state_setter import DefaultStateSetter
-from royalegym.terminal import GameOverCondition, StepLimitCondition
+from royalegym.state_mutator import DefaultStateMutator
 
 pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -250,8 +250,9 @@ def rollout_rejections(engine, steps: int, seed: int, snapshots: list[bytes] | N
     """Random masked play for both seats; every rejected masked-legal action."""
     env = ClashParallelEnv(
         engine=engine,
-        state_setter=DefaultStateSetter(decks=[DECK, list(reversed(DECK))]),
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(10_000)],
+        state_mutator=DefaultStateMutator(decks=[DECK, list(reversed(DECK))]),
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(10_000),
         decision_ms=250,
     )
     rng = np.random.default_rng(seed)
@@ -318,7 +319,8 @@ def test_replay_recorded_on_rust_verifies_and_vector_envs_run():
     env = ClashParallelEnv(
         engine=RustEngine(card_names=SHARED),
         recorder=rec,
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(60)],
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(60),
     )
     obs, _ = env.reset(seed=5)
     rng = np.random.default_rng(5)
@@ -977,8 +979,9 @@ def rotation_divergence(
         engine=engine_cls(card_names=deck),
         action_parser=parser_cls(),
         obs_builder=obs_builder_cls() if obs_builder_cls is not None else None,
-        state_setter=DefaultStateSetter(decks=[DECK, DECK], mirror=True),
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(steps)],
+        state_mutator=DefaultStateMutator(decks=[DECK, DECK], mirror=True),
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(steps),
     )
     obs, _ = env.reset(seed=seed)
     if act is None:
@@ -1325,7 +1328,7 @@ def spawn_spec(engine, name: str) -> SpawnSpec:
 @pytest.mark.parametrize("name", list(SPAWN_CASES))
 def test_spawn_rule_is_one_rule_on_both_engines(rust, mock, name):
     """MatchSetup spawns: without one shared rule, RustEngine raises on water or out
-    of bounds where MockEngine accepts, and a state setter valid on the mock crashes
+    of bounds where MockEngine accepts, and a state mutator valid on the mock crashes
     RustEngine.reset. Both run ``protocol.spawn_violation``: the same
     verdict, the same ValueError, the previous battle left intact on refusal, and an
     accepted spec lands exactly where and with the hp it asked for."""
@@ -1610,8 +1613,9 @@ def test_plant_mock_input_order_is_caught(mock, monkeypatch):
 def env_steps_per_second(engine, steps: int = 200) -> tuple[float, int, int]:
     env = ClashParallelEnv(
         engine=engine,
-        state_setter=DefaultStateSetter(decks=[DECK, list(reversed(DECK))]),
-        terminal_conditions=[GameOverCondition(), StepLimitCondition(10_000)],
+        state_mutator=DefaultStateMutator(decks=[DECK, list(reversed(DECK))]),
+        termination_cond=GameOverCondition(),
+        truncation_cond=StepLimitCondition(10_000),
     )
     obs, _ = env.reset(seed=1)
     rng = np.random.default_rng(1)
