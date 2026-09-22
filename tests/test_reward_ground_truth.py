@@ -345,20 +345,51 @@ CASES = [
     pytest.param("rust", RED, id="rust-red-leads", marks=needs_rust),
 ]
 
-# On the compiled engine, PlayerState.tower_max_hp is not the towers' own max_hp (a full
-# king reports 4824 hp of a 6144 maximum), and TowerHPReward and the episode's tower
-# fractions divide by tower_max_hp. So a king and a princess are scaled by different
-# factors, and a full tower is never 1. Strict, so the day the two agree this test says so.
-# Only a failed assertion is expected: an engine that cannot even load still fails here.
-TOWER_MAX_REASON = (
-    "the compiled engine reports PlayerState.tower_max_hp larger than the tower entities' "
-    "own max_hp, and the tower terms divide by tower_max_hp"
+# Until 2026-09-22 the compiled engine reported PlayerState.tower_max_hp on the CARD
+# ladder rather than the tower ladder, so a full king read 4824 of a 6144 maximum while
+# the tower terms divide by tower_max_hp: a king and a princess were scaled by different
+# factors and a full tower was never 1. These cases were strict expected failures naming
+# it, and they flipped to XPASS the day the engine started reporting the towers' own
+# maximum. They now run with no allowance on either engine.
+
+
+# Two allowances, both naming an open defect rather than hiding one, both strict so the
+# day the defect is fixed the test says so.
+#
+# RELOCATED, a DeployResult that reports the tap and not the unit. Since 2026-09-22 the
+# engine moves a building whose tile box does not fit to the nearest place it fits, and
+# DeployResult still carries the COMMANDED x and y. PlacementDepthReward reads those, so
+# it scores a point the building is not on (measured: -0.0721875 against a true
+# -0.0859375). Sim is adding the resolved position to the step result; when it lands,
+# PlacementDepthReward reads it and these pass.
+RELOCATED_REASON = (
+    "DeployResult carries the commanded position, and the engine now relocates a building "
+    "whose box does not fit, so a depth read from the command is not where the unit stands"
 )
-TOWER_XFAIL = pytest.mark.xfail(strict=True, raises=AssertionError, reason=TOWER_MAX_REASON)
-TOWER_CASES = [
-    p if p.values[0] == "mock" else pytest.param(*p.values, id=p.id, marks=[*p.marks, TOWER_XFAIL])
-    for p in CASES
-]
+RELOCATED_XFAIL = pytest.mark.xfail(strict=True, raises=AssertionError, reason=RELOCATED_REASON)
+#
+# RED_LEADS_OUTCOME. The scripted scenario is not a mirror of itself (on MockEngine the
+# Blue-leader battle ends at tick 3600 and the Red-leader one at 4182), so "the leader
+# wins" is a claim about this scenario and not a symmetry property. On the compiled
+# engine the Red-leader battle now ends at regulation with Blue ahead, and it does so for
+# every reset seed 0..9, so it is structural rather than luck. The likely cause is the
+# tower-maximum fix of the same rebuild moving a tower-hp tiebreak. Reported to sim.
+# The scenario needs a leader advantage that does not rest on a tiebreak.
+RED_LEADS_REASON = (
+    "the scripted Red-leader battle no longer ends with Red ahead on the compiled engine, "
+    "for any reset seed; the leader's advantage rests on a tower-hp tiebreak that moved"
+)
+RED_LEADS_XFAIL = pytest.mark.xfail(strict=True, raises=AssertionError, reason=RED_LEADS_REASON)
+
+
+def only(cases, kind, leader, mark):
+    """``cases`` with ``mark`` added to the one (kind, leader) case."""
+    return [
+        pytest.param(*p.values, id=p.id, marks=[*p.marks, mark])
+        if p.values == (kind, leader)
+        else p
+        for p in cases
+    ]
 
 
 def mismatches(b: Battle, name: str):
@@ -375,7 +406,7 @@ def mismatches(b: Battle, name: str):
 # ---------------------------------------------------------------- the checks
 
 
-@pytest.mark.parametrize(("kind", "leader"), CASES)
+@pytest.mark.parametrize(("kind", "leader"), only(CASES, "rust", RED, RED_LEADS_XFAIL))
 def test_the_battle_ends_with_the_leader_winning_inside_the_window(kind, leader):
     b = battle(kind, leader)
     last = b.steps[-1].cur
@@ -408,7 +439,7 @@ def test_crown_reward_is_the_crown_difference_the_engine_records(kind, leader):
     assert mismatches(battle(kind, leader), "CrownReward") == []
 
 
-@pytest.mark.parametrize(("kind", "leader"), TOWER_CASES)
+@pytest.mark.parametrize(("kind", "leader"), CASES)
 def test_tower_reward_follows_the_tower_entities_hp_over_their_max(kind, leader):
     assert mismatches(battle(kind, leader), "TowerHPReward") == []
 
@@ -423,7 +454,7 @@ def test_leak_penalty_fires_only_while_the_bar_sits_at_the_engine_cap(kind, lead
     assert mismatches(battle(kind, leader), "ElixirLeakPenalty") == []
 
 
-@pytest.mark.parametrize(("kind", "leader"), CASES)
+@pytest.mark.parametrize(("kind", "leader"), only(CASES, "rust", RED, RELOCATED_XFAIL))
 def test_placement_depth_is_where_the_unit_stands_in_its_owners_frame(kind, leader):
     assert mismatches(battle(kind, leader), "PlacementDepthReward") == []
 
@@ -433,7 +464,7 @@ def test_illegal_action_penalty_counts_the_commands_that_placed_nothing(kind, le
     assert mismatches(battle(kind, leader), "IllegalActionPenalty") == []
 
 
-@pytest.mark.parametrize(("kind", "leader"), TOWER_CASES)
+@pytest.mark.parametrize(("kind", "leader"), only(CASES, "rust", RED, RELOCATED_XFAIL))
 def test_the_scalar_reward_is_the_weighted_sum_of_the_true_terms(kind, leader):
     """The number the learner actually receives, per seat, against the same quantities."""
     b = battle(kind, leader)

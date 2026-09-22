@@ -46,8 +46,8 @@ from test_reward_ground_truth import (
     CASES,
     DRAW_VALUE,
     LEADER_SCRIPT,
+    RELOCATED_XFAIL,
     TOL,
-    TOWER_XFAIL,
     TOWERS,
     TRAILER_SCRIPT,
     TRUTH,
@@ -56,6 +56,7 @@ from test_reward_ground_truth import (
     all_terms,
     battle,
     make_engine,
+    only,
     scenario_setup,
     scripted_action,
 )
@@ -63,14 +64,8 @@ from test_reward_ground_truth import (
 SEATS = (BLUE, RED)
 
 
-def with_tower_xfail(cases):
-    """The compiled engine's cases, expected to fail strictly on the tower maximum."""
-    return [
-        p
-        if p.values[0] == "mock"
-        else pytest.param(*p.values, id=p.id, marks=[*p.marks, TOWER_XFAIL])
-        for p in cases
-    ]
+# The tower_max_hp defect these cases allowed for was fixed in the engine on 2026-09-22,
+# so they run with no allowance on both engines.
 
 
 def summary(b: Battle, team: int) -> dict:
@@ -152,7 +147,7 @@ def test_the_summary_counts_the_episode_the_engine_ran(kind, leader, team):
     assert info["elixir_leak_steps"] == leak_steps(b, team)
 
 
-@pytest.mark.parametrize(("kind", "leader"), with_tower_xfail(CASES))
+@pytest.mark.parametrize(("kind", "leader"), CASES)
 def test_tower_fractions_are_the_tower_entities_hp_over_their_max(kind, leader):
     b = battle(kind, leader)
     end = final(b)
@@ -166,7 +161,13 @@ def test_tower_fractions_are_the_tower_entities_hp_over_their_max(kind, leader):
 def reward_sum_cases():
     out = []
     for name in sorted(TRUTH):
-        cases = with_tower_xfail(CASES) if name == "TowerHPReward" else CASES
+        # PlacementDepthReward sums a per-play depth read from DeployResult, which reports
+        # the tap rather than where a relocated building stands (RELOCATED_REASON).
+        cases = (
+            only(CASES, "rust", RED, RELOCATED_XFAIL)
+            if name == "PlacementDepthReward"
+            else CASES
+        )
         out += [pytest.param(*p.values, name, id=f"{p.id}-{name}", marks=p.marks) for p in cases]
     return out
 
