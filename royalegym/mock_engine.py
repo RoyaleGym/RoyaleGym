@@ -11,9 +11,10 @@ WHAT IT IS FOR
 WHAT IT IS NOT
     A fidelity claim. No unit collision, no projectile travel (ranged hits are
     instant), no stun/slow, spells hit once, splash is centred on the target, all
-    cards and towers at CSV base level, overtime that ends level is a draw (the
-    live game's lowest-tower-HP tiebreak is not modelled). None of this should be
-    used to argue about how the real game behaves.
+    cards and towers at CSV base level, overtime that ends level is decided by
+    calibration match.OVERTIME_TIEBREAK (the same rule table the Rust engine
+    reads; the rule itself is not yet measured on a recorded match). None of this
+    should be used to argue about how the real game behaves.
 
     ITS SPELL EFFECTS ARE NOT THE ENGINE'S. The Rust core (../RoyaleSim/crates/royalesim
     spell.rs) flies Fireball / Arrows / Goblin Barrel to their target, lands and
@@ -46,6 +47,7 @@ from __future__ import annotations
 import csv
 import hashlib
 from collections.abc import Sequence
+from fractions import Fraction
 from math import isqrt
 from pathlib import Path
 
@@ -82,6 +84,9 @@ from .protocol import (
     spawn_order_key,
     validate_setup,
 )
+
+# calibration match.OVERTIME_TIEBREAK candidates (the Rust core's OvertimeTiebreak enum).
+OVERTIME_TIEBREAK_RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction", "none_draw")
 
 # The card subset the mock supports. A mock design choice (a spread of placement
 # types, air/ground, splash, building-targeters), not a physics constant.
@@ -294,6 +299,11 @@ class MockEngine:
         self.king_activate_ticks = _ceil_div(cal.int("match.KING_ACTIVATE_TIME_MS"), self.tick_ms)
         self.regular_ticks = _ceil_div(cal.int("match.REGULAR_TIME_S") * 1000, self.tick_ms)
         self.overtime_ticks = _ceil_div(cal.int("match.OVERTIME_S") * 1000, self.tick_ms)
+        self.overtime_tiebreak = str(cal.value("match.OVERTIME_TIEBREAK"))
+        if self.overtime_tiebreak not in OVERTIME_TIEBREAK_RULES:
+            raise ValueError(
+                f"calibration match.OVERTIME_TIEBREAK {self.overtime_tiebreak!r} is not a rule"
+            )
         if not cal.bool("match.THREE_CROWN_INSTANT_WIN"):
             raise NotImplementedError("mock only implements THREE_CROWN_INSTANT_WIN = true")
         self.range_to_radius = cal.bool("targeting.ADD_CHARACTER_RANGE_TO_RADIUS")
@@ -1005,7 +1015,40 @@ class MockEngine:
                 s.overtime = True
         if s.overtime and not s.game_over and s.tick >= self.regular_ticks + self.overtime_ticks:
             s.game_over = True
-            s.winner = Winner.DRAW
+            s.winner = self._overtime_tiebreak(s)
+
+    def _overtime_tiebreak(self, s: _Sim) -> Winner:
+        """The verdict when overtime runs out level on crowns (calibration
+        match.OVERTIME_TIEBREAK, the Rust engine's state.rs overtime_tiebreak): each
+        side's key is its WEAKEST standing crown tower and the weaker weakest tower
+        loses; an exact tie is a draw. Absolute compares hp; fraction compares
+        hp/max_hp by exact cross-multiplication. Scalars per side, so the seat
+        rotation cannot enter."""
+        if self.overtime_tiebreak == "none_draw":
+            return Winner.DRAW
+        fraction = self.overtime_tiebreak == "lowest_tower_hp_fraction"
+
+        def weakest(team: int):
+            towers = [
+                (max(e.hp, 0), max(e.max_hp, 1))
+                for e in s.ents
+                if e.team == team and e.tower_slot >= 0
+            ]
+            if not towers:
+                return None
+            if fraction:
+                return min(towers, key=lambda t: Fraction(t[0], t[1]))
+            return min(towers, key=lambda t: t[0])
+
+        b, r = weakest(BLUE), weakest(RED)
+        if b is None or r is None:
+            if b is None and r is None:
+                return Winner.DRAW
+            return Winner.RED if b is None else Winner.BLUE
+        kb, kr = (Fraction(b[0], b[1]), Fraction(r[0], r[1])) if fraction else (b[0], r[0])
+        if kb == kr:
+            return Winner.DRAW
+        return Winner.BLUE if kb > kr else Winner.RED
 
     # --- geometry helpers (all tie-breaks in the acting team's own frame)
 

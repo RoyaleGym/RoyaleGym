@@ -203,6 +203,7 @@ class SpellMotion(enum.IntEnum):
     AIRBORNE = 1  # The Log before it lands and starts rolling
     ROLLING = 2  # The Log rolling toward ``aim`` (the roll's end point)
     AREA = 3  # an area effect sitting at its centre (Zap)
+    PULSING = 4  # an area effect that hits every HitSpeed until its life runs out (Poison)
 
 
 class EntityKind(enum.IntEnum):
@@ -298,14 +299,14 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # defaulted, so an engine that models no status effect (MockEngine) and a trace
     # recorded before status effects existed both decode with 0.
     stun_ticks: int = 0  # >0 while stunned (Zap): no move, no attack
-    knockback_ticks: int = 0  # >0 while a knockback slide is in progress (0 when instant)
+    knockback_ticks: int = 0  # >0 while a knockback (slide or ladder) still moves the unit
 
 
 class SpellState(msgspec.Struct, frozen=True, array_like=True):
     """A live spell object: cast and not yet finished (Rust core, py.rs ``state_json``).
 
     ENGINE frame, subtiles. ``aim`` is the landing point (FLIGHT, AIRBORNE), the roll's
-    END point (ROLLING) or the centre itself (AREA). A spell that resolves inside the
+    END point (ROLLING) or the centre itself (AREA, PULSING). A spell that resolves inside the
     tick it materialises never appears here -- MockEngine's spells all do, so its
     ``BattleState.spells`` is always empty (mock_engine.py WHAT IT IS NOT).
     """
@@ -317,7 +318,7 @@ class SpellState(msgspec.Struct, frozen=True, array_like=True):
     y: int
     aim_x: int
     aim_y: int
-    delay_ticks: int  # FLIGHT: ticks before it starts moving (0 otherwise)
+    delay_ticks: int  # FLIGHT: ticks before it starts moving; PULSING: ticks of life left
     travelled: int  # ROLLING: subtiles rolled so far (0 otherwise)
     length: int  # ROLLING: total roll length in subtiles (0 otherwise)
     hits: int  # ROLLING: units hit so far (0 otherwise)

@@ -224,8 +224,11 @@ class RustEngine:
         search, measured on client 16.402 (RoyaleLive traces), which is NOT seat-symmetric:
         rotated twins can take different equal-cost routes, as in the real game).
         ``"trace_fitted_astar"`` selects the frame-planned arm whose routes are exact
-        rotations; the rotation-mirror tests run under it so they keep measuring the symmetry
-        of everything else."""
+        rotations -- and the fixed-distance knockback with it (the shipped
+        ``knockback.DISPLACEMENT_LAW`` ladder, client16402, has two absolute-frame points
+        like the search: the zero-vector direction and the water resolution's tie); the
+        rotation-mirror tests run under it so they keep measuring the symmetry of everything
+        else."""
         if _core is None:
             raise ImportError(CORE_IMPORT_ERROR)
         cal = calibration or default_calibration()
@@ -372,7 +375,8 @@ class RustEngine:
 
 
 class SymmetricRustEngine(RustEngine):
-    """``RustEngine`` under the frame-planned pathfinder (``path_search="trace_fitted_astar"``).
+    """``RustEngine`` under the frame-planned pathfinder (``path_search="trace_fitted_astar"``),
+    which also selects the fixed-distance knockback (see ``RustEngine.__init__``).
 
     FOR ROTATION-MIRROR GATES ONLY. The shipped search is the game's own, measured on
     client 16.402 (RoyaleLive traces), and it is not seat-symmetric: its goal scan and
@@ -388,4 +392,3 @@ class SymmetricRustEngine(RustEngine):
     def __init__(self, *args, **kwargs) -> None:
         kwargs.setdefault("path_search", "trace_fitted_astar")
         super().__init__(*args, **kwargs)
-

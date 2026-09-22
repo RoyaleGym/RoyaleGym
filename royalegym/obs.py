@@ -65,6 +65,7 @@ from .protocol import (
     EntityKind,
     EntityState,
     Placement,
+    SpellMotion,
     TowerSlot,
     default_calibration,
     to_own,
@@ -382,8 +383,9 @@ class EntityListObsBuilder(ObsBuilder):
 
     Live spell objects, ``spells`` [max_spells, S] (S = 14 + num_cards):
         0 present, 1 own, 2 enemy, 3..6 motion one-hot (flight, airborne, rolling,
-        area), 7 x_own / width, 8 y_own / height, 9 aim_x_own / width, 10 aim_y_own /
-        height, 11 delay_ticks / 100 (clipped), 12 travelled / length (0 when length
+        area; a pulsing area effect sets the area bit), 7 x_own / width, 8 y_own /
+        height, 9 aim_x_own / width, 10 aim_y_own / height, 11 delay_ticks / 100
+        (clipped; a pulsing area's life left), 12 travelled / length (0 when length
         is 0), 13 hits / 16 (clipped), 14.. card one-hot. Sorted by ``spell_row_key``
         (enemy, y_own, x_own, motion, card, aim y_own, aim x_own, delay, travelled,
         length, hits); beyond ``max_spells`` dropped in that order. Positions are
@@ -512,6 +514,8 @@ class EntityListObsBuilder(ObsBuilder):
             f[1 + enemy] = 1
             if 0 <= motion < 4:
                 f[3 + motion] = 1
+            elif motion == SpellMotion.PULSING:
+                f[3 + SpellMotion.AREA] = 1
             f[7] = ox / a.width
             f[8] = oy / a.height
             f[9] = ax / a.width

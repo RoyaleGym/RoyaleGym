@@ -627,7 +627,7 @@ footer { color:var(--muted); font-size:11px; padding:4px 14px 12px; }
     var m = Math.max(4, scale * 0.35);
     ctx.save();
     ctx.strokeStyle = TEAM_DARK[team]; ctx.fillStyle = TEAM[team]; ctx.lineWidth = 2;
-    if (motion !== MOTION.AREA) {
+    if (motion !== MOTION.AREA && motion !== MOTION.PULSING) {
       ctx.setLineDash([5, 4]);
       ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(aim[0], aim[1]); ctx.stroke();
       ctx.setLineDash([]);
