@@ -355,3 +355,59 @@ def test_derived_cards_vintage_reads_the_provenance_the_extractor_wrote(tmp_path
     written.write_text(json.dumps({"cards": []}), encoding="utf-8")
     assert protocol.derived_cards_vintage(written) == "unknown"
     assert protocol.derived_cards_vintage(tmp_path / "absent.json") == "unknown"
+
+
+# --- a card table this reader cannot read must not load QUIETLY ---------------
+
+
+def test_a_csv_missing_a_column_this_reader_uses_is_refused(tmp_path):
+    """The failure this prevents was seen, not imagined.
+
+    Pointed at a newer client's tables, ``_csv_table`` did not raise: it read the
+    columns it wanted, did not find them, and returned radius 0 for every unit and
+    flying False for Minions. A catalogue of plausible wrong numbers, and anything
+    comparing MockEngine with another engine would then have measured the parser
+    rather than the engines.
+
+    An absent COLUMN is the error. An empty CELL is not: most cards have no
+    Projectile, and reading that as the default is what the loader intends.
+    """
+    header = "Name,Hitpoints,CollisionRadius\n"
+    types = "string,int,int\n"
+    good = tmp_path / "good.csv"
+    good.write_text(header + types + "Knight,1400,500\n", encoding="utf-8")
+    table = mock_engine._csv_table(good, ("Name", "Hitpoints", "CollisionRadius"))
+    assert table["Knight"]["CollisionRadius"] == "500"
+
+    # the same file read by a loader that also wants a column it does not have
+    with pytest.raises(ValueError, match="CollisionRadiusMilli"):
+        mock_engine._csv_table(good, ("Name", "CollisionRadiusMilli"))
+
+    # an EMPTY cell is still fine, and still reads as the default
+    blanks = tmp_path / "blanks.csv"
+    blanks.write_text(header + types + "Knight,1400,\n", encoding="utf-8")
+    row = mock_engine._csv_table(blanks, ("Name", "CollisionRadius"))["Knight"]
+    assert mock_engine._i(row, "CollisionRadius") == 0
+    assert mock_engine._i(row, "Hitpoints") == 1400
+
+    empty = tmp_path / "nothing.csv"
+    empty.write_text("", encoding="utf-8")
+    with pytest.raises(ValueError, match="empty"):
+        mock_engine._csv_table(empty, ("Name",))
+
+
+def test_plant_a_reader_without_the_column_check_loads_zeros(monkeypatch, tmp_path):
+    """Put the old behaviour back and show what it produced: silence, and zeros."""
+    header = "Name,Hitpoints,SomeNewNameForRadius\n"
+    types = "string,int,int\n"
+    renamed = tmp_path / "renamed.csv"
+    renamed.write_text(header + types + "Knight,1400,500\n", encoding="utf-8")
+
+    # with the check, the schema change is an error that names the column
+    with pytest.raises(ValueError, match="CollisionRadius"):
+        mock_engine._csv_table(renamed, mock_engine.UNIT_COLUMNS)
+
+    # without it, the loader reads a radius of 0 and says nothing at all
+    row = mock_engine._csv_table(renamed)["Knight"]
+    assert mock_engine._i(row, "CollisionRadius") == 0, "plant did not land"
+    assert mock_engine._b(row, "AttacksAir") is False

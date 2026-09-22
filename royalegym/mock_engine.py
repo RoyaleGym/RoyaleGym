@@ -166,15 +166,65 @@ def _ceil_div(a: int, b: int) -> int:
     return -((-a) // b)
 
 
-def _csv_table(path: Path) -> dict[str, dict[str, str]]:
+def _csv_table(
+    path: Path, required: Sequence[str] = ()
+) -> dict[str, dict[str, str]]:
+    """One Supercell CSV as name -> row, refusing a table this loader cannot read.
+
+    ``required`` names the columns the caller goes on to read. A column that is
+    ABSENT from the header is a different thing from a cell that is empty: an empty
+    cell is ordinary (most cards have no Projectile) and reads as the default, while
+    a missing column means the file is not the schema this reader was written for,
+    and every lookup into it would quietly return that same default.
+
+    That failure has been seen. Pointed at a newer client's tables, this reader did
+    not raise -- it returned radius 0 for every unit and flying False for Minions,
+    a catalogue of plausible wrong numbers. Anything comparing MockEngine with
+    another engine would then have been measuring the parser rather than the
+    engines. Loud here, rather than subtle three layers up.
+    """
     with path.open(encoding="utf-8-sig") as fh:
         rows = list(csv.reader(fh))
+    if not rows:
+        raise ValueError(f"{path} is empty")
     header = rows[0]
+    missing = [c for c in required if c not in header]
+    if missing:
+        raise ValueError(
+            f"{path} has no column(s) {missing}: this reader is written for the "
+            f"{RAW_CARD_PACK} schema and every lookup into a column that is not there "
+            f"would silently read as 0 or False. Found columns: {sorted(set(header))[:12]}"
+        )
     out: dict[str, dict[str, str]] = {}
     for r in rows[2:]:
         if r and r[0].strip():
             out[r[0].strip()] = dict(zip(header, r, strict=False))
     return out
+
+
+# The columns ``_load_cards`` reads out of each table. Not the whole schema -- only
+# what this reader touches, so a column being added or dropped elsewhere is not an
+# error here.
+UNIT_COLUMNS = (
+    "Name",
+    "Hitpoints",
+    "CollisionRadius",
+    "Speed",
+    "Range",
+    "SightRange",
+    "HitSpeed",
+    "LoadTime",
+    "Damage",
+    "AreaDamageRadius",
+    "AttacksAir",
+    "AttacksGround",
+    "TargetOnlyBuildings",
+    "FlyingHeight",
+    "DeployTime",
+    "LifeTime",
+)
+SPELL_CARD_COLUMNS = ("Name", "ManaCost", "SummonCharacter")
+OTHER_SPELL_COLUMNS = ("Name", "ManaCost", "SpellAsDeploy")
 
 
 def _i(row: dict[str, str], key: str, default: int = 0) -> int:
@@ -391,13 +441,13 @@ class MockEngine:
         # joinpath, not "/": the source scan in tests/test_env_protocol.py reads a
         # division of two non-literals as arithmetic, and this module may hold none.
         base = data_dir().joinpath("raw", RAW_CARD_PACK, "csv_logic")
-        chars = _csv_table(base / "characters.csv")
-        bldgs = _csv_table(base / "buildings.csv")
-        projs = _csv_table(base / "projectiles.csv")
-        aoes = _csv_table(base / "area_effect_objects.csv")
-        s_chr = _csv_table(base / "spells_characters.csv")
-        s_bld = _csv_table(base / "spells_buildings.csv")
-        s_oth = _csv_table(base / "spells_other.csv")
+        chars = _csv_table(base / "characters.csv", UNIT_COLUMNS)
+        bldgs = _csv_table(base / "buildings.csv", UNIT_COLUMNS)
+        projs = _csv_table(base / "projectiles.csv", ("Name", "Damage"))
+        aoes = _csv_table(base / "area_effect_objects.csv", ("Name",))
+        s_chr = _csv_table(base / "spells_characters.csv", SPELL_CARD_COLUMNS)
+        s_bld = _csv_table(base / "spells_buildings.csv", SPELL_CARD_COLUMNS)
+        s_oth = _csv_table(base / "spells_other.csv", OTHER_SPELL_COLUMNS)
 
         self._units: list[_UnitTpl] = []
         self._spells: list[_SpellTpl] = []
