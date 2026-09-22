@@ -187,10 +187,12 @@ built into the venv you are running, or you are running a different Python from 
 into. Note that `import royalegym` itself still works. The package is designed to import without
 the engine.
 
-!!! note "The message sends you to a section that does not exist"
-    It ends `(README.md, Setup)`. No README in this project has a section called Setup.
-    RoyaleSim and RoyaleGym both call it **Install**, and that is the one you want, in
-    RoyaleSim's README. The message is being corrected; until it is, do not go hunting.
+!!! note "The message points at the wrong README"
+    It ends `(README.md, Setup)`. The error comes from `royalegym`, so you will look in
+    RoyaleGym's README, and that section is called **Install**. RoyaleSim's is called Install
+    too, and RoyaleSim's is the one you actually want, because the build happens there. The
+    only **Setup** heading in the project is in RoyaleViser's README, which is the repo this
+    error has least to do with. The message is being corrected.
 
 **What to do.** Either build it, which is the `maturin develop --release` line in problem 1, or
 carry on without it for now:
