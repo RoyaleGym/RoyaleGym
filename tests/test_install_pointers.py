@@ -33,9 +33,9 @@ WHAT IT CANNOT CATCH
     so ``README.md What you get`` is checked as "What". It fails loudly rather than
     passing, which is the right way round, but the message will be confusing.
 
-    A pointer into another repo's README. RoyaleViser's does have a "Setup", at ``###``
-    -- which is how the original report of this defect overstated itself, from a sweep
-    that listed ``##`` headings only. Only this repo's README is read here.
+    A pointer whose target repo is not checked out beside this one. Those SKIP, with
+    that as the printed reason, rather than passing quietly -- a pointer that cannot be
+    read is not a pointer that is fine.
 
     Whether the section, once found, says the right thing. A heading that exists and is
     wrong reads as fine here.
@@ -82,7 +82,11 @@ ANCHOR_FORMS = (
 # wrong pointer as a wrong pointer is no use to anyone.
 SOURCES = [
     p
-    for p in sorted((REPO / "royalegym").glob("*.py")) + sorted((REPO / "tests").glob("*.py"))
+    for p in (
+        sorted((REPO / "royalegym").glob("*.py"))
+        + sorted((REPO / "tests").glob("*.py"))
+        + sorted((REPO / "examples").glob("*.py"))
+    )
     if p.name != Path(__file__).name
 ]
 
@@ -189,7 +193,8 @@ def anchors() -> list[tuple[Path, str, str]]:
     that invents findings gets switched off faster than one that misses them.
     """
     found = []
-    for path in [README, *sorted((REPO / "docs").rglob("*.md")), *SOURCES]:
+    docs = sorted((REPO / "docs").rglob("*.md")) + sorted((REPO / "examples").glob("*.md"))
+    for path in [README, *docs, *SOURCES]:
         text = path.read_text(encoding="utf-8")
         for m in re.finditer(r"README\.md#([a-z0-9][a-z0-9-]*)", text):
             found.append((path, "RoyaleGym/README.md", m.group(1)))
