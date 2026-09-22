@@ -5,7 +5,7 @@
   <img alt="Engine: Rust, same seed same battle" src="https://img.shields.io/badge/engine-Rust%2C%20same%20seed%20same%20battle-DEA584?style=flat-square&logo=rust&logoColor=white">
   <img alt="APIs: Gymnasium and PettingZoo" src="https://img.shields.io/badge/APIs-Gymnasium%20%2B%20PettingZoo-0b7285?style=flat-square">
   <img alt="Engine, environments and viewer: working" src="https://img.shields.io/badge/engine%2C%20envs%2C%20viewer-working-2ea043?style=flat-square">
-  <img alt="Trainer: being written" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
+  <img alt="Trainer: runs, no bot trained yet" src="https://img.shields.io/badge/trainer-runs%3B%20no%20bot%20trained%20yet-d29922?style=flat-square">
   <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/badge/discord-join%20the%20server-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
 </p>
 
@@ -114,7 +114,7 @@ in one go. Most of the time you only think about one of them.
 |---|---|---|
 | [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | The battle engine, written in Rust. It plays the match: elixir, hands, deploys, walking, targeting, fighting, spells, towers, overtime and the crowns. | Once, to build it. After that only if you want to know how accurate it is, or you want to drive a battle directly from Python without an environment around it. |
 | [RoyaleGym](https://github.com/RoyaleGym/RoyaleGym) | The environments. What your bot sees, what its moves mean, what it is rewarded for. It speaks Gymnasium and PettingZoo, the two standard Python interfaces for this. | Most of the time. Your reward function goes here, and this is the API your training code talks to. |
-| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | The training harness: self play, PPO, a ladder of past opponents to measure against, checkpoints. | Not yet. It is being written. Install it now if you like, but nothing in it starts a training run. |
+| [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | The training harness: self play, PPO, a ladder of past opponents to measure against, checkpoints. | When you want to train rather than drive the environments yourself. It runs, and no bot has been trained with it yet, so you would be early. It needs the torch extra. |
 | [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | The viewer. It opens a saved battle, an engine trace, or a training run that is happening right now, in its own window. | Whenever you want to see what your bot did instead of reading numbers off a table. It is optional and it needs no engine build. |
 
 There is a fifth repository, RoyaleLive. It records real matches, it is private, and it always

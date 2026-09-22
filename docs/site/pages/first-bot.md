@@ -396,7 +396,7 @@ Source for this section: RoyaleLearn's own README and its owner, on 2026-09-22.
 
 ### The four commands
 
-**Does not work yet.** These four commands are the plan, not something to try.
+All four of these work. `config` runs without torch; the other three need the torch extra.
 
 ```
 python -m royalelearn config --profile laptop -o run.json   # writes a config file you can edit
@@ -435,7 +435,8 @@ Start with the middle two, not the last one.
 
 There will also be a script for people who would rather edit Python than a command line.
 
-**Does not work yet.** `examples/train_1v1.py` is planned, not written.
+`examples/train_1v1.py` exists. This is the shape of it, not a transcript: it loads the laptop
+config, changes a couple of fields, and hands it to the coordinator.
 
 ```python
 # examples/train_1v1.py, about fifteen lines: load a config, change a couple of fields, then

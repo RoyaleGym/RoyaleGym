@@ -383,8 +383,9 @@ When the loop lands, a custom reward is named in the run's config rather than pa
 into the trainer, so the checkpoint records it:
 
 !!! warning "UNVERIFIED"
-    Nobody has run this. The RoyaleLearn command line exists as a design, and the
-    training loop it belongs to is being written now.
+    This particular snippet has not been run here. The command line and the training loop both
+    exist and work; `examples/custom_reward.py` in RoyaleLearn is the maintained version of
+    this, and is the one to copy.
 
 ```
 python -m royalelearn train --config examples/configs/laptop.json

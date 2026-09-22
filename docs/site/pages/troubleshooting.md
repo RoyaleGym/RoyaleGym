@@ -182,9 +182,15 @@ Two more reasons a viewer stays empty, in the order worth checking:
 ImportError: royalesim is not built (No module named 'royalesim'); run `maturin develop --release` in the sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active (README.md, Setup)
 ```
 
-**What it means.** Exactly what it says. The Rust engine was never built into the venv you are
-running, or you are running a different Python from the one you built into. Note that
-`import royalegym` itself still works. The package is designed to import without the engine.
+**What it means.** Exactly what it says, with one wrong turning in it. The Rust engine was never
+built into the venv you are running, or you are running a different Python from the one you built
+into. Note that `import royalegym` itself still works. The package is designed to import without
+the engine.
+
+!!! note "The message sends you to a section that does not exist"
+    It ends `(README.md, Setup)`. No README in this project has a section called Setup.
+    RoyaleSim and RoyaleGym both call it **Install**, and that is the one you want, in
+    RoyaleSim's README. The message is being corrected; until it is, do not go hunting.
 
 **What to do.** Either build it, which is the `maturin develop --release` line in problem 1, or
 carry on without it for now:

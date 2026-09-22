@@ -90,9 +90,10 @@ to end, the opponent-pool bookkeeping, and the viewer stream.
 
 These are the plan. Do not try them tonight.
 
-!!! warning "UNVERIFIED"
-    Nobody has run this from a clean install yet. These commands are not written, so there is
-    nothing to run.
+!!! note "Run here, not from a clean install"
+    These commands were run on a machine that already had everything built. Nobody has yet gone
+    from four fresh clones to a training run in one sitting, so the install path around them is
+    the untested part, not the commands.
 
 ```
 python -m royalelearn train --config examples/configs/laptop.json

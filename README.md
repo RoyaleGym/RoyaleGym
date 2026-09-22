@@ -246,8 +246,9 @@ Open:
 - Default observations and rewards should be computed inside the engine, with the Python
   versions kept as the override for experiments. Until that is done, training time goes to
   building observations rather than to the battle.
-- Nothing trains on these envs out of the box yet. RoyaleLearn is designed but not written. The
-  envs do expose `action_masks()` in the form sb3-contrib's MaskablePPO expects.
+- RoyaleLearn now trains on these envs, as of 2026-09-22, and no bot has been trained with it
+  yet. The envs also expose `action_masks()` in the form sb3-contrib's MaskablePPO expects, if
+  you would rather bring your own trainer.
 - `MockEngine` is a stand-in, not a second simulator. Spells resolve instantly, there are no
   stuns or knockbacks, and cards run at their base level. Anything about how faithful the game
   itself is belongs to RoyaleSim's status, not this repo's.
