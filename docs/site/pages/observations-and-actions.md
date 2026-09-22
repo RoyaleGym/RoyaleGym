@@ -55,8 +55,8 @@ spatial      shape (20, 32, 18)   dtype float32
 vector       shape (1177,)        dtype float32
 action_mask  shape (2305,)        dtype int8
 mask_planes  shape (4, 32, 18)    dtype int8
-cards in this catalogue: 95
-legal actions right now: 1605 of 2305
+cards in this catalogue: 100
+legal actions right now: 1623 of 2305
 ```
 
 The deck is named card by card on purpose. With no deck named, each side is dealt eight
@@ -219,7 +219,7 @@ and waiting is just picking index 0.
 The second half of that program printed this:
 
 ```
-step   1  legal actions  1605  elixir 5.18
+step   1  legal actions  1623  elixir 5.18
 step  20  legal actions     1  elixir 2.57
 step  60  legal actions   459  elixir 3.71
 ```
@@ -239,7 +239,7 @@ the rectangle around each enemy crown tower that is still alive.
 For comparison, RoyaleGym's
 [architecture.md](https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/architecture.md)
 reports 691 legal actions of 2305 on the first step with default random decks on the
-Rust engine, and 1235 on `MockEngine`. This page got 1605 with the named deck above.
+Rust engine, and 1235 on `MockEngine`. This page got 1623 with the named deck above.
 Different deck, different card table, different count. The number is not a property of
 the game.
 

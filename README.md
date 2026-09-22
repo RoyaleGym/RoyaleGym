@@ -47,7 +47,7 @@ New here? The install steps are under [Install](#install).
 <table>
   <tr>
     <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.png" alt="Two APIs over one battle: ClashParallelEnv driving both seats through PettingZoo, and a Gymnasium env driving one seat, stepping the same board."><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat, and the env plays the other.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.png" alt="The legality mask: the actions playable on the first step, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1605 of the 2305 are, for each player.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.png" alt="The legality mask: the actions playable on the first step, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1623 of the 2305 are, for each player (2026-09-22).</sub></td>
     <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.png" alt="Batched self-play: four boards become eight agent slots, and one policy is fed both seats' observations, each in its own frame."><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
   </tr>
   <tr>
@@ -89,13 +89,16 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 1  crowns [1, 1]  tick 4800
+winner 0  crowns [0, 0]  tick 4800
 ```
 
-That is a whole match, and a close one. Each player took one of the other's princess towers, so
-the crowns are level. Tick 4800 is three minutes plus the full sixty seconds of overtime, and
-with the crowns still level at the end it came down to which king tower had taken more damage.
-Red's was the healthier, so Red won.
+That is a whole match, and a close one (re-run 2026-09-22). Neither side ever finished off a
+tower, so the crowns are level at nothing each. Tick 4800 is three minutes plus the full sixty
+seconds of overtime, and with the crowns level it came down to damage. Red finished with a
+princess tower on 24 hitpoints out of 3052, against Blue's weakest on 1248, so Blue won.
+
+Two random players rarely take a tower, which is the point of the example rather than a flaw in
+it. This is the bar your bot starts from.
 
 These eight cards are here so the battle comes out the same on your machine as it did on ours.
 They are an example, not a recommendation. All eight are from the 18 whose behaviour is checked
