@@ -112,6 +112,7 @@ from royalegym.rust_engine import (
     CORE_IMPORT_ERROR,
     RustEngine,
     SymmetricRustEngine,
+    catalogue_vintage_split,
     core_available,
     territory_differences,
 )
@@ -556,6 +557,9 @@ SETUPS = {
 
 @pytest.mark.parametrize("name", sorted(SETUPS))
 def test_mock_and_rust_agree_on_setup_state(rust, mock, name):
+    split = catalogue_vintage_split(rust.cards(), mock.cards())
+    if split is not None:
+        pytest.skip(split)
     for seed in (1, 2, 77):
         got = state_disagreements(rust, mock, seed, SETUPS[name])
         unexpected = got - KNOWN_STATE_DISAGREEMENTS

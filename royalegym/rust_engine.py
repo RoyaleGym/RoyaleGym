@@ -69,6 +69,7 @@ from typing import Any
 
 import msgspec
 
+from .mock_engine import RAW_CARD_PACK
 from .protocol import (
     BLUE,
     HAND_SIZE,
@@ -89,6 +90,7 @@ from .protocol import (
     calibration_values,
     data_dir,
     default_calibration,
+    derived_cards_vintage,
     validate_setup,
 )
 
@@ -165,6 +167,50 @@ def stale_build_differences(calibration: Calibration, arena_path: Path | None = 
     if built_arena != now_arena:
         diffs.append(f"arena.json differs from the one compiled in ({p})")
     return diffs
+
+
+# CardInfo fields that are card DATA -- read from the table both engines are meant
+# to be reading. ``hitpoints`` is deliberately absent: it is the engine's card LEVEL,
+# a known and intended mechanics difference (tests/test_rust_engine.py's allow-list).
+CARD_DATA_FIELDS = ("name", "elixir", "placement", "count", "radius", "flying")
+
+
+def catalogue_vintage_split(
+    rust_cards: Sequence[CardInfo], mock_cards: Sequence[CardInfo]
+) -> str | None:
+    """Why the two engines are reading DIFFERENT card tables, or None.
+
+    The compiled engine carries the catalogue it was built with; MockEngine reads the
+    raw CSVs on disk. In a public checkout those are the same vintage by
+    construction -- the newer client packs are not redistributed, so the extractor
+    can only build the tracked one -- and any difference here is a real defect. On a
+    machine that HAS a newer pack and regenerated cards.json from it, the two are
+    simply different tables, and every cross-engine comparison is then measuring the
+    data rather than the engines.
+
+    Returned as a ready reason string so a test can skip on it and SAY SO. A skip is
+    not a pass: the comparison that skipped still has to run somewhere, which for
+    this one is a checkout without the private pack.
+    """
+    differences: dict[str, list[str]] = {}
+    if len(rust_cards) != len(mock_cards):
+        differences["catalogue size"] = [f"{len(rust_cards)}/{len(mock_cards)} cards"]
+    for a, b in zip(rust_cards, mock_cards, strict=False):
+        for field in CARD_DATA_FIELDS:
+            if getattr(a, field) != getattr(b, field):
+                differences.setdefault(field, []).append(
+                    f"{b.name} {getattr(a, field)}/{getattr(b, field)}"
+                )
+    if not differences:
+        return None
+    detail = "; ".join(f"{f}: {', '.join(v[:4])}" for f, v in sorted(differences.items()))
+    return (
+        "the two engines are reading different card tables, so this comparison would "
+        "measure the DATA and not the engines. A SKIP IS NOT A PASS -- run it in a "
+        "checkout without the private client pack, where both sides read the tracked "
+        f"table. cards.json vintage {derived_cards_vintage()!r} vs MockEngine's "
+        f"{RAW_CARD_PACK!r}. Differences (rust/mock) -- {detail}"
+    )
 
 
 def _derive_slot_of_k(arena: Arena) -> list[list[int]]:

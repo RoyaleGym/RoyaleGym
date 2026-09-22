@@ -160,19 +160,23 @@ Open:
 Tests:
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 294 passed, 11 failed (2026-09-21)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 294 passed, 6 skipped, 5 failed (2026-09-21)
 ..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
 ```
 
 Without the engine built the Rust-backed tests skip; an engine build older than the data files
 fails them rather than skipping.
 
-The 11 failures on 2026-09-21 are all in the engine, not in this layer, and all 11 fail the same
-way on the tree before this one: five `mock_and_rust_agree_on_setup_state` cases and the thin-slice
-catalogue check are a card-table vintage split (`MockEngine` reads the 2018 CSVs, the compiled
-engine was rebuilt from a newer table, and they now disagree on one card's unit count), and four
-rotation-mirror cases are a deliberately asymmetric deploy clamp whose symmetric arm the engine
-does not yet expose to Python. Both are tracked in RoyaleSim.
+The six SKIPS on 2026-09-21 are a card-table vintage split, and they cannot happen in a public
+checkout: only the oldest raw client pack is tracked, so the extractor builds the same table the
+mock reads and the two engines agree by construction. This machine has a newer pack and a card
+table generated from it, so its two engines are reading different data and every cross-engine
+comparison would measure that rather than the engines — `rust_engine.catalogue_vintage_split` says
+so and the tests skip on it, naming both vintages. A skip is not a pass.
+
+The five failures are in the engine, not in this layer, and all five fail the same way on the tree
+before this one: a deliberately asymmetric deploy clamp whose symmetric arm the engine does not yet
+expose to Python. Tracked in RoyaleSim.
 
 Read next: [`docs/architecture.md`](docs/architecture.md) (the layers, the engine contract, the
 action space, the module map, the conventions and why each is there),

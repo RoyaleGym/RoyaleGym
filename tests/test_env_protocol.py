@@ -20,6 +20,7 @@ from royalegym.protocol import (
     RED,
     Arena,
     Calibration,
+    CardInfo,
     DeployCommand,
     Engine,
     MatchSetup,
@@ -293,3 +294,64 @@ def test_setup_violation_is_a_pure_function_of_its_arguments():
     assert msgspec.json.encode(setup) == snapshot
     ok = MatchSetup(decks=[list(range(8))] * 2, elixir_milli=[-1, 10**9])  # clamped, not refused
     assert protocol.setup_violation(eng.arena(), eng.cards(), ok) is None
+
+
+# --- which card table is in front of you -------------------------------------
+#
+# The derived card table is GENERATED from a raw client pack, and only the oldest
+# pack is tracked, so which one a checkout has is a property of the MACHINE. Two
+# engines reading different packs disagree about cards while both being correct,
+# and a cross-engine comparison then measures the data rather than the engines.
+# These are pure functions, so they run without the compiled engine.
+
+
+def _card(name: str, **over) -> CardInfo:
+    base = {
+        "card_id": 0,
+        "name": name,
+        "elixir": 3,
+        "placement": 0,
+        "count": 1,
+        "radius": 500,
+        "flying": False,
+        "hitpoints": 700,
+    }
+    return CardInfo(**{**base, **over})
+
+
+def test_catalogue_vintage_split_is_silent_when_the_tables_agree():
+    from royalegym.rust_engine import catalogue_vintage_split
+
+    same = [_card("Knight"), _card("Goblins", count=3)]
+    assert catalogue_vintage_split(same, list(same)) is None
+    # hitpoints is the engine's card LEVEL, a known mechanics difference, not data
+    levelled = [_card("Knight", hitpoints=2000), _card("Goblins", count=3, hitpoints=400)]
+    assert catalogue_vintage_split(levelled, same) is None
+
+
+def test_catalogue_vintage_split_names_the_field_the_card_and_both_vintages():
+    from royalegym.rust_engine import catalogue_vintage_split
+
+    mock = [_card("Knight"), _card("Goblins", count=3)]
+    rust = [_card("Knight"), _card("Goblins", count=4)]
+    why = catalogue_vintage_split(rust, mock)
+    assert why is not None
+    assert "Goblins 4/3" in why
+    assert "count" in why
+    assert "A SKIP IS NOT A PASS" in why
+    assert mock_engine.RAW_CARD_PACK in why
+    assert protocol.derived_cards_vintage() in why
+    # a catalogue of a different SIZE is the same split, said plainly
+    short = catalogue_vintage_split(rust, mock[:1])
+    assert short is not None
+    assert "2/1 cards" in short
+
+
+def test_derived_cards_vintage_reads_the_provenance_the_extractor_wrote(tmp_path):
+    assert protocol.derived_cards_vintage() != ""
+    written = tmp_path / "cards.json"
+    written.write_text(json.dumps({"provenance": {"vintage": "made up 1999"}}), encoding="utf-8")
+    assert protocol.derived_cards_vintage(written) == "made up 1999"
+    written.write_text(json.dumps({"cards": []}), encoding="utf-8")
+    assert protocol.derived_cards_vintage(written) == "unknown"
+    assert protocol.derived_cards_vintage(tmp_path / "absent.json") == "unknown"

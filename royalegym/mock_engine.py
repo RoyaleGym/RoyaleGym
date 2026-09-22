@@ -87,6 +87,12 @@ from .protocol import (
 )
 
 # calibration match.OVERTIME_TIEBREAK candidates (the Rust core's OvertimeTiebreak enum).
+# The raw client pack MockEngine reads its card stats from. Only this one is tracked
+# in RoyaleSim; the newer packs are not redistributed, so a public checkout has this
+# and nothing else, and the derived cards.json the compiled engine is built from is
+# generated from it too (rust_engine.catalogue_vintage_split).
+RAW_CARD_PACK = "retroroyale-2018"
+
 OVERTIME_TIEBREAK_RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction", "none_draw")
 
 # The card subset the mock supports. A mock design choice (a spread of placement
@@ -382,7 +388,9 @@ class MockEngine:
         return _ceil_div(ms, self.tick_ms)
 
     def _load_cards(self, names: Sequence[str]) -> None:
-        base = data_dir() / "raw" / "retroroyale-2018" / "csv_logic"
+        # joinpath, not "/": the source scan in tests/test_env_protocol.py reads a
+        # division of two non-literals as arithmetic, and this module may hold none.
+        base = data_dir().joinpath("raw", RAW_CARD_PACK, "csv_logic")
         chars = _csv_table(base / "characters.csv")
         bldgs = _csv_table(base / "buildings.csv")
         projs = _csv_table(base / "projectiles.csv")

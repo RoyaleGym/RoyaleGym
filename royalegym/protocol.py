@@ -565,6 +565,25 @@ def load_tower_no_deploy_sizes(path: Path | None = None) -> dict[str, tuple[int,
     return out
 
 
+def derived_cards_vintage(path: Path | None = None) -> str:
+    """``provenance.vintage`` of data/derived/cards.json, or "unknown".
+
+    The card table is GENERATED from a raw client dump, and which dump is a
+    property of the machine rather than of the repository: only the oldest pack is
+    tracked, and the generator defaults to a newer one when a checkout happens to
+    have it. So two catalogues built from the same tools on two machines can differ,
+    and this is the field that says which one is in front of you.
+    """
+    p = path or data_dir() / "derived" / "cards.json"
+    if not p.exists():
+        return "unknown"
+    raw = json.loads(p.read_text(encoding="utf-8"))
+    provenance = raw.get("provenance")
+    if not isinstance(provenance, dict):
+        return "unknown"
+    return str(provenance.get("vintage", "unknown"))
+
+
 Rect = tuple[int, int, int, int]  # closed (x0, y0, x1, y1), engine frame subtiles
 
 
