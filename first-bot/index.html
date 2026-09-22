@@ -471,6 +471,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#is-it-actually-better" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Is it actually better?
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1127,6 +1138,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#is-it-actually-better" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Is it actually better?
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1564,6 +1586,35 @@ hands it to game 0 only.</p>
 <p>Both of these were run to check this page and both fed the viewer.</p>
 </div>
 <hr />
+<h3 id="is-it-actually-better">Is it actually better?<a class="headerlink" href="#is-it-actually-better" title="Permanent link">&para;</a></h3>
+<p>This is the question you ask after every change, and it is the one a hand-written loop gets
+wrong. A loop plays your bot in one seat, prints a bare percentage, and counts a battle the
+step limit cut short as a draw. <code>evaluate</code> plays both seats and gives you an interval.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python examples/07_is_this_bot_better.py
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>greedy vs noop: 20-0-0 over 20 games. win rate 100.0% (83.9% to 100.0% at 95%) -- greedy is better. seat gap +0.0%, mean 2405 ticks.
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    as blue 10-0-0
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    as red  10-0-0
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>greedy vs random: 8-12-0 over 20 games. win rate 40.0% (21.9% to 61.3% at 95%) -- too close to call. seat gap -20.0%, mean 3310 ticks.
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    as blue 3-7-0
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    as red  5-5-0
+</code></pre></div>
+<p>Two things to read off that, and the second is the one people get wrong.</p>
+<p><strong>"Too close to call" is not a tie.</strong> It means the interval still covers 50%, so the games you
+played cannot separate the two bots. Play more and ask again. A bare "40%" would have told you
+the opposite of the truth here.</p>
+<p><strong>A large seat gap means you measured the colour, not the skill.</strong> Blue and Red are not the same
+job: whoever is behind has to attack. <code>evaluate</code> plays every pairing both ways and reports the
+gap, so you can see when that is what your number is made of.</p>
+<div class="admonition tip">
+<p class="admonition-title">How many games is enough? More than you think</p>
+<p>RoyaleGym's own maintainer ran a 40-game round robin over the six shipped opponents. It
+established exactly two orderings: the do-nothing opponent loses to everything, and the
+patient one beats random 27 to 13. The three in the middle, which are described in
+increasing order of sophistication, came out 19-19, 20-19 and 20-19. Forty games could not
+tell them apart. If you change your reward function and see a five point move over twenty
+games, you have seen noise.</p>
+</div>
 <h2 id="how-long-a-run-will-take">How long a run will take<a class="headerlink" href="#how-long-a-run-will-take" title="Permanent link">&para;</a></h2>
 <p>Two numbers, and they are different on purpose. Both were measured on a four core Windows laptop
 with 7.8 GB of RAM and several other jobs running, so both are pessimistic.</p>
@@ -1608,9 +1659,9 @@ of battles required.</p>
 <div class="admonition note">
 <p class="admonition-title">What has and has not been run here</p>
 <p><code>train</code> was run for this page and it completed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>royalelearn train --config examples\configs\smoke.json
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>...
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>run 85b4ce0a1d6e8f1d stopped at iteration 3
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>royalelearn train --config examples\configs\smoke.json
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>...
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>run 85b4ce0a1d6e8f1d stopped at iteration 3
 </code></pre></div>
 <p>It left a checkpoint with the network, the advantage scaler and the ladder's pool under
 <code>runs/smoke-85b4ce0a1d6e8f1d/checkpoints/</code>.</p>
@@ -1662,10 +1713,10 @@ is available to whoever does it first.</p>
 <p>Source for this section: RoyaleLearn's own README and its owner, on 2026-09-22.</p>
 <h3 id="the-four-commands">The four commands<a class="headerlink" href="#the-four-commands" title="Permanent link">&para;</a></h3>
 <p>All four of these work. <code>config</code> runs without torch; the other three need the torch extra.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>python -m royalelearn config --profile laptop -o run.json   # writes a config file you can edit
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>python -m royalelearn doctor --config run.json              # first-run checks, before you commit hours
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>python -m royalelearn bench                                 # measures YOUR machine, not someone else's
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>python -m royalelearn train --config run.json               # the training run itself
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>python -m royalelearn config --profile laptop -o run.json   # writes a config file you can edit
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>python -m royalelearn doctor --config run.json              # first-run checks, before you commit hours
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>python -m royalelearn bench                                 # measures YOUR machine, not someone else's
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>python -m royalelearn train --config run.json               # the training run itself
 </code></pre></div>
 <p>Start with the middle two, not the last one.</p>
 <ul>
@@ -1697,9 +1748,9 @@ iteration     228 cycles for 32768 timesteps; credit horizon 38.6 s
 <p>There will also be a script for people who would rather edit Python than a command line.</p>
 <p><code>examples/train_1v1.py</code> exists. This is the shape of it, not a transcript: it loads the laptop
 config, changes a couple of fields, and hands it to the coordinator.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># examples/train_1v1.py, about fifteen lines: load a config, change a couple of fields, then</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">with</span> <span class="n">LearningCoordinator</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">run</span><span class="o">.</span><span class="n">learn</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># examples/train_1v1.py, about fifteen lines: load a config, change a couple of fields, then</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="k">with</span> <span class="n">LearningCoordinator</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">run</span><span class="o">.</span><span class="n">learn</span><span class="p">()</span>
 </code></pre></div>
 <p>The command line and the script go through the same object. Neither is a wrapper around the other.</p>
 <h3 id="the-reward-function-which-is-the-part-you-actually-write">The reward function, which is the part you actually write<a class="headerlink" href="#the-reward-function-which-is-the-part-you-actually-write" title="Permanent link">&para;</a></h3>
