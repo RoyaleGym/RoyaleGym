@@ -5,11 +5,20 @@ watching. This module is the whole of what royalegym knows about the viewer; it 
 nothing from RoyaleViser (dependency direction stays RoyaleLearn -> RoyaleGym -> RoyaleSim)
 and nothing graphical.
 
-    from royalegym.env import ClashParallelEnv
+    from royalegym.env import ClashParallelEnv, ClashSelfPlayVecEnv
     from royalegym.viser import ViserPublisher
     env = ClashParallelEnv(viser=ViserPublisher())        # 127.0.0.1:9870
-    # or, without touching the constructor:  set ROYALEVISER=127.0.0.1:9870
+    # or, for self-play:  set ROYALEVISER=127.0.0.1:9870, then
+    vec = ClashSelfPlayVecEnv(8)                          # binds ONE, watches game 0
     # then, in another process:  python -m royaleviser --stream 127.0.0.1:9870
+
+WHO READS ROYALEVISER
+    ``ViserPublisher.from_env()``, and only ``ClashSelfPlayVecEnv`` calls it.
+    ``ClashParallelEnv`` publishes when it is HANDED a publisher and reads no
+    environment variable of its own: a viewer watches ONE battle and has one fixed
+    port, so N envs each building their own from the variable is ``OSError 10048``,
+    which is what self-play with more than one game used to raise. The decision
+    belongs to whoever knows how many battles there are.
 
 PROTOCOL
     The viewer sends the heartbeat datagram HELLO to (host, port) once a second while it is
