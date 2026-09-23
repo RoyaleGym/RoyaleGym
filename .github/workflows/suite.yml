@@ -40,8 +40,14 @@ jobs:
       # "fails late and unhelpfully" without one.
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: clone the sibling the README names
-        run: git clone --depth 1 https://github.com/RoyaleGym/RoyaleSim.git
+      # RoyaleViser too. The README's install block installs it and then says a reader may
+      # stop before it, because it is "the viewer, plus one test that sends a frame through
+      # it". Without it that test SKIPS, and on 2026-09-23 the viewer's publish rate changed
+      # in this repo, so the round-trip is the least skippable test in the suite right now.
+      - name: clone the siblings the README names
+        run: |
+          git clone --depth 1 https://github.com/RoyaleGym/RoyaleSim.git
+          git clone --depth 1 https://github.com/RoyaleGym/RoyaleViser.git
 
       # docs/site/pages/install.md, the macOS/Linux commands, verbatim.
       - name: venv and tools
@@ -64,8 +70,10 @@ jobs:
         working-directory: RoyaleSim
         run: ../.venv/bin/maturin develop --release
 
-      - name: install the package
-        run: .venv/bin/python -m pip install -e RoyaleGym
+      - name: install the packages
+        run: |
+          .venv/bin/python -m pip install -e RoyaleGym
+          .venv/bin/python -m pip install -e RoyaleViser
 
       # A SKIP IS NOT A PASS, and this is where that bites hardest. If the engine did not
       # install, every Rust-backed test skips and the suite is green while testing almost
