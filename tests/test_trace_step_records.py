@@ -18,6 +18,7 @@ WHY THESE ARE GRADED THE WAY THEY ARE
 from __future__ import annotations
 
 import msgspec
+import numpy as np
 import pytest
 
 from royalegym.mock_engine import MockEngine
@@ -328,3 +329,104 @@ def test_a_card_id_the_table_does_not_have_is_named_rather_than_guessed():
         "lost_tile answer confidently about a card it cannot identify"
     )
     assert isinstance(row.lost_tile, bool)
+
+
+# ---------------------------------------------------------------------------
+# The per-tile map: the same question asked of the BOARD instead of of a tap.
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_the_map_agrees_with_the_rate_that_was_measured_by_sweep():
+    """The map is the sweep, per tile. If they disagree one of them is wrong.
+
+    The published figures are 15.0% for a 3x3 and 10.0% for a 2x2 over every offered tile of
+    a fresh board, and they are quoted in `action.py` and in two handoffs. A map that did not
+    reproduce them would mean the number in the docs describes nothing anyone can recompute.
+    """
+    from royalegym.landing import tile_loss_map
+
+    engine = RustEngine()
+    names = {c.name for c in engine.cards()}
+    for card, expected in (("Cannon", 0.150), ("Tesla", 0.100)):
+        if card not in names:
+            pytest.skip(f"this card table has no {card}")
+        engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
+        engine.step([], 10)
+        m = tile_loss_map(engine, card)
+        assert int(m.offered.sum()) == 240, (
+            f"{card} was offered {int(m.offered.sum())} tiles, not the 240 the sweep saw; "
+            "the map and the published rate are not over the same population"
+        )
+        assert abs(m.rate() - expected) < 0.005, (
+            f"{card} map says {m.rate():.3f}, the documented sweep says {expected:.3f}"
+        )
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_two_cards_of_one_footprint_give_the_SAME_map():
+    """'Relocation depends only on the footprint' was a measurement; this makes it a test.
+
+    It was reported to another session as a finding and used to redesign their experiment, so
+    it should not rest on a table someone printed once. The 2x2 differing from the 3x3 is the
+    control: without it, a map that ignored the card entirely would also pass.
+    """
+    from royalegym.landing import tile_loss_map
+
+    engine = RustEngine()
+    names = {c.name for c in engine.cards()}
+    threes = [n for n in ("Cannon", "Mortar", "Tombstone", "BombTower") if n in names]
+    if len(threes) < 2 or "Tesla" not in names:
+        pytest.skip("need two 3x3 cards and a Tesla on this table")
+
+    engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
+    engine.step([], 10)
+    maps = {n: tile_loss_map(engine, n) for n in [*threes, "Tesla"]}
+    first = maps[threes[0]]
+    for other in threes[1:]:
+        assert np.array_equal(first.lost, maps[other].lost), (
+            f"{threes[0]} and {other} are both 3x3 but lose different tiles"
+        )
+        assert np.array_equal(first.offered, maps[other].offered)
+    assert not np.array_equal(first.lost, maps["Tesla"].lost), (
+        "the 3x3 and the 2x2 maps are identical, so this function is not reading the card "
+        "at all and the agreement above means nothing"
+    )
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_an_unoffered_tile_says_None_rather_than_keeps_its_tile():
+    """False would fold 'you cannot play here' into 'you can, and it stays put'."""
+    from royalegym.landing import tile_loss_map
+
+    engine = RustEngine()
+    if "Cannon" not in {c.name for c in engine.cards()}:
+        pytest.skip("this card table has no Cannon")
+    engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
+    engine.step([], 10)
+    m = tile_loss_map(engine, "Cannon")
+    unoffered = np.argwhere(~m.offered)
+    assert len(unoffered), "every tile was offered, so this test checks nothing"
+    ty, tx = unoffered[0]
+    assert m.would_lose_tile(int(tx), int(ty)) is None
+    offered = np.argwhere(m.offered)
+    oy, ox = offered[0]
+    assert isinstance(m.would_lose_tile(int(ox), int(oy)), bool)
+    assert m.would_lose_tile(-1, 0) is None, "off-board should not be reported as a tile"
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_a_card_with_no_footprint_is_refused_rather_than_mapped_all_False():
+    """An all-False map reads as 'this card never loses its tile', which is a measurement.
+
+    For a troop it is a category error, and the difference matters because the caller is
+    weighting a tap distribution by these maps.
+    """
+    from royalegym.landing import tile_loss_map
+
+    engine = RustEngine()
+    troop = next((c.name for c in engine.cards() if c.placement == Placement.TROOP), None)
+    if troop is None:
+        pytest.skip("this card table has no troop")
+    engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
+    with pytest.raises(ValueError, match="no footprint"):
+        tile_loss_map(engine, troop)

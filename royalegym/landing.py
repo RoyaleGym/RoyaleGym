@@ -52,6 +52,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 import msgspec
+import numpy as np
 
 from royalegym.protocol import DeployStatus
 
@@ -346,3 +347,93 @@ def relocations(trace, accepted_only: bool = True) -> list[Relocation]:
                 )
             )
     return out
+
+
+# ---------------------------------------------------------------------------
+# The same question asked of the BOARD rather than of a tap: for every tile, would a
+# building tapped there keep the tile?
+#
+# WHY THIS EXISTS SEPARATELY FROM `relocations`. A relocation rate measured from a trace is
+# a rate over taps the policy ACTUALLY MADE, and that is useless for a card the policy has
+# learned not to play: train's agent plays Cannon on 0.6% of its opportunities, so more
+# traces only scale a near-zero numerator. The rate they want decomposes instead:
+#
+#     rate = sum over tiles of  P(policy taps this tile) x (a footprint loses this tile)
+#
+# The first factor is well sampled from ANY trace, because a policy makes hundreds of taps a
+# battle across all cards. The second is this map, and it needs no plays of the card at all.
+#
+# WHAT IT IS A FACT ABOUT, precisely, because this is the part that is easy to over-claim: it
+# is computed against the engine's CURRENT state. On a fresh board that is the terrain-only
+# answer. In a live battle other buildings block the search and change it, so a map is a
+# snapshot and not a constant of the arena. It is stable across CARDS of one footprint --
+# that is measured, and `tests/` asserts it -- and not across boards.
+
+
+class TileLossMap(msgspec.Struct, frozen=True):
+    """Per-tile outcome of tapping a building at each tile centre, in the seat's own frame.
+
+    Three arrays rather than one, because "the tap did not give me the tile" and "the tap was
+    not offered at all" are different facts and collapsing them makes an illegal tile look
+    like a relocating one.
+    """
+
+    card: str
+    footprint: int
+    team: int
+    offered: np.ndarray  # [ny, nx] bool: the engine found somewhere for the box
+    moved: np.ndarray  # [ny, nx] bool: the centre's tile is not the tapped tile
+    lost: np.ndarray  # [ny, nx] bool: the footprint does not cover the tapped tile
+
+    def rate(self) -> float:
+        """Fraction of OFFERED tiles that lose the tile. The figure quoted for a card."""
+        n = int(self.offered.sum())
+        return float(self.lost.sum()) / n if n else 0.0
+
+    def would_lose_tile(self, tx: int, ty: int) -> bool | None:
+        """None when the tile is not offered at all, which is not the same as 'keeps it'."""
+        if not (0 <= ty < self.offered.shape[0] and 0 <= tx < self.offered.shape[1]):
+            return None
+        if not self.offered[ty, tx]:
+            return None
+        return bool(self.lost[ty, tx])
+
+
+def tile_loss_map(engine, card: str, team: int = 0) -> TileLossMap:
+    """Ask the engine, tile by tile, where it would actually put ``card``.
+
+    Nothing is re-derived in Python: every answer comes from ``building_placement``, the
+    same resolver the action mask uses, so this cannot drift from the engine's own rule.
+    """
+    arena = engine.arena()
+    sub = arena.subtile
+    info = next((c for c in engine.cards() if c.name == card), None)
+    if info is None:
+        raise ValueError(f"no card named {card!r} in this engine's table")
+    footprint = info.footprint_tiles
+    if not footprint:
+        raise ValueError(
+            f"{card!r} has no footprint, so it is never relocated and a loss map for it "
+            "would be all False -- which would read as a measurement rather than a category "
+            "error. Pass a building."
+        )
+    ny, nx = arena.tiles_y, arena.tiles_x
+    offered = np.zeros((ny, nx), dtype=bool)
+    moved = np.zeros((ny, nx), dtype=bool)
+    lost = np.zeros((ny, nx), dtype=bool)
+    half = footprint * sub // 2
+    for ty in range(ny):
+        for tx in range(nx):
+            x, y = tx * sub + sub // 2, ty * sub + sub // 2
+            landed = engine.building_placement(team, card, x, y)
+            if landed is None:
+                continue
+            lx, ly = landed[0], landed[1]
+            offered[ty, tx] = True
+            moved[ty, tx] = (lx // sub, ly // sub) != (tx, ty)
+            covers_x = tx in range((lx - half) // sub, (lx + half) // sub)
+            covers_y = ty in range((ly - half) // sub, (ly + half) // sub)
+            lost[ty, tx] = not (covers_x and covers_y)
+    return TileLossMap(
+        card=card, footprint=footprint, team=team, offered=offered, moved=moved, lost=lost
+    )
