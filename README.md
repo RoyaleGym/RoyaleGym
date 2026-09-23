@@ -263,6 +263,7 @@ for the learner.
 ## Status
 
 <p align="center">
+  <img alt="Tests on your own clone, 2026-09-22: 781 passed, 3 skipped, nothing failing" src="https://img.shields.io/badge/your%20clone%2C%202026--09--22-781%20passed%2C%203%20skipped-2ea043?style=flat-square">
   <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
   <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-777%20passed%2C%207%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
@@ -280,8 +281,8 @@ it went: all 18 lines, including `maturin develop --release`, which took 119 sec
 Measured on a fresh clone on 2026-09-22, not on the machine that wrote this.
 
 The three skips are worth reading rather than ignoring. Your clone builds the 2018 card table,
-which has 66 cards the engine can load. Three tests need the newer 144-card table, which is not
-published and cannot be, so they skip and name the table they wanted. Earlier today they FAILED
+which has 66 cards the engine can load. Three tests need the newer table, which gives 100, and it
+is not published and cannot be, so they skip and name the table they wanted. Earlier today they FAILED
 instead of skipping, which is a different thing: a skip that says why is information, and a failure
 would have told you your install was broken when it was not.
 
