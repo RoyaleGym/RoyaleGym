@@ -60,8 +60,36 @@ def context_is_posix(text: str, upto: int) -> bool:
     return bool(POSIX_HINT.search(text[max(0, upto - 400):upto]))
 
 
+CONTROL_OK = {0x09, 0x0A, 0x0D}
+
+
+def control_characters(text: str, name: str) -> list[str]:
+    r"""A control character in a page, almost always a heredoc eating a backslash escape.
+
+    A backslash-b written through a shell heredoc becomes a literal 0x08. It survives every
+    reading that renders the file: an editor, git diff, a terminal and a failure message all show
+    it as nothing, or as the character it ate. Only the bytes show it. Gym lost an evening to a
+    regex that could not match because its word-boundary escape was a backspace byte.
+
+    This project has now had it four times, and two were in pages DESCRIBING the trap. The fourth
+    was this function: its first version was written through a heredoc, which turned the escape in
+    this docstring into a backspace and the one in the line counter below into a real newline,
+    breaking the file. Rewritten with an editing tool, which is the advice the message gives.
+    """
+    out = []
+    for i, ch in enumerate(text):
+        if ord(ch) < 0x20 and ord(ch) not in CONTROL_OK:
+            line = text[:i].count(chr(10)) + 1
+            out.append(
+                f"{name}:{line}: control character 0x{ord(ch):02x} in the text. A shell heredoc "
+                "turns a backslash escape into the byte it names; write the file with an editing "
+                "tool, or use a quoted heredoc."
+            )
+    return out
+
+
 def check_text(text: str, name: str = "<text>") -> list[str]:
-    problems = []
+    problems = control_characters(text, name)
     for pos, tag, body in fences(text):
         if tag in PROSE_TAGS:
             continue
@@ -115,6 +143,10 @@ SELFTEST = [
     ("posix tab may chain", '=== "macOS and Linux"\n\n```\nmkdir Royale && cd Royale\n```\n', False),
     ("windows block, one per line", "## Install on Windows\n\n```\nmkdir Royale\ncd Royale\n```\n", False),
     ("python block untouched", "## Example\n\n```python\nx = 1  # a real comment\n```\n", False),
+    # The byte a heredoc leaves behind when it eats a backslash-b. Written with chr(8) rather
+    # than an escape, so that this case cannot be destroyed by the very thing it tests for.
+    ("a backspace byte in the prose", "## Install\n\nMatch on a " + chr(8) + " boundary.\n", True),
+    ("tabs and newlines are fine", "## Install\n\n\tindented with a tab\n", False),
 ]
 
 
