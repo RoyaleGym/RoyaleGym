@@ -225,6 +225,9 @@ def landings(
 #     moved_tile    the centre's tile is not the tile tapped
 #     lost_tile     the FOOTPRINT does not cover the tile tapped
 #
+# `lost_tile` is the one to use, and filter buildings with `r.has_footprint` rather than
+# `r.footprint >= 2`: footprint is None for troops and spells, and `None >= 2` raises.
+#
 # `lost_tile` is the one that bears on credit assignment, because the action space chooses a
 # TILE: a 3x3 shifted by one tile is displaced but still stands on the tile the agent asked
 # for. Measured over every legal tile on a near-empty board: 51.7% / 51.7% / 15.0% for a 3x3
@@ -243,7 +246,7 @@ class Relocation(msgspec.Struct, frozen=True):
     team: int
     card_id: int
     card_name: str
-    footprint: int
+    footprint: int | None  # None for troops, spells, spawners
     commanded: tuple[int, int]
     landed: tuple[int, int]
     subtile: int
@@ -266,8 +269,33 @@ class Relocation(msgspec.Struct, frozen=True):
         return self.landed_tile != self.commanded_tile
 
     @property
+    def has_footprint(self) -> bool:
+        """True for buildings. Use THIS to filter, never ``footprint >= 2``.
+
+        ``footprint`` is None for troops, spells and spawners, and ``None >= 2`` is a
+        TypeError rather than False -- so the obvious filter crashes on the first troop
+        row, which in a real trace is most of them.
+        """
+        return bool(self.footprint)
+
+    @property
     def lost_tile(self) -> bool:
-        """The footprint does not stand on the tile that was tapped."""
+        """The thing does not stand on the tile that was tapped.
+
+        A card with NO footprint is placed at the point tapped, so it occupies the tile it
+        landed on and nothing else: for those this is exactly ``moved_tile``. Returning
+        False outright would also have been defensible, but it would make the property mean
+        two different things depending on the row, and this way it answers the same question
+        for every card.
+
+        This used to raise a TypeError on any troop row -- the two criteria documented as
+        the ones NOT to use returned cleanly while the recommended one crashed, so a caller
+        who followed the advice hit it and a caller who ignored it did not. It survived
+        because every test here used a deck of buildings, so the tests could not see the
+        part of the space where most cards live.
+        """
+        if not self.footprint:
+            return self.moved_tile
         half = self.footprint * self.subtile // 2
         tx, ty = self.commanded_tile
         xs = range((self.landed[0] - half) // self.subtile, (self.landed[0] + half) // self.subtile)
@@ -311,7 +339,7 @@ def relocations(trace, accepted_only: bool = True) -> list[Relocation]:
                     team=cmd.team,
                     card_id=card_id,
                     card_name=info.name if info else f"card:{card_id}",
-                    footprint=getattr(info, "footprint_tiles", 1) if info else 1,
+                    footprint=info.footprint_tiles if info else None,
                     commanded=(cmd.x, cmd.y),
                     landed=(pos[0], pos[1]),
                     subtile=header.subtile,

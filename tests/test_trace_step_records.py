@@ -230,3 +230,101 @@ def test_a_trace_without_the_fields_refuses_instead_of_reporting_no_relocation()
     rec.trace.steps[-1].landed = []
     with pytest.raises(ValueError, match="predates them"):
         relocations(rec.trace)
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_every_criterion_answers_for_a_card_with_no_footprint():
+    """THE POPULATION THE OTHER TESTS HERE COULD NOT SEE.
+
+    Every test above uses a deck of buildings, so none of them ever held a row whose
+    `footprint` is None -- which is troops, spells and spawners, and in a real trace is most
+    rows. `lost_tile` raised a TypeError on all of them while `moved_point` and `moved_tile`
+    returned cleanly, so the criterion documented as the one to USE was the only one that
+    crashed. Found by train on their first real trace: 58 troop commands against 6 building
+    ones.
+
+    A deck of one placement class is a sample that cannot fail in the way the code does.
+    """
+    from royalegym.landing import relocations
+
+    engine = RustEngine()
+    cards = engine.cards()
+    by_placement: dict[int, int] = {}
+    for i, c in enumerate(cards):
+        by_placement.setdefault(int(c.placement), i)
+    troop = by_placement.get(int(Placement.TROOP))
+    building = by_placement.get(int(Placement.BUILDING))
+    assert troop is not None, "this card table has no troop, so the defect cannot appear"
+    assert building is not None, "this card table has no building to contrast against"
+    # Everything else the table offers, so no placement class is left untested by omission.
+    skip = (int(Placement.TROOP), int(Placement.BUILDING))
+    others = [i for p, i in by_placement.items() if p not in skip]
+
+    deck = [troop, building, *others][:8]
+    deck = (deck * 8)[:8]
+    setup = MatchSetup(decks=[deck, deck], elixir_milli=[10000, 10000])
+    engine.reset(seed=0, setup=setup)
+    engine.step([], 10)
+    rec = ReplayRecorder()
+    rec.begin(engine, 0, setup)
+    for slot in range(4):
+        command = DeployCommand(
+            team=0, hand_slot=slot, x=9 * TILE + TILE // 2, y=5 * TILE + TILE // 2
+        )
+        results = engine.step([command], 1)
+        rec.record_frame(engine)
+        rec.record_step(engine.state().tick, 1, [command], results)
+
+    rows = relocations(rec.trace)
+    assert rows, "nothing was accepted, so this test measured nothing"
+    footless = [r for r in rows if not r.has_footprint]
+    assert footless, (
+        "every accepted row had a footprint, so this test is the buildings-only sample "
+        "again and cannot see the defect it exists for"
+    )
+    for r in rows:
+        # The point of the test: none of the three may raise, for any card.
+        assert isinstance(r.moved_point, bool)
+        assert isinstance(r.moved_tile, bool)
+        assert isinstance(r.lost_tile, bool), f"{r.card_name} did not answer lost_tile"
+
+    # And the filter the module documents must work on exactly these rows.
+    rate = sum(r.lost_tile for r in rows if r.has_footprint)
+    assert rate >= 0
+    with pytest.raises(TypeError):
+        # Pinned so the docs are never quietly changed back: this is why has_footprint exists.
+        [r for r in rows if r.footprint >= 2]
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_a_card_id_the_table_does_not_have_is_named_rather_than_guessed():
+    """Found by a plant that changed nothing: the only difference between two versions of
+    the footprint lookup was an out-of-range card id, and no test reached that path.
+
+    A refused command can carry EMPTY_CARD, and `accepted_only=False` is a documented way
+    to ask for those rows. Guessing a footprint of 1 for an unknown card would make
+    `lost_tile` answer confidently about a card it cannot identify.
+    """
+    from royalegym.landing import relocations
+
+    engine = RustEngine()
+    setup = MatchSetup(decks=[list(range(8))] * 2, elixir_milli=[10000, 10000])
+    engine.reset(seed=0, setup=setup)
+    engine.step([], 10)
+    rec = ReplayRecorder()
+    rec.begin(engine, 0, setup)
+    command = DeployCommand(team=0, hand_slot=0, x=9 * TILE, y=5 * TILE)
+    results = engine.step([command], 1)
+    rec.record_frame(engine)
+    rec.record_step(engine.state().tick, 1, [command], results)
+    rec.trace.steps[-1].card_ids = [10_000]  # no table has this
+
+    rows = relocations(rec.trace, accepted_only=False)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.card_name == "card:10000", f"an unknown card was named {row.card_name!r}"
+    assert row.footprint is None, (
+        f"an unknown card was given footprint {row.footprint!r}; a guessed footprint makes "
+        "lost_tile answer confidently about a card it cannot identify"
+    )
+    assert isinstance(row.lost_tile, bool)
