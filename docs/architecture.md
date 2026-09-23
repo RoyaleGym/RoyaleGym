@@ -234,16 +234,20 @@ exactly.
 ## Tests
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 793 passed, 8 skipped, 4 xfailed at 5ceeb2c
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 825 passed, 9 skipped, 1 xfailed at afd259d on build d872d792711934c2
 ..\.venv\Scripts\python -m ruff check royalegym tests examples   # All checks passed!
 ```
 
-That count names the commit it was measured at, because a count is only a fact about one
-tree and this suite grows daily. A test checks it, and only on that commit: anywhere else
+That count names the commit it was measured at AND the engine build, because it is only a
+fact about one tree compiled against one ledger. Both move: the build digest changed three
+times on 2026-09-22 alone, twice without any commit in this repo, because it covers
+calibration.json and arena.json rather than code. A test checks it, and only on that commit: anywhere else
 it says so rather than comparing two different trees.
 
-The split moves between a workspace and a fresh clone even when the total does not. At
-5ceeb2c this machine gives 793 passed and 8 skipped and a clone gives 797 and 4, both 805.
+The split moves between a workspace and a fresh clone even when the total does not. At 5ceeb2c, on
+the earlier build f7628dd51148e4ce, this machine gave 793 passed and 8 skipped and a clone
+gave 797 and 4, both 805. Those two are kept as a matched pair taken on one build; do not
+compare either against the figure above, which is a different build.
 More tests RUN on the clone, which is the opposite of what you would expect. The reason is
 the card table: six of the skips here are two-engine comparisons that refuse to run while
 this machine's compiled engine carries a newer table than MockEngine reads, and on a clone
