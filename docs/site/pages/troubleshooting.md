@@ -94,12 +94,17 @@ The two `...` are the full folder path on your machine. Everything else is the r
 `arena.json` and no `globals.json`. Generating them is a mandatory install step, not an optional
 one. This was checked on clean clones of all four repos.
 
+**Note the third line.** The error message above is the engine's own, and it still tells you to
+extract the 2018 table over `cards.json`. That was the recipe before RoyaleSim committed its
+derived 15.535 table; the current install copies instead. Follow the block below rather than the
+quoted message.
+
 **What to do.** Run all four generator commands, from your `RoyaleSim` folder:
 
 ```
 ..\.venv\Scripts\python tools\extract_arena.py
 ..\.venv\Scripts\python tools\extract_cards.py --vintage 2018
-..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 --out data\derived\cards.json
+Copy-Item data\derived\cards-15.535.json data\derived\cards.json
 ..\.venv\Scripts\python tools\extract_globals.py
 ```
 

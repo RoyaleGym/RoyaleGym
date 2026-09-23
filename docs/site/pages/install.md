@@ -107,7 +107,7 @@ them.
     cd RoyaleSim
     ..\.venv\Scripts\python tools\extract_arena.py
     ..\.venv\Scripts\python tools\extract_cards.py --vintage 2018
-    ..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 --out data\derived\cards.json
+    Copy-Item data\derived\cards-15.535.json data\derived\cards.json
     ..\.venv\Scripts\python tools\extract_globals.py
     cd ..
     ```
@@ -118,7 +118,7 @@ them.
     cd RoyaleSim
     ../.venv/bin/python tools/extract_arena.py
     ../.venv/bin/python tools/extract_cards.py --vintage 2018
-    ../.venv/bin/python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json
+    cp data/derived/cards-15.535.json data/derived/cards.json
     ../.venv/bin/python tools/extract_globals.py
     cd ..
     ```
@@ -150,7 +150,7 @@ things read it by name.
 | The run | Writes | Read by |
 |---|---|---|
 | `--vintage 2018` | `data/derived/cards-2018.json` | one of the engine's own Rust tests, which loads it by that exact filename |
-| `--vintage 2018 --out data\derived\cards.json` | `data/derived/cards.json` | the engine itself, every time you create one |
+| `Copy-Item ...cards-15.535.json ...cards.json` | `data/derived/cards.json` | the engine itself, every time you create one |
 
 Leave either one out and something later goes looking for a file that is not there.
 
