@@ -89,12 +89,16 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [2, 1]  tick 3600
+winner 0  crowns [1, 0]  tick 3755
 ```
 
-That is a whole match, re-run 2026-09-23 on engine build `d6715210f21ca0c3` with the **15.535 card
-table**, which is what the install above puts at `cards.json`. Blue took two of Red's princess
-towers and Red took one, so Blue wins on crowns.
+That is a whole match, re-run 2026-09-23 on engine build `8952c1c4aa7d7923` with the **15.535 card
+table**, which is what the install above puts at `cards.json`. Blue took one of Red's princess
+towers and Red took none, so Blue wins on crowns.
+
+Measured on a clean runner, not here: RoyaleGym suite run 35930514103, building the engine from
+RoyaleSim at `f3cd4ca`. Two earlier measurements agree, one on CI from an earlier RoyaleSim commit
+and one on a developer machine, so the figure does not rest on a single build of a single tree.
 
 **Two stamps, because two things move this output independently.** The build is one: the same
 program on a different engine can end a different way. The card table is the other, and it is not a
@@ -103,8 +107,16 @@ smaller effect. The same program at this same build, run against the 2018 table,
 vintage together tell you which of the two moved, rather than leaving you to suspect your install.
 `RustEngine().config()` prints yours.
 
-Tick 3600 is exactly three minutes, so this one finished in regulation and never reached
-overtime.
+The digest covers `data/calibration.json` and `arena.json` - the data the engine was built from,
+not the compiled Rust. That is why two engines compiled from different source trees can share one,
+and it is the right stamp here: this battle last moved because a ledger value moved. To tell two
+engines built from the same data apart you want `engine_binary`, which is a different stamp and not
+this one.
+
+Tick 3755 is past the three-minute mark, so this one ran into overtime rather than finishing in
+regulation. It used to end at 3600, and the engine change that moved it has not been attributed to
+a specific rule: two changes landed together and the experiment that would separate them has not
+been run, so this page names the number and not a cause.
 
 Both players are picking at random from the legal moves, and one of them still took a tower. That
 is the bar your bot starts from.
