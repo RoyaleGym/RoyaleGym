@@ -267,6 +267,7 @@ otherwise.
 | `obs.py` | `ObsBuilder`: `SpatialObsBuilder`, `EntityListObsBuilder` |
 | `action.py` | `ActionParser`: `TileActionParser`, `HalfTileActionParser`; `PlacementOracle` (the legality mask) |
 | `reward.py` | `RewardFunction` and the shipped terms; `default_reward()` |
+| `landing.py` | `landings()`: where a deploy actually put its units, read from `engine.state()`. A `DeployResult` carries the TAP, and the engine relocates a building whose footprint does not fit, so for buildings the two differ on half of accepted taps and by a full tile or more |
 | `done_condition.py` | `DoneCondition`, `TerminationCondition`, `TruncationCondition` and the shipped conditions |
 | `state_mutator.py` | `StateMutator` and the shipped mutators; `Snapshot` |
 | `selfplay.py` | `Opponent`, `NoopOpponent`, `RandomLegalOpponent`, `CallableOpponent`, `OpponentPool` (uniform / latest / PFSP sampling, Elo bookkeeping) |
