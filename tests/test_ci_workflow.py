@@ -99,15 +99,27 @@ def test_the_workflow_records_the_build_digest_beside_the_count() -> None:
     asserted ``"build_digest" in workflow``, and that substring also appears in the step's
     IMPORT line, so deleting the recording entirely left the test green. It was checking a
     token adjacent to the thing it claimed. This reads the recording step's own commands.
-    """
-    import yaml
 
-    steps = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]["suite"]["steps"]
-    recording = [s for s in steps if "GITHUB_STEP_SUMMARY" in str(s.get("run", ""))]
-    assert recording, (
-        "no step writes to GITHUB_STEP_SUMMARY, so a CI run records no provenance at all"
+    NO YAML PARSER HERE, and that is the second thing CI taught this test. The version after
+    that imported ``yaml``, which is not in this repo's documented install -- the install
+    page lists maturin, pytest, hypothesis and ruff -- so a test ABOUT the workflow was the
+    one test that could not run ON the workflow. It failed with ModuleNotFoundError on the
+    first real run. Adding PyYAML to CI would have fixed the symptom by making the runner
+    diverge from the documented install, which is the one thing this job exists to prevent.
+    """
+    text = WORKFLOW.read_text(encoding="utf-8")
+    # The recording step, taken as the text between its name and the next step or the end.
+    marker = "- name: record what this run was"
+    assert marker in text, (
+        "the workflow no longer has a step named 'record what this run was', so either it "
+        "records nothing or this test is looking for the wrong step"
     )
-    body = "\n".join(str(s["run"]) for s in recording)
+    after = text.split(marker, 1)[1]
+    body = after.split("\n      - name:", 1)[0]
+    assert "GITHUB_STEP_SUMMARY" in body, (
+        "the recording step does not write to GITHUB_STEP_SUMMARY, so a CI run records no "
+        "provenance at all"
+    )
     for token in ("build_digest=", "engine_binary=", "cards_vintage="):
         assert token in body, (
             f"the recording step does not emit {token}. Without it a later failure cannot be "

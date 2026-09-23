@@ -148,6 +148,11 @@ def test_the_build_directory_is_found_behind_other_text(tmp_path, monkeypatch):
     cards = checkout / "data" / "derived" / "cards.json"
     cards.parent.mkdir(parents=True)
     cards.write_text("{}")
+    # The build directory has to EXIST, as it does in a real build. The fixture used to
+    # leave it out, and that is what made this test pass on Windows and return None on a
+    # clean ubuntu runner: `Path(missing, "..", "..", f).is_file()` is True on Windows,
+    # which normalises ".." lexically, and False on POSIX, which walks each component.
+    (checkout / "crates" / "royalesim").mkdir(parents=True)
     build_dir = str(checkout / "crates" / "royalesim").encode("utf-8")
     blob = b"\x00\x01garbage/nowhere N" + build_dir + b"/../../data/derived/\x00tail"
     ext = tmp_path / "royalesim.bin"
@@ -155,7 +160,32 @@ def test_the_build_directory_is_found_behind_other_text(tmp_path, monkeypatch):
     monkeypatch.setattr(rust_engine, "_extension_file", lambda: ext)
     rust_engine._cards_json_in_build_checkout.cache_clear()
     try:
-        assert rust_engine._cards_json_in_build_checkout() == cards.resolve()
+        got = rust_engine._cards_json_in_build_checkout()
+        # DIAGNOSTIC ON FAILURE, added 2026-09-23 after this passed on Windows and returned
+        # None on a clean ubuntu runner. Windows never exercises the candidate LOOP: the
+        # first regex match there is the drive letter, which is already the right start,
+        # while on POSIX the first match is a slash inside the leading garbage and the
+        # right answer is the second candidate. The failure said only "None", which names
+        # no step, so it is reconstructed here rather than guessed at from a laptop that
+        # cannot reproduce it.
+        if got != cards.resolve():
+            blob_read = ext.read_bytes()
+            at = blob_read.find(rust_engine._CARD_PATH_TAIL)
+            start = at
+            while start > 0 and at - start < 4096 and 0x20 <= blob_read[start - 1] != 0x7F:
+                start -= 1
+            run = blob_read[start:at]
+            tried = []
+            for m in rust_engine._PATH_ROOT.finditer(run):
+                bd = run[m.start() :].decode("utf-8", "replace")
+                cand = Path(bd, "..", "..", "data", "derived", "cards.json")
+                tried.append(f"{bd!r} -> is_file={cand.is_file()}")
+            raise AssertionError(
+                f"expected {cards.resolve()}, got {got!r}.\n"
+                f"  tail found at: {at}\n"
+                f"  run: {run.decode('utf-8', 'replace')!r}\n"
+                f"  candidates tried, in order:\n    " + "\n    ".join(tried)
+            )
     finally:
         rust_engine._cards_json_in_build_checkout.cache_clear()
 
@@ -394,3 +424,56 @@ def test_the_binary_stamp_is_in_config(rust) -> None:
     assert config["build_digest"] == rust_engine.build_digest()
     # The three are different questions and must not be the same answer.
     assert len({config["engine_binary_sha256"], config["build_digest"]}) == 2
+
+
+def test_a_build_directory_that_does_not_exist_is_refused_on_every_platform(
+    tmp_path, monkeypatch
+):
+    """The cross-platform finding from the first clean-runner CI run, pinned.
+
+    ``Path(x, "..", "..", f).is_file()`` asks a DIFFERENT QUESTION on the two platforms.
+    Windows normalises ``..`` lexically and answers without the intermediate directory
+    existing; POSIX walks every component and ENOENTs. Because the scanner takes the FIRST
+    candidate that is a file, earliest first, the same extension could resolve to DIFFERENT
+    checkouts on the two platforms -- Windows accepting a short garbage candidate that
+    POSIX rejects. The consequence is silent: the card table gets a provenance label that is
+    confidently wrong, which is exactly what the digest-beside-the-count discipline exists
+    to prevent.
+
+    This would have FAILED on Windows before the fix and passed on Linux, so it is the
+    mirror of the failure that found it.
+    """
+    real = tmp_path / "real"
+    (real / "data" / "derived").mkdir(parents=True)
+    (real / "data" / "derived" / "cards.json").write_text("{}")
+    (real / "crates" / "royalesim").mkdir(parents=True)
+
+    # A decoy whose cards.json exists but whose BUILD DIRECTORY does not. On Windows this
+    # used to win, because the lexical "..' never checks that crates/royalesim is there.
+    decoy = tmp_path / "decoy"
+    (decoy / "data" / "derived").mkdir(parents=True)
+    (decoy / "data" / "derived" / "cards.json").write_text("{}")
+
+    decoy_build = str(decoy / "crates" / "royalesim").encode("utf-8")
+    real_build = str(real / "crates" / "royalesim").encode("utf-8")
+    blob = (
+        b"\x00\x01"
+        + decoy_build
+        + b"/../../data/derived/\x00\x01"
+        + real_build
+        + b"/../../data/derived/\x00tail"
+    )
+    ext = tmp_path / "royalesim.bin"
+    ext.write_bytes(blob)
+    monkeypatch.setattr(rust_engine, "_extension_file", lambda: ext)
+    rust_engine._cards_json_in_build_checkout.cache_clear()
+    try:
+        got = rust_engine._cards_json_in_build_checkout()
+    finally:
+        rust_engine._cards_json_in_build_checkout.cache_clear()
+    assert got == (real / "data" / "derived" / "cards.json").resolve(), (
+        f"resolved to {got!r}. The decoy's cards.json exists but its build directory does "
+        "not, so it is not a checkout anything was built in. Accepting it means the engine's "
+        "card table is attributed to the wrong tree, silently, and differently on Windows "
+        "and Linux."
+    )

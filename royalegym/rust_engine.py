@@ -300,6 +300,20 @@ def _cards_json_in_build_checkout() -> Path | None:
                 build_dir = run[m.start() :].decode("utf-8")
             except UnicodeDecodeError:
                 continue
+            # THE BUILD DIRECTORY MUST EXIST BEFORE ITS cards.json IS BELIEVED, and that
+            # is a portability fix rather than a tightening. `Path(x, "..", ..).is_file()`
+            # asks a DIFFERENT QUESTION on the two platforms: Windows normalises ".."
+            # lexically and answers without the intermediate existing, while POSIX walks
+            # each component and ENOENTs. Since this loop takes the FIRST candidate that is
+            # a file, earliest first, the two platforms could pick DIFFERENT checkouts from
+            # the same extension -- Windows accepting a short garbage candidate such as
+            # "/crates/royalesim/../../data/derived/cards.json" that POSIX rejects. The
+            # consequence is silent: `engine_cards_json_path` would label a card table with
+            # a provenance that is confidently wrong. Requiring the directory to exist makes
+            # both platforms strict and makes them agree. Found by a clean ubuntu CI runner
+            # on 2026-09-23; it cannot be reproduced on Windows, which is the point.
+            if not Path(build_dir).is_dir():
+                continue
             candidate = Path(build_dir, "..", "..", "data", "derived", "cards.json")
             if candidate.is_file():
                 return candidate.resolve()
