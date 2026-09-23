@@ -56,14 +56,28 @@ jobs:
           .venv/bin/python -m pip install maturin pytest hypothesis ruff
 
       # Generates RoyaleSim/data/derived/, which no clone carries and without which the engine
-      # cannot start. --vintage 2018 on BOTH extract_cards runs: without it the extractor asks
-      # for a card table that is not shipped.
+      # cannot start.
+      #
+      # THE ENGINE READS THE 15.535 TABLE, BY COPY, and that changed on 2026-09-23. This step
+      # ran `extract_cards.py --vintage 2018` TWICE, so CI put the 2018 table in cards.json --
+      # the table the engine actually loads. Sim ruled against that: every clone was running a
+      # 2026 simulator on eight-year-old card data, and the constraint that forced 2018 was an
+      # asset pack that cannot be redistributed. Committing the DERIVED table removed it, so
+      # the install copies `cards-15.535.json` and the 2018 table is built beside it under its
+      # own name for the comparisons that want it.
+      #
+      # A workflow that installs some other way than the README tests nothing a reader meets,
+      # and for a while this one was the other way round: the README moved first and CI kept
+      # writing 2018, which is why `test_readme_program` went red pointing at the workflow.
+      # Mirrors README.md stage 3. NOTE for whoever reads this next: as of f37dd5d,
+      # docs/site/pages/install.md still publishes the two `--vintage 2018` lines and does NOT
+      # match README.md. That page is the docs session's; this file follows the README.
       - name: generate the data the engine reads
         working-directory: RoyaleSim
         run: |
           ../.venv/bin/python tools/extract_arena.py
           ../.venv/bin/python tools/extract_cards.py --vintage 2018
-          ../.venv/bin/python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json
+          cp data/derived/cards-15.535.json data/derived/cards.json
           ../.venv/bin/python tools/extract_globals.py
 
       - name: build the engine

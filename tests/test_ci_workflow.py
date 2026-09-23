@@ -42,9 +42,55 @@ POSIX_INSTALL = (
     ".venv/bin/python -m pip install maturin pytest hypothesis ruff",
     "../.venv/bin/python tools/extract_arena.py",
     "../.venv/bin/python tools/extract_cards.py --vintage 2018",
-    "../.venv/bin/python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json",
     "../.venv/bin/python tools/extract_globals.py",
 )
+
+#: WHICH FILE ENDS UP AS cards.json is checked separately, below, because it is the one
+#: part of the install that three places have to agree about and the only part whose
+#: disagreement changes what the engine computes. It was dropped from the list above when
+#: it stopped being a single literal shared by both pages.
+CARDS_JSON_WRITERS = {
+    "2018": "--vintage 2018 --out data",
+    "15.535": "cards-15.535.json",
+}
+
+
+def installed_table(text: str) -> set[str]:
+    """Which card table a page or workflow puts in cards.json, by the line that writes it."""
+    return {name for name, marker in CARDS_JSON_WRITERS.items() if marker in text}
+
+
+def test_the_readme_the_install_page_and_the_workflow_install_the_SAME_card_table() -> None:
+    """Three places describe one cards.json, and the engine loads whatever is in it.
+
+    This is not tidiness. The card table changes what the engine COMPUTES: the same
+    scripted battle ends `winner 0 crowns [2, 1]` on the 15.535 table and
+    `winner 1 crowns [0, 1]` on the 2018 one, same engine build. So a reader who follows
+    the page that disagrees gets a different game and no way to know which page was wrong.
+
+    It fires the moment one of the three moves, which is what happened on 2026-09-23:
+    README.md changed to copy the committed 15.535 table after sim ruled that a 2026
+    simulator should not run on eight-year-old card data, this workflow followed it, and
+    docs/site/pages/install.md kept publishing the two `--vintage 2018` lines. Two
+    published pages then told a reader to put different tables in the same file, and
+    whichever install they ran last won.
+    """
+    sources = {
+        "README.md": (REPO / "README.md").read_text(encoding="utf-8"),
+        "docs/site/pages/install.md": INSTALL_PAGE.read_text(encoding="utf-8"),
+        ".github/workflows/suite.yml": WORKFLOW.read_text(encoding="utf-8"),
+    }
+    tables = {name: installed_table(text) for name, text in sources.items()}
+    assert all(tables.values()), (
+        f"a source names no cards.json writer at all, so this check cannot compare them: "
+        f"{ {k: sorted(v) for k, v in tables.items()} }"
+    )
+    distinct = {frozenset(v) for v in tables.values()}
+    assert len(distinct) == 1, (
+        "these disagree about which card table becomes cards.json, and the engine loads "
+        f"whatever is there: { {k: sorted(v) for k, v in tables.items()} }. Make the two "
+        "published pages agree first -- the workflow follows the README."
+    )
 
 
 @pytest.mark.parametrize("command", POSIX_INSTALL)
