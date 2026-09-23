@@ -265,7 +265,7 @@ for the learner.
 <p align="center">
   <img alt="Tests on your own clone at fa380b3, 2026-09-22: 781 passed, 3 skipped, nothing failing" src="https://img.shields.io/badge/your%20clone%20at%20fa380b3-781%20passed%2C%203%20skipped-2ea043?style=flat-square">
   <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
-  <img alt="pytest on the project's own machine at c94bb53, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%20at%20c94bb53-778%20passed%2C%207%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on the project's own machine at 56da55d, 2026-09-22; its 8 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%20at%2056da55d-778%20passed%2C%208%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>
