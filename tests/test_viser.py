@@ -69,3 +69,38 @@ def test_a_publisher_names_its_run_in_every_frame_and_omits_it_when_unnamed(monk
         assert sent, "nothing was published while attached"
         assert sent[0]["meta"].get("run") == expected
         env.close()
+
+
+def test_a_second_publisher_on_a_taken_port_says_it_is_a_second_run() -> None:
+    """A bare OSError here reads as a broken machine and means "a run is already streaming".
+
+    On Windows the raw error is WinError 10048, "Only one usage of each socket address is
+    normally permitted", which names neither training nor another run nor a remedy. A
+    reader meets it at the moment they follow the published example with a run already
+    going, and the published example is what told them to use that port. Viser 1
+    reproduced it and found it had also been read as "the example is broken" in a gate run.
+
+    Bound on an EPHEMERAL port rather than the documented 9870, so this test cannot fail
+    because some other session on this machine happens to be streaming -- and cannot pass
+    by accident for the same reason.
+    """
+    first = ViserPublisher(port=0)
+    host, port = first.address
+    try:
+        with pytest.raises(OSError, match="already using it") as caught:
+            ViserPublisher(host=host, port=port)
+        message = str(caught.value)
+        assert str(port) in message, f"the error does not name the port it failed on: {message}"
+        for expected in ("already", "second run", "ROYALEVISER"):
+            assert expected in message, (
+                f"the error does not mention {expected!r}, so a reader still cannot tell a "
+                f"second run from a broken machine: {message}"
+            )
+        # The cause is kept rather than swallowed: whoever is debugging a genuinely odd
+        # bind failure still needs the operating system's own words.
+        assert caught.value.__cause__ is not None, (
+            "the original OSError was discarded, so a bind failure that is NOT a second "
+            "run now has no diagnosis at all"
+        )
+    finally:
+        first.close()

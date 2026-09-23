@@ -204,7 +204,29 @@ class ViserPublisher:
     def __init__(self, host: str = HOST, port: int = PORT, run: str = "") -> None:
         self.run = run
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._sock.bind((host, port))
+        try:
+            self._sock.bind((host, port))
+        except OSError as exc:
+            # A BARE OSError HERE READS AS A BROKEN MACHINE AND MEANS "a run is already
+            # streaming". On Windows it is WinError 10048, "Only one usage of each socket
+            # address is normally permitted", which says nothing about training, about
+            # another run, or about what to do. A reader meets it at the exact moment they
+            # follow the published example with a run already going, and the published
+            # example is what told them to use this port. Viser 1 reproduced it and found
+            # it had also been read as "the example is broken" in a gate run.
+            #
+            # The port itself stays fixed, deliberately: discovery needs a known address,
+            # so the reader sets one string and points a viewer at the same string. An
+            # ephemeral port would need a discovery file, which is more machinery than
+            # this should carry.
+            self._sock.close()
+            raise OSError(
+                f"cannot stream to {host}:{port} because something is already using it, "
+                "which is almost always another run of your own: ONE run holds this port "
+                "for as long as it is streaming. A second run on the same machine needs "
+                "its own, so set ROYALEVISER=127.0.0.1:9872 (any free port) and point the "
+                f"viewer at the same number. The original error was: {exc}"
+            ) from exc
         self._sock.setblocking(False)
         self.address: tuple[str, int] = self._sock.getsockname()[:2]
         self._peer: tuple[str, int] | None = None
