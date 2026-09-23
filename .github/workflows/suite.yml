@@ -1,0 +1,103 @@
+name: suite
+
+# Job A, the per-repo half. It installs the way THIS REPO'S README tells a reader to install,
+# verbatim, because a workflow that installs some other way tests nothing a reader will meet.
+# The install path was broken for the entire public life of these repos and nobody noticed,
+# which is the whole reason CI is worth having here.
+#
+# TWO THINGS THAT MAKE THIS LONGER THAN THE TEMPLATE, both deliberate.
+#
+# 1. RoyaleGym HAS NO STANDALONE INSTALL. Its README documents one path and that path clones
+#    RoyaleSim as a sibling, generates the derived data, builds the engine with maturin and
+#    then installs this package. `pip install -e ".[dev]"` on its own is not in the README at
+#    all. It would "work" -- the package imports without the engine -- and every Rust-backed
+#    test would SKIP, which is the one outcome this project refuses to call a pass.
+#
+# 2. IT RUNS THE macOS/LINUX COMMANDS, which docs/site/pages/install.md publishes and says in
+#    as many words that nobody has ever typed. A fresh ubuntu runner is the first machine in
+#    this project's life to execute them. A red first run here is the job working.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    steps:
+      # The README's layout is a folder holding the sibling repos with one venv beside them,
+      # so the checkout goes into RoyaleGym/ rather than the workspace root.
+      - uses: actions/checkout@v4
+        with:
+          path: RoyaleGym
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # maturin needs a Rust toolchain. The README calls it a prerequisite and warns the build
+      # "fails late and unhelpfully" without one.
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: clone the sibling the README names
+        run: git clone --depth 1 https://github.com/RoyaleGym/RoyaleSim.git
+
+      # docs/site/pages/install.md, the macOS/Linux commands, verbatim.
+      - name: venv and tools
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install maturin pytest hypothesis ruff
+
+      # Generates RoyaleSim/data/derived/, which no clone carries and without which the engine
+      # cannot start. --vintage 2018 on BOTH extract_cards runs: without it the extractor asks
+      # for a card table that is not shipped.
+      - name: generate the data the engine reads
+        working-directory: RoyaleSim
+        run: |
+          ../.venv/bin/python tools/extract_arena.py
+          ../.venv/bin/python tools/extract_cards.py --vintage 2018
+          ../.venv/bin/python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json
+          ../.venv/bin/python tools/extract_globals.py
+
+      - name: build the engine
+        working-directory: RoyaleSim
+        run: ../.venv/bin/maturin develop --release
+
+      - name: install the package
+        run: .venv/bin/python -m pip install -e RoyaleGym
+
+      # A SKIP IS NOT A PASS, and this is where that bites hardest. If the engine did not
+      # install, every Rust-backed test skips and the suite is green while testing almost
+      # nothing. So the engine is required to CONSTRUCT before the suite is allowed to count.
+      - name: refuse to run the suite without the engine
+        run: |
+          .venv/bin/python - <<'PY'
+          from royalegym.rust_engine import RustEngine, build_digest, core_available
+          if not core_available():
+              raise SystemExit("royalesim did not install; the suite would skip its way to green")
+          RustEngine()
+          print("engine constructs, build_digest", build_digest())
+          PY
+
+      - name: suite
+        working-directory: RoyaleGym
+        run: ../.venv/bin/python -m pytest -q -p no:randomly
+
+      - name: ruff
+        working-directory: RoyaleGym
+        run: ../.venv/bin/python -m ruff check royalegym tests examples
+
+      # A COUNT IS A FACT ABOUT A BUILD. The engine digest covers calibration.json and
+      # arena.json rather than code, so it moved three times on 2026-09-22 and twice of those
+      # with no commit in this repo at all. A CI line recording only a count is the version
+      # nobody can debug, because the first green-then-red-with-no-commit looks impossible.
+      - name: record what this run was
+        if: always()
+        run: |
+          {
+            echo "commit=$(git -C RoyaleGym rev-parse HEAD)"
+            echo "sim=$(git -C RoyaleSim rev-parse HEAD)"
+            .venv/bin/python -c "from royalegym.rust_engine import build_digest, engine_binary_digest; print(f'build_digest={build_digest()}'); print(f'engine_binary={engine_binary_digest()}')" || true
+            .venv/bin/python -c "from royalegym.protocol import derived_cards_vintage; print(f'cards_vintage={derived_cards_vintage()}')" || true
+          } >> "$GITHUB_STEP_SUMMARY"

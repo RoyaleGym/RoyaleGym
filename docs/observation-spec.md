@@ -220,7 +220,9 @@ Recorded so the reasoning survives, including the part of it that was WRONG, bec
 wrong version is the one a reader is likely to re-derive.
 
 **The dead claim.** Counting distinct per-tile feature vectors in `spatial` gives 11 to 18
-distinct vectors across 576 tiles, with the most common covering 43% of the board. It is
+distinct vectors across 576 tiles, with the most common covering 43% of the board. Measured
+on build `d872d792711934c2`, blue seat, at steps 0, 20 and 60 of a played battle with 6, 12
+and 15 entities on the board; the 43% held at all three. It is
 tempting to conclude that a pointer head, which scores a tile by an inner product with that
 tile's features, therefore has ~18 logits available and cannot separate 250 tiles by any
 weights. **That conclusion is false.** The head's inner product is not with this array: the
