@@ -37,14 +37,18 @@ How often the engine agrees with the recording:
 | how often the engine agrees | counting towers | towers left out | from the run at |
 |---|---|---|---|
 | a unit is within a quarter of a tile of where it really was | 85.1% | 56.5% | `d872d792711934c2` |
-| a unit's hitpoints are exactly right | 81.7%, the run before it | 79.5% | `d872d792711934c2` |
+| a unit's hitpoints are exactly right | 80.8% | 79.5% | `d872d792711934c2` |
 
-Both right-hand figures are from the run at `d872d792711934c2`. The one cell that is not is marked
-where it sits, not in a note above the table, because a reader who arrives here from a link never
-sees a note above the table. The position figure moved on 2026-09-22 when the spawner emission
-point was corrected, from 49.4%, over the same 73 fixtures and the same harness; hitpoints barely
-moved, 79.4% to 79.5%, which is the useful contrast. Correcting where a spawner puts its units
-changed where units stand and not how much damage they took.
+Every figure in this table is from one run, at `d872d792711934c2`, over 73 recorded battles:
+270,972 unit-ticks without towers and 799,831 with them.
+
+The contrast between the rows is the useful part. When the spawner emission point was corrected on
+2026-09-22, position went from 49.4% to 56.5% and hitpoints went from 79.4% to 79.5% without
+towers, and from 81.7% to 80.8% with them. Correcting where a spawner puts its units changed where
+units stand and not how much damage they took, in both populations, and the towers-included figure
+moved slightly DOWN. A change that improves the thing it targets and leaves everything else roughly
+where it was is the shape you want; one that moves every number at once usually means something
+else moved too.
 
 The right-hand column is the one to look at. Towers do not move and there are six of them in
 every battle, so counting them flatters the result. A tower that sits still is not evidence that
