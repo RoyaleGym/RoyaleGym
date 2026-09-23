@@ -21,6 +21,7 @@ from royalegym.protocol import (
     DeployStatus,
     EntityKind,
     MatchSetup,
+    Placement,
     ShuffleMode,
     SpawnSpec,
     TowerSlot,
@@ -38,10 +39,32 @@ DECK = card_ids(
     ("Knight", "Archer", "Goblins", "Giant", "MiniPekka", "Musketeer", "Skeletons", "Minions"),
     _CARDS,
 )
-# troop, tank, air, splash, building, 3 spells
+#: troop, tank, air, splash, building, 3 spells. It is the same eight cards as
+#: ``MIXED_DECK`` in a different order, so the two are not independent samples of the
+#: catalogue; ``test_the_all_types_deck_is_what_its_name_says`` holds the spread to the
+#: engine's own catalogue rather than to this comment.
 ALL_TYPES_DECK = card_ids(
     ("Knight", "Giant", "Minions", "Valkyrie", "Cannon", "Fireball", "Zap", "Log"), _CARDS
 )
+
+
+def test_the_all_types_deck_is_what_its_name_says() -> None:
+    """A deck called ALL_TYPES has to contain all the types, checked against the engine.
+
+    The name is the only thing saying this deck is a spread, and a name is not a check.
+    Graded on each card's own catalogue row so that a card whose class changes, or a
+    rename that lands on a different card, fails here rather than quietly narrowing
+    every test that uses this deck.
+    """
+    cards = [_CARDS[i] for i in ALL_TYPES_DECK]
+    placements = {c.placement for c in cards}
+    assert Placement.TROOP in placements, "no troop"
+    assert Placement.BUILDING in placements, "no building"
+    assert placements & {Placement.SPELL, Placement.SPELL_NOT_ON_WATER, Placement.ROLLING}, (
+        "no spell of any kind"
+    )
+    assert any(c.flying for c in cards), "nothing that flies"
+    assert len({c.name for c in cards}) == len(cards), "a card is listed twice"
 
 
 def random_commands(eng: MockEngine, parser: TileActionParser, rng: np.random.Generator, p: float):

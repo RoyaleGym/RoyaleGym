@@ -21,6 +21,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _decks import card_ids
 from royalegym import render
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashParallelEnv
@@ -39,10 +40,22 @@ from royalegym.replay import ReplayRecorder, load_trace, save_trace, verify_trac
 from royalegym.selfplay import RandomLegalOpponent
 from royalegym.state_mutator import DefaultStateMutator
 
-ALL_TYPES = [0, 3, 7, 9, 10, 11, 13, 14]
+#: Resolved by NAME, like the rest of the suite: the catalogue renumbers whenever a card
+#: becomes loadable, so a literal id list quietly names different cards.
+ALL_TYPES = card_ids(
+    ("Knight", "Giant", "Minions", "Valkyrie", "Cannon", "Fireball", "Zap", "Log"), MockEngine()
+)
 
 
-def _record(steps: int = 60, frame_every_tick: bool = True):
+#: 80 rather than 60 steps. The recording has to CONTAIN what the viewer tests look at,
+#: and a random policy stopped deploying the flier within 60 steps when the engine's
+#: starting elixir changed on 2026-09-22: more elixir at tick 0 means a different card is
+#: affordable first, so the same seed plays a different battle. The recording is checked
+#: for its contents rather than assumed, in test_the_recorded_battle_is_real_evidence.
+RECORD_STEPS = 80
+
+
+def _record(steps: int = RECORD_STEPS, frame_every_tick: bool = True):
     rec = ReplayRecorder(frame_every_tick=frame_every_tick)
     env = ClashParallelEnv(
         recorder=rec,

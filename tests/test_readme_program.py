@@ -37,6 +37,7 @@ import pytest
 
 from royalegym.protocol import derived_cards_vintage
 from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
+from royalegym.rust_engine import build_digest as engine_build_digest
 
 REPO = Path(__file__).resolve().parents[1]
 README = REPO / "README.md"
@@ -47,6 +48,10 @@ README = REPO / "README.md"
 #: produce the same battle, which is the README's point about naming cards rather than
 #: numbering them, and it is checked rather than assumed.
 RECORDED_VINTAGE = "retroroyale-2018"
+#: The engine build the README's printed battle was recorded against. It covers
+#: data/calibration.json and arena.json, so it moves when a ledger VALUE moves, which is
+#: what turned this battle from a draw into a win on 2026-09-22 with no card changed.
+RECORDED_BUILD = "f7628dd51148e4ce"
 
 pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -84,11 +89,20 @@ def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
     )
     assert done.stdout.strip() == expected.strip(), (
         f"the README prints:\n  {expected.strip()}\nthe program prints:\n  "
-        f"{done.stdout.strip()}\n\nThe first thing to suspect is the card table: this "
-        f"engine was built with {derived_cards_vintage()!r} and the printed result was "
-        f"recorded against {RECORDED_VINTAGE!r}. It held on both when it was written, so "
-        "a difference means one of the eight named cards has changed, and the README's "
-        "printed battle is now wrong for whoever has this catalogue."
+        f"{done.stdout.strip()}\n\n"
+        "The printed battle is the OUTCOME of a whole simulation, so it moves with "
+        "anything the engine reads, not only with the cards. What it depends on, in the "
+        "order worth checking:\n"
+        f"  the engine build   recorded {RECORDED_BUILD}, now {engine_build_digest()}\n"
+        f"  the card table     recorded {RECORDED_VINTAGE!r}, now "
+        f"{derived_cards_vintage()!r}\n"
+        "The build digest covers data/calibration.json and arena.json, so a ledger value "
+        "moving is enough on its own: the starting elixir went from 5 to 6 on 2026-09-22 "
+        "and turned this battle from a 0-0 draw at tick 4800 into 1-0 at tick 3600, with "
+        "no card changed at all. Until that was written down, this message named only the "
+        "card table and sent a reader to the wrong file.\n"
+        "Re-record by running the program and pasting its output under the block, and "
+        "update RECORDED_BUILD and RECORDED_VINTAGE beside it."
     )
 
 
@@ -132,6 +146,17 @@ def test_the_badge_count_matches_what_the_suite_collects() -> None:
         text=True,
         timeout=600,
         cwd=REPO,
+    )
+    # Collection has to have SUCCEEDED. A test file that cannot be imported is a
+    # collection ERROR, and pytest still prints a count of what it did manage to
+    # collect, so reading that number without the exit code lets this certify a badge
+    # against a suite that does not run. Planted: three unimportable test files with the
+    # badge lowered to match, and it passed while the rest never imported. A count is
+    # only a fact about the suite if the suite could be read.
+    assert done.returncode == 0, (
+        f"pytest could not collect the suite (exit {done.returncode}), so the count it "
+        f"printed is of whatever survived. This is a broken suite, not a wrong badge:\n"
+        f"{(done.stdout + done.stderr)[-1500:]}"
     )
     found = re.search(r"(\d+)(?:/\d+)? tests? (?:collected|deselected)", done.stdout)
     assert found, f"could not read a collected count:\n{done.stdout[-800:]}"

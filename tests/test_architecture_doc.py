@@ -72,14 +72,25 @@ def test_the_module_map_names_every_module_and_only_real_ones() -> None:
     )
 
 
+def ruff_scope(text: str, where: str) -> set[str]:
+    found = re.search(r"ruff check ([a-z ]+?)\s*(?:#|\n)", text)
+    assert found, f"{where} no longer shows a ruff command"
+    return set(found.group(1).split())
+
+
 def test_the_documented_gate_commands_name_the_scopes_that_are_gated() -> None:
     """The Tests section prints the commands a contributor runs. They are the gate, so
-    a scope that drifts here is a scope nobody runs."""
-    text = ARCHITECTURE.read_text(encoding="utf-8")
-    ruff = re.search(r"ruff check ([a-z ]+?)\s+#", text)
-    assert ruff, "docs/architecture.md no longer shows a ruff command"
-    scopes = set(ruff.group(1).split())
-    assert scopes == {"royalegym", "tests", "examples"}, (
-        f"the documented ruff scope is {sorted(scopes)}. It should be the same three "
-        "the README gates on, or one of them is linted by nobody."
+    a scope that drifts here is a scope nobody runs.
+
+    Compared against the README's command rather than a list written here. A literal
+    would be a third copy of the same fact, and the next person to widen the gate would
+    update the two they were looking at: that is how this page came to say royalegym and
+    tests while the README already gated examples/ as well. The README is the page a
+    contributor actually follows, so it is the one to agree with.
+    """
+    doc = ruff_scope(ARCHITECTURE.read_text(encoding="utf-8"), "docs/architecture.md")
+    readme = ruff_scope((REPO / "README.md").read_text(encoding="utf-8"), "README.md")
+    assert doc == readme, (
+        f"docs/architecture.md gates ruff on {sorted(doc)} and README.md on "
+        f"{sorted(readme)}. Whichever is narrower names code that nobody lints."
     )

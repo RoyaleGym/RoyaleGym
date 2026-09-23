@@ -249,7 +249,7 @@ otherwise.
 | Module | What it holds |
 |---|---|
 | `protocol.py` | the `Engine` contract and its value types (`BattleState`, `MatchSetup`, `Calibration`, `Arena`, `DeployRules`); `data_dir()` |
-| `env.py` | `ClashParallelEnv` (PettingZoo), `ClashGymEnv` (Gymnasium, ids `royalegym/ClashRoyale-v0`, `ClashRoyaleMock-v0`, `ClashRoyaleRust-v0`), `ClashSelfPlayVecEnv` (N games as 2N agent slots: four games give a `spatial` batch of shape (8, 20, 32, 18) and eight masks), `make_gym_vec_env` |
+| `env.py` | `ClashParallelEnv` (PettingZoo), `ClashGymEnv` (Gymnasium, ids `royalegym/ClashRoyale-v0`, `royalegym/ClashRoyaleMock-v0`, `royalegym/ClashRoyaleRust-v0`), `ClashSelfPlayVecEnv` (N games as 2N agent slots: four games give a `spatial` batch of shape (8, 20, 32, 18) and eight masks), `make_gym_vec_env` |
 | `mock_engine.py` | `MockEngine`, the pure-Python reference engine the RL layer is tested against |
 | `rust_engine.py` | `RustEngine` over the compiled `royalesim` core; `SymmetricRustEngine` for the rotation-mirror gates |
 | `obs.py` | `ObsBuilder`: `SpatialObsBuilder`, `EntityListObsBuilder` |
