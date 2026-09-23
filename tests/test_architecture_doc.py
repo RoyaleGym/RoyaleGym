@@ -96,32 +96,8 @@ def test_the_documented_gate_commands_name_the_scopes_that_are_gated() -> None:
     )
 
 
-def test_no_source_file_carries_a_stray_control_character() -> None:
-    r"""A control character in a string looks exactly like the text around it.
-
-    This cost an hour on 2026-09-22. A regex written as ``[0-9a-f]{7,40}\b`` went into a
-    file through a shell heredoc, where ``\b`` became a real BACKSPACE, 0x08. The line
-    displayed identically in the editor, in ``git diff``, in ``inspect.getsource`` and in
-    the failure message; the regex simply never matched, because it required a backspace
-    the subject never has. Reading the code could not find it. Dumping the bytes could.
-
-    Tab, newline and carriage return are the only control characters a source file has a
-    reason to contain. Anything else arrived by accident.
-    """
-    allowed = {0x09, 0x0A, 0x0D}
-    found: dict[str, list[str]] = {}
-    for path in sorted(REPO.rglob("*.py")):
-        if any(part in {".venv", "__pycache__", "build", ".git"} for part in path.parts):
-            continue
-        raw = path.read_bytes()
-        stray = {b for b in raw if (b < 0x20 or b == 0x7F) and b not in allowed}
-        if stray:
-            where = next(
-                i + 1 for i, line in enumerate(raw.split(b"\n")) if any(b in line for b in stray)
-            )
-            rel = str(path.relative_to(REPO))
-            found[rel] = [f"{hex(b)} at line {where}" for b in sorted(stray)]
-    assert not found, (
-        "these files contain control characters that are not tab, newline or carriage "
-        f"return, which is how an invisible byte gets into a regex or a string: {found}"
-    )
+# The stray-control-character guard that used to live here now lives in
+# tests/test_invisible_characters.py. It moved because it outgrew this file twice over:
+# it is not about docs/architecture.md, and it was widened from .py to every text file
+# and from one byte-level bound to four code-point classes after that bound was shown to
+# miss DEL and the whole C1 range.
