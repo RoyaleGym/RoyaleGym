@@ -263,18 +263,26 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="Tests on a fresh clone, 2026-09-22, debug engine build" src="https://img.shields.io/badge/fresh%20clone%2C%202026--09--22-385%20passed%2C%200%20skipped-2ea043?style=flat-square">
-  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-772%20passed%2C%207%20skipped-2ea043?style=flat-square">
+  <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
+  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-776%20passed%2C%207%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>
 
-**As of 2026-09-22.** Here is what your clone should give you. That day the four repos were
-cloned fresh into an empty folder and set up with the [Install](#install) steps, with a debug
-build of the engine. This repo's tests there gave 385 passed, 0 skipped (RoyaleGym at commit
-`afb6d1e`). Nothing skipped, so every test ran. The suite has grown since (492 tests at commit
-`be58cac`), and has not been re-run from a fresh clone. The release build has not been timed
-from a fresh clone yet.
+**As of 2026-09-22.** Two things about what your clone gives you, and the second is the one to
+read.
+
+The install itself works from nothing. On 2026-09-22 the recipe above was run verbatim from a
+fresh clone in Windows PowerShell 5.1, with no virtual environment active and nothing repaired as
+it went: all 18 lines, including `maturin develop --release`, which took 119 seconds.
+
+**Three tests fail on a clean clone today, and they are ours rather than yours.** You will meet
+them straight after installing, because the next thing this page tells you to do is run the suite.
+The cause is one thing, not three: your clone builds the 2018 card table, which has 66 cards the
+engine can load, and those three tests are pinned to fixtures made against a newer 144-card table
+that is not published and cannot be. They should skip and say so; instead they fail. Measured on a
+fresh clone on 2026-09-22: 775 passed, 3 failed, 1 skipped. Nothing is wrong with your install or
+with the engine, and the earlier figure of 385 passed came from a clone before the suite grew.
 
 The `pytest` badge is from the project's own machine, which also holds a newer card table that
 is not distributed. Six tests skip there because of that table. A clone built with the Install
