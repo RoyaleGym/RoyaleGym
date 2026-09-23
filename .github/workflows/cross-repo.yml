@@ -1,5 +1,34 @@
 name: cross-repo
-on: [push, workflow_dispatch]
+
+# Three lines of caller and one schedule, and the schedule is the part worth explaining.
+#
+# WHY THIS RUNS ON A TIMER AND NOT ONLY ON PUSH. The workflow being called lives in RoyaleSim
+# and is referenced at `@main`, so a change there takes effect here with no commit in this
+# repo. That is the point of a reusable workflow and it is also the hole: when sim changes it,
+# nothing runs THIS path until RoyaleGym happens to push.
+#
+# It is not hypothetical. On 2026-09-23 sim changed that file between 10:12 and 10:37; this
+# repo was green at 10:00 and did not push again until 16:11, when it came back red on a
+# checkout that assumed the triggering commit was RoyaleSim's. Six hours of red on main that
+# nobody was in a position to see. RoyaleViser went red on the same cause in the same window.
+#
+# AND THE HOST COULD NOT HAVE CAUGHT IT. A repo exercises its own reusable workflow only in
+# the configuration where caller and host are the same repo -- which is exactly the
+# configuration in which a reusable workflow is indistinguishable from an ordinary one. Sim's
+# runs were green throughout and were CORRECT about the case they covered. So the only
+# instruments that can see this class of break live in the calling repos, which makes running
+# it here on a timer the repair rather than a courtesy. (Integrator 1's finding, 2026-09-23;
+# the same reasoning RoyaleLive's downstream.yml gives for its own nightly.)
+#
+# WHAT THE TIMER DOES NOT FIX, stated rather than left to be assumed: a break can still live
+# up to a day, and the schedule does not shorten the window between sim's change and the next
+# run -- it only bounds it. Anything needing an immediate answer has to be dispatched.
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * *'
+
 jobs:
   cross:
     uses: RoyaleGym/RoyaleSim/.github/workflows/cross-repo.yml@main
