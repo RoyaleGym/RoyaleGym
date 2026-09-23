@@ -371,11 +371,13 @@ cd RoyaleSim
 ```
 
 ```
-108 passed in 134.27s (0:02:14)
+179 passed, 10 skipped
 ```
 
-Give this one a couple of minutes. That output is from an earlier run. Counted on 2026-09-22,
-the suite has 112 tests, so expect a bigger count.
+Give this one a couple of minutes. That is RoyaleSim's PYTHON suite on a fresh clone, measured on
+2026-09-22 at commit `2b85ce1`. It is not the Rust suite, which is a separate command with a
+separate result, and which is failing today on one test. Read the ten skips rather than ignoring
+them: each names the thing it could not find and says a skip is not a pass.
 
 ### How fast is it on your machine
 
