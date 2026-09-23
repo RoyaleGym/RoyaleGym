@@ -49,6 +49,38 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+#: How each observation key is compared, chosen PER KEY rather than globally.
+#:
+#: This exists before it is needed, because the moment the Rust builder lands there will be
+#: pressure to add one global tolerance: a float32 board computed in Rust need not be
+#: bit-identical to the same board computed by numpy, and the obvious fix is "compare within
+#: an epsilon". That fix is correct for a QUANTITY and catastrophic for an INDEX.
+#:
+#: `card_ids` (D2, not shipped yet) is an index into the catalogue. 6.997 read as card 6 is
+#: a DIFFERENT CARD, not a small error, so a tolerance would pass the only failure mode that
+#: key has. Every other column is a quantity where a tolerance is reasonable, which is
+#: exactly why the default would be wrong for the one column whose failures are categorical
+#: rather than numerical. Learn raised it; recording it now makes adding the column a table
+#: entry rather than a rediscovery.
+#:
+#: An UNKNOWN key is a failure, not a default. That is the whole point of the table: the
+#: person who adds the next key cannot forget to choose, because forgetting is a red test
+#: rather than a silent inheritance.
+EXACT, QUANTITY = "exact", "quantity"
+COMPARISON = {
+    "spatial": EXACT,
+    "vector": EXACT,
+    "action_mask": EXACT,
+    "mask_planes": EXACT,
+    # "card_ids": EXACT  <- when D2's planes land. MUST be EXACT. It is an index.
+}
+
+#: Keys that must NEVER be compared with a tolerance whatever else changes, because their
+#: values are categorical. Held separately from COMPARISON so that relaxing a key to
+#: QUANTITY is a two-place edit and one of the places says why it is forbidden.
+NEVER_APPROXIMATE = ("card_ids", "action_mask", "mask_planes")
+
+
 def a_corpus(n_steps: int = 80) -> list[tuple[BattleState, dict[int, object]]]:
     """Boards a builder actually meets, each with ITS OWN masks, captured live.
 
@@ -118,6 +150,14 @@ def disagreements(a: ObsBuilder, b: ObsBuilder, corpus) -> list[str]:
                 found.append(f"state {i} seat {team}: keys {sorted(left)} vs {sorted(right)}")
                 continue
             for key in sorted(left):
+                rule = COMPARISON.get(key)
+                if rule is None:
+                    found.append(
+                        f"state {i} seat {team}: the key {key!r} has no entry in COMPARISON, "
+                        "so nobody has chosen how it is compared. Add one. An index column "
+                        "compared with a tolerance passes the only failure mode it has."
+                    )
+                    continue
                 x, y = np.asarray(left[key]), np.asarray(right[key])
                 if x.shape != y.shape:
                     found.append(f"state {i} seat {team} {key}: shape {x.shape} vs {y.shape}")
@@ -239,3 +279,46 @@ def test_the_harness_compares_both_seats_and_not_only_blue() -> None:
     assert all("seat 1" in f for f in found), (
         f"a red-only perturbation produced disagreements on other seats too: {found[:3]}"
     )
+
+
+def test_a_key_with_no_comparison_rule_is_refused_rather_than_defaulted() -> None:
+    """The table is only load-bearing if forgetting an entry is RED.
+
+    When `card_ids` lands it must be compared exactly, because it is an index and 6.997
+    read as card 6 is a different card rather than a small error. The way to make that
+    survive the person who adds it is to make a missing entry fail, rather than to write a
+    comment asking them to remember.
+    """
+    corpus = a_corpus(n_steps=2)
+
+    class ExtraKey(SpatialObsBuilder):
+        def build(self, state, team, mask):
+            out = dict(super().build(state, team, mask))
+            out["card_ids"] = np.zeros((2, 4, 4), dtype=np.uint8)
+            return out
+
+    found = disagreements(bound(ExtraKey()), bound(ExtraKey()), corpus)
+    assert found, (
+        "a key with no COMPARISON entry was compared anyway, so the table is decoration: "
+        "the next person to add a column inherits whatever rule happens to be first."
+    )
+    assert any("no entry in COMPARISON" in f for f in found), (
+        f"the refusal did not name the missing rule: {found[:2]}"
+    )
+
+
+def test_the_categorical_keys_are_never_listed_as_quantities() -> None:
+    """A guard on the table itself, so relaxing an index column is not a one-line edit.
+
+    Its failure message is the argument, because the person who hits this will be in the
+    middle of making a Rust float32 board agree with a numpy one and will be reaching for
+    a global tolerance.
+    """
+    for key in NEVER_APPROXIMATE:
+        rule = COMPARISON.get(key)
+        assert rule in (None, EXACT), (
+            f"{key!r} is compared as a {rule!r}. It is categorical: its values are indices "
+            "or flags, so a tolerance passes the only failure mode it has. If a Rust and a "
+            "numpy board disagree in their last bits, relax the QUANTITY columns and leave "
+            "this one exact."
+        )
