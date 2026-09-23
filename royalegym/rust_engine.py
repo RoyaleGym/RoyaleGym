@@ -175,6 +175,12 @@ def engine_binary_digest() -> str:
     Cached: about 4 ms over 2.3 MB, paid once per process. "unknown" rather than raising
     when the module is not a file on disk, because a missing provenance stamp should not
     stop a battle.
+
+    TAKE IT IN THE PROCESS THAT PRODUCED THE RESULT. This describes the binary THIS
+    process loaded. Fetched later from a second process it describes whatever is on disk
+    by then, which is not the same claim and is the easier one to make by accident: a
+    recording, a picture or a metrics row stamped after the fact says which engine exists
+    now, not which engine made it. Record it beside the result, not beside the report.
     """
     if _core is None:
         raise ImportError(CORE_IMPORT_ERROR)
