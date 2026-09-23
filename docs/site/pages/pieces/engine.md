@@ -1,7 +1,7 @@
 # The engine
 
 [![repo](https://img.shields.io/badge/repo-RoyaleSim-DEA584?style=flat-square&logo=rust&logoColor=white)](https://github.com/RoyaleGym/RoyaleSim)
-![cards](https://img.shields.io/badge/cards-78%20public%2C%20144%20full-555?style=flat-square)
+![cards](https://img.shields.io/badge/cards-144%2C%20same%20in%20a%20clone-555?style=flat-square)
 ![tick](https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square)
 ![speed](https://img.shields.io/badge/one%20worker-16%2C100%20battles%2Fhour-2ea043?style=flat-square)
 ![same seed](https://img.shields.io/badge/same%20seed-same%20battle-2ea043?style=flat-square)
