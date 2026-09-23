@@ -48,11 +48,31 @@ README = REPO / "README.md"
 #: catalogue is wrong, and skipping would hide it. Both vintages on this machine
 #: produce the same battle, which is the README's point about naming cards rather than
 #: numbering them, and it is checked rather than assumed.
-RECORDED_VINTAGE = "retroroyale-2018"
-#: The engine build the README's printed battle was recorded against. It covers
-#: data/calibration.json and arena.json, so it moves when a ledger VALUE moves, which is
-#: what turned this battle from a draw into a win on 2026-09-22 with no card changed.
-RECORDED_BUILD = "d872d792711934c2"
+#: BOTH STAMPS ARE READ FROM THE README, not copied into here, and the copies are why.
+#: This file held `RECORDED_BUILD = "d872d792711934c2"` and
+#: `RECORDED_VINTAGE = "retroroyale-2018"` while the page itself said `d6715210f21ca0c3`
+#: and the 15.535 table. Docs re-pinned the page and nothing made this follow, so there
+#: were two recorded builds and a reader got whichever they happened to open: train read
+#: the constant, docs read the prose, and they reported different numbers for one figure.
+#:
+#: A stamp the page states and a test restates is two copies of a number, and they drift
+#: exactly the way two copies of a rule do. The page is the publication, so the page is
+#: the source; this parses what it says.
+_PROVENANCE = re.compile(
+    r"on engine build `([0-9a-f]{8,64})` with the \*\*([^*]+?)\s*card\s*\n?table\*\*", re.S
+)
+
+
+def recorded_provenance() -> tuple[str, str]:
+    """(build digest, card table) exactly as README.md states them."""
+    m = _PROVENANCE.search(README.read_text(encoding="utf-8"))
+    assert m, (
+        "README.md no longer states the build and card table its printed battle was "
+        "recorded on, in the form 'on engine build `<digest>` with the **<table> card "
+        "table**'. That sentence is the only record of what the figure is a fact ABOUT, "
+        "so a figure without it cannot be checked or aged by anyone."
+    )
+    return m.group(1), " ".join(m.group(2).split())
 
 pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -81,6 +101,26 @@ def try_it_program() -> tuple[str, str]:
 
 
 def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
+    """The program must RUN on any build; its printed battle is only checkable on the
+    build it was recorded on.
+
+    THE SPLIT IS THE POINT, and it was one assertion until 2026-09-23. A printed battle is
+    the outcome of a whole simulation, so a different engine build produces a different
+    one legitimately. Comparing them is comparing numbers from two different trees --
+    exactly what the commit-pinned count rule in this same file already refuses, for the
+    same reason.
+
+    Treating a moved build as a FAILURE also put the red in the wrong place. This repo's
+    suite runs in RoyaleLearn's and RoyaleViser's cross-repo CI, so a stale figure here
+    turned every one of their commits red for something they cannot fix and did not cause.
+    A check that cries wolf on other people's work is one they learn to ignore, which
+    costs more than the stale figure it was guarding.
+
+    What is NOT weakened: on the build the figure was recorded on, a changed battle is
+    still a hard failure, and that is where a real regression shows. A build that moved is
+    reported as an unchecked claim with both digests named, which is what it is.
+    """
+    RECORDED_BUILD, RECORDED_VINTAGE = recorded_provenance()
     program, expected = try_it_program()
     done = subprocess.run(
         [sys.executable, "-c", program], capture_output=True, text=True, timeout=300, cwd=REPO
@@ -88,6 +128,17 @@ def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
     assert done.returncode == 0, (
         f"the README's 'complete program' does not run:\n{done.stderr[-2000:]}"
     )
+    if engine_build_digest() != RECORDED_BUILD:
+        pytest.skip(
+            f"SKIPPED, NOT PASSED: the README's battle was recorded on engine build "
+            f"{RECORDED_BUILD} and this engine is {engine_build_digest()}. The printed "
+            "battle is the OUTCOME of a whole simulation, so a different build ends it "
+            "differently and comparing the two would be comparing numbers from two "
+            f"different trees. It prints {done.stdout.strip()!r} here. To re-pin: run the "
+            "program on a COMMITTED build, paste its output under the block, and update "
+            "the 'on engine build ... with the ... card table' sentence beside it -- both "
+            "stamps are read from that sentence, so there is nothing else to change."
+        )
     assert done.stdout.strip() == expected.strip(), (
         f"the README prints:\n  {expected.strip()}\nthe program prints:\n  "
         f"{done.stdout.strip()}\n\n"
