@@ -210,3 +210,111 @@ def landings(
             Landing(result=r, commanded=(cmd.x, cmd.y), entities=mine, x=only.x, y=only.y)
         )
     return results, out
+
+
+# ---------------------------------------------------------------------------
+# The same question asked of a RECORDED trace rather than a live engine.
+#
+# WHY THIS IS NOT "landed != commanded". That comparison is the criterion that means the
+# least, and it is the one a reader reaches for first. A building with an EVEN footprint
+# snaps to a tile CORNER, so its centre can never sit on the tile centre that was tapped and
+# the comparison reports 100% of Tesla taps as relocated however well the engine behaved. It
+# is a fact about the definition, not about the game. Three criteria, and they disagree:
+#
+#     moved_point   the centre is not the point tapped   -- geometry for even footprints
+#     moved_tile    the centre's tile is not the tile tapped
+#     lost_tile     the FOOTPRINT does not cover the tile tapped
+#
+# `lost_tile` is the one that bears on credit assignment, because the action space chooses a
+# TILE: a 3x3 shifted by one tile is displaced but still stands on the tile the agent asked
+# for. Measured over every legal tile on a near-empty board: 51.7% / 51.7% / 15.0% for a 3x3
+# and 100.0% / 30.4% / 10.0% for a 2x2. Quote one of these only with its name attached.
+#
+# THE RATE A RUN PAYS IS NOT THAT SWEEP. Those figures weight every legal tile equally and a
+# trained policy does not: it concentrates. Whether relocation costs a given agent more or
+# less than the sweep says depends on whether its favoured tiles are ones its buildings fit
+# on, which is exactly what this function exists to answer from its own recorded taps.
+
+
+class Relocation(msgspec.Struct, frozen=True):
+    """One recorded command, with where it was aimed and where the engine put it."""
+
+    tick: int
+    team: int
+    card_id: int
+    card_name: str
+    footprint: int
+    commanded: tuple[int, int]
+    landed: tuple[int, int]
+    subtile: int
+
+    @property
+    def commanded_tile(self) -> tuple[int, int]:
+        return (self.commanded[0] // self.subtile, self.commanded[1] // self.subtile)
+
+    @property
+    def landed_tile(self) -> tuple[int, int]:
+        return (self.landed[0] // self.subtile, self.landed[1] // self.subtile)
+
+    @property
+    def moved_point(self) -> bool:
+        """Least useful of the three; see the note above before quoting it."""
+        return self.landed != self.commanded
+
+    @property
+    def moved_tile(self) -> bool:
+        return self.landed_tile != self.commanded_tile
+
+    @property
+    def lost_tile(self) -> bool:
+        """The footprint does not stand on the tile that was tapped."""
+        half = self.footprint * self.subtile // 2
+        tx, ty = self.commanded_tile
+        xs = range((self.landed[0] - half) // self.subtile, (self.landed[0] + half) // self.subtile)
+        ys = range((self.landed[1] - half) // self.subtile, (self.landed[1] + half) // self.subtile)
+        return not (tx in xs and ty in ys)
+
+
+def relocations(trace, accepted_only: bool = True) -> list[Relocation]:
+    """Every recorded command with its aim and its outcome, for per-card analysis.
+
+    Reads the card table from the TRACE'S OWN header rather than from a live engine, which
+    is not a convenience: catalogue ids are POSITIONAL, so scoring a trace against a
+    different card table renames every card silently and produces a per-card table that
+    looks entirely reasonable.
+
+    Raises on a trace recorded before steps carried these fields, rather than returning an
+    empty list. An empty list reads as "nothing relocated", which is the one answer that is
+    both wrong and plausible.
+    """
+    header = trace.header
+    cards = header.cards
+    out: list[Relocation] = []
+    for step in trace.steps:
+        if not step.commands:
+            continue
+        if not step.card_ids or not step.landed:
+            raise ValueError(
+                f"the step at tick {step.tick} carries commands but no card_ids/landed, so "
+                "this trace predates them. Re-record it; a rate computed from the commands "
+                "alone would be 0% and look like a result."
+            )
+        for cmd, card_id, pos, status in zip(
+            step.commands, step.card_ids, step.landed, step.statuses, strict=True
+        ):
+            if accepted_only and status != DeployStatus.OK:
+                continue
+            info = cards[card_id] if 0 <= card_id < len(cards) else None
+            out.append(
+                Relocation(
+                    tick=step.tick,
+                    team=cmd.team,
+                    card_id=card_id,
+                    card_name=info.name if info else f"card:{card_id}",
+                    footprint=getattr(info, "footprint_tiles", 1) if info else 1,
+                    commanded=(cmd.x, cmd.y),
+                    landed=(pos[0], pos[1]),
+                    subtile=header.subtile,
+                )
+            )
+    return out

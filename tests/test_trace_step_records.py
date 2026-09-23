@@ -153,3 +153,80 @@ def test_a_step_recorded_before_these_fields_existed_still_decodes():
         "see cards the recording never contained"
     )
     assert step.landed == []
+
+
+# ---------------------------------------------------------------------------
+# Reading those fields back as a relocation rate, which is what they were added for.
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+@pytest.mark.parametrize(("card", "footprint"), [("Cannon", 3), ("Tesla", 2)])
+def test_the_three_criteria_disagree_and_the_struct_keeps_them_apart(card, footprint):
+    """An EVEN footprint makes `moved_point` useless, and that is the whole warning.
+
+    A 2x2 snaps to a tile CORNER, so its centre can never be the tapped tile CENTRE:
+    `moved_point` is then 100% no matter how well the engine behaved. If a reader takes that
+    for a relocation rate they conclude Tesla is the worst card in the game. This pins that
+    the struct reports the three separately and that they really do differ.
+    """
+    from royalegym.landing import relocations
+
+    engine = RustEngine()
+    ids = {c.name: i for i, c in enumerate(engine.cards())}
+    if card not in ids:
+        pytest.skip(f"this card table has no {card}")
+    assert engine.cards()[ids[card]].footprint_tiles == footprint, (
+        f"{card} is not {footprint}x{footprint} on this table, so this case tests something else"
+    )
+
+    setup = MatchSetup(decks=[[ids[card]] * 8] * 2, elixir_milli=[10000, 10000])
+    rec = ReplayRecorder()
+    engine.reset(seed=0, setup=setup)
+    engine.step([], 10)
+    rec.begin(engine, 0, setup)
+    for tx in range(2, 16):
+        for ty in range(3, 13, 2):
+            command = DeployCommand(
+                team=0, hand_slot=0, x=tx * TILE + TILE // 2, y=ty * TILE + TILE // 2
+            )
+            results = engine.step([command], 1)
+            rec.record_frame(engine)
+            rec.record_step(engine.state().tick, 1, [command], results)
+
+    rows = relocations(rec.trace)
+    assert rows, "no accepted command was recorded, so nothing below is measured"
+    assert all(r.card_name == card for r in rows), (
+        f"the card name came back as {rows[0].card_name!r}; it is read from the trace header"
+    )
+    point = sum(r.moved_point for r in rows)
+    lost = sum(r.lost_tile for r in rows)
+    assert lost <= point, "a tap that kept its tile cannot have moved less than not at all"
+    if footprint % 2 == 0:
+        assert point == len(rows), (
+            f"an even footprint cannot land on a tile centre, so moved_point should be all "
+            f"{len(rows)} taps, got {point}"
+        )
+        assert lost < point, (
+            "every tap counted as lost as well as moved, so this build gives the reader no "
+            "reason to prefer the criterion that matters"
+        )
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_a_trace_without_the_fields_refuses_instead_of_reporting_no_relocation():
+    """Returning [] would read as 0% relocation, which is wrong AND plausible."""
+    from royalegym.landing import relocations
+
+    engine = RustEngine()
+    setup = MatchSetup(decks=[list(range(8))] * 2, elixir_milli=[10000, 10000])
+    engine.reset(seed=0, setup=setup)
+    rec = ReplayRecorder()
+    rec.begin(engine, 0, setup)
+    command = DeployCommand(team=0, hand_slot=0, x=9 * TILE, y=5 * TILE)
+    results = engine.step([command], 1)
+    rec.record_step(engine.state().tick, 1, [command], results)
+    # Age the step by hand: exactly what an older recording decodes to.
+    rec.trace.steps[-1].card_ids = []
+    rec.trace.steps[-1].landed = []
+    with pytest.raises(ValueError, match="predates them"):
+        relocations(rec.trace)
