@@ -97,8 +97,16 @@ table**, which is what the install above puts at `cards.json`. Blue took one of 
 towers and Red took none, so Blue wins on crowns.
 
 Measured on a clean runner, not here: RoyaleGym suite run 35930514103, building the engine from
-RoyaleSim at `f3cd4ca`. Two earlier measurements agree, one on CI from an earlier RoyaleSim commit
-and one on a developer machine, so the figure does not rest on a single build of a single tree.
+**RoyaleSim `f3cd4ca`**. An earlier CI run built from RoyaleSim `49777a6` printed the same pair, and
+those two commits differ only in a README and a `.gitignore` - no Rust, no data - so they are the
+same engine. A developer machine printed it too.
+
+**The RoyaleSim commit is written here because the digest cannot supply it.** `build_digest` hashes
+the calibration values and the arena compiled into the extension; it has no access to the Rust at
+all, so two engines with different code and identical calibration share one. That cuts both ways: a
+future engine could change behaviour, keep this digest, and be compared against this battle as
+though nothing had moved. The commit beside it is what closes that gap, and `engine_binary` is the
+stamp that identifies the compiled artefact if you need to tell two builds apart directly.
 
 **Two stamps, because two things move this output independently.** The build is one: the same
 program on a different engine can end a different way. The card table is the other, and it is not a
