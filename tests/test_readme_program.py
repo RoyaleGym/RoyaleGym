@@ -132,40 +132,50 @@ def test_the_badge_count_matches_what_the_suite_collects() -> None:
     it fresh is the date and commit in the label, not this test going red on somebody
     else's work.
     """
-    # There are two test-count badges and they count DIFFERENT populations: one a fresh
-    # clone, which nothing here can re-run, and one this machine. Only the second is a
-    # claim collection can check, so this finds it by its LABEL rather than by its
-    # position. Keying on position would silently start checking the fresh-clone figure
-    # against this machine the day the two badges are reordered, which is the failure
-    # this test is supposed to prevent rather than commit.
+    # THERE USED TO BE TWO COUNT BADGES and this looked for the one labelled as this
+    # machine's. They existed because a clean clone and a developer machine ran DIFFERENT
+    # populations: the clone built the 2018 card table and the laptop the 15.535 one, so
+    # each badge was about a population the other side could not reproduce.
+    #
+    # On 2026-09-23 the documented install moved to the committed 15.535 table and both
+    # sides converged -- same collection, same nine skips. The second badge then had
+    # nothing left to say, docs collapsed them into one, and this assertion started
+    # failing on a premise that had been retired rather than on anything being wrong.
+    # It is a check outliving the fact it encoded, which is the thing this file is full
+    # of warnings about, arriving in the file itself.
+    #
+    # So: find THE count badge, whatever it is labelled, and require exactly one. Two
+    # again would mean two populations again, and this test would have to be told which
+    # of them collection can check.
     readme = README.read_text("utf-8")
-    ours = re.findall(r"our%20machine[^\"']*?-(\d+)%20passed%2C%20(\d+)%20skipped", readme)
     counts = re.findall(r"-(\d+)%20passed%2C%20(\d+)%20skipped", readme)
-    assert counts, "README.md states no test count at all; it used to state two"
-    assert len(ours) == 1, (
-        f"expected exactly one badge labelled as this machine's, found {len(ours)} among "
-        f"{len(counts)} test-count badges. If the label changed, change it here too: a "
-        "count nothing checks is the thing this test exists to prevent."
+    assert counts, "README.md states no test count at all; it used to state one"
+    assert len(counts) == 1, (
+        f"found {len(counts)} test-count badges. One is the documented shape. If a second "
+        "population is being reported again, say which of them this check should compare "
+        "against collection, because they cannot both be it."
     )
-    claimed = int(ours[0][0]) + int(ours[0][1])
+    claimed = int(counts[0][0]) + int(counts[0][1])
 
-    at = re.search(r"our%20machine%20at%20([0-9a-f]{7,40})", readme)
+    at = re.search(r"%20at%20([0-9a-f]{7,40})-", readme)
     assert at, (
-        "the machine badge names no commit, so nothing can ever check it: a count "
-        "without the tree it was taken on is a claim about a moving target. Label it "
-        "`our machine at <sha>`."
+        "the count badge names no commit, so nothing can ever check it: a count without "
+        "the tree it was taken on is a claim about a moving target. Label it "
+        "`<where> at <sha>`."
     )
     # The rule itself lives in tests/_pinned_count.py, because docs/architecture.md
     # states a count too and two copies of a rule drift exactly like two copies of a
     # number. That file is also where the reasoning is written down.
     reason = why_it_cannot_be_checked(at.group(1))
     if reason:
-        pytest.skip(skip_reason("the badge", ours[0][0], ours[0][1], at.group(1), reason))
+        pytest.skip(skip_reason("the badge", counts[0][0], counts[0][1], at.group(1), reason))
 
     collected = collected_excluding_xfail()
     assert claimed == collected, (
-        f"the README badge for this machine says {ours[0][0]} passed and {ours[0][1]} "
-        f"skipped, which is {claimed} tests, and pytest collects {collected}."
+        f"the README badge says {counts[0][0]} passed and {counts[0][1]} skipped, which "
+        f"is {claimed} tests, and pytest collects {collected}. The badge is measured on a "
+        "clean runner; since 2026-09-23 that runner and this machine collect the same "
+        "population, so a difference here is a real one rather than two card tables."
     )
 
 
@@ -208,16 +218,22 @@ def test_the_clone_badge_is_present_and_says_where_it_came_from() -> None:
     better form and is what the page carries, because it names the tree that was measured
     rather than the day; a date is accepted too, since a dated claim can at least be aged.
     """
+    # THE LABEL IS NOT PINNED HERE, on purpose. This looked for `your clone` until
+    # 2026-09-23, when the two badges became one and it was renamed to name the clean
+    # runner. A test that hard-codes a label fails on a rename rather than on a defect,
+    # and the rename was the correct response to the populations converging. What must
+    # not change is the PROPERTY: a count nobody here can re-measure has to say where it
+    # came from. So this matches any count badge and checks that, not its wording.
     readme = README.read_text("utf-8")
-    clone = re.search(r"your%20clone[^\"']*?-(\d+)%20passed%2C%20(\d+)%20skipped", readme)
+    clone = re.search(r"-(\d+)%20passed%2C%20(\d+)%20skipped", readme)
     assert clone, (
-        "README.md no longer carries a clone badge. It is the only count a reader can "
-        "reproduce, so if it was removed, say in the Status prose what replaced it; if it "
-        "was renamed, rename it here. This test does not check its numbers and never "
-        "could: there is no clone on this machine."
+        "README.md no longer carries a test-count badge. It is the count a reader can "
+        "reproduce, so if it was removed, say in the Status prose what replaced it. This "
+        "test does not check its numbers against this machine and should not: they are "
+        "measured on a clean runner."
     )
-    assert int(clone.group(1)) > 0, "the clone badge claims no passing tests"
-    label = clone.group(0).split("-")[0]
+    assert int(clone.group(1)) > 0, "the count badge claims no passing tests"
+    label = readme[: clone.start()].rsplit("badge/", 1)[-1]
     dated = re.search(r"\d{4}--\d{2}--\d{2}", label)
     committed = re.search(r"%20at%20[0-9a-f]{7,40}$", label)
     assert dated or committed, (
