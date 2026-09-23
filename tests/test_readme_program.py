@@ -181,3 +181,45 @@ def test_the_program_really_is_complete() -> None:
         f"the README calls this the complete program with nothing but royalegym and "
         f"numpy, and it imports {sorted(roots)}"
     )
+
+
+def test_the_clone_badge_is_present_and_says_where_it_came_from() -> None:
+    """The reader's own number, and the one thing this machine cannot verify.
+
+    The front page states two counts because they are two POPULATIONS: what this
+    machine's suite does, and what a reader's fresh clone does. They differ because the
+    README's recipe installs the 2018 card table, so a clone gets 66 loadable cards
+    against this machine's 100, and two scripted scenarios skip there rather than run.
+
+    This test deliberately does NOT check the clone badge's split. It cannot: there is no
+    clone here, and collection on this machine answers a different question. The two
+    totals happen to be equal, 781 + 3 and 777 + 7 both being 784 when this was written,
+    because those two scenarios move from passed to SKIPPED rather than leaving the
+    suite. That equality is a coincidence of one day's arithmetic and not a property, so
+    checking the clone's pair against this machine's collection would look like
+    verification while resting on it. A clone scenario that stopped skipping and started
+    failing would move the split without moving the total, and the badge would be wrong
+    and green.
+
+    What it checks is what an unverifiable claim needs: that it is there, that it says
+    which population it counts, and that it says WHERE IT CAME FROM. A commit is the
+    better form and is what the page carries, because it names the tree that was measured
+    rather than the day; a date is accepted too, since a dated claim can at least be aged.
+    """
+    readme = README.read_text("utf-8")
+    clone = re.search(r"your%20clone[^\"']*?-(\d+)%20passed%2C%20(\d+)%20skipped", readme)
+    assert clone, (
+        "README.md no longer carries a clone badge. It is the only count a reader can "
+        "reproduce, so if it was removed, say in the Status prose what replaced it; if it "
+        "was renamed, rename it here. This test does not check its numbers and never "
+        "could: there is no clone on this machine."
+    )
+    assert int(clone.group(1)) > 0, "the clone badge claims no passing tests"
+    label = clone.group(0).split("-")[0]
+    dated = re.search(r"\d{4}--\d{2}--\d{2}", label)
+    committed = re.search(r"%20at%20[0-9a-f]{7,40}$", label)
+    assert dated or committed, (
+        f"the clone badge says {label!r}, which names no commit and no date. Nothing here "
+        "can re-measure it, so the one thing it must carry is where it came from: a "
+        "commit for preference, since that names the tree, or a date so it can be aged."
+    )
