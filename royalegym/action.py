@@ -412,19 +412,20 @@ class GridActionParser(ActionParser):
 
     def bind(self, engine: Engine) -> None:
         super().bind(engine)
-        if self.buildings == "taps_where_the_building_stays":
-            # Where a building LANDS is the engine's rule, and asking the engine is the
-            # point: working it out here would be a second copy of that rule, drifting
-            # from the first. An engine that cannot answer is refused now rather than
-            # quietly behaving like the default arm.
-            if not hasattr(engine, "building_placement"):
-                raise NotImplementedError(
-                    f"{type(engine).__name__} cannot say where a building would land, so "
-                    f"the {self.buildings!r} arm cannot be built on it. It needs a "
-                    "building_placement(team, card_name, x, y) method returning the "
-                    "landing, or None when the tap is refused."
-                )
+        # Where a building LANDS is the engine's rule, and asking the engine is the
+        # point: working it out here would be a second copy of that rule, drifting from
+        # the first. BOTH arms need it. The default arm needs it because relocation does
+        # not always rescue a tap: when nothing fits within the engine's search, the tap
+        # is refused, and a mask built from the cell rules alone offers it anyway.
+        if hasattr(engine, "building_placement") and self.oracle.buildings_relocate:
             self._engine = engine
+        elif self.buildings == "taps_where_the_building_stays":
+            raise NotImplementedError(
+                f"{type(engine).__name__} cannot say where a building would land, so "
+                f"the {self.buildings!r} arm cannot be built on it. It needs a "
+                "building_placement(team, card_name, x, y) method returning the "
+                "landing, or None when the tap is refused."
+            )
         self.nx = self.arena.tiles_x * self.pitch_div
         self.ny = self.arena.tiles_y * self.pitch_div
         self.pitch = self.arena.subtile // self.pitch_div
@@ -478,12 +479,20 @@ class GridActionParser(ActionParser):
             if team == RED:
                 grid = grid[::-1, ::-1]  # engine frame -> Red's own frame
             if self._engine is not None and card.placement == Placement.BUILDING:
-                grid = grid & self.stays_put(team, card)
+                grid = self.buildable(team, card, grid)
             mask[1 + slot * per : 1 + (slot + 1) * per] = grid.reshape(-1)
         return mask
 
-    def stays_put(self, team: int, card: CardInfo) -> np.ndarray:
-        """Own-frame grid: True where tapping puts ``card`` on the tile that was tapped.
+    def buildable(self, team: int, card: CardInfo, legal: np.ndarray) -> np.ndarray:
+        """Own-frame grid of the taps this arm offers for ``card``, asked of the engine.
+
+        Both arms need the engine, for different reasons. ``any_tap`` needs it because
+        relocation does NOT always rescue a tap: when nothing fits within the engine's
+        search the tap is refused, and the cell rules alone cannot tell, so a mask built
+        from them offers actions the engine turns down. Measured on a Cannon lattice
+        filling one half, 15 buildings was enough: the engine refused every tap and the
+        cell-rule mask offered all 960. ``taps_where_the_building_stays`` needs it to
+        know where the building would land.
 
         Asks the engine, once per cell, where the building would land. It reads the
         engine's CURRENT battle, which is the state the caller is masking for; a parser
@@ -499,13 +508,20 @@ class GridActionParser(ActionParser):
         little is worse than none.
         """
         assert self._engine is not None
+        stays = self.buildings == "taps_where_the_building_stays"
         out = np.zeros((self.ny, self.nx), dtype=bool)
         pitch, half = self.pitch, self.pitch // 2
-        for yi in range(self.ny):
-            for xi in range(self.nx):
+        # Only cells the cell rules already allow are worth asking about: the engine
+        # would refuse the rest for a reason this side already knows. On a Cannon that
+        # is about 240 of 576 cells.
+        for yi, xi in zip(*np.nonzero(legal), strict=True):
+            if True:
                 x, y = to_engine(self.arena, team, xi * pitch + half, yi * pitch + half)
                 landed = self._engine.building_placement(team, card.name, x, y)
                 if landed is None:
+                    continue  # nothing fits within the engine's search: refused
+                if not stays:
+                    out[yi, xi] = True
                     continue
                 ox, oy = to_own(self.arena, team, landed[0], landed[1])
                 out[yi, xi] = (ox // self.arena.subtile, oy // self.arena.subtile) == (xi, yi)

@@ -283,10 +283,16 @@ def rollout_rejections(engine, steps: int, seed: int, snapshots: list[bytes] | N
         # Snapshot roughly every 125 steps, at the first state after the mark where
         # both seats can play something (a random policy keeps elixir drained, and
         # an all-illegal state checks nothing).
+        #
+        # The window used to be i % 125 >= 60, which assumed both seats would be able
+        # to afford something in the back half of every quarter. After the engine's
+        # starting-elixir change of 2026-09-22 that stopped happening on this deck, and
+        # NOTHING was captured: the caller then probed an empty list and reported it as
+        # "probes are nearly all-illegal", which is a different claim from "there were no
+        # probes". The window is the whole quarter now, and the caller checks it got some.
         if (
             snapshots is not None
             and len(snapshots) < i // 125 + 1
-            and i % 125 >= 60
             and env.agents
             and all(int(obs[a]["action_mask"].sum()) > 1 for a in env.agents)
         ):
@@ -302,6 +308,11 @@ def test_parallel_env_500_masked_steps_never_rejected(rust):
     assert deploys[Placement.BUILDING] >= 3, deploys
     # The other direction too: over whole action spaces on rollout states, the
     # mask and check_deploy agree exactly (and so every mask-legal action is legal).
+    assert snaps, (
+        "no probe state was captured, so the exhaustive comparison below would run over "
+        "nothing and pass. A rollout where neither seat can ever afford a card at the "
+        "sampling points means the deck, the elixir law or the policy has changed."
+    )
     for parser_cls in (TileActionParser, HalfTileActionParser):
         parser = parser_cls()
         parser.bind(rust)
