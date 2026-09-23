@@ -51,10 +51,13 @@ MIXED_BARREL = card_ids(MIXED_BARREL_DECK, _CARDS)
 @pytest.mark.parametrize(
     ("make_engine", "n_cards"),
     [
+        # MockEngine's size IS this repo's to pin: MOCK_CARD_NAMES is defined here.
+        # The compiled engine's is not -- it is whatever table the reader extracted --
+        # so None means "not ours to assert". See the note at the end of the test.
         pytest.param(MockEngine, 16, id="mock"),
         pytest.param(
             RustEngine,
-            100,
+            None,
             id="rust",
             marks=pytest.mark.skipif(
                 not core_available(), reason="the compiled engine is not importable"
@@ -87,10 +90,23 @@ def test_the_shared_deck_still_holds_one_card_of_every_kind(make_engine, n_cards
     # The barrel deck carries the one placement class the deck above cannot also hold.
     barrel = [cards[i] for i in card_ids(MIXED_BARREL_DECK, cards, "the barrel deck")]
     assert Placement.SPELL_NOT_ON_WATER in {Placement(c.placement) for c in barrel}
-    # Weaker, and second on purpose. The kinds above are what the suite needs; a
-    # catalogue may grow without breaking anything, and then this line is the note
-    # that says the ids moved and every literal one is now suspect.
-    assert len(cards) == n_cards, f"catalogue size moved from {n_cards} to {len(cards)}"
+    # NOT pinned to a number, and that is the point. The catalogue size is a property of
+    # the DATA the reader installed, not of this repo: a clone following the README runs
+    # `extract_cards.py --vintage 2018` and gets 66 loadable cards where this machine's
+    # newer table gives 100. Measured on two independent clones, 2026-09-22. Pinning
+    # either number asserts something true only where it was written, and re-pinning it
+    # to the other just moves which environment is wrong.
+    #
+    # What IS pinned is above: the deck names cards that exist and they are the kinds the
+    # suite needs. That holds on both catalogues, which is what makes it a property of
+    # this repo rather than of a machine. The size is reported so a failure above can say
+    # which catalogue produced it.
+    assert len(cards) >= len(MIXED_DECK), (
+        f"the catalogue has {len(cards)} cards, fewer than the shared deck needs. "
+        "Run tools/extract_cards.py in the RoyaleSim checkout the engine was built in."
+    )
+    if n_cards is not None:
+        assert len(cards) == n_cards, f"catalogue size moved from {n_cards} to {len(cards)}"
 
 
 def hand_slot(state, team: int, card: int) -> int:

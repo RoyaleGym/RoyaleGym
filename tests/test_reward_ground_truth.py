@@ -38,12 +38,14 @@ Without that, a term that never fires, or a swap of the two seats, would pass.
 
 from __future__ import annotations
 
+import types
 from dataclasses import dataclass, field
 from fractions import Fraction
 from functools import cache
 
 import numpy as np
 import pytest
+from _pytest.outcomes import Skipped
 
 from royalegym import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
@@ -59,6 +61,7 @@ from royalegym.protocol import (
     SpawnSpec,
     TowerSlot,
     Winner,
+    derived_cards_vintage,
     to_engine,
     to_own,
 )
@@ -427,6 +430,46 @@ def only(cases, kind, leader, mark):
     ]
 
 
+#: The card table these scripted scenarios were tuned against. They set tower HP a few
+#: hundred points from a crown and give the leader unlimited elixir for the last 603
+#: ticks, so whether a tower actually falls depends on the CARDS' damage, which is a
+#: property of the installed table and not of this repo.
+SCENARIO_CARD_TABLE = "15.535.29"
+
+
+def require_a_decided_battle(b: Battle, kind: str) -> None:
+    """Refuse to grade seat differences on a battle that ended level, and say which.
+
+    A clone following the README runs ``extract_cards.py --vintage 2018`` and gets a
+    different table: 66 loadable cards where this machine has 100, with different damage.
+    Measured on two independent clones, 2026-09-22. On that table this scenario ends with
+    the seats level, and the tests below then compare two identical numbers and fail with
+    ``assert 1 != 1``, which tells a contributor nothing about why.
+
+    So: level on a DIFFERENT table is a loud skip naming the table, and level on the
+    table these were tuned for is a real failure. A skip is not a pass, and this one says
+    what would have to be true to run it.
+    """
+    end = b.steps[-1].cur
+    if end.players[BLUE].crowns != end.players[RED].crowns:
+        return
+    vintage = derived_cards_vintage()
+    if SCENARIO_CARD_TABLE not in vintage:
+        pytest.skip(
+            f"SKIPPED, NOT PASSED: the scripted {kind} battle ends level on this card "
+            f"table ({vintage!r}), so the two seats cannot be told apart and nothing "
+            f"below would be graded. It was tuned against {SCENARIO_CARD_TABLE!r}, where "
+            "the leader takes a tower inside the scripted window. The reward terms "
+            "themselves are still graded by the MockEngine cases, which do not depend on "
+            "this table."
+        )
+    raise AssertionError(
+        f"the scripted {kind} battle ended level on {vintage!r}, the very table it was "
+        "tuned against. That is a regression in the scenario or in the engine, not a "
+        "difference in installed data."
+    )
+
+
 def mismatches(b: Battle, name: str):
     out = []
     for i, s in enumerate(b.steps):
@@ -539,3 +582,38 @@ def test_winloss_pays_the_draw_value_to_both_seats_on_a_drawn_battle(kind):
     assert seen[-1][:3] == (False, True, Winner.DRAW)
     assert seen[-1][3:] == (DRAW_VALUE, DRAW_VALUE)
     assert all(step[3:] == (0.0, 0.0) for step in seen[:-1])
+
+
+def _level_battle(crowns: tuple[int, int]):
+    """The smallest thing shaped like what ``require_a_decided_battle`` reads."""
+    player = lambda c: types.SimpleNamespace(crowns=c)  # noqa: E731
+    cur = types.SimpleNamespace(players=[player(crowns[0]), player(crowns[1])])
+    return types.SimpleNamespace(steps=[types.SimpleNamespace(cur=cur)])
+
+
+def test_a_level_battle_skips_on_another_card_table_and_fails_on_this_one(monkeypatch) -> None:
+    """The guard has two branches and they must not be the same branch.
+
+    A clone's table ending the scenario level is a fact about the reader's data and is a
+    loud skip. The SAME outcome on the table these were tuned for is a regression and has
+    to fail. A guard that skipped in both cases would hide the second, which is the only
+    one that means something is broken.
+    """
+    decided = _level_battle((1, 0))
+    require_a_decided_battle(decided, "decided")  # returns, no skip, no failure
+
+    monkeypatch.setattr(
+        "test_reward_ground_truth.derived_cards_vintage",
+        lambda *a, **k: "~2018 client data (PRE-2025)",
+    )
+    with pytest.raises(Skipped) as skipped:
+        require_a_decided_battle(_level_battle((1, 1)), "clone")
+    assert "SKIPPED, NOT PASSED" in str(skipped.value)
+    assert "2018" in str(skipped.value), "the skip does not name the table that caused it"
+
+    monkeypatch.setattr(
+        "test_reward_ground_truth.derived_cards_vintage",
+        lambda *a, **k: f"{SCENARIO_CARD_TABLE} client (2026, LIVE build family)",
+    )
+    with pytest.raises(AssertionError, match="the very table it was tuned against"):
+        require_a_decided_battle(_level_battle((1, 1)), "ours")

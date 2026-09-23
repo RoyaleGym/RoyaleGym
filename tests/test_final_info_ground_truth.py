@@ -57,6 +57,7 @@ from test_reward_ground_truth import (
     battle,
     make_engine,
     only,
+    require_a_decided_battle,
     scenario_setup,
     scripted_action,
 )
@@ -109,6 +110,7 @@ def leak_steps(b: Battle, team: int) -> int:
 @pytest.mark.parametrize(("kind", "leader"), CASES)
 def test_the_battle_can_tell_the_seats_and_the_clock_apart(kind, leader):
     b = battle(kind, leader)
+    require_a_decided_battle(b, f"{kind}-{'blue' if leader == BLUE else 'red'}-leads")
     end = final(b)
     assert end.game_over
     assert end.players[BLUE].crowns != end.players[RED].crowns
@@ -230,6 +232,10 @@ class FixedSetup(StateMutator):
 
 @pytest.mark.parametrize(("kind", "leader"), CASES)
 def test_the_vector_envs_final_info_describes_the_battle_that_ended(kind, leader):
+    # Same precondition as the parallel-env case: on a card table these scenarios were
+    # not tuned for, the battle ends level and every seat comparison below compares a
+    # number with itself. battle() is cached, so this costs one lookup.
+    require_a_decided_battle(battle(kind, leader), f"{kind}-vector")
     setup = scenario_setup(make_engine(kind), leader)
     engine = RecordedRust() if kind == "rust" else RecordedMock()
     vec = ClashSelfPlayVecEnv(
