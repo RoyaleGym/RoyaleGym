@@ -246,7 +246,20 @@ def test_the_vector_envs_final_info_describes_the_battle_that_ended(kind, leader
     scripts = {leader: LEADER_SCRIPT, 1 - leader: TRAILER_SCRIPT}
     rng = np.random.default_rng(3)
     elixir = []  # both bars before each step; after a step is before the next one
-    for t in range(200):
+    # BOUNDED BY TICKS, not by a step count. The literal 200 here covered the scenario
+    # while OVERTIME_S was 60 s; at 120 s it stopped reaching the end of overtime, and on
+    # a table where the battle is level at regulation the episode simply never ended --
+    # `engine.finals` stayed empty and this read as "the episode did not end" rather than
+    # as a time constant having moved in another repo.
+    #
+    # Ticks rather than steps because this harness has no env handle to ask for
+    # `decision_ticks`, and a second guess at the decision granularity would be one more
+    # copy of a constant to go stale. The step cap is only a backstop against a tick that
+    # stops advancing; the real exit is the termination break below.
+    end_by = start.regular_ticks + start.overtime_ticks
+    t = -1
+    while engine.state().tick <= end_by and t < 2000:
+        t += 1
         prev = engine.state()
         masks = vec.action_masks()
         actions = [
