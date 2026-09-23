@@ -214,6 +214,41 @@ coordinated change rather than a switch. The cost is worth paying: the alternati
 card id stored as a scaled half, which fails silently, and silent is worse than work.
 
 
+## 3c. Queued: positional channels (NOT built, and frozen until train's run ends)
+
+Recorded so the reasoning survives, including the part of it that was WRONG, because the
+wrong version is the one a reader is likely to re-derive.
+
+**The dead claim.** Counting distinct per-tile feature vectors in `spatial` gives 11 to 18
+distinct vectors across 576 tiles, with the most common covering 43% of the board. It is
+tempting to conclude that a pointer head, which scores a tile by an inner product with that
+tile's features, therefore has ~18 logits available and cannot separate 250 tiles by any
+weights. **That conclusion is false.** The head's inner product is not with this array: the
+learner's trunk concatenates two coordinate planes, normalised y and x, into the stem's
+input, so the feature map the head sees distinguishes two empty tiles by construction. The
+measurement is real and the inference on top of it is not.
+
+**What is true**, in learn's formulation: what distinguishes two empty tiles is their
+coordinates plus whatever falls inside the receptive field, which at four residual blocks of
+3x3 convolutions is roughly 9 to 11 tiles. So a tile further than that from every entity is
+described by its position and the static planes alone. That predicts a policy can learn
+"deploy at this coordinate" and cannot learn "deploy 14 tiles from that Giant" without more
+depth. It is weaker than the dead claim and, unlike it, checkable.
+
+**The queued channels.** Distance to each tower, and lane. Worth a plane each because a 3x3
+convolution stack has to spend DEPTH computing something an input plane could simply state,
+and depth is what this network does not have much of.
+
+**Not now, and the reason is the same as the card planes'.** The observation shape is frozen
+until train's several-hundred-iteration run finishes: changing what the network sees
+mid-comparison invalidates both arms and looks like a result. These land behind the
+card-identity planes.
+
+**These do NOT overlap with `card_ids`.** The card planes differentiate about 19 OCCUPIED
+tiles of 576; the tiles a positional channel helps are the empty ones. Two different gaps.
+Both this session and learn had been counting them as one.
+
+
 ## 4. The flat `vector`, float32 `[12n + 37]` (fair)
 
 All slots are clipped to `[0, 1]`. The offsets in the table are for n = 16, which is
