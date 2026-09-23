@@ -128,6 +128,73 @@ the key is simply absent.
 
 ---
 
+## 3b. `card_ids`, uint8 `[2, 32, 18]`, `SpatialObsBuilder` only (behind a flag, default off)
+
+AGREED WITH learn BEFORE IT IS WIRED, because their stem does an embedding lookup on these
+and most of the ways to get it wrong fail silently rather than loudly.
+
+`spatial` cannot tell a Giant from a Knight standing on the same tile: it carries no
+per-unit card identity. That is a ceiling on play quality and it is invisible in any
+throughput comparison, which is why D2 was nearly decided on the wrong axis. These planes
+close it without a new trunk.
+
+| | |
+|---|---|
+| key | `card_ids`, its OWN key, not a slice of `spatial` |
+| shape | `[2, 32, 18]` — plane 0 own, plane 1 enemy, in the seat's own frame |
+| dtype | `uint8`, declared `Box(0, vocab - 1, dtype=np.uint8)` |
+| vocab | `num_cards + 2`, from the LOADED card table (102 here, 68 on a 2018 clone) |
+
+**Why its own key and not a channel of `spatial`.** `spatial` is declared
+`Box(0.0, SPATIAL_CLIP, float32)`, and a learner's codec picks exact-versus-scaled-half
+storage from the declared bounds. A card id inside a float box is stored as a scaled half,
+comes back as 6.997 instead of 7, and `.long()` reads card 6. Nothing fails; the policy
+learns from a catalogue that is subtly wrong. `mask_planes` is already a separate
+integer-valued key, so this follows a path the codec has met.
+
+**The vocabulary.**
+
+| index | meaning |
+|---|---|
+| 0 | empty tile |
+| 1 | a crown tower, which is not a card |
+| 2 + `card_id` | a unit of that card |
+
+Index 0 is reserved so that "nothing here" and "the first card in the catalogue" are not
+the same number. Crown towers get index 1 for exactly the same reason one step along: they
+are the only entity class carrying no card (`card_id == EMPTY_CARD == -1`), and leaving
+their tiles at 0 would make 0 mean both "empty ground" and "a tower stands here". It also
+carries real information rather than a constant, because a destroyed tower's tile becomes
+genuinely empty. Units a spell releases are NOT in this class; the engine reports them
+under the releasing spell's catalogue id, so they are ordinary cards.
+
+**The vocabulary size is not a constant.** It is a fact about the table the engine loaded:
+100 cards on the 15.535 table, 66 on a 2018 clone. It is published in the EnvSpec so a
+network sizes `nn.Embedding(vocab, C)` at construction. A literal would be wrong on a
+clone, and an embedding sized by guessing truncates silently.
+
+**Catalogue ids are POSITIONAL, and that is the trap this ships with a guard against.**
+Making one more card loadable renumbers every later id, so an embedding table indexed by
+those ids would have the same checkpoint reading a different game afterwards with nothing
+failing. So the planes ship with an explicit `card_names` list recorded in the run
+identity: a renumber is then a REFUSAL rather than a quiet reinterpretation. If the
+vocabulary ever exceeds 255, construction refuses and names the storage decision instead of
+widening the dtype silently.
+
+**Ties are broken by lowest `uid`, and this is not cosmetic.** `BattleState.entities` is
+NOT in uid order — a live battle gives `[0, 2, 4, 1, 3, 5]` — so "whichever comes first"
+would make the plane a function of iteration order, and two runs of one seed could differ.
+`uid` is unique for a whole battle and never reused.
+
+**Spells in flight do not appear here**, and that is structural rather than a choice:
+`BattleState.spells` is a separate list from `entities`, so a live spell has no entity and
+no tile. This matches the same object being invisible to a learner's committed-elixir
+accounting, which is the one outcome that creates no new discrepancy between the two.
+
+**Default OFF until train's policy-head arm has run.** Flipping an observation shape under
+a paired comparison invalidates both arms and looks like a result.
+
+
 ## 4. The flat `vector`, float32 `[12n + 37]` (fair)
 
 All slots are clipped to `[0, 1]`. The offsets in the table are for n = 16, which is
