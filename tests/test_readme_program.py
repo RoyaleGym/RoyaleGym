@@ -102,26 +102,43 @@ def test_the_badge_count_matches_what_the_suite_collects() -> None:
 
     There is one copy now, and this compares it against collection rather than against
     a run: ``--collect-only`` is quick, does not execute anything, and passed + skipped
-    is exactly what gets collected. So adding a test without touching the badge turns
-    this red, which is the friction that keeps the number true.
+    is exactly what gets collected once the expected failures are deselected. So adding a
+    test without touching the badge turns this red, which is the friction that keeps the
+    number true.
     """
-    badge = re.search(r"pytest-(\d+)%20passed%2C%20(\d+)%20skipped", README.read_text("utf-8"))
-    assert badge, "no pytest badge in README.md"
-    claimed = int(badge.group(1)) + int(badge.group(2))
+    # There are two test-count badges and they count DIFFERENT populations: one a fresh
+    # clone, which nothing here can re-run, and one this machine. Only the second is a
+    # claim collection can check, so this finds it by its LABEL rather than by its
+    # position. Keying on position would silently start checking the fresh-clone figure
+    # against this machine the day the two badges are reordered, which is the failure
+    # this test is supposed to prevent rather than commit.
+    readme = README.read_text("utf-8")
+    ours = re.findall(r"our%20machine[^\"']*?-(\d+)%20passed%2C%20(\d+)%20skipped", readme)
+    counts = re.findall(r"-(\d+)%20passed%2C%20(\d+)%20skipped", readme)
+    assert counts, "README.md states no test count at all; it used to state two"
+    assert len(ours) == 1, (
+        f"expected exactly one badge labelled as this machine's, found {len(ours)} among "
+        f"{len(counts)} test-count badges. If the label changed, change it here too: a "
+        "count nothing checks is the thing this test exists to prevent."
+    )
+    claimed = int(ours[0][0]) + int(ours[0][1])
 
+    # Deselect the expected failures. They are collected but a run reports them as
+    # xfailed, so they are in neither number the badge states, and counting them would
+    # make the badge wrong by exactly the number of open defects the suite is marking.
     done = subprocess.run(
-        [sys.executable, "-m", "pytest", "--collect-only", "-q"],
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", "-m", "not xfail"],
         capture_output=True,
         text=True,
         timeout=600,
         cwd=REPO,
     )
-    found = re.search(r"(\d+) tests? collected", done.stdout)
+    found = re.search(r"(\d+)(?:/\d+)? tests? (?:collected|deselected)", done.stdout)
     assert found, f"could not read a collected count:\n{done.stdout[-800:]}"
     collected = int(found.group(1))
     assert claimed == collected, (
-        f"the README badge says {badge.group(1)} passed and {badge.group(2)} skipped, "
-        f"which is {claimed} tests, and pytest collects {collected}."
+        f"the README badge for this machine says {ours[0][0]} passed and {ours[0][1]} "
+        f"skipped, which is {claimed} tests, and pytest collects {collected}."
     )
 
 

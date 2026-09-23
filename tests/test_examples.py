@@ -35,8 +35,16 @@ pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERR
 
 #: The line that proves each example did the thing it is there to demonstrate, not
 #: merely that python reached the end of the file.
+#:
+#: The first-step count was 1605 until 2026-09-22, when the engine started RELOCATING a
+#: building whose tile box does not fit rather than refusing the tap, and the mask stopped
+#: treating the bodies already on the board as a rule for buildings. Measured on this
+#: example's own deck and seed, counting each hand slot under both rules: the whole
+#: difference is the Cannon, 222 legal tiles before and 240 after, and Zap, Fireball and
+#: Archer do not move at all. So this number changing again means a placement rule
+#: changed, and the per-slot breakdown says which card.
 PROOF = {
-    "01_one_battle.py": "legal moves on the first step: 1605 of 2305",
+    "01_one_battle.py": "legal moves on the first step: 1623 of 2305",
     "02_one_seat_against_a_bot.py": "against rush-left",
     "03_self_play_batch.py": "agent-episodes finished in 400 vector steps",
     "04_your_own_reward.py": "% of the signal",
