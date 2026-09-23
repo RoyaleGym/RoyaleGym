@@ -176,3 +176,25 @@ def test_the_workflow_emits_the_collected_count_rather_than_leaving_it_derived()
         "the collected count is not taken from pytest --collect-only, so it is a number "
         "about something other than what this run collected"
     )
+
+
+def test_the_provenance_block_is_readable_from_the_run_log() -> None:
+    """A provenance block written only to the step summary cannot be checked.
+
+    `$GITHUB_STEP_SUMMARY` is not returned by `gh run view` or by the jobs API, so a value
+    sent only there is invisible to the person who needs it -- and the integrator reads run
+    LOGS, quoting log lines for this repo's counts. Writing the collected count somewhere
+    unreadable made "the workflow emits it" an unverified claim about the very instrument
+    added to stop a number being unverified.
+
+    So the block tees: the summary keeps its formatted copy and stdout carries the same
+    text into the log.
+    """
+    text = WORKFLOW.read_text(encoding="utf-8")
+    marker = "- name: record what this run was"
+    body = text.split(marker, 1)[1].split("\n      - name:", 1)[0]
+    assert "tee -a" in body, (
+        "the provenance block no longer tees to stdout, so its values go only to the step "
+        "summary, which cannot be read from the API or from `gh run view`. A number nobody "
+        "can read is not a number the run reported."
+    )

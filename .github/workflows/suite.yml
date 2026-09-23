@@ -124,4 +124,10 @@ jobs:
             echo "collected=$(cd "$GITHUB_WORKSPACE/RoyaleGym" && ../.venv/bin/python -m pytest -q --collect-only 2>/dev/null | tail -1)"
             .venv/bin/python -c "from royalegym.rust_engine import build_digest, engine_binary_digest; print(f'build_digest={build_digest()}'); print(f'engine_binary={engine_binary_digest()}')" || true
             .venv/bin/python -c "from royalegym.protocol import derived_cards_vintage; print(f'cards_vintage={derived_cards_vintage()}')" || true
-          } >> "$GITHUB_STEP_SUMMARY"
+          # tee, not >>. The summary is not readable from the API or from `gh run view`,
+          # so a provenance block that goes ONLY there cannot be checked by the person who
+          # needs it: the integrator reads run LOGS and quoted log lines for this repo's
+          # counts. Writing it to a place I cannot read made "the workflow emits the
+          # collected count" an unverified claim about my own instrument -- the shape this
+          # block exists to prevent. stdout makes it checkable by anyone reading the run.
+          } | tee -a "$GITHUB_STEP_SUMMARY"
