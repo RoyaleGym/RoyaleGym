@@ -11,6 +11,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _decks import MIXED_BARREL_DECK, MIXED_DECK, SPELL_FIRST_DECK, card_id, card_ids
 from royalegym.action import (
     NOOP,
     HalfTileActionParser,
@@ -30,15 +31,83 @@ from royalegym.protocol import (
     ShuffleMode,
     SpawnSpec,
 )
+from royalegym.rust_engine import RustEngine, core_available
 from royalegym.selfplay import RandomLegalOpponent
 from royalegym.state_mutator import DefaultStateMutator
 
-# Knight Giant Cannon Log | Fireball Zap Minions Valkyrie -- all four placement types
-CANNON = 10
-MIXED = [0, 3, 10, 14, 11, 13, 7, 9]
-# Zap swapped for Goblin Barrel (mock id 15, 2026-09-13): every Placement class,
+# Knight Giant Cannon Log | Fireball Zap Minions Valkyrie -- all four placement types.
+# Written as NAMES in tests/_decks.py and turned into ids here, because an id is a
+# position in a catalogue and positions move when a catalogue gains a card.
+_CARDS = MockEngine().cards()
+CANNON = card_id("Cannon", _CARDS)  # the deck's BUILDING
+KNIGHT = card_id("Knight", _CARDS)  # an ordinary ground troop
+BARREL = card_id("GoblinBarrel", _CARDS)  # the SPELL_NOT_ON_WATER card
+MIXED = card_ids(MIXED_DECK, _CARDS)
+# Zap swapped for the Goblin Barrel (2026-09-13): every Placement class,
 # SPELL_NOT_ON_WATER included, is in MIXED or MIXED_BARREL.
-MIXED_BARREL = [0, 3, 10, 14, 11, 15, 7, 9]
+MIXED_BARREL = card_ids(MIXED_BARREL_DECK, _CARDS)
+
+
+@pytest.mark.parametrize(
+    ("make_engine", "n_cards"),
+    [
+        pytest.param(MockEngine, 16, id="mock"),
+        pytest.param(
+            RustEngine,
+            100,
+            id="rust",
+            marks=pytest.mark.skipif(
+                not core_available(), reason="the compiled engine is not importable"
+            ),
+        ),
+    ],
+)
+def test_the_shared_deck_still_holds_one_card_of_every_kind(make_engine, n_cards):
+    """The suite's deck is not eight cards: it is one card of each KIND.
+
+    Tests in this file and in several others reach into it for the building, for a
+    spell, for the rolling spell and for the flying troop, and none of them says so
+    out loud. If a card table changed so that the deck was eight ordinary ground
+    troops, those tests would keep passing while exercising none of what they were
+    written for. That is the failure this catches, on every engine, before the
+    quiet ones get the chance.
+    """
+    cards = make_engine().cards()
+    deck = [cards[i] for i in card_ids(MIXED_DECK, cards, "the shared deck")]
+    assert [c.name for c in deck] == list(MIXED_DECK)
+    kinds = {Placement(c.placement) for c in deck}
+    for want in (Placement.BUILDING, Placement.SPELL, Placement.ROLLING, Placement.TROOP):
+        assert want in kinds, f"the shared deck has no {want.name}: {[c.name for c in deck]}"
+    # A TROOP, not any flying card: what the air tests need is a unit the board can
+    # hold, and a spell that travels through the air would otherwise answer for it.
+    flying = [c.name for c in deck if c.flying and c.placement == Placement.TROOP]
+    ground = [c.name for c in deck if c.placement == Placement.TROOP and not c.flying]
+    assert flying, f"the shared deck has no flying troop: {[c.name for c in deck]}"
+    assert ground, f"the shared deck is all air: {[c.name for c in deck]}"
+    # The barrel deck carries the one placement class the deck above cannot also hold.
+    barrel = [cards[i] for i in card_ids(MIXED_BARREL_DECK, cards, "the barrel deck")]
+    assert Placement.SPELL_NOT_ON_WATER in {Placement(c.placement) for c in barrel}
+    # Weaker, and second on purpose. The kinds above are what the suite needs; a
+    # catalogue may grow without breaking anything, and then this line is the note
+    # that says the ids moved and every literal one is now suspect.
+    assert len(cards) == n_cards, f"catalogue size moved from {n_cards} to {len(cards)}"
+
+
+def hand_slot(state, team: int, card: int) -> int:
+    """Which hand slot holds ``card``, so a test can name the card it is about.
+
+    The alternative is an index into the deck, which says nothing about what is in
+    that position and stops being true the moment the deck is written differently.
+    """
+    hand = list(state.players[team].hand)
+    assert card in hand, f"card {card} is not in the hand {hand}"
+    return hand.index(card)
+
+
+def mask_plane(mask, slot: int, nx: int = 18, ny: int = 32):
+    """One hand slot's grid out of a flat action mask."""
+    per = nx * ny
+    return mask[1 + slot * per : 1 + (slot + 1) * per].reshape(ny, nx)
 
 
 def test_action_space_is_documented_size():
@@ -108,7 +177,7 @@ def _probe_states():
             spawns=[
                 SpawnSpec(BLUE, CANNON, s * 9, s * 10),  # on a tile corner
                 SpawnSpec(RED, CANNON, a.width - s * 5 - s // 2, a.height - s * 12 - s // 2),
-                SpawnSpec(BLUE, 0, s * 4, s * 20),  # troops do NOT block placement
+                SpawnSpec(BLUE, KNIGHT, s * 4, s * 20),  # troops do NOT block placement
             ],
         ),
     )
@@ -248,15 +317,15 @@ def test_goblin_barrel_is_refused_only_on_water():
     eng = MockEngine()
     p = TileActionParser()
     p.bind(eng)
-    assert eng.cards()[15].name == "GoblinBarrel"
-    assert eng.cards()[15].placement == Placement.SPELL_NOT_ON_WATER
-    barrel_first = [15, 0, 3, 10, 14, 11, 7, 9]  # ShuffleMode.NONE: slot 0 is the barrel
+    assert eng.cards()[BARREL].placement == Placement.SPELL_NOT_ON_WATER
+    # ShuffleMode.NONE: hand slot 0 is the first card of the deck.
+    barrel_first = card_ids(("GoblinBarrel", *(n for n in MIXED_DECK if n != "Zap")), _CARDS)
     eng.reset(
         0,
         MatchSetup(decks=[barrel_first, MIXED], elixir_milli=[10000, 0], shuffle=ShuffleMode.NONE),
     )
     st = eng.state()
-    assert st.players[BLUE].hand[0] == 15
+    assert st.players[BLUE].hand[0] == BARREL
     per = 18 * 32
     grid = p.action_mask(st, BLUE)[1 : 1 + per].reshape(32, 18)
     water = p.oracle.water.reshape(32, 2, 18, 2).any(axis=(1, 3))
@@ -304,11 +373,12 @@ def test_unmasked_illegal_action_is_rejected_and_costs_nothing():
     obs, _ = env.reset(seed=0)
     parser = env.action_parser
     a = env.engine.arena()
-    # Knight (slot 0) on a water tile, own frame tile (8, 15): mask says no.
-    act = parser.encode(0, 8, 15)
+    # A troop on a water tile, own frame tile (8, 15): mask says no.
+    slot = hand_slot(env.battle_state, BLUE, KNIGHT)
+    act = parser.encode(slot, 8, 15)
     assert obs["blue"]["action_mask"][act] == 0
     # ...and on the enemy half.
-    far = parser.encode(0, 8, 25)
+    far = parser.encode(slot, 8, 25)
     assert obs["blue"]["action_mask"][far] == 0
     before = env.battle_state.players[BLUE]
     _, _, _, _, info = env.step({"blue": act, "red": NOOP})
@@ -328,11 +398,17 @@ def test_mask_marks_unaffordable_cards_and_keeps_noop():
     eng.reset(0, MatchSetup(decks=[MIXED, MIXED], shuffle=ShuffleMode.NONE, elixir_milli=[2999, 0]))
     st = eng.state()
     m = p.action_mask(st, BLUE)
-    per = 18 * 32
-    # hand = Knight(3) Giant(5) Cannon(3) Log(2): only Log is affordable at 2.999
+    # Blue holds 2.999 elixir. Which cards that pays for is the catalogue's business,
+    # so ask it rather than trusting a comment about a deck position.
+    hand = st.players[BLUE].hand
+    cheap = [i for i, c in enumerate(hand) if eng.cards()[c].elixir * 1000 <= 2999]
+    dear = [i for i, c in enumerate(hand) if i not in cheap]
+    held = [eng.cards()[c].name for c in hand]
+    assert cheap, f"fixture needs a card 2.999 pays for, hand is {held}"
+    assert dear, f"fixture needs a card 2.999 does not pay for, hand is {held}"
     assert m[NOOP] == 1
-    assert m[1 : 1 + 3 * per].sum() == 0
-    assert m[1 + 3 * per :].sum() > 0
+    assert all(mask_plane(m, i).sum() == 0 for i in dear)
+    assert all(mask_plane(m, i).sum() > 0 for i in cheap)
     assert p.action_mask(st, RED).sum() == 1  # zero elixir: only no-op
 
 
@@ -343,16 +419,15 @@ def test_spells_are_legal_everywhere_troops_only_in_territory():
     eng.reset(
         0,
         MatchSetup(
-            decks=[[11, 0, 1, 2, 3, 4, 5, 6], MIXED],
+            decks=[card_ids(SPELL_FIRST_DECK, _CARDS), MIXED],
             shuffle=ShuffleMode.NONE,
             elixir_milli=[10000, 0],
         ),
     )
     st = eng.state()
     m = p.action_mask(st, BLUE).reshape(-1)
-    per = 18 * 32
-    fireball = m[1 : 1 + per].reshape(32, 18)
-    knight = m[1 + per : 1 + 2 * per].reshape(32, 18)
+    fireball = mask_plane(m, hand_slot(st, BLUE, card_id("Fireball", _CARDS)))
+    knight = mask_plane(m, hand_slot(st, BLUE, KNIGHT))
     assert fireball.all()
     assert knight[16:].sum() == 0  # nothing past the river (no pocket yet)
     assert knight[:15].sum() > 0
@@ -373,7 +448,8 @@ def test_pocket_opens_on_the_correct_side_after_a_princess_falls():
         ),
     )
     st = eng.state()
-    knight = p.action_mask(st, BLUE)[1 : 1 + 18 * 32].reshape(32, 18)
+    m = p.action_mask(st, BLUE)
+    knight = mask_plane(m, hand_slot(st, BLUE, KNIGHT))
     enemy_half = knight[17:]
     assert enemy_half[:, 9:].sum() > 0, "pocket should open on Blue's right"
     assert enemy_half[:, :9].sum() == 0, "and not on Blue's left"
@@ -383,10 +459,10 @@ def test_pocket_opens_on_the_correct_side_after_a_princess_falls():
     assert open_rows == [17, 18, 19, 20], open_rows
     half = HalfTileActionParser()
     half.bind(eng)
-    hk = half.action_mask(st, BLUE)[1 : 1 + 36 * 64].reshape(64, 36)
+    hk = mask_plane(half.action_mask(st, BLUE), hand_slot(st, BLUE, KNIGHT), 36, 64)
     assert [hy for hy in range(34, 64) if hk[hy, 18:].any()] == list(range(34, 42))
     # Buildings never get the pocket.
-    cannon = p.action_mask(st, BLUE)[1 + 2 * 18 * 32 : 1 + 3 * 18 * 32].reshape(32, 18)
+    cannon = mask_plane(m, hand_slot(st, BLUE, CANNON))
     assert cannon[17:].sum() == 0
 
 
@@ -427,7 +503,7 @@ def test_the_memo_returns_exactly_what_recomputing_would():
     eng, parser = _oracle_and_states()
     plain = PlacementOracle(eng.arena(), eng.rules(), eng.cards())
     plain.grid_key = lambda *a, **k: None  # every call a miss
-    deck = [0, 3, 10, 14, 11, 13, 7, 9]
+    deck = MIXED
     rng = np.random.default_rng(3)
     checked = 0
     for trial in range(4):
@@ -461,8 +537,8 @@ def test_the_memo_returns_exactly_what_recomputing_would():
 def test_a_memoised_grid_is_read_only():
     """Callers share it, so writing to one seat's grid would change the other's."""
     eng, parser = _oracle_and_states()
-    eng.reset(0, MatchSetup(decks=[[0, 3, 10, 14, 11, 13, 7, 9]] * 2))
-    grid = parser.oracle.point_grid(eng.state(), BLUE, eng.cards()[0], 1)
+    eng.reset(0, MatchSetup(decks=[MIXED] * 2))
+    grid = parser.oracle.point_grid(eng.state(), BLUE, eng.cards()[KNIGHT], 1)
     with pytest.raises(ValueError, match="read-only"):
         grid[0, 0] = True
 
@@ -471,7 +547,7 @@ def test_a_memoised_grid_is_read_only():
 def test_the_memo_key_notices_everything_the_grid_reads(what):
     """A stale hit is the only way a memo can be wrong. Change one input at a time."""
     eng, parser = _oracle_and_states()
-    deck = [0, 3, 10, 14, 11, 13, 7, 9]
+    deck = MIXED
     sub = eng.arena().subtile
     troop = next(c for c in eng.cards() if c.placement == Placement.TROOP)
 
@@ -509,7 +585,7 @@ def test_the_memo_key_notices_everything_the_grid_reads(what):
 def test_every_troop_card_shares_one_grid_and_a_building_does_not():
     """Why the memo pays: the grid is not a function of the card, except for size."""
     eng, parser = _oracle_and_states()
-    eng.reset(0, MatchSetup(decks=[[0, 3, 10, 14, 11, 13, 7, 9]] * 2))
+    eng.reset(0, MatchSetup(decks=[MIXED] * 2))
     st = eng.state()
     troops = [c for c in eng.cards() if c.placement == Placement.TROOP]
     assert len(troops) > 2

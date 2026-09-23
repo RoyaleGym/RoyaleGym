@@ -6,6 +6,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _decks import MIXED_DECK, card_id, card_ids
 from royalegym import obs as obs_mod
 from royalegym.action import TileActionParser
 from royalegym.done_condition import StepLimitCondition
@@ -39,7 +40,8 @@ from royalegym.protocol import (
 )
 from royalegym.state_mutator import DefaultStateMutator, SnapshotStateMutator
 
-DECK = [0, 3, 10, 14, 11, 13, 7, 9]
+_CARDS = MockEngine().cards()
+DECK = card_ids(MIXED_DECK, _CARDS)
 # The FAIR channel set. Every reveal appends its channels after these, so a fair
 # channel's index is the same whatever the Reveal (obs.py, vector_layout).
 CHANNEL = {name: i for i, (name, _) in enumerate(spatial_channels())}
@@ -83,7 +85,10 @@ def _states(n_steps: int = 400):
             elixir_milli=[9000, 4000],
             tower_hp=[[2400, 900, 1400], [2400, 0, 1100]],
             # an asymmetric board, so a flip bug cannot hide behind symmetry
-            spawns=[SpawnSpec(BLUE, 0, s * 3, s * 9), SpawnSpec(RED, 7, s * 12, s * 20)],
+            spawns=[
+                SpawnSpec(BLUE, card_id("Knight", _CARDS), s * 3, s * 9),
+                SpawnSpec(RED, card_id("Minions", _CARDS), s * 12, s * 20),  # flying
+            ],
         ),
     )
     rng = np.random.default_rng(8)
@@ -374,7 +379,7 @@ def _both_teams_deploying():
     eng = MockEngine()
     a = eng.arena()
     s = a.subtile
-    knight = next(c.card_id for c in eng.cards() if c.name == "Knight")
+    knight = card_id("Knight", eng)
     deck = [knight] + [c for c in DECK if c != knight]
     eng.reset(
         0,
@@ -515,7 +520,7 @@ def _mirrored_order_state():
     ]
     # Live spells, rotation-mirrored, Red's listed in a different order, with a pair
     # that ties on (enemy, y, x, motion, card) and differs only in aim and hits.
-    fb = next(c.card_id for c in eng.cards() if c.name == "Fireball")
+    fb = card_id("Fireball", eng)
     spells_b = [
         SpellState(BLUE, fb, SpellMotion.FLIGHT, sx, sy, 9 * a.subtile, 25 * a.subtile, 1, 0, 0, 0),
         SpellState(BLUE, fb, SpellMotion.FLIGHT, sx, sy, 4 * a.subtile, 25 * a.subtile, 1, 0, 0, 0),
@@ -788,7 +793,7 @@ def _two_enemy_spells(aim_x_a, aim_x_b):
     """One state with two enemy spells alike in everything a fair viewer can see,
     differing only in where they are going -- and in delay and hits, which ARE
     visible and must therefore not be ordered by the hidden aim."""
-    fb = next(c.card_id for c in ENG.cards() if c.name == "Fireball")
+    fb = card_id("Fireball", ENG)
     t = ENG.arena().subtile
     return msgspec.structs.replace(
         MOCK_STATES[0],
@@ -1260,7 +1265,9 @@ def test_the_memory_says_when_its_count_can_no_longer_be_exact():
     # stumble into.
     # The card at cycle position 5 is the one at hand slot 0, so playing slot 0
     # draws the same card straight back into it and NOTHING in the hand changes.
-    doubled = [0, 3, 10, 14, 0, 11, 13, 7]
+    doubled = card_ids(
+        ("Knight", "Giant", "Cannon", "Log", "Knight", "Fireball", "Zap", "Minions"), _CARDS
+    )
     eng = MockEngine()
     parser = TileActionParser()
     parser.bind(eng)
@@ -1408,7 +1415,9 @@ def test_exactness_is_checked_on_both_bars_not_just_the_visible_one():
     reading. With the own-bar check alone, ``exact`` stayed True on this setup while
     the number it certified was wrong.
     """
-    doubled = [0, 0, 3, 3, 10, 10, 14, 14]
+    doubled = card_ids(
+        ("Knight", "Knight", "Giant", "Giant", "Cannon", "Cannon", "Log", "Log"), _CARDS
+    )
     env = ClashParallelEnv(
         engine=MockEngine(),
         state_mutator=DefaultStateMutator(decks=[DECK, doubled]),

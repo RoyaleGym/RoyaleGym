@@ -40,6 +40,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from _decks import MIXED_DECK, card_ids
 from royalegym.action import TileActionParser
 from royalegym.mock_engine import MockEngine
 from royalegym.obs import (
@@ -56,7 +57,10 @@ from royalegym.protocol import (
     SpawnSpec,
 )
 
-DECK = [0, 3, 10, 14, 11, 13, 7, 9]
+_CARDS = MockEngine().cards()
+DECK = card_ids(MIXED_DECK, _CARDS)
+# Three ground troops a reader can tell apart, for boards built to vary one thing.
+KNIGHT, ARCHER, GOBLINS = card_ids(("Knight", "Archer", "Goblins"), _CARDS)
 
 
 @pytest.fixture(scope="module")
@@ -108,8 +112,8 @@ def test_moving_one_unit_one_tile_moves_the_observation(engine):
     """The cheapest possible collapse: an observation that ignores the board."""
     eng, _ = engine
     sub = eng.arena().subtile
-    before = base_state(engine, spawns=[SpawnSpec(BLUE, 0, 6 * sub, 9 * sub)])
-    after = base_state(engine, spawns=[SpawnSpec(BLUE, 0, 7 * sub, 9 * sub)])
+    before = base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, 6 * sub, 9 * sub)])
+    after = base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, 7 * sub, 9 * sub)])
     a, _ = built(engine, before)
     b, _ = built(engine, after)
     assert not np.array_equal(a["spatial"], b["spatial"]), (
@@ -138,7 +142,7 @@ def test_two_different_boards_are_two_different_observations(engine):
     eng, _ = engine
     sub = eng.arena().subtile
     states = [
-        base_state(engine, spawns=[SpawnSpec(BLUE, 0, x * sub, y * sub)])
+        base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, x * sub, y * sub)])
         for x, y in ((4, 8), (6, 9), (9, 11), (13, 8), (6, 14))
     ]
     states.append(base_state(engine))
@@ -233,8 +237,8 @@ def test_damaging_one_unit_moves_the_hp_plane_and_only_that(engine):
     from royalegym.obs import spatial_channels
 
     names = [n for n, _ in spatial_channels()]
-    full = base_state(engine, spawns=[SpawnSpec(BLUE, 0, 6 * sub, 9 * sub)])
-    hurt = base_state(engine, spawns=[SpawnSpec(BLUE, 0, 6 * sub, 9 * sub, hp=40)])
+    full = base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, 6 * sub, 9 * sub)])
+    hurt = base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, 6 * sub, 9 * sub, hp=40)])
     a, _ = built(engine, full)
     b, _ = built(engine, hurt)
     changed = {
@@ -256,10 +260,13 @@ def test_the_enemys_board_moves_the_enemy_fields_and_not_the_owns(engine):
     """The own/enemy split, tested by changing exactly one side."""
     eng, _ = engine
     sub = eng.arena().subtile
-    before = base_state(engine, spawns=[SpawnSpec(BLUE, 0, 6 * sub, 9 * sub)])
+    before = base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, 6 * sub, 9 * sub)])
     after = base_state(
         engine,
-        spawns=[SpawnSpec(BLUE, 0, 6 * sub, 9 * sub), SpawnSpec(RED, 0, 6 * sub, 22 * sub)],
+        spawns=[
+            SpawnSpec(BLUE, KNIGHT, 6 * sub, 9 * sub),
+            SpawnSpec(RED, KNIGHT, 6 * sub, 22 * sub),
+        ],
     )
     from royalegym.obs import spatial_channels
 
@@ -342,9 +349,9 @@ def test_every_entity_row_field_responds_to_the_entity_it_describes(engine):
         engine,
         tower_hp=[[2400, 0, 1400], [2400, 1400, 1400]],
         spawns=[
-            SpawnSpec(BLUE, 0, 6 * sub, 9 * sub),
-            SpawnSpec(BLUE, 1, 9 * sub, 11 * sub),
-            SpawnSpec(RED, 2, 9 * sub, 22 * sub, hp=50),
+            SpawnSpec(BLUE, KNIGHT, 6 * sub, 9 * sub),
+            SpawnSpec(BLUE, ARCHER, 9 * sub, 11 * sub),
+            SpawnSpec(RED, GOBLINS, 9 * sub, 22 * sub, hp=50),
         ],
     )
     b = EntityListObsBuilder()
@@ -369,8 +376,8 @@ def test_damaging_one_unit_moves_only_that_row(engine):
     sub = eng.arena().subtile
     def board(hp):
         return base_state(engine, spawns=[
-            SpawnSpec(BLUE, 0, 6 * sub, 9 * sub),
-            SpawnSpec(BLUE, 0, 9 * sub, 11 * sub, hp=hp),
+            SpawnSpec(BLUE, KNIGHT, 6 * sub, 9 * sub),
+            SpawnSpec(BLUE, KNIGHT, 9 * sub, 11 * sub, hp=hp),
         ])
     b = EntityListObsBuilder()
     b.bind(eng, parser)
@@ -389,7 +396,7 @@ def test_two_different_boards_are_two_different_entity_arrays(engine):
     b.bind(eng, parser)
     flat = []
     for x, y in ((4, 8), (6, 9), (9, 11), (13, 8), (6, 14)):
-        s = base_state(engine, spawns=[SpawnSpec(BLUE, 0, x * sub, y * sub)])
+        s = base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, x * sub, y * sub)])
         flat.append(b.build(s, BLUE, parser.action_mask(s, BLUE))["entities"].ravel())
     clashes = [
         (i, j)
@@ -456,7 +463,7 @@ def test_measure_variability_reports_both_cosines_and_the_static_fraction(engine
     eng, parser = engine
     sub = eng.arena().subtile
     states = [
-        base_state(engine, spawns=[SpawnSpec(BLUE, 0, x * sub, y * sub)])
+        base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, x * sub, y * sub)])
         for x, y in ((4, 8), (6, 9), (9, 11), (13, 8), (6, 14))
     ]
     states += [
@@ -496,7 +503,7 @@ def test_measure_variability_sees_a_collapse(engine, monkeypatch):
     eng, parser = engine
     sub = eng.arena().subtile
     states = [
-        base_state(engine, spawns=[SpawnSpec(BLUE, 0, x * sub, y * sub)])
+        base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, x * sub, y * sub)])
         for x, y in ((4, 8), (6, 9), (9, 11), (13, 8))
     ]
     masks = [parser.action_mask(s, BLUE) for s in states]
@@ -550,7 +557,7 @@ def test_the_two_builders_variability_numbers_are_not_comparable(engine):
     eng, parser = engine
     sub = eng.arena().subtile
     states = [
-        base_state(engine, spawns=[SpawnSpec(BLUE, 0, x * sub, y * sub)])
+        base_state(engine, spawns=[SpawnSpec(BLUE, KNIGHT, x * sub, y * sub)])
         for x, y in ((4, 8), (6, 9), (9, 11), (13, 8))
     ]
     masks = [parser.action_mask(s, BLUE) for s in states]

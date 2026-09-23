@@ -22,6 +22,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from _decks import MIXED_DECK, card_ids
 from royalegym import (
     ClashParallelEnv,
     DefaultStateMutator,
@@ -32,7 +33,7 @@ from royalegym import (
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.evaluate import MatchResult, evaluate, wilson
 
-DECK = [0, 3, 10, 14, 11, 13, 7, 9]
+DECK = card_ids(MIXED_DECK, MockEngine())
 
 
 def env_fn(max_steps: int = 700):

@@ -13,6 +13,8 @@ only ``engine.state()``, the card catalogue, the arena and ``protocol.to_own``:
     TowerHPReward         change in own towers' hp / max_hp minus the enemy's, read from
                           the tower ENTITIES, weighted per tower
     ElixirTradeReward     elixir value of enemy units that left the board minus own
+                          (this deck casts no spell and summons nothing, which is what
+                          keeps that the whole truth -- see ``true_trade``)
     ElixirLeakPenalty     -1 when this seat's bar sat at the cap across the step, the cap
                           being what the engine clamps a huge starting bar to
     PlacementDepthReward  2 * y_own / height - 1 of the unit this seat's play put down
@@ -52,6 +54,7 @@ from royalegym.protocol import (
     BattleState,
     EntityKind,
     MatchSetup,
+    Placement,
     ShuffleMode,
     SpawnSpec,
     TowerSlot,
@@ -79,6 +82,8 @@ DECK = ("Knight", "Giant", "MiniPekka", "Musketeer", "HogRider", "Valkyrie", "Ca
 # only cycles.
 PLAYED = frozenset(DECK[:7])
 TOWERS = (EntityKind.KING_TOWER, EntityKind.PRINCESS_TOWER)
+# A card that puts nothing of its own on the board, so its elixir is spent at the tap.
+SPELL_PLACEMENTS = (Placement.SPELL, Placement.ROLLING, Placement.SPELL_NOT_ON_WATER)
 
 # Distinct weights, so a term reported under another term's name, or with another term's
 # weight, cannot come out right. The draw value is distinct from 0 and from +-1 for the
@@ -193,6 +198,10 @@ class Battle:
     cap: int = 0
     names: dict[int, str] = field(default_factory=dict)
     value: dict[int, Fraction] = field(default_factory=dict)
+    # What one unit of each card looks like, and which cards are spells: both only so
+    # ``true_trade`` can check that this battle stays inside the case it grades.
+    rows: dict[int, tuple[int, int, bool]] = field(default_factory=dict)
+    spell_ids: set[int] = field(default_factory=set)
 
 
 def all_terms():
@@ -223,6 +232,13 @@ def battle(kind: str, leader: int) -> Battle:
     enemy_elixir_at = env.obs_builder.vector_offsets()["enemy_elixir"]
     out.names = {c.card_id: c.name for c in engine.cards()}
     out.value = {c.card_id: Fraction(c.elixir, max(1, c.count)) for c in engine.cards()}
+    out.rows = {c.card_id: (c.hitpoints, c.radius, c.flying) for c in engine.cards()}
+    held = {c.card_id for c in engine.cards() if c.name in DECK}
+    out.spell_ids = {
+        c.card_id
+        for c in engine.cards()
+        if c.card_id in held and c.placement in SPELL_PLACEMENTS
+    }
     # The cap as the ENGINE applies it: the leader asked for far more than any bar holds.
     out.cap = engine.state().players[leader].elixir_milli
     scripts = {leader: LEADER_SCRIPT, 1 - leader: TRAILER_SCRIPT}
@@ -293,11 +309,30 @@ def true_towers(b: Battle, s: Step, team: int) -> float:
 
 
 def true_trade(b: Battle, s: Step, team: int) -> float:
+    """Elixir of the enemy units that left the board, minus this seat's.
+
+    THE TERM HAS TWO MORE CLAUSES AND THIS BATTLE EXERCISES NEITHER. It also charges a
+    seat the elixir of a spell it cast, and scores zero for a unit a card produced
+    rather than summoned, because the catalogue prices no such unit and reports it
+    under whichever card could have made it. This deck holds no spell, and every unit
+    in it is the one its card's row describes, so the plain sum below is still the
+    whole truth here. The two asserts say that rather than a comment: widen DECK and
+    they fire instead of grading a term whose definition has moved. The clauses
+    themselves are graded in tests/test_rewards.py.
+    """
+    assert not b.spell_ids, "this deck now holds a spell; the trade truth must charge the cast"
     alive = {e.uid for e in s.cur.entities}
     total = Fraction(0)
     for e in s.prev.entities:
         if e.uid in alive or e.kind in TOWERS:
             continue
+        # ``rows.get``, not ``rows[...]``: a unit a card produced can be reported under no
+        # card at all, and that is the very case this has to name rather than crash on.
+        assert b.rows.get(e.card_id) == (e.max_hp, e.radius, e.flying), (
+            f"a unit left the board that is not the one its card describes "
+            f"({b.names.get(e.card_id, e.card_id)}); the trade truth must score a unit a "
+            "card produced at zero"
+        )
         total += b.value[e.card_id] if e.team != team else -b.value[e.card_id]
     return float(total / Fraction(TRADE_SCALE))
 

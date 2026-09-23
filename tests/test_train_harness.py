@@ -28,6 +28,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _decks import MIXED_DECK, card_ids
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import (
     AGENT_TEAM,
@@ -55,7 +56,7 @@ from royalegym.selfplay import NoopOpponent
 from royalegym.state_mutator import DefaultStateMutator
 from royalegym.viser import ENV_VAR, ViserPublisher
 
-DECK = [0, 3, 10, 14, 11, 13, 7, 9]
+DECK = card_ids(MIXED_DECK, MockEngine())
 
 
 def short_env(max_steps: int = 6, engine: MockEngine | None = None, **kwargs) -> ClashParallelEnv:
@@ -468,7 +469,12 @@ def test_the_episode_says_whether_its_counted_features_were_trustworthy():
         _, _, _, _, infos = env.step(dict.fromkeys(AGENTS, 0))
     assert infos["blue"]["elixir_count_exact"] is True
 
-    doubled = [0, 0, 3, 3, 10, 10, 14, 14]
+    # Four cards, each twice: a play can swap a card for itself, so the hand does
+    # not change and the count has no way to stay exact.
+    doubled = card_ids(
+        ("Knight", "Knight", "Giant", "Giant", "Cannon", "Cannon", "Log", "Log"),
+        MockEngine(),
+    )
     env = ClashParallelEnv(
         engine=MockEngine(),
         state_mutator=DefaultStateMutator(decks=[doubled, doubled]),

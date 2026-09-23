@@ -35,12 +35,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from _decks import MIXED_DECK, card_ids
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
 from royalegym.env import ClashParallelEnv, ClashSelfPlayVecEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.state_mutator import DefaultStateMutator
 
-DECK = [0, 3, 10, 14, 11, 13, 7, 9]
+DECK = card_ids(MIXED_DECK, MockEngine())
 STEPS = 3  # every episode truncates after this many, so all games move in lockstep
 
 

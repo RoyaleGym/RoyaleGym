@@ -40,6 +40,8 @@ from .protocol import (
     DeployResult,
     Engine,
     EntityKind,
+    EntityState,
+    Placement,
     TowerSlot,
     Winner,
     to_own,
@@ -144,13 +146,60 @@ class TowerHPReward(RewardFunction):
         return own - foe
 
 
-class ElixirTradeReward(RewardFunction):
-    """Elixir value of enemy units killed minus own units lost, / MAX-ish scale.
+# The placement classes of a card that puts nothing of its own on the board. Its
+# elixir is spent at the tap and there is never a unit of it to price later, so
+# ``ElixirTradeReward`` charges it there instead.
+CAST_AND_GONE = (Placement.SPELL, Placement.ROLLING, Placement.SPELL_NOT_ON_WATER)
 
-    A unit is valued at card elixir / units summoned by that card. Entities that
-    vanish count as killed whether by damage or by lifetime expiry -- a building
-    that times out WAS spent elixir, so counting it as a loss is the honest
-    accounting, not a bug. Crown towers are excluded (TowerHPReward covers them).
+
+class ElixirTradeReward(RewardFunction):
+    """Elixir the enemy spent and lost minus what this seat spent and lost, / MAX-ish scale.
+
+    Two things spend elixir and leave nothing behind: a unit that dies, and a spell
+    that is cast. A unit is valued at card elixir / units summoned by that card.
+    Entities that vanish count as killed whether by damage or by lifetime expiry -- a
+    building that times out WAS spent elixir, so counting it as a loss is the honest
+    accounting, not a bug. Crown towers are excluded (TowerHPReward covers them). A
+    unit born and killed inside ONE decision step is in neither snapshot, so it is
+    never priced for either seat; that has always been so and the spell charge below
+    does not change it.
+
+    A SPELL IS CHARGED AT THE TAP, from the accepted deploy results, and never from
+    the board. It is consumed the moment it is played, so its elixir is gone whether
+    it killed anything or not, and a Fireball that hits air has to cost four. The
+    board cannot say this: an engine whose spells resolve inside the tick they land
+    reports no spell object at all, and the spell objects that do appear live for
+    several ticks and carry no identity, so counting them once is not possible. Every
+    engine reports an accepted tap exactly once, which is why it is read there.
+    Without this the term paid for a spell's kills and charged nothing for the spell,
+    which teaches that spells are free.
+
+    WHAT THE CATALOGUE DOES NOT PRICE. A card can put units on the board that are not
+    the unit the card itself summons -- a hut and a Witch keep producing them, a
+    Tombstone leaves more behind when it dies, a barrel releases them where it lands.
+    The catalogue has one row per card and no row for any of those units, and an
+    engine reports each of them under SOME card that can produce it, which need not
+    be the card its owner played: a Tombstone's skeleton is reported under the Witch,
+    a five-elixir card its owner may not even hold. So a unit is paid for only when
+    it is the unit its own card's row describes -- same hitpoints, same collision
+    radius, same air or ground -- and anything else a card produced scores nothing.
+    THAT IS AN UNDERSTATEMENT AND IT IS DELIBERATE: a Tombstone's skeleton is worth
+    something, and this term says zero rather than five. It is the closest to right
+    the reported state allows. The day an entity says which card produced it, the
+    produced unit can be priced instead.
+
+    WHAT THAT LEAVES TRUE is the property the term actually needs: ONE PLAY OF A CARD IS
+    WORTH EXACTLY THAT CARD'S ELIXIR, charged once, either at the tap or through the
+    units it left behind, never both and never neither. Not every unit a tap puts down
+    matches the row --
+    a Goblin Gang puts three spear goblins down beside its three goblins, a Rascals puts
+    two girls down beside the boy, and the row describes one kind of each -- but the
+    card's summon count covers exactly the units the row does describe, so the play
+    still totals the card's price. What it costs is precision WITHIN a card: kill a
+    Goblin Gang's spear goblins and the term pays nothing, kill its other three and it
+    pays the whole three elixir. No produced unit matches the row of the card it is
+    reported under. Both are measured in tests/test_rewards.py over every card either
+    engine will place, on both seats, because the whole rule rests on them.
 
     EXACT ARITHMETIC. Unit values are ``Fraction(elixir, count)`` and the sum is
     exact until the final division. A running float sum of the same values depends
@@ -164,6 +213,8 @@ class ElixirTradeReward(RewardFunction):
     def __init__(self, scale: float = 10.0) -> None:
         self.scale = scale
         self.value: dict[int, Fraction] = {}
+        self.cast: dict[int, Fraction] = {}
+        self.own_unit: dict[int, tuple[int, int, bool]] = {}
 
     def config(self) -> dict[str, object]:
         return {"scale": self.scale}
@@ -171,6 +222,15 @@ class ElixirTradeReward(RewardFunction):
     def bind(self, engine: Engine) -> None:
         cards: Sequence[CardInfo] = engine.cards()
         self.value = {c.card_id: Fraction(c.elixir, max(1, c.count)) for c in cards}
+        self.own_unit = {c.card_id: (c.hitpoints, c.radius, c.flying) for c in cards}
+        self.cast = {c.card_id: Fraction(c.elixir) for c in cards if c.placement in CAST_AND_GONE}
+
+    def unit_value(self, e: EntityState) -> Fraction:
+        """The card's per-unit value, or zero for a unit the catalogue does not price."""
+        row = self.own_unit.get(e.card_id)
+        if row is None or row != (e.max_hp, e.radius, e.flying):
+            return Fraction(0)
+        return self.value[e.card_id]
 
     def get_reward(
         self,
@@ -184,8 +244,15 @@ class ElixirTradeReward(RewardFunction):
         for e in prev.entities:
             if e.uid in alive or e.kind in (EntityKind.KING_TOWER, EntityKind.PRINCESS_TOWER):
                 continue
-            v = self.value.get(e.card_id, Fraction(0))
+            v = self.unit_value(e)
             total += v if e.team != team else -v
+        for r in results:
+            if r.status != 0:
+                continue
+            v = self.cast.get(r.card_id)
+            if v is None:
+                continue
+            total += v if r.team != team else -v
         return float(total) / self.scale
 
 

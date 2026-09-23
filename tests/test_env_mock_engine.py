@@ -8,6 +8,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _decks import SPELL_FIRST_DECK, card_id, card_ids
 from royalegym import mock_engine
 from royalegym.action import TileActionParser
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
@@ -29,8 +30,18 @@ from royalegym.protocol import (
 from royalegym.selfplay import RandomLegalOpponent
 from royalegym.state_mutator import DefaultStateMutator
 
-DECK = list(range(8))  # Knight Archer Goblins Giant MiniPekka Musketeer Skeletons Minions
-ALL_TYPES_DECK = [0, 3, 7, 9, 10, 11, 13, 14]  # troop, tank, air, splash, building, 3 spells
+# Decks are card NAMES turned into ids here. An id is a POSITION in a catalogue, so a
+# deck written as numbers names different cards on a catalogue of a different size.
+_CARDS = MockEngine().cards()
+KNIGHT = card_id("Knight", _CARDS)
+DECK = card_ids(
+    ("Knight", "Archer", "Goblins", "Giant", "MiniPekka", "Musketeer", "Skeletons", "Minions"),
+    _CARDS,
+)
+# troop, tank, air, splash, building, 3 spells
+ALL_TYPES_DECK = card_ids(
+    ("Knight", "Giant", "Minions", "Valkyrie", "Cannon", "Fireball", "Zap", "Log"), _CARDS
+)
 
 
 def random_commands(eng: MockEngine, parser: TileActionParser, rng: np.random.Generator, p: float):
@@ -115,15 +126,15 @@ def test_hand_cycles_through_the_deck_in_order():
     eng.reset(0, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 0]))
     a = eng.arena()
     s = eng.state()
-    assert s.players[BLUE].hand == [0, 1, 2, 3]
-    assert s.players[BLUE].next_card == 4
+    assert s.players[BLUE].hand == DECK[:4]
+    assert s.players[BLUE].next_card == DECK[4]
     spot = (a.subtile * 9 // 2, a.subtile * 21 // 2)  # tile (4, 10) centre, own half
     r = eng.step([DeployCommand(BLUE, 2, *spot)], 1)
     assert r[0].status == DeployStatus.OK
-    assert r[0].card_id == 2
+    assert r[0].card_id == DECK[2]
     p = eng.state().players[BLUE]
-    assert p.hand == [0, 1, 4, 3]
-    assert p.next_card == 5
+    assert p.hand == [DECK[0], DECK[1], DECK[4], DECK[3]]
+    assert p.next_card == DECK[5]
     # Goblins cost 2; one tick of regen was added before payment.
     assert p.elixir_milli < 10000 - 2000 + 100
 
@@ -162,7 +173,7 @@ def test_overtime_is_sudden_death():
     eng.reset(
         0,
         MatchSetup(
-            decks=[[11, 0, 1, 2, 3, 4, 5, 6], DECK],
+            decks=[card_ids(SPELL_FIRST_DECK, _CARDS), DECK],  # Blue's slot 0 is a spell
             shuffle=ShuffleMode.NONE,
             start_tick=eng.regular_ticks,
             elixir_milli=[10000, 0],
@@ -184,7 +195,7 @@ def test_king_kill_is_three_crowns_and_ends_the_game():
     eng.reset(
         0,
         MatchSetup(
-            decks=[[11, 0, 1, 2, 3, 4, 5, 6], DECK],
+            decks=[card_ids(SPELL_FIRST_DECK, _CARDS), DECK],  # Blue's slot 0 is a spell
             shuffle=ShuffleMode.NONE,
             elixir_milli=[10000, 0],
             tower_hp=[[2400, 1400, 1400], [1, 1400, 1400]],
@@ -255,14 +266,14 @@ def test_mirrored_knights_trade_symmetrically():
         MatchSetup(
             decks=[DECK, DECK],
             spawns=[
-                SpawnSpec(BLUE, 0, x, yb),
-                SpawnSpec(RED, 0, a.width - x, a.height - yb),
+                SpawnSpec(BLUE, KNIGHT, x, yb),
+                SpawnSpec(RED, KNIGHT, a.width - x, a.height - yb),
             ],
         ),
     )
     for _ in range(600):
         eng.step([], 1)
-        knights = {e.team: e for e in eng.state().entities if e.card_id == 0}
+        knights = {e.team: e for e in eng.state().entities if e.card_id == KNIGHT}
         assert set(knights) in ({BLUE, RED}, set()), f"one knight outlived the other: {knights}"
         if knights:
             assert knights[BLUE].hp == knights[RED].hp
@@ -381,7 +392,9 @@ def _played_snapshot(steps: int = 80) -> tuple[MockEngine, bytes, list]:
     eng = MockEngine(card_names=SHARED8)
     parser = TileActionParser()
     parser.bind(eng)
-    eng.reset(4, MatchSetup(decks=[DECK, DECK[::-1]], elixir_milli=[10000, 10000]))
+    # This engine's catalogue IS the eight shared cards, so the deck is all of them.
+    shared = card_ids(SHARED8, eng)
+    eng.reset(4, MatchSetup(decks=[shared, shared[::-1]], elixir_milli=[10000, 10000]))
     rng = np.random.default_rng(4)
     for _ in range(steps):
         eng.step(random_commands(eng, parser, rng, 0.5), 5)
@@ -455,7 +468,8 @@ def test_plant_ids_read_through_the_wrong_catalogue_are_caught(monkeypatch):
 def _snapshot_with_foreign_card(where: str) -> bytes:
     """A SHARED8 snapshot whose catalogue gains "Valkyrie", referenced in ONE place."""
     eng = MockEngine(card_names=SHARED8)
-    eng.reset(2, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE))
+    shared = card_ids(SHARED8, eng)
+    eng.reset(2, MatchSetup(decks=[shared, shared], shuffle=ShuffleMode.NONE))
     a = eng.arena()
     sim = msgspec.msgpack.decode(eng.save_state(), type=mock_engine._Sim)
     valk = len(sim.catalogue)
@@ -484,7 +498,8 @@ def load_refusal_failures() -> list[str]:
     bad = []
     for where, message in LOAD_REFUSALS.items():
         eng = MockEngine(card_names=SHARED8)
-        eng.reset(7, MatchSetup(decks=[DECK, DECK]))
+        shared = card_ids(SHARED8, eng)
+        eng.reset(7, MatchSetup(decks=[shared, shared]))
         eng.step([], 30)
         before = eng.save_state()
         try:
@@ -532,8 +547,8 @@ REFUSED_SETUPS = {
     "tower_hp one team": dict(tower_hp=[[5, 3, 3]]),
     "tower hp beyond i32": dict(tower_hp=[[2**31, 3, 3], [1, 1, 1]]),
     "deck of 7": dict(decks=[DECK[:7], DECK]),
-    "unknown card": dict(decks=[DECK, [99] * 8]),
-    "spawn on water": dict(spawns=[SpawnSpec(BLUE, 0, 9 * 18000, 31 * 9000)]),
+    "unknown card": dict(decks=[DECK, [len(_CARDS)] * 8]),  # one past the last id
+    "spawn on water": dict(spawns=[SpawnSpec(BLUE, KNIGHT, 9 * 18000, 31 * 9000)]),
 }
 
 
