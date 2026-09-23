@@ -114,11 +114,22 @@ def test_the_badge_count_matches_what_the_suite_collects() -> None:
     number is a machine for producing a wrong one: whoever updates it updates the copy
     they are looking at.
 
-    There is one copy now, and this compares it against collection rather than against
-    a run: ``--collect-only`` is quick, does not execute anything, and passed + skipped
-    is exactly what gets collected once the expected failures are deselected. So adding a
-    test without touching the badge turns this red, which is the friction that keeps the
-    number true.
+    There is one copy now, and it is PINNED TO A COMMIT, which is what makes it
+    checkable at all. The badge reads "778 passed, 7 skipped at c94bb53", and this
+    compares those numbers against collection only when HEAD is that commit with a clean
+    tree. Anywhere else it checks that the badge names a commit and says, out loud, that
+    it cannot check further.
+
+    IT USED TO CHECK ON EVERY COMMIT AND THAT WAS WRONG. Five sessions add tests to this
+    suite, so the count moved under the badge continually: 776 set, 777 measured, 777
+    set, 778 measured, and two runs a minute apart reporting 785 then 786. Every number
+    was true when it was taken. A literal racing a moving suite turns red on work that
+    has nothing to do with the README, and a test that cries wolf is one people learn to
+    ignore -- which costs more than the stale number it was guarding against.
+
+    A count pinned to a commit is a smaller claim and a true one. The friction that keeps
+    it fresh is the date and commit in the label, not this test going red on somebody
+    else's work.
     """
     # There are two test-count badges and they count DIFFERENT populations: one a fresh
     # clone, which nothing here can re-run, and one this machine. Only the second is a
@@ -136,6 +147,36 @@ def test_the_badge_count_matches_what_the_suite_collects() -> None:
         "count nothing checks is the thing this test exists to prevent."
     )
     claimed = int(ours[0][0]) + int(ours[0][1])
+
+    at = re.search(r"our%20machine%20at%20([0-9a-f]{7,40})", readme)
+    assert at, (
+        "the machine badge names no commit, so nothing can ever check it: a count "
+        "without the tree it was taken on is a claim about a moving target. Label it "
+        "`our machine at <sha>`."
+    )
+    head = subprocess.run(
+        ["git", "rev-parse", "--short=" + str(len(at.group(1))), "HEAD"],
+        capture_output=True, text=True, cwd=REPO,
+    )
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True, cwd=REPO
+    )
+    if head.returncode != 0:
+        pytest.skip("not a git checkout, so the badge's commit cannot be compared with HEAD")
+    tracked_changes = [ln for ln in dirty.stdout.splitlines() if not ln.startswith("??")]
+    if head.stdout.strip() != at.group(1) or tracked_changes:
+        pytest.skip(
+            f"SKIPPED, NOT PASSED: the badge states {ours[0][0]} passed and {ours[0][1]} "
+            f"skipped at {at.group(1)}, and this tree is "
+            + (
+                f"at {head.stdout.strip()}"
+                if head.stdout.strip() != at.group(1)
+                else "that commit with uncommitted changes"
+            )
+            + ". The count is only checkable on the tree it was taken on; anywhere else "
+            "collection answers a different question. Re-measure and re-pin the badge "
+            "rather than making this compare numbers from two different trees."
+        )
 
     # Deselect the expected failures. They are collected but a run reports them as
     # xfailed, so they are in neither number the badge states, and counting them would
