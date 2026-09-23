@@ -79,6 +79,11 @@ class Landing(msgspec.Struct, frozen=True):
     """
 
     result: DeployResult
+    #: Where the command ASKED for, kept here because DeployResult no longer holds it:
+    #: since the engine started returning the resolved position, `result.x` IS the
+    #: landing. Comparing the landing against it asked whether the engine agreed with
+    #: itself, which is a gate comparing a thing to itself and is always True.
+    commanded: tuple[int, int] = (0, 0)
     #: Entities this command created, in engine order. Empty for a refusal or a spell.
     entities: tuple[EntityState, ...] = ()
     #: The landing, in the ENGINE frame, when there is exactly one entity.
@@ -94,7 +99,7 @@ class Landing(msgspec.Struct, frozen=True):
         False for every case where the landing is unknown, so this is safe to count but
         never treat a False as "the engine honoured the tap" without checking ``x``.
         """
-        return self.x is not None and (self.x, self.y) != (self.result.x, self.result.y)
+        return self.x is not None and (self.x, self.y) != self.commanded
 
     @property
     def displacement(self) -> int | None:
@@ -105,7 +110,7 @@ class Landing(msgspec.Struct, frozen=True):
         """
         if self.x is None or self.y is None:
             return None
-        return max(abs(self.x - self.result.x), abs(self.y - self.result.y))
+        return max(abs(self.x - self.commanded[0]), abs(self.y - self.commanded[1]))
 
 
 def landings(
@@ -131,11 +136,12 @@ def landings(
         claims[(r.team, r.card_id)] = claims.get((r.team, r.card_id), 0) + 1
 
     out: list[Landing] = []
-    for r in results:
+    for cmd, r in zip(commands, results, strict=True):
         if r.status != DeployStatus.OK:
             out.append(
                 Landing(
                     result=r,
+                    commanded=(cmd.x, cmd.y),
                     reason=f"the command was refused ({DeployStatus(r.status).name}), so "
                     "nothing was created and there is no landing",
                 )
@@ -146,6 +152,7 @@ def landings(
             out.append(
                 Landing(
                     result=r,
+                    commanded=(cmd.x, cmd.y),
                     reason=f"{claims[key]} accepted commands in this step are team "
                     f"{r.team} card {r.card_id}, and the entity list does not say which "
                     "tap made which unit, so no landing can be attributed",
@@ -157,6 +164,7 @@ def landings(
             out.append(
                 Landing(
                     result=r,
+                    commanded=(cmd.x, cmd.y),
                     reason="the command was accepted but created no entity, which is what "
                     "a spell that resolves inside the step does; it never enters the "
                     "entity list and has no landing to read",
@@ -167,6 +175,7 @@ def landings(
             out.append(
                 Landing(
                     result=r,
+                    commanded=(cmd.x, cmd.y),
                     entities=mine,
                     reason=f"this card created {len(mine)} entities, so its position is a "
                     "group; a single x and y would be a derivation this cannot make "
@@ -175,5 +184,7 @@ def landings(
             )
             continue
         only = mine[0]
-        out.append(Landing(result=r, entities=mine, x=only.x, y=only.y))
+        out.append(
+            Landing(result=r, commanded=(cmd.x, cmd.y), entities=mine, x=only.x, y=only.y)
+        )
     return results, out

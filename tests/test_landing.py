@@ -71,7 +71,10 @@ def test_a_relocated_building_reports_where_it_stands_not_where_it_was_tapped() 
         "no tile-centre Cannon tap on the blue seat relocated. Half of them did when this "
         "was written, so either the engine stopped relocating or this stopped looking."
     )
-    assert (found.x, found.y) != (found.result.x, found.result.y)
+    # Against the COMMAND, not against result.x/y. Since the engine began returning the
+    # resolved position, result.x IS the landing, so the old form of this line asked
+    # whether the engine agreed with itself and was true by construction.
+    assert (found.x, found.y) != found.commanded
     assert found.displacement is not None
     assert found.displacement >= TILE, (
         f"the landing moved {found.displacement} subtiles, less than one tile. Every "

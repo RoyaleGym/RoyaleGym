@@ -314,9 +314,22 @@ class DeployCommand(msgspec.Struct, frozen=True):
 class DeployResult(msgspec.Struct, frozen=True):
     """What an engine did with one command, and where.
 
-    ``x`` and ``y`` are the ENGINE frame, as the command gave them, and they are
-    filled for a REFUSED command too, so a penalty term can say where the mask and
-    the engine disagreed rather than only that they did.
+    ``x`` and ``y`` are the ENGINE frame and are the RESOLVED position: where an
+    accepted deploy actually put things, which for a building whose footprint did not
+    fit is where the engine relocated it to and not where it was tapped. For anything
+    else, and for a REFUSED command, they are the point the command asked for, so a
+    penalty term can still say where the mask and the engine disagreed rather than
+    only that they did.
+
+    THEY USED TO BE THE COMMAND, ALWAYS. That was harmless until the engine began
+    relocating a building whose box does not fit, and then it was not: measured over
+    234 accepted Cannon taps at tile centres, half relocated and EVERY relocation moved
+    a full tile or more, so anything reading this as a position was a tile or more wrong
+    on half its building sample. There is no small-error tail. It retired a published
+    placement-entropy figure that had been computed over a distribution with half the
+    building mass in the wrong bin. The engine now returns the point it acted on rather
+    than answering a second query, because a second query is a second answer that can
+    disagree with the first.
 
     They are here because a reward function is handed the results and not the
     commands, so without them the archetypal shaping term for this game cannot be

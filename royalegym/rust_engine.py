@@ -682,10 +682,19 @@ class RustEngine:
         if ticks < 0:
             raise ValueError("ticks must be >= 0")
         raw = self._battle.step([self._wire(c) for c in commands], int(ticks))
-        return [
-            DeployResult(c.team, c.hand_slot, card_id, self._status(reason), tick, c.x, c.y)
-            for c, (card_id, reason, tick) in zip(commands, raw, strict=True)
-        ]
+        # TOLERANT UNPACK. The core's per-command tuple grew two TRAILING elements, the
+        # RESOLVED position: where an accepted building actually took, the tap for anything
+        # else, and the requested point for a refusal. This used to unpack exactly three and
+        # so raised `too many values to unpack` against the new core -- on every engine
+        # deploy, in every repo, the moment the extension was rebuilt. The trailing shape
+        # was chosen so a tolerant reader keeps working; this reader was not one. It is now,
+        # in both directions: an older core returning three still works, and the command's
+        # own point is the fallback, which is exactly what the field used to hold.
+        out = []
+        for c, (card_id, reason, tick, *rest) in zip(commands, raw, strict=True):
+            x, y = (rest[0], rest[1]) if len(rest) >= 2 else (c.x, c.y)
+            out.append(DeployResult(c.team, c.hand_slot, card_id, self._status(reason), tick, x, y))
+        return out
 
     def state(self) -> BattleState:
         return self._decode_state.decode(self._battle.state_json())

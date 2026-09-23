@@ -400,11 +400,13 @@ CASES = [
 # it scores a point the building is not on (measured: -0.0721875 against a true
 # -0.0859375). Sim is adding the resolved position to the step result; when it lands,
 # PlacementDepthReward reads it and these pass.
-RELOCATED_REASON = (
-    "DeployResult carries the commanded position, and the engine now relocates a building "
-    "whose box does not fit, so a depth read from the command is not where the unit stands"
-)
-RELOCATED_XFAIL = pytest.mark.xfail(strict=True, raises=AssertionError, reason=RELOCATED_REASON)
+# RESOLVED 2026-09-22. These three xfailed for one evening because DeployResult carried
+# the COMMAND, and the engine had begun relocating a building whose box does not fit, so a
+# depth read from the command was not where the unit stood (measured: -0.0721875 against a
+# true -0.0859375). Sim added the resolved position to the step result, gym's wrapper reads
+# it, and they pass. The markers are removed rather than left as passing xfails: a strict
+# xfail that passes is a failure, which is what told us it had landed, and that is the
+# behaviour to keep for the next one.
 #
 # RED_LEADS_OUTCOME. The scripted scenario is not a mirror of itself (on MockEngine the
 # Blue-leader battle ends at tick 3600 and the Red-leader one at 4182), so "the leader
@@ -532,7 +534,7 @@ def test_leak_penalty_fires_only_while_the_bar_sits_at_the_engine_cap(kind, lead
     assert mismatches(battle(kind, leader), "ElixirLeakPenalty") == []
 
 
-@pytest.mark.parametrize(("kind", "leader"), only(CASES, "rust", RED, RELOCATED_XFAIL))
+@pytest.mark.parametrize(("kind", "leader"), CASES)
 def test_placement_depth_is_where_the_unit_stands_in_its_owners_frame(kind, leader):
     assert mismatches(battle(kind, leader), "PlacementDepthReward") == []
 
@@ -542,7 +544,7 @@ def test_illegal_action_penalty_counts_the_commands_that_placed_nothing(kind, le
     assert mismatches(battle(kind, leader), "IllegalActionPenalty") == []
 
 
-@pytest.mark.parametrize(("kind", "leader"), only(CASES, "rust", RED, RELOCATED_XFAIL))
+@pytest.mark.parametrize(("kind", "leader"), CASES)
 def test_the_scalar_reward_is_the_weighted_sum_of_the_true_terms(kind, leader):
     """The number the learner actually receives, per seat, against the same quantities."""
     b = battle(kind, leader)

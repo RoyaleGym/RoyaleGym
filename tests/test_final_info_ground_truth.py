@@ -46,7 +46,6 @@ from test_reward_ground_truth import (
     CASES,
     DRAW_VALUE,
     LEADER_SCRIPT,
-    RELOCATED_XFAIL,
     TOL,
     TOWERS,
     TRAILER_SCRIPT,
@@ -56,7 +55,6 @@ from test_reward_ground_truth import (
     all_terms,
     battle,
     make_engine,
-    only,
     require_a_decided_battle,
     scenario_setup,
     scripted_action,
@@ -163,14 +161,12 @@ def test_tower_fractions_are_the_tower_entities_hp_over_their_max(kind, leader):
 def reward_sum_cases():
     out = []
     for name in sorted(TRUTH):
-        # PlacementDepthReward sums a per-play depth read from DeployResult, which reports
-        # the tap rather than where a relocated building stands (RELOCATED_REASON).
-        cases = (
-            only(CASES, "rust", RED, RELOCATED_XFAIL)
-            if name == "PlacementDepthReward"
-            else CASES
-        )
-        out += [pytest.param(*p.values, name, id=f"{p.id}-{name}", marks=p.marks) for p in cases]
+        # PlacementDepthReward used to be special-cased here: it sums a per-play depth
+        # read from DeployResult, which reported the TAP rather than where a relocated
+        # building stands, so its rust/red case was an expected failure. The engine now
+        # returns the resolved position, so there is nothing to except and every term
+        # takes the same cases.
+        out += [pytest.param(*p.values, name, id=f"{p.id}-{name}", marks=p.marks) for p in CASES]
     return out
 
 

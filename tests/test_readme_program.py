@@ -52,7 +52,7 @@ RECORDED_VINTAGE = "retroroyale-2018"
 #: The engine build the README's printed battle was recorded against. It covers
 #: data/calibration.json and arena.json, so it moves when a ledger VALUE moves, which is
 #: what turned this battle from a draw into a win on 2026-09-22 with no card changed.
-RECORDED_BUILD = "f7628dd51148e4ce"
+RECORDED_BUILD = "abac02d398ec90cb"
 
 pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
