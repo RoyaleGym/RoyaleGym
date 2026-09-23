@@ -13,24 +13,41 @@ WHY THIS EXISTS
     integrator found it by running against origin.
 
 WHY THE OLD ARM NEEDS A FAKE
-    The three-element arm is now UNEXERCISABLE by the real engine: every build has the
-    new shape, so no engine test can reach it. Compatibility that nothing exercises is a
-    claim rather than a property, and it is the arm most likely to rot, because nothing
-    will ever fail if it breaks. So it is driven through a stub core, and a second test
-    pins what the REAL core returns, so the day that changes the stub is replaced rather
-    than quietly left describing a world that has gone.
+    Every build on this machine has the new shape, so no ordinary engine test can reach
+    the old arm. Compatibility that nothing exercises is a claim rather than a property,
+    and it is the arm most likely to rot, because nothing will ever fail if it breaks. So
+    it is driven through a stub core, and a second test pins what the REAL core returns,
+    so the day that changes the stub is replaced rather than quietly left describing a
+    world that has gone.
 
     Same treatment as the DUPLICATE_TEAM branch in test_landing.py, and for the same
     reason: a guard whose test can never fire is not a guard.
 
-THE FALLBACK IS WRONG, NOT MISSING, AND THAT IS WHY IT IS LOUD
-    Against an old core the position falls back to the COMMAND. That is not a smaller
-    answer, it is a different one: measured over 234 accepted Cannon taps, 118 relocated
-    and every relocation moved a full tile or more. So the fallback hands back a
-    plausible number with nothing to distinguish it from a resolved position, and the
-    field's name writes the false sentence. Hence the warning and
-    ``reports_resolved_position``.
-"""
+WHAT THE STUB'S SHAPE IS KNOWN FROM, and it is measured rather than reconstructed
+    I first wrote that the old arm was UNEXERCISABLE. That was wrong, and the correction
+    is worth more than the claim was. The integrator still had a clone whose venv carried
+    a royalesim built before the rebuild -- build_digest f7628dd51148e4ce against this
+    workspace's abac02d398ec90cb -- and ran real deploys through this wrapper on it:
+
+        refused  (not enough elixir)   raw [(4, 4, 16)]   3 elements
+        ACCEPTED (Knight, own half)    raw [(0, 0, 10)]   3 elements, reason 0
+
+    The second row is the one that mattered. This stub defaults to reason 0, an ACCEPTED
+    three-element row, and for a while that was the one case no real core had been seen
+    to produce -- so the stub was modelling precisely the thing nobody could check. It is
+    now measured. A fake is most dangerous exactly where it is most needed, because what
+    it stands in for is what cannot be reached.
+
+    The same clone also demonstrated why the fallback needs the flag, on the class that
+    relocates: an accepted CANNON at (171000, 153000) came back through this wrapper as
+    status OK at (171000, 153000). The tap, presented as a position, with nothing for a
+    caller to interrogate. That is the false sentence the field's name writes, shown on a
+    real pre-change core rather than argued from the measurement.
+
+    A pre-change binary is a test fixture, and this project throws them away by default:
+    every clone venv carries a dated engine and nobody keeps them on purpose. That clone
+    is being kept deliberately now.
+    """
 
 from __future__ import annotations
 
@@ -50,7 +67,13 @@ TAP = (9 * TILE + TILE // 2, 8 * TILE + TILE // 2)
 
 
 class ShortRowCore:
-    """A stub of the core's ``Battle`` that returns the OLD three-element rows."""
+    """A stub of the core's ``Battle`` that returns the OLD three-element rows.
+
+    Both this shape and this default are MEASURED against a real pre-change core
+    (f7628dd51148e4ce): an accepted deploy there returns [(0, 0, 10)], three elements
+    with reason 0. See the module docstring for why the accepted row specifically is
+    the one that had to be checked.
+    """
 
     def __init__(self, card_id: int = 7, reason: int = 0, tick: int = 0) -> None:
         self.row = (card_id, reason, tick)
