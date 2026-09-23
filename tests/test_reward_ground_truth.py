@@ -299,7 +299,23 @@ def battle(kind: str, leader: int) -> Battle:
     out.cap = engine.state().players[leader].elixir_milli
     scripts = {leader: LEADER_SCRIPT, 1 - leader: TRAILER_SCRIPT}
     rng = np.random.default_rng(3)
-    for t in range(200):
+    # THE STEP BUDGET IS DERIVED, NOT A LITERAL, and the literal is why this is written
+    # down. 200 steps reached the end of overtime from this scenario's start tick while
+    # overtime was 60 s. A calibration change to 120 s doubled it to 2400 ticks, the budget
+    # stopped reaching the end, and on a table where the battle is LEVEL at regulation --
+    # the 2018 table a clean clone installs -- the episode never terminated. No final info
+    # was written, and the tests that read it failed with KeyError rather than with a
+    # count, pointing at a missing dict key instead of at a time constant in another repo.
+    #
+    # This machine could not see it: here the leader takes its crown and the battle ends at
+    # regulation, so it never reaches overtime at all. Only the clean runner did.
+    #
+    # A literal budget is a second copy of a constant the engine already owns. Derived, it
+    # follows a calibration change instead of silently failing to cover one.
+    state = engine.state()
+    to_cover = state.regular_ticks + state.overtime_ticks - out.start.tick
+    budget = -(-to_cover // env.decision_ticks) + 5  # ceil, plus a few steps of slack
+    for t in range(budget):
         prev = engine.state()
         actions = {}
         for agent, team in (("blue", BLUE), ("red", RED)):
