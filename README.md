@@ -263,7 +263,7 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="Tests on your own clone at fa380b3, 2026-09-22: 781 passed, 3 skipped, nothing failing" src="https://img.shields.io/badge/your%20clone%20at%20fa380b3-781%20passed%2C%203%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on your own clone at fa380b3, 2026-09-22: 781 passed, 3 skipped, nothing failing" src="https://img.shields.io/badge/your%20clone%20at%20fa380b3-781%20passed%2C%203%20skipped-2ea043?style=flat-square">
   <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
   <img alt="pytest on the project's own machine at 56da55d, 2026-09-22; its 8 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%20at%2056da55d-778%20passed%2C%208%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
@@ -277,7 +277,9 @@ The install itself works from nothing. On 2026-09-22 the recipe above was run ve
 fresh clone in Windows PowerShell 5.1, with no virtual environment active and nothing repaired as
 it went: all 18 lines, including `maturin develop --release`, which took 119 seconds.
 
-**The suite passes on a clean clone: 781 passed, 3 skipped, 4 expected failures, nothing failing.**
+**The pytest suite passes on a clean clone: 781 passed, 3 skipped, 4 expected failures, nothing
+failing.** This repo has one suite and it is pytest; there is no separate Rust suite here, and the
+engine's own tests live in RoyaleSim.
 Measured on a fresh clone at commit `fa380b3` on 2026-09-22, not on the machine that wrote this. A
 clone count belongs to the commit it was taken at, so it names one.
 
