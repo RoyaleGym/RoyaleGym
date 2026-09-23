@@ -78,6 +78,7 @@ import hashlib
 import importlib.machinery
 import json
 import re
+import warnings
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -613,6 +614,11 @@ class RustEngine:
         ]
         self._decode_state = msgspec.json.Decoder(BattleState)
         self._reset_called = False
+        #: Whether the last step's results carried the engine's RESOLVED deploy
+        #: position, or fell back to the command. None until something is stepped.
+        #: A consumer that treats DeployResult.x,y as a place should read this and
+        #: refuse rather than be handed a tap that looks like a landing.
+        self.reports_resolved_position: bool | None = None
 
     # ------------------------------------------------------------ protocol
 
@@ -692,7 +698,27 @@ class RustEngine:
         # own point is the fallback, which is exactly what the field used to hold.
         out = []
         for c, (card_id, reason, tick, *rest) in zip(commands, raw, strict=True):
-            x, y = (rest[0], rest[1]) if len(rest) >= 2 else (c.x, c.y)
+            resolved = len(rest) >= 2
+            x, y = (rest[0], rest[1]) if resolved else (c.x, c.y)
+            if not resolved and self.reports_resolved_position is not False:
+                # SAID OUT LOUD, ONCE, because the fallback is silently WRONG rather than
+                # silently missing. Against an old core these are the tap, and a tap is a
+                # full tile or more from the landing on half of accepted building taps
+                # (measured: 118 of 234, no small-error tail). A caller reading
+                # DeployResult.x as a position would get a plausible number with nothing
+                # to distinguish it from a resolved one, and the field's name writes the
+                # false sentence for them.
+                warnings.warn(
+                    "this royalesim core returns no resolved deploy position, so "
+                    "DeployResult.x,y are the COMMAND. For a building whose footprint did "
+                    "not fit, that is where it was tapped and not where it stands: half of "
+                    "accepted Cannon taps relocate, by a full tile or more. Rebuild with "
+                    "`maturin develop --release` for the resolved position, or read "
+                    "RustEngine.reports_resolved_position before treating x,y as a place.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+            self.reports_resolved_position = resolved
             out.append(DeployResult(c.team, c.hand_slot, card_id, self._status(reason), tick, x, y))
         return out
 
