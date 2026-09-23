@@ -65,6 +65,13 @@ ignore = [
 # first entry, because seeing the shape IS what the example is for. Shortening it to
 # `obs, *_ = env.step(...)` would lint better and teach worse.
 "examples/*.py" = ["RUF059"]
+# A VENDORED copy, kept byte-identical to the original in the cross-repo harness so the
+# copies in the four public repos can be diffed against each other and against it. Every
+# public repo carries its own, because a guard that lives only in the private repo cannot
+# run for an outside contributor, who is the reader it protects. Reformatting it to this
+# repo's line length would make that diff noisy for no behaviour change, so the line
+# length is waived here and nothing else is.
+"tests/_shell_fences.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["royalegym", "royalesim"]
