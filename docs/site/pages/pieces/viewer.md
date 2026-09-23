@@ -86,10 +86,13 @@ Same command, three kinds of source.
 The filenames below are examples. Put your own in their place. The command you ran above is the
 same command with a file that ships with the repo.
 
+The three lines open the three kinds of source: a recording, like the two that ship in
+`tests/fixtures`; a trace saved from the engine; and an environment running right now.
+
 ```
-python -m royaleviser frames-my-match.jsonl.gz         # a recording, like the two in tests/fixtures
-python -m royaleviser battle.msgpack --start-tick 900  # a trace saved from the engine
-python -m royaleviser --stream 127.0.0.1:9870          # an environment running right now
+python -m royaleviser frames-my-match.jsonl.gz
+python -m royaleviser battle.msgpack --start-tick 900
+python -m royaleviser --stream 127.0.0.1:9870
 ```
 
 For the stream, set `ROYALEVISER=127.0.0.1:9870` before your training run starts and change no

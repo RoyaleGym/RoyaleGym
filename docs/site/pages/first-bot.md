@@ -331,6 +331,12 @@ attached for part of the run. Nothing is sent while nobody is listening.
 
     Both of these were run to check this page and both fed the viewer.
 
+    `9870` is a default, not the address. One run holds that port while it streams, so a second
+    run on the same machine needs its own: set `ROYALEVISER=127.0.0.1:9872` and point that run's
+    viewer at the same number. Starting a second run on a port that is taken fails when it binds,
+    and the message names the port rather than anything about training, so it reads as a broken
+    example when it usually means something else on the machine is already streaming.
+
 ---
 
 ### Is it actually better?
@@ -471,11 +477,14 @@ Source for this section: RoyaleLearn's own README and its owner, on 2026-09-22.
 
 All four of these work. `config` runs without torch; the other three need the torch extra.
 
+`config` writes a config file you can edit. `doctor` runs the first-run checks, before you commit
+hours. `bench` measures YOUR machine rather than someone else's. `train` is the run itself.
+
 ```
-python -m royalelearn config --profile laptop -o run.json   # writes a config file you can edit
-python -m royalelearn doctor --config run.json              # first-run checks, before you commit hours
-python -m royalelearn bench                                 # measures YOUR machine, not someone else's
-python -m royalelearn train --config run.json               # the training run itself
+python -m royalelearn config --profile laptop -o run.json
+python -m royalelearn doctor --config run.json
+python -m royalelearn bench
+python -m royalelearn train --config run.json
 ```
 
 Start with the middle two, not the last one.

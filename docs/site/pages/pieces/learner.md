@@ -97,11 +97,14 @@ All four run today. `config` works without torch; the other three need the torch
     from four fresh clones to a training run in one sitting, so the install path around them is
     the untested part, not the commands.
 
+The first line trains. `config` writes a config you can edit, `doctor` runs the first-run checks,
+and `bench` measures this machine's throughput.
+
 ```
 python -m royalelearn train --config examples/configs/laptop.json
-python -m royalelearn config --profile laptop -o run.json     # writes a config you can edit
-python -m royalelearn doctor --config run.json                # first-run checks
-python -m royalelearn bench                                   # this machine's throughput
+python -m royalelearn config --profile laptop -o run.json
+python -m royalelearn doctor --config run.json
+python -m royalelearn bench
 ```
 
 `doctor` is the one worth knowing about in advance. It builds one environment, prints the engine

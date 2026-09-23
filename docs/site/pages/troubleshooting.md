@@ -11,6 +11,9 @@ you actually see, what it means, and what to type next.
 
 Every message on this page was copied from a real run, except where a line says otherwise.
 
+The commands are written for Windows PowerShell, which is the default shell on Windows 10 and 11.
+On macOS and Linux use forward slashes and `.venv/bin/python` in place of `.venv\Scripts\python`.
+
 !!! tip "The two commands that answer most questions"
     Run these from your `RoyaleGym` folder. The first says whether the Rust engine is built and
     importable. The second prints a short hash of the data the engine was built with.
@@ -257,10 +260,11 @@ Add `-rs` to any pytest run to see the reason for every skip. Without it you get
 
 **What to do.** On a normal clone, nothing. Both engines come from the tracked 2018 table there,
 the check runs, and it passes. That was confirmed on fresh clones of all four repos on
-2026-09-22: RoyaleGym's whole suite gave 385 passed, 0 skipped, on a debug engine build.
+2026-09-22: RoyaleGym's whole pytest suite gave 385 passed, 0 skipped, on a debug engine build.
 
 The project's own machine does hold a newer card table, so six tests skip there in exactly this
-way. If you see a result with 6 skipped quoted somewhere in the docs, that is where it came from.
+way. If you see a pytest result with 6 skipped quoted somewhere in the docs, that is where it
+came from.
 
 If you see skips you did not expect, read the reason before you trust the green. Skips also
 happen when the engine is not built at all, which is problem 5. A few tests skip when Node.js is
