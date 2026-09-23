@@ -89,16 +89,15 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [0, 0]  tick 4800
+winner 0  crowns [1, 0]  tick 3600
 ```
 
-That is a whole match, and a close one (re-run 2026-09-22). Neither side ever finished off a
-tower, so the crowns are level at nothing each. Tick 4800 is three minutes plus the full sixty
-seconds of overtime, and with the crowns level it came down to damage. Red finished with a
-princess tower on 24 hitpoints out of 3052, against Blue's weakest on 1248, so Blue won.
+That is a whole match (re-run 2026-09-22). Blue took one of Red's princess towers and Red took
+none, so Blue wins on crowns. Tick 3600 is exactly three minutes, so this one finished in
+regulation and never reached overtime.
 
-Two random players rarely take a tower, which is the point of the example rather than a flaw in
-it. This is the bar your bot starts from.
+Both players are picking at random from the legal moves, and one of them still took a tower. That
+is the bar your bot starts from.
 
 These eight cards are here so the battle comes out the same on your machine as it did on ours.
 They are an example, not a recommendation. All eight are from the 18 whose behaviour is checked
@@ -228,7 +227,7 @@ for the learner.
 
 <p align="center">
   <img alt="Tests on a fresh clone, 2026-09-22, debug engine build" src="https://img.shields.io/badge/fresh%20clone%2C%202026--09--22-385%20passed%2C%200%20skipped-2ea043?style=flat-square">
-  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-697%20passed%2C%207%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-761%20passed%2C%207%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>

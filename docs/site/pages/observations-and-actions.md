@@ -219,17 +219,17 @@ and waiting is just picking index 0.
 The second half of that program printed this:
 
 ```
-step   1  legal actions  1623  elixir 5.18
-step  20  legal actions     1  elixir 2.57
-step  60  legal actions   459  elixir 3.71
+step   1  legal actions  1623  elixir 6.18
+step  20  legal actions     1  elixir 0.57
+step  60  legal actions     1  elixir 0.71
 ```
 
-Read the middle line. At step 20 exactly one action was legal, and that one is the wait
-action. The player had 2.57 elixir and the four cards in hand were Giant, Cannon, Minions
-and Archer, the cheapest of them 3. The deck does hold a 2 cost card, Zap, and it was not in
-hand at that moment, which is the whole point: what you can afford depends on the four cards
-you happen to be holding, not on the eight you chose. Without a mask your bot would spend
-thousands of steps discovering that by being refused.
+Read the last two lines. At steps 20 and 60 exactly one action was legal, and that one is the
+wait action. At step 20 the player had 0.57 elixir and was holding Giant, Knight, Minions and
+Archer, the cheapest of them 3. It could not afford anything at all, which is the whole point:
+what you can play depends on the elixir you have and on the four cards you happen to be holding,
+not on the eight you chose. Without a mask your bot would spend thousands of steps discovering
+that by being refused.
 
 The count moves with your elixir, with your hand, with the towers still standing and
 with the buildings already on the board. The mask covers elixir, which half of the
@@ -240,8 +240,9 @@ For comparison, RoyaleGym's
 [architecture.md](https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/architecture.md)
 reports 691 legal actions of 2305 on the first step with default random decks on the
 Rust engine, and 1235 on `MockEngine`. This page got 1623 with the named deck above.
-Different deck, different card table, different count. The number is not a property of
-the game.
+Different deck, different card table, different starting elixir, different count. The number is
+not a property of the game. All three figures on this page were re-run on 2026-09-22, after the
+engine's starting elixir moved from 5 to 6, which is why the elixir column reads as it does.
 
 Two details worth trusting the project for:
 

@@ -98,13 +98,13 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [0, 0]  tick 4800
+winner 0  crowns [1, 0]  tick 3600
 ```
 
-Blue is player 0, and neither side finished off a tower. Tick 3600 is the full three minutes, so
-this one went the full three minutes plus sixty seconds of overtime and finished with the crowns
-level at nothing each. It was decided by the tiebreak: the side whose weakest standing tower has
-less health left loses, and that was Red, on 24 hitpoints out of 3052 (re-run 2026-09-22).
+Blue is player 0, and Blue took one of Red's princess towers. Tick 3600 is the full three minutes,
+so this one finished in regulation on crowns and never reached overtime (re-run 2026-09-22). Had
+it finished level, it would have gone to overtime and then to a tiebreak, where the side whose
+weakest standing tower has less health left loses.
 
 One env step is half a second of game time, which is 10 ticks. That battle was 480 steps, so
 each player made 480 decisions. It takes well under a second of real time.
