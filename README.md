@@ -264,7 +264,7 @@ for the learner.
 
 <p align="center">
   <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
-  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-776%20passed%2C%207%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-777%20passed%2C%207%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>
@@ -276,13 +276,14 @@ The install itself works from nothing. On 2026-09-22 the recipe above was run ve
 fresh clone in Windows PowerShell 5.1, with no virtual environment active and nothing repaired as
 it went: all 18 lines, including `maturin develop --release`, which took 119 seconds.
 
-**Three tests fail on a clean clone today, and they are ours rather than yours.** You will meet
-them straight after installing, because the next thing this page tells you to do is run the suite.
-The cause is one thing, not three: your clone builds the 2018 card table, which has 66 cards the
-engine can load, and those three tests are pinned to fixtures made against a newer 144-card table
-that is not published and cannot be. They should skip and say so; instead they fail. Measured on a
-fresh clone on 2026-09-22: 775 passed, 3 failed, 1 skipped. Nothing is wrong with your install or
-with the engine, and the earlier figure of 385 passed came from a clone before the suite grew.
+**The suite passes on a clean clone: 781 passed, 3 skipped, 4 expected failures, nothing failing.**
+Measured on a fresh clone on 2026-09-22, not on the machine that wrote this.
+
+The three skips are worth reading rather than ignoring. Your clone builds the 2018 card table,
+which has 66 cards the engine can load. Three tests need the newer 144-card table, which is not
+published and cannot be, so they skip and name the table they wanted. Earlier today they FAILED
+instead of skipping, which is a different thing: a skip that says why is information, and a failure
+would have told you your install was broken when it was not.
 
 The `pytest` badge is from the project's own machine, which also holds a newer card table that
 is not distributed. Six tests skip there because of that table. A clone built with the Install
