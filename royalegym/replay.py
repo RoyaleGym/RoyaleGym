@@ -24,6 +24,7 @@ MockEngine trace has no spell objects: its spells resolve inside a tick.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -281,3 +282,91 @@ def verify_trace(trace: Trace, engine: Engine) -> list[str]:
     if trace.result is not None and _hex(engine.state_hash()) != trace.result.final_hash:
         problems.append("final hash differs")
     return problems
+
+
+class SavingReplayRecorder(ReplayRecorder):
+    """A recorder that WRITES completed traces, so a rollout worker can produce them.
+
+    WHY THIS EXISTS RATHER THAN ``on_finish``
+        ``ReplayRecorder`` already takes ``on_finish``, and for a script that is the better
+        tool. It is unreachable from a training run: the recorder is an ``EnvFactory``
+        COMPONENT, given as an importable class plus JSON kwargs, and a callable is not
+        something JSON can express. So a worker that gets a pickled recipe can be handed
+        this class and a directory, and cannot be handed a function. Every argument here is
+        a string, an int or a bool for that reason.
+
+        Asked for by train, who had built and measured the rest: a 3-minute battle is 3,601
+        frames and 1.6 MB on disk, and their viewer plays one to a real viewer at wall clock
+        in 57 MB. Watching a live run cannot work -- `time/collection` is 4.35 s of a 62.94 s
+        iteration, and those 4.35 seconds hold about 82,000 engine ticks, so it is a firehose
+        between silences rather than slow gameplay. Replaying a saved trace is the form that
+        works, and the training run producing them was the one missing piece.
+
+    WHAT IT COSTS THE RUN
+        One write every ``every`` completed episodes, and nothing else. Recording itself is
+        whatever ``frame_every_tick`` already costs; this adds serialisation of a finished
+        trace, not per-tick work.
+
+    THREE THINGS IT DOES THAT A NAIVE VERSION WOULD NOT, each because a rollout worker is
+    not a script:
+        * **The PID is in the name.** Workers are separate PROCESSES with separate counters,
+          so two of them would otherwise write the same ``000050`` file and one would win.
+        * **The write is atomic**, via a temporary file and ``os.replace``. A viewer reading
+          the directory while a worker writes would otherwise find a half-written trace, and
+          msgpack does not fail loudly on one.
+        * **The directory is created and tested at CONSTRUCTION**, so a bad path fails when
+          the config is loaded rather than after the first episode of a five-hour run. A
+          recorder that silently saves nothing is the failure train hit from the other side:
+          a publisher that reported "3601 frames, 0 sent" and looked like it worked.
+    """
+
+    def __init__(
+        self,
+        out_dir: str,
+        every: int = 50,
+        keep: int = 4,
+        frame_every_tick: bool = True,
+    ) -> None:
+        super().__init__(frame_every_tick=frame_every_tick)
+        if every < 1:
+            raise ValueError(f"every must be >= 1, got {every}: 0 would save nothing quietly")
+        if keep < 1:
+            raise ValueError(f"keep must be >= 1, got {keep}: 0 would delete what it just wrote")
+        self.out_dir = Path(out_dir)
+        self.every = every
+        self.keep = keep
+        # Fail here, not after the first episode. mkdir raises on an unusable path.
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        self.completed = 0
+        self.saved: list[Path] = []
+
+    def end(self, engine: Engine) -> Trace | None:
+        trace = super().end(engine)
+        if trace is None:
+            return None
+        self.completed += 1
+        if self.completed % self.every == 0:
+            self.saved.append(self._write(trace))
+            self._prune()
+        return trace
+
+    def _write(self, trace: Trace) -> Path:
+        """Atomically, because a viewer may be reading this directory as we write."""
+        tick = trace.result.final_tick if trace.result is not None else 0
+        name = f"{os.getpid()}-{self.completed:06d}-tick{tick}.msgpack"
+        final = self.out_dir / name
+        tmp = final.with_suffix(".msgpack.part")
+        tmp.write_bytes(msgspec.msgpack.encode(trace))
+        os.replace(tmp, final)
+        return final
+
+    def _prune(self) -> None:
+        """Keep the newest ``keep`` of OUR OWN files.
+
+        Only this process's, because another worker's traces are not ours to delete and a
+        directory shared by eight workers would otherwise have each of them deleting the
+        others' newest files.
+        """
+        while len(self.saved) > self.keep:
+            old = self.saved.pop(0)
+            old.unlink(missing_ok=True)
