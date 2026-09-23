@@ -62,6 +62,12 @@ class TraceFrame(msgspec.Struct, array_like=True):
     hands: list[list[int]]
     state_hash: str
     spells: list[SpellState] = []  # live spell objects (trailing: older traces decode)
+    # The card each seat draws NEXT, which the hand alone does not say. A replay without it
+    # has to report the cycle as unknown, and guessing it would be worse. Trailing and
+    # defaulted for the same reason `spells` is: `array_like=True` means fields are
+    # positional, so a trace recorded before this existed is a shorter array and still
+    # decodes, with []. Asked for by train, whose player block reported it unknown.
+    next_cards: list[int] = []
 
 
 class TraceHeader(msgspec.Struct):
@@ -142,6 +148,7 @@ def _frame(engine: Engine) -> TraceFrame:
         hands=[list(p.hand) for p in s.players],
         state_hash=_hex(engine.state_hash()),
         spells=list(s.spells),
+        next_cards=[p.next_card for p in s.players],
     )
 
 

@@ -28,6 +28,7 @@ WHAT THESE PIN, AND WHY EACH IS A ROLLOUT-WORKER PROBLEM RATHER THAN A SCRIPT PR
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -166,3 +167,58 @@ def test_every_argument_is_expressible_in_json(tmp_path):
     json.dumps(kwargs)  # raises if any default is not JSON-expressible
     rebuilt = SavingReplayRecorder(**json.loads(json.dumps(kwargs)))
     assert rebuilt.out_dir == tmp_path
+
+
+# ---------------------------------------------------------------------------
+# What a recorded FRAME carries. Not about saving, but about whether a replay can be
+# honest: a trace without next_cards has to report the cycle as unknown, and guessing it
+# would be worse than saying so.
+
+
+def test_a_recorded_frame_carries_the_next_card_each_seat_will_draw():
+    """Graded against the ENGINE's own PlayerState, not against the recorder.
+
+    Comparing a recorded frame with the recorder's own idea of the frame would be the
+    shape that hid a transposition in the learner's viser sink for a day: both sides read
+    the same source, so they move together and agree about anything.
+    """
+    engine = MockEngine()
+    setup = MatchSetup(decks=[DECK, DECK])
+    engine.reset(seed=3, setup=setup)
+    # every=10**9 so nothing is written: this test is about the FRAME, not the saving.
+    out = Path(os.environ.get("TMP", ".")) / "royalegym-frame-test"
+    rec = SavingReplayRecorder(out_dir=str(out), every=10**9)
+    rec.begin(engine, 3, setup)
+    engine.step([], 10)
+    rec.record_frame(engine)
+    trace = rec.trace
+    assert trace is not None
+    frame = trace.frames[-1]
+    from_engine = [p.next_card for p in engine.state().players]
+    assert frame.next_cards == from_engine, (
+        f"the frame says {frame.next_cards} and the engine says {from_engine}"
+    )
+    assert len(frame.next_cards) == len(engine.state().players)
+    # Non-vacuity: an all-empty list would satisfy the comparison above if the engine also
+    # reported nothing, and then this test would pass while carrying no information.
+    assert from_engine, "the engine reported no players, so the comparison above is empty"
+
+
+def test_a_frame_recorded_before_next_cards_existed_still_decodes():
+    """`array_like=True` means positional fields, so an older trace is a SHORTER array.
+
+    The field is trailing and defaulted for that reason, exactly as `spells` was before it.
+    A trace recorded yesterday must still load, and it must load saying [] rather than
+    inventing a cycle.
+    """
+    import msgspec
+
+    from royalegym.replay import TraceFrame
+
+    before = [30, [], [5000, 5000], [0, 0], [[0, 1, 2, 3], [0, 1, 2, 3]], "abc", []]
+    frame = msgspec.msgpack.decode(msgspec.msgpack.encode(before), type=TraceFrame)
+    assert frame.tick == 30
+    assert frame.next_cards == [], (
+        "an older frame decoded with something other than an empty list, so a replay of it "
+        "would show a cycle the recording never contained"
+    )
