@@ -263,7 +263,7 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="Tests on your own clone, 2026-09-22: 781 passed, 3 skipped, nothing failing" src="https://img.shields.io/badge/your%20clone%2C%202026--09--22-781%20passed%2C%203%20skipped-2ea043?style=flat-square">
+  <img alt="Tests on your own clone at fa380b3, 2026-09-22: 781 passed, 3 skipped, nothing failing" src="https://img.shields.io/badge/your%20clone%20at%20fa380b3-781%20passed%2C%203%20skipped-2ea043?style=flat-square">
   <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
   <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-777%20passed%2C%207%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
@@ -278,7 +278,8 @@ fresh clone in Windows PowerShell 5.1, with no virtual environment active and no
 it went: all 18 lines, including `maturin develop --release`, which took 119 seconds.
 
 **The suite passes on a clean clone: 781 passed, 3 skipped, 4 expected failures, nothing failing.**
-Measured on a fresh clone on 2026-09-22, not on the machine that wrote this.
+Measured on a fresh clone at commit `fa380b3` on 2026-09-22, not on the machine that wrote this. A
+clone count belongs to the commit it was taken at, so it names one.
 
 The three skips are worth reading rather than ignoring. Your clone builds the 2018 card table,
 which has 66 cards the engine can load. Three tests need the newer table, which gives 100, and it
