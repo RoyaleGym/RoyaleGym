@@ -27,6 +27,7 @@ WHAT IT CANNOT PIN
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -60,36 +61,59 @@ def installed_table(text: str) -> set[str]:
     return {name for name, marker in CARDS_JSON_WRITERS.items() if marker in text}
 
 
-def test_the_readme_the_install_page_and_the_workflow_install_the_SAME_card_table() -> None:
-    """Three places describe one cards.json, and the engine loads whatever is in it.
+def sources_that_write_cards_json() -> dict[str, str]:
+    """Every TRACKED file here that names a way of putting cards.json in place.
 
-    This is not tidiness. The card table changes what the engine COMPUTES: the same
-    scripted battle ends `winner 0 crowns [2, 1]` on the 15.535 table and
-    `winner 1 crowns [0, 1]` on the 2018 one, same engine build. So a reader who follows
-    the page that disagrees gets a different game and no way to know which page was wrong.
+    ENUMERATED, NOT LISTED, and that is the correction. The first version of this check
+    named three files -- README.md, install.md and the workflow -- and was short the day it
+    was written: the same instruction also lived in docs/site/pages/troubleshooting.md, and
+    in two sibling repos' READMEs. A named list is a population somebody has to remember to
+    grow, and this one went stale within the hour. (The docs session's point, 2026-09-23,
+    made after my named list caught one page and missed four.)
 
-    It fires the moment one of the three moves, which is what happened on 2026-09-23:
-    README.md changed to copy the committed 15.535 table after sim ruled that a 2026
-    simulator should not run on eight-year-old card data, this workflow followed it, and
-    docs/site/pages/install.md kept publishing the two `--vintage 2018` lines. Two
-    published pages then told a reader to put different tables in the same file, and
-    whichever install they ran last won.
+    CROSS-REPO PAGES ARE NOT COVERED and cannot be from here. RoyaleLearn's and
+    RoyaleViser's READMEs carried the same instruction and are outside this checkout, so
+    this check would have passed with both of them wrong. Stated rather than left for a
+    reader to assume it is complete.
     """
-    sources = {
-        "README.md": (REPO / "README.md").read_text(encoding="utf-8"),
-        "docs/site/pages/install.md": INSTALL_PAGE.read_text(encoding="utf-8"),
-        ".github/workflows/suite.yml": WORKFLOW.read_text(encoding="utf-8"),
-    }
-    tables = {name: installed_table(text) for name, text in sources.items()}
-    assert all(tables.values()), (
-        f"a source names no cards.json writer at all, so this check cannot compare them: "
-        f"{ {k: sorted(v) for k, v in tables.items()} }"
+    listed = subprocess.run(
+        ["git", "ls-files"], cwd=REPO, capture_output=True, text=True, timeout=60, check=True
     )
-    distinct = {frozenset(v) for v in tables.values()}
-    assert len(distinct) == 1, (
-        "these disagree about which card table becomes cards.json, and the engine loads "
-        f"whatever is there: { {k: sorted(v) for k, v in tables.items()} }. Make the two "
-        "published pages agree first -- the workflow follows the README."
+    names = [n for n in listed.stdout.splitlines() if n.endswith((".md", ".yml", ".yaml"))]
+    assert names, "git ls-files returned no pages, so this check would scan an empty set"
+    out: dict[str, str] = {}
+    for name in names:
+        text = (REPO / name).read_text(encoding="utf-8", errors="replace")
+        if installed_table(text):
+            out[name] = text
+    return out
+
+
+def test_every_page_that_installs_cards_json_names_the_15_535_TABLE() -> None:
+    """The engine loads whatever is in cards.json, so every documented install must agree.
+
+    Not tidiness: the card table changes what the engine COMPUTES. The same scripted
+    battle ends `winner 0 crowns [2, 1]` on the 15.535 table and `winner 1 crowns [0, 1]`
+    on the 2018 one, at the same engine build. A reader who follows the page that disagrees
+    gets a different game and no way to tell which page was wrong.
+
+    THE RULE IS "NAMES THE COPY", not "never mentions 2018", and that difference is what
+    keeps it from firing on a correct page. troubleshooting.md quotes the engine's own
+    FileNotFoundError verbatim, and that message still tells a reader to extract the 2018
+    table over cards.json. Editing the quote would make the page stop matching what a
+    reader actually sees, so the quote stands and the page instructs the copy beside it. A
+    check that banned the string would demand a correct page be made wrong in order to
+    pass, which is a defect in the check rather than in the page.
+    """
+    sources = sources_that_write_cards_json()
+    assert sources, "no tracked page names a cards.json writer, so this compared nothing"
+    missing = sorted(
+        name for name, text in sources.items() if CARDS_JSON_WRITERS["15.535"] not in text
+    )
+    assert not missing, (
+        f"these put cards.json in place WITHOUT naming the committed 15.535 table: "
+        f"{missing}. The engine loads what is there, so a reader following one of them "
+        "gets the 2018 table and a different battle."
     )
 
 
