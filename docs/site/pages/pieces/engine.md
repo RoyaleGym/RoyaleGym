@@ -148,9 +148,14 @@ table is not. That is 60 more cards in the 2018 table a fresh clone builds.
 one has a status, from guess to measured, and nearly all of them say where they came from. You
 can change one and rebuild.
 
-**You want to help close the accuracy gap.** The two biggest sources of error are where
-multi-unit cards put their units and how units push each other apart on contact. Together those
-are 63% of what is left. Both are open work.
+**You want to help close the accuracy gap.** Measured at build `d872d792711934c2`, the two
+biggest sources are when a unit dies, 31.2% of what is left, and where multi-unit cards put
+their units, 29.4%. Both are open work.
+
+That ranking is less stable than it looks, and the accuracy page explains why: each battle is
+counted against whatever went wrong FIRST in it, so correcting one cause reshuffles the rest.
+Contact was the second-biggest source until the spawn point was corrected and is now the
+smallest. Pick a cause because you can fix it, not because it is top of the table.
 
 !!! warning "Rebuild after you change the constants or the arena"
     The engine compiles `data/calibration.json` and `data/derived/arena.json` into itself. So

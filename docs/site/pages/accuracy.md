@@ -60,47 +60,45 @@ in the right place to your eye and still be counted as a miss here.
 
     ---
 
-    Within a quarter of a tile 82.5% of the time. While it walks to a tower untouched, it is on
-    the game's own path, to a fiftieth of a tile, on 74.9% of those ticks. Close to solved.
+    Within a quarter of a tile 72.9% of the time. While it walks to a tower untouched, it is on
+    the game's own path, to a fiftieth of a tile, on 73.3% of those ticks. Close to solved.
 
 -   __Goblins__
 
     ---
 
-    42.5%. Cheap units arriving three or four at once are where the engine and the game come
+    40.6%. Cheap units arriving three or four at once are where the engine and the game come
     apart.
 
 -   __Skeletons__
 
     ---
 
-    43.9%. Same story. The more bodies touching each other, the worse it gets.
+    46.0%. Same story. The more bodies touching each other, the worse it gets.
 
 </div>
 
-So the gap is not spread evenly. It is almost all in swarms.
+So the gap is not spread evenly. It is almost all in swarms. Every figure in this section is
+from the run at build `d872d792711934c2`, over 73 recorded battles.
 
 ## What goes wrong first
 
 The same run that produces the table above also reports what went wrong first in every battle.
-That is the useful table, because it says what to fix:
+That is the useful table, because it says what to fix. Measured at build `d872d792711934c2`:
 
-| cause of the first divergence | share of all the misses, in battles that went wrong this way first |
-|---|---|
-| where a spawner or a multi-unit card puts its units | 32.5% |
-| how units push each other apart on contact | 31.0% |
-| when a unit dies | 21.9% |
-| attack timing | 13.9% |
-| walking | 0.4% |
+| cause of the first divergence | battles | share of all the misses, in battles that went wrong this way first |
+|---|---|---|
+| when a unit dies | 16 | 31.2% |
+| where a spawner or a multi-unit card puts its units | 10 | 29.4% |
+| attack timing | 10 | 20.5% |
+| how units push each other apart on contact | 12 | 18.9% |
 
-Battles that went wrong first in one of the top two ways hold 63.5% of the misses. Both of
-those causes are being worked on right now: where a multi-unit card drops its units, and how
-units push each other apart when they touch.
+**Do not compare this table with the one it replaced.** Contact was 31.0% and is now 18.9%;
+death was 21.9% and is now 31.2%. Contact did not improve. Each battle is counted against
+whatever went wrong FIRST in it, so correcting the largest cause changes the scene every other
+cause is measured on, and a row-by-row comparison of two runs measures nothing.
 
-Walking is the smallest row at 0.4%, which matches the Knight number above. A single unit
-choosing its route and walking it is the part that is nearly right.
-
-25 of the 67 battles in the corpus never diverge at all, though most of those are short ones.
+19 of the 67 battles in the corpus never diverge at all, though most of those are short ones.
 
 These numbers are from 2026-09-21, not the target. The target is that a swarm fight does not diverge
 either. Expect the table to move.
@@ -120,8 +118,9 @@ choosing which lane, spending elixir at the right moment, defending a lone unit 
 those lean on walking, routes and timing, and those are the parts measured closest to the game.
 
 Where the engine is furthest, they may not carry over. A bot that learns exactly how a pile of
-Skeletons flows around a Knight is learning a crowd behaviour that is 43.9% right. A habit built
-on that can be worth nothing, or worse than nothing, in a real match.
+Skeletons flows around a Knight is learning a crowd behaviour that is 46.0% right. A habit built
+on that can be worth nothing, or worse than nothing, in a real match. That 46.0% is from the
+run at build `d872d792711934c2`.
 
 The practical version, three lines:
 

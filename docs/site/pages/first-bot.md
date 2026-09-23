@@ -358,7 +358,8 @@ greedy vs random: 8-12-0 over 20 games. win rate 40.0% (21.9% to 61.3% at 95%) -
     as red  5-5-0
 ```
 
-Two things to read off that, and the second is the one people get wrong.
+Two things to read off that, and the second is the one people get wrong. Both numbers below come
+from the run printed above, which is 20 games on your machine and nobody else's.
 
 **"Too close to call" is not a tie.** It means the interval still covers 50%, so the games you
 played cannot separate the two bots. Play more and ask again. A bare "40%" would have told you
