@@ -431,6 +431,10 @@ class GridActionParser(ActionParser):
         self.pitch = self.arena.subtile // self.pitch_div
         self.n_actions = 1 + HAND_SIZE * self.nx * self.ny
         self._space: spaces.Discrete = spaces.Discrete(self.n_actions)
+        # ``buildable`` memo. Keyed on everything relocation reads; see that method.
+        self._buildable: dict[tuple[Any, ...], np.ndarray] = {}
+        self.buildable_hits = 0
+        self.buildable_misses = 0
 
     @property
     def space(self) -> spaces.Discrete:
@@ -479,11 +483,13 @@ class GridActionParser(ActionParser):
             if team == RED:
                 grid = grid[::-1, ::-1]  # engine frame -> Red's own frame
             if self._engine is not None and card.placement == Placement.BUILDING:
-                grid = self.buildable(team, card, grid)
+                grid = self.buildable(state, team, card, grid)
             mask[1 + slot * per : 1 + (slot + 1) * per] = grid.reshape(-1)
         return mask
 
-    def buildable(self, team: int, card: CardInfo, legal: np.ndarray) -> np.ndarray:
+    def buildable(
+        self, state: BattleState, team: int, card: CardInfo, legal: np.ndarray
+    ) -> np.ndarray:
         """Own-frame grid of the taps this arm offers for ``card``, asked of the engine.
 
         Both arms need the engine, for different reasons. ``any_tap`` needs it because
@@ -501,13 +507,44 @@ class GridActionParser(ActionParser):
         ``tests/test_building_tap_arms.py`` grades the mask against the engine rather
         than assuming it.
 
-        Not memoised. Measured 2026-09-22: 0.7 ms for a whole 576-tile grid against
-        0.05 ms for the memoised legality mask, on an iteration whose collection is a
-        fifth of its time. A memo here would have to key on every building and tower on
-        the board, which the legality memo no longer does, and a memo keyed on too
-        little is worse than none.
+        MEMOISED, and it has to be. Without a memo this was 58% of ``env.step`` in a
+        profile of 400 real steps: one engine call per offered cell, 96 000 of them,
+        because a hand holding a building pays it every step for both seats. The first
+        measurement missed that entirely, because the hand it sampled held no building.
+
+        The key is everything relocation reads and nothing else: the acting team, the
+        card's own size, and every body that can block a box, which is the buildings and
+        the ALIVE towers. Not the tick, not elixir, not troops -- a troop cannot block a
+        building (``DeployRules``), so including it would miss the memo on every step
+        for nothing. Buildings and towers change rarely, so this hits across steps rather
+        than only across the two seats of one step.
         """
         assert self._engine is not None
+        blockers = tuple(
+            sorted(
+                (e.x, e.y, e.radius, int(e.kind))
+                for e in state.entities
+                if e.kind != EntityKind.TROOP
+            )
+        )
+        # ``legal`` is in the key, not assumed constant. The grid below is filled only
+        # at cells ``legal`` allows, so a hit against a DIFFERENT legal set would return
+        # False for cells never asked about: an under-offering mask, silently. It is
+        # constant for a building today, since the cell rules are static, but that is an
+        # invariant of another function and not one to bet a wrong mask on.
+        key = (
+            team,
+            card.name,
+            self.pitch_div,
+            self.buildings,
+            blockers,
+            legal.tobytes(),
+        )
+        hit = self._buildable.get(key)
+        if hit is not None:
+            self.buildable_hits += 1
+            return legal & hit
+        self.buildable_misses += 1
         stays = self.buildings == "taps_where_the_building_stays"
         out = np.zeros((self.ny, self.nx), dtype=bool)
         pitch, half = self.pitch, self.pitch // 2
@@ -525,7 +562,11 @@ class GridActionParser(ActionParser):
                     continue
                 ox, oy = to_own(self.arena, team, landed[0], landed[1])
                 out[yi, xi] = (ox // self.arena.subtile, oy // self.arena.subtile) == (xi, yi)
-        return out
+        if len(self._buildable) >= GRID_CACHE_SIZE:
+            self._buildable.clear()
+        out.flags.writeable = False
+        self._buildable[key] = out
+        return legal & out
 
     def parse(self, action: int, state: BattleState, team: int) -> DeployCommand | None:
         action = int(action)

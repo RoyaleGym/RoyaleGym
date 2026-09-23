@@ -326,3 +326,44 @@ def test_the_board_set_spans_the_case_that_matters(engine, card) -> None:
         f"{card}: the engine can build on EVERY board here, so nothing exercises a tap "
         f"it refuses. Boards and whether they accept: {spans}"
     )
+
+
+@pytest.mark.parametrize("card", BUILDINGS)
+def test_one_parser_masking_two_boards_sees_the_second_board(engine, card) -> None:
+    """The memo behind ``buildable`` has to notice the board changing.
+
+    Asking the engine where a building lands is the expensive part of a building mask,
+    so it is cached. A cache is a second copy of an answer, and the question is whether
+    it is thrown away when the answer changes.
+
+    Nothing here caught that until this test existed. Every other test in this file
+    builds a board and binds a FRESH parser, so the memo is always cold and a key that
+    ignores the board looks identical to a correct one. Proved by planting exactly that
+    -- a key without the blocking bodies -- and confirming the plant APPLIED (643 calls,
+    521 served from the blind cache) while the whole file still passed.
+
+    So this reuses ONE parser across two different boards, which is what an env does.
+    """
+    empty, crowded = "empty", "no usable gap"
+    parser = TileActionParser()
+    build(engine, card, empty)
+    parser.bind(engine)
+    first = offered(parser, engine.state(), BLUE)
+    assert first, f"{card}: nothing offered on the empty board, so this proves nothing"
+
+    build(engine, card, crowded)
+    second = offered(parser, engine.state(), BLUE)
+    assert not second, (
+        f"{card}: the same parser offered {len(second)} taps on a board where the engine "
+        "builds nothing. The mask is answering for the previous board, so the memo is "
+        "keyed on too little."
+    )
+
+    # And back, so a cache that simply emptied itself once is not mistaken for one that
+    # tracks the board.
+    build(engine, card, empty)
+    third = offered(parser, engine.state(), BLUE)
+    assert third == first, (
+        f"{card}: returning to the first board gave {len(third)} taps where it gave "
+        f"{len(first)}. The mask is not a function of the board alone."
+    )
