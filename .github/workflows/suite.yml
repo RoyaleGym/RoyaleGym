@@ -80,9 +80,16 @@ jobs:
           print("engine constructs, build_digest", build_digest())
           PY
 
+      # -rs, so the run says WHAT IT DID NOT EXERCISE and why. A count on its own reads as
+      # "the suite passed" when it means "the subset this machine could collect passed", and
+      # the difference here is not cosmetic: a runner has the 2018 card table and the
+      # project's own machine has 15.535, so the tests that skip on a clean runner are
+      # exactly the ones that depend on the most valuable data in the project. An instrument
+      # that under-exercises the tests it is least able to run should state that itself
+      # rather than leave it to whoever reads the number.
       - name: suite
         working-directory: RoyaleGym
-        run: ../.venv/bin/python -m pytest -q -p no:randomly
+        run: ../.venv/bin/python -m pytest -q -p no:randomly -rs
 
       - name: ruff
         working-directory: RoyaleGym
@@ -98,6 +105,7 @@ jobs:
           {
             echo "commit=$(git -C RoyaleGym rev-parse HEAD)"
             echo "sim=$(git -C RoyaleSim rev-parse HEAD)"
+            echo "population=what this runner could collect, NOT the whole suite; see skips"
             .venv/bin/python -c "from royalegym.rust_engine import build_digest, engine_binary_digest; print(f'build_digest={build_digest()}'); print(f'engine_binary={engine_binary_digest()}')" || true
             .venv/bin/python -c "from royalegym.protocol import derived_cards_vintage; print(f'cards_vintage={derived_cards_vintage()}')" || true
           } >> "$GITHUB_STEP_SUMMARY"

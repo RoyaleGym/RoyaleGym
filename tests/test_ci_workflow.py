@@ -126,3 +126,27 @@ def test_the_workflow_records_the_build_digest_beside_the_count() -> None:
             "told apart from a rebuild underneath the same commit, which happened three "
             "times on 2026-09-22 and twice with no commit in this repo."
         )
+
+
+def test_the_workflow_reports_what_it_could_not_exercise() -> None:
+    """A count alone reads as "the suite passed" and means "the subset here passed".
+
+    The gap is not cosmetic in this repo. A clean runner has the 2018 card table and the
+    project's own machine has 15.535, so the tests that skip on a runner are precisely the
+    ones depending on the most valuable data in the project: a clean-runner count
+    systematically under-exercises exactly what is hardest to exercise. An instrument with
+    that property should state it rather than leave it to whoever reads the number.
+
+    So the suite step runs with -rs. Pinned as a test because it is one flag, it looks like
+    noise to anyone tidying the workflow, and removing it turns an honest measurement back
+    into a bare count with no visible loss.
+    """
+    text = WORKFLOW.read_text(encoding="utf-8")
+    marker = "- name: suite"
+    assert marker in text, "the workflow no longer has a step named 'suite'"
+    body = text.split(marker, 1)[1].split("\n      - name:", 1)[0]
+    assert "-rs" in body, (
+        "the suite step no longer passes -rs, so a run records how many tests skipped and "
+        "never which or why. On a clean runner the skips are the card-table tests, which "
+        "makes the count a statement about a smaller population than a reader will assume."
+    )
