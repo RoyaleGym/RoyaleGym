@@ -117,7 +117,18 @@ def test_the_checker_is_the_vendored_copy_and_not_a_local_rewrite() -> None:
         for line in text.splitlines()
         if line.startswith("import ") or line.startswith("from ")
     }
-    assert imports <= {"re", "sys", "pathlib", "__future__"}, (
-        f"the vendored checker imports {sorted(imports - {'re', 'sys', 'pathlib', '__future__'})}, "
-        "so it no longer runs on a fresh clone with nothing installed"
+    # Asked of sys.stdlib_module_names rather than compared against a list written here.
+    # The list version was `imports <= {"re", "sys", "pathlib", "__future__"}` and it
+    # failed on the first correct change: the canonical grew a `unicodedata` import for
+    # the control-character rule, unicodedata IS the standard library, and this test
+    # reported that a fresh clone could not run the checker. It could; the integrator has
+    # four clones where it imports fine. A hardcoded allow-list standing in for a property
+    # states the property in its message and checks something next to it, and the repairs
+    # it invites -- delete the import, or add one more name to the list -- both move the
+    # list further from the sentence above it. Caught by Viser 1 and the integrator, in a
+    # test this session wrote. requires-python is >=3.12, so stdlib_module_names is there.
+    outside = imports - sys.stdlib_module_names - {"__future__"}
+    assert not outside, (
+        f"the vendored checker imports {sorted(outside)}, which is not in the standard "
+        "library, so it no longer runs on a fresh clone with nothing installed"
     )

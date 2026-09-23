@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import re
 import sys
+import unicodedata
 
 FENCE = re.compile(r"^( {0,3})(`{3,}|~{3,})([^\n]*)\n(.*?)^\1?\2`*[ \t]*$", re.M | re.S)
 POSIX_HINT = re.compile(r"macos|linux|bash|posix|wsl", re.I)
@@ -78,7 +79,26 @@ def control_characters(text: str, name: str) -> list[str]:
     """
     out = []
     for i, ch in enumerate(text):
-        if ord(ch) < 0x20 and ord(ch) not in CONTROL_OK:
+        # Ask the character what it IS rather than where it sits. The first version tested
+        # `ord(ch) < 0x20`, which silently exempted everything from 0x7f up: gym probed it with a
+        # DEL and it passed, and viser then showed that fixing only DEL would still leave the C1
+        # range 0x80-0x9f open, which arrives from a mis-decoded paste rather than a heredoc but
+        # is just as invisible. A numeric bound encodes an assumption about where the trouble
+        # lives; the category asks the question directly.
+        #
+        # Cc is every control character, C0 and C1 and DEL. Cf is the invisible formatting ones,
+        # zero-width space and joiner and the BOM. NBSP is neither, and it is here because it
+        # looks exactly like a space and is not one.
+        #
+        # NBSP is matched by CODE POINT and never as a literal. The first version of this line
+        # held a real U+00A0 between quotes, so the guard against invisible characters contained
+        # one. It behaved correctly; the problem is how it would FAIL. On the page it is
+        # indistinguishable from `ch == " "`, in an editor, in git diff and in review, so any
+        # whitespace tidy-up silently turns it into a plain space and the rule then refuses every
+        # space in every page. Gym measured that as 3974 problems in one README. Same reasoning as
+        # chr(10) below: a rule must not be destructible by the thing it exists to catch.
+        cat = unicodedata.category(ch)
+        if (cat in ("Cc", "Cf") or ord(ch) == 0xA0) and ord(ch) not in CONTROL_OK:
             line = text[:i].count(chr(10)) + 1
             out.append(
                 f"{name}:{line}: control character 0x{ord(ch):02x} in the text. A shell heredoc "
@@ -147,11 +167,34 @@ SELFTEST = [
     # than an escape, so that this case cannot be destroyed by the very thing it tests for.
     ("a backspace byte in the prose", "## Install\n\nMatch on a " + chr(8) + " boundary.\n", True),
     ("tabs and newlines are fine", "## Install\n\n\tindented with a tab\n", False),
+    # DEL is 0x7f, above the printable range, so the obvious `< 0x20` test lets it through.
+    ("a DEL byte in the prose", "## Install\n\nA stray " + chr(0x7F) + " byte.\n", True),
+    # C1, 0x80 to 0x9f. Fixing DEL alone would have left this whole range open.
+    ("a C1 byte in the prose", "## Install\n\nA stray " + chr(0x85) + " byte.\n", True),
+    # Invisible rather than control: these render as nothing or as a space and break a grep.
+    ("a zero-width space", "## Install\n\nRun the" + chr(0x200B) + " command.\n", True),
+    ("a non-breaking space", "## Install\n\nRun the" + chr(0xA0) + "command.\n", True),
+    # The rule must not fire on ordinary text, or nobody will keep it switched on.
+    ("ordinary accented prose passes", "## Install\n\nNaïve café résumé.\n", False),
 ]
 
 
 def selftest() -> int:
     bad = 0
+    # Point the checker at its own source. Five instances of the invisible-character defect have
+    # been found in this project and the fifth was in this file, in the NBSP rule itself, found by
+    # gym rather than by this check. A guard that cannot see its own source is one a reader has no
+    # reason to trust with theirs.
+    try:
+        with open(__file__, encoding="utf-8") as fh:
+            mine = control_characters(fh.read(), "shell_fence_check.py")
+    except OSError:
+        mine = []
+    print(f"{'FAIL' if mine else 'ok  '} this checker's own source: "
+          f"{len(mine)} invisible character(s)")
+    for m in mine:
+        print(f"       {m}")
+    bad += bool(mine)
     for name, text, must_fail in SELFTEST:
         got = bool(check_text(text, name))
         ok = got == must_fail
