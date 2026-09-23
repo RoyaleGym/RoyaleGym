@@ -227,7 +227,7 @@ for the learner.
 
 <p align="center">
   <img alt="Tests on a fresh clone, 2026-09-22, debug engine build" src="https://img.shields.io/badge/fresh%20clone%2C%202026--09--22-385%20passed%2C%200%20skipped-2ea043?style=flat-square">
-  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-761%20passed%2C%207%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-764%20passed%2C%207%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>
