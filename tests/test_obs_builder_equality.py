@@ -59,6 +59,11 @@ def a_corpus(n_steps: int = 80) -> list[tuple[BattleState, dict[int, object]]]:
     last one. That is the same mistake as reading a unit's position after the whole step
     instead of at the deploy tick, in a different place on the same day.
 
+    THE GENERAL FORM, which is worth more than either instance: a query that consults LIVE
+    state is not a pure function of the state you think you are holding. `action_mask` looks
+    like `f(state, team)` and is not. Anything that takes a snapshot and calls such a query
+    later is silently asking about a different world, and nothing in the signature says so.
+
     Taken by PLAYING rather than by constructing, so these are boards the engine produces
     and not ones a test author imagined.
     """
