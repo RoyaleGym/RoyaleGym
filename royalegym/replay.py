@@ -52,6 +52,30 @@ class TraceStep(msgspec.Struct, array_like=True):
     ticks: int  # ticks requested
     commands: list[DeployCommand]
     statuses: list[int]
+    # WHAT THE ENGINE ALREADY RESOLVED, kept instead of thrown away. A DeployResult carries
+    # the card the slot held and the position the deploy actually used; this struct used to
+    # keep only the status, so a trace could say a command succeeded and not say what it
+    # played or where it ended up.
+    #
+    # WHY card_ids IS NOT RECONSTRUCTABLE FROM THE TRACE. The obvious route is the hand:
+    # decode the command's slot and read `frames[...].hands`. It is wrong by one. Frames are
+    # recorded AFTER `engine.step(commands, ...)` (see `ClashParallelEnv._advance`), so the
+    # frame nearest a step shows the hand the play already cycled -- the REPLACEMENT card,
+    # not the card played. The correct frame is the previous step's trailing one, which is a
+    # rule nobody reading a trace would guess and which fails silently when guessed wrong.
+    # Asked for by train, who could measure tile concentration but could not split it BY
+    # CARD.
+    #
+    # WHY landed IS WORTH THE BYTES. It is the RESOLVED position, so for a building whose
+    # footprint did not fit it is where the engine moved it rather than where the policy
+    # tapped. With the command beside it a trace can measure relocation on the policy's OWN
+    # distribution of taps, which a uniform sweep over legal tiles cannot stand in for: the
+    # rate depends on where the policy chooses to play.
+    #
+    # Trailing and defaulted, like `spells` and `next_cards`, because `array_like=True`
+    # makes fields positional and an older trace is simply a shorter array.
+    card_ids: list[int] = []
+    landed: list[list[int]] = []  # [[x, y], ...] ENGINE frame, parallel to commands
 
 
 class TraceFrame(msgspec.Struct, array_like=True):
@@ -208,7 +232,14 @@ class ReplayRecorder:
     ) -> None:
         if self._open and self.trace is not None:
             self.trace.steps.append(
-                TraceStep(tick, ticks, list(commands), [r.status for r in results])
+                TraceStep(
+                    tick,
+                    ticks,
+                    list(commands),
+                    [r.status for r in results],
+                    [r.card_id for r in results],
+                    [[r.x, r.y] for r in results],
+                )
             )
 
     def end(self, engine: Engine) -> Trace | None:
