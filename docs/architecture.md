@@ -111,8 +111,8 @@ aliases.
 |---|---|
 | `ObsBuilder` | `SpatialObsBuilder` (20-channel board + `mask_planes` + a `12n + 37`-float vector + the mask), `EntityListObsBuilder` |
 | `ActionParser` | `TileActionParser` (`Discrete(2305)`), `HalfTileActionParser` (`Discrete(9217)`) |
-| `RewardFunction` | `WinLoss`, `Crown`, `TowerHP`, `ElixirTrade`, `ElixirLeak`, `IllegalAction`, `Combined`; `default_reward()` is WinLoss 1.0 + Crown 0.2 + TowerHP 0.1 + ElixirTrade 0.02 |
-| `StateMutator` | `Default`, `MidGame`, `ScriptedBoard`, `Snapshot`, `Weighted` (curriculum lives here) |
+| `RewardFunction` | `WinLoss`, `Crown`, `TowerHP`, `ElixirTrade`, `ElixirLeak`, `PlacementDepth`, `IllegalAction`, `Combined`; `default_reward()` is WinLoss 1.0 + Crown 0.2 + TowerHP 0.1 + ElixirTrade 0.02. `PlacementDepth` and `IllegalAction` ship unused, as templates |
+| `StateMutator` | `Default`, `MidGame`, `ScriptedBoard`, `Snapshot`, `Weighted`, `DeckCurriculum` (curriculum lives here) |
 | `DoneCondition` | `GameOver`, `FirstCrown` (terminations); `StepLimit`, `TickLimit` (truncations); `Any`, `All` (either role) |
 
 Imperfect information is the default, and it is the default in the form a player actually
@@ -160,8 +160,12 @@ centre and corner, both teams, seven tower states. So a silently wrong mask fail
 instead of a training run. The mask covers elixir, territory, water, the river band,
 building footprints and the no-deploy rectangle around each living enemy crown tower.
 
-Measured at `reset(seed=0)` with the default random decks: 691 of 2305 actions are legal on
-the first step on `RustEngine`, 1235 on `MockEngine` (whose cards run at CSV level 1). Every
+Measured at `reset(seed=0)` with the default random decks, 2026-09-22: 921 of 2305 actions
+are legal on the first step on `RustEngine` and 1235 on `MockEngine` (whose cards run at CSV
+level 1). Read that pair carefully rather than as a property of either engine. A random deck
+is drawn from the catalogue, so which cards land in the first hand moves with the catalogue,
+and a hand of four troops offers far fewer tiles than one holding a spell, which is legal
+almost everywhere. The `RustEngine` figure here is a hand of four troops. Every
 observation dict carries the mask as `int8`, which is what PettingZoo's `parallel_api_test`
 and Gymnasium's `Discrete.sample(mask=...)` expect. Beside it sits `mask_planes`, the same
 mask minus the no-op, reshaped to `[4, 32, 18]` for a convolutional trunk. `action_masks()`
@@ -230,8 +234,8 @@ exactly.
 ## Tests
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q      # 342 passed, 6 skipped (2026-09-21)
-..\.venv\Scripts\python -m ruff check royalegym tests     # All checks passed!
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 697 passed, 7 skipped, 4 xfailed (2026-09-22)
+..\.venv\Scripts\python -m ruff check royalegym tests examples   # All checks passed!
 ```
 
 Without `royalesim` built the Rust-backed tests skip, not pass. A `royalesim` build older
@@ -245,7 +249,7 @@ otherwise.
 | Module | What it holds |
 |---|---|
 | `protocol.py` | the `Engine` contract and its value types (`BattleState`, `MatchSetup`, `Calibration`, `Arena`, `DeployRules`); `data_dir()` |
-| `env.py` | `ClashParallelEnv` (PettingZoo), `ClashGymEnv` (Gymnasium, id `royalegym/ClashRoyale-v0`), `ClashSelfPlayVecEnv` (N games as 2N agent slots: four games give a `spatial` batch of shape (8, 20, 32, 18) and eight masks), `make_gym_vec_env` |
+| `env.py` | `ClashParallelEnv` (PettingZoo), `ClashGymEnv` (Gymnasium, ids `royalegym/ClashRoyale-v0`, `ClashRoyaleMock-v0`, `ClashRoyaleRust-v0`), `ClashSelfPlayVecEnv` (N games as 2N agent slots: four games give a `spatial` batch of shape (8, 20, 32, 18) and eight masks), `make_gym_vec_env` |
 | `mock_engine.py` | `MockEngine`, the pure-Python reference engine the RL layer is tested against |
 | `rust_engine.py` | `RustEngine` over the compiled `royalesim` core; `SymmetricRustEngine` for the rotation-mirror gates |
 | `obs.py` | `ObsBuilder`: `SpatialObsBuilder`, `EntityListObsBuilder` |
@@ -257,9 +261,11 @@ otherwise.
 | `replay.py` | `ReplayRecorder`, `Trace`, `save_trace` / `load_trace`, `verify_trace` |
 | `render.py` | the offline HTML replay page (`python -m royalegym.render trace.msgpack -o out.html`) |
 | `viser.py` | `ViserPublisher`, the engine side of RoyaleViser |
+| `evaluate.py` | `evaluate()`, bot against bot on both seats with a Wilson interval; `MatchResult` |
+| `opponents.py` | four scripted opponents and `ladder()`, whose ordering is measured rather than assumed |
 
 `tests/` holds the pytest suite: the env layer against `MockEngine`, and the Rust engine
-through `RustEngine`. `docs/` holds this file and `background.md`.
+through `RustEngine`. `docs/` holds this file, `background.md` and `observation-spec.md`.
 
 ## Everything else stays off the hot path
 
