@@ -5,8 +5,18 @@ WHY THERE ARE TWO
     building to the nearest place it does fit. So the default action space offers taps
     that put the building somewhere the agent did not choose: measured on the compiled
     engine, 124 of the 240 tiles offered to a Cannon and 73 of 240 offered to a Tesla.
-    A policy under that arm asks for one cell and gets another more often than not, and
-    nothing in its observation says which taps are which.
+
+    SAY WHICH CRITERION THOSE COUNT, because three of them disagree and this docstring
+    quoted the wrong one until 2026-09-23. They count taps whose landed centre falls in a
+    different TILE. They do not count placements LOST: a 3x3 shifted by one tile still
+    stands on the tile the agent asked for, and the rate at which the chosen tile is
+    actually vacated is 15.0% for a 3x3 and 10.0% for a Tesla. The sentence that stood
+    here, "a policy asks for one cell and gets another more often than not", was true of
+    the 124/240 and read as the smaller number. ``royalegym/action.py`` carries the full
+    table; ``examples/measure_building_relocation.py`` re-derives it.
+
+    What needs no qualifier is the rest: nothing in the observation says which taps are
+    which.
 
     ``taps_where_the_building_stays`` offers only the taps that keep their word.
 

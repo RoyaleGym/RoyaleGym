@@ -382,14 +382,54 @@ class ActionParser(ABC):
 #: ``taps_where_the_building_stays`` offers only the taps that put the building on the
 #: tile that was tapped. Measured 2026-09-22 on the compiled engine, both seats, a board
 #: with buildings and towers standing: of the 240 tiles the default offers a Cannon, 124
-#: put it on a tile the agent did not choose, and 73 of 240 for a Tesla. So under the
-#: default a policy asks for one cell and gets another more often than not, and nothing
-#: in its observation says which taps are which.
+#: put it on a tile the agent did not choose, and 73 of 240 for a Tesla.
+#:
+#: HOW MUCH THAT COSTS THE AGENT DEPENDS ON WHICH QUESTION YOU ASK, and until 2026-09-23
+#: the sentence here answered a different one from the figures above it. It read "a policy
+#: asks for one cell and gets another more often than not" -- true of the 124/240, and a
+#: reader takes it to mean the placement was LOST. Three criteria, over all 11 building
+#: cards, every tile of the board, build d872d792711934c2
+#: (``examples/measure_building_relocation.py`` re-derives this):
+#:
+#:     criterion                              3x3 (10 cards)   2x2 (Tesla)
+#:     centre != tapped point                        51.7%        100.0%
+#:     centre's tile != tapped tile                  51.7%         30.4%
+#:     footprint does NOT cover chosen tile          15.0%         10.0%
+#:
+#: The top row is worthless and is recorded so nobody measures it again: an EVEN footprint
+#: snaps to a tile CORNER, so its centre can never sit on a tile centre, and 100% is
+#: geometry rather than relocation. The middle row is what this arm filters on and what the
+#: 240-tile sweep counted. The bottom row is the one that bears on credit assignment,
+#: because a 3x3 shifted by one tile still STANDS ON the tile the agent chose. So the agent
+#: loses its chosen tile about 15% of the time, not "more often than not"; the aliasing is
+#: real and under a third the size the old sentence implied. What is unqualified is the
+#: last clause: nothing in the observation says which taps are which.
+#:
+#: RELOCATION DEPENDS ONLY ON THE FOOTPRINT, not on the card. All ten 3x3 buildings agree
+#: to the decimal on all three criteria; Tesla differing is the control that shows the card
+#: reaches the engine at all. Treat this as a 3x3-vs-2x2 property and pool cards freely.
+#:
+#: MEASURE IT ON EVERY TILE OR NOT AT ALL. A coarse lattice over the agent's own half gave
+#: 47.5% and 39.0% where the full board gives 51.7% and 30.4%, and the narrowed gap was
+#: briefly read as evidence that board CROWDING drives relocation. It does not: the full
+#: scan above, on a near-empty board, reproduces the busy-board sweep exactly. The lattice
+#: was the entire difference, and the hypothesis it suggested was about the sampling.
 #:
 #: This arm is lossless over the boards it was checked on: every landing tile reachable
 #: by any tap is also reachable by a tap that stays put, so it removes aliases and no
 #: placement. ``tests/test_building_tap_arms.py`` checks that per board rather than
-#: trusting the sweep, because it is a property of the board and not of the engine.
+#: trusting the sweep, because it is a property of the board and not of the engine. That
+#: file was checked on 2026-09-23 for sensitivity rather than assumed: a plant making the
+#: arm lossy failed 8 of its 36 tests, and a blind control perturbing only a diagnostic
+#: counter left all 36 green.
+#:
+#: LOSSLESS IS ABOUT LANDING TILES, NOT ABOUT TAPS, and the difference is large enough to
+#: matter when choosing an arm. On the board above the honest arm offers a Cannon 116 of
+#: 240 taps; of the 124 it drops, 88 would still have left the building standing on the
+#: tile the agent chose. Tesla drops only 73 of 240. Every landing tile stays reachable,
+#: but a 3x3 loses over half its ways to ask for one and a 2x2 loses under a third, so the
+#: arms differ in mask density asymmetrically BETWEEN FOOTPRINTS. A behaviour change under
+#: this arm therefore has two candidate causes, not one.
 BUILDING_TAP_ARMS = ("any_tap", "taps_where_the_building_stays")
 
 

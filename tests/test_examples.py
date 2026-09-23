@@ -51,6 +51,15 @@ PROOF = {
     "05_record_and_replay.py": "re-run on a fresh engine: 0 divergences",
     "06_resume_a_run.py": "resumed run matches the original row for row: True",
     "07_is_this_bot_better.py": "too close to call",
+    # NO NUMBER IN THIS ONE, unlike its neighbours, and for a reason worth keeping: the
+    # example measures rates that depend on the card table, so pinning "10 cards" or
+    # "51.7%" here would fail on a machine with a different vintage for a reason that has
+    # nothing to do with placement. The sentence below is printed only when every card of
+    # a footprint agreed AND a second footprint was present as a control, so it is the
+    # finding rather than a reading of it.
+    "measure_building_relocation.py": (
+        "relocation is a property of the footprint, not the card"
+    ),
 }
 
 
