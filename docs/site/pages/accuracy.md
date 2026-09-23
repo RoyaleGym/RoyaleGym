@@ -2,7 +2,7 @@
 
 <p align="center">
   <img alt="Measured" src="https://img.shields.io/badge/accuracy-measured%2C%20not%20guessed-0b7285?style=flat-square">
-  <img alt="Position within a quarter tile, towers left out" src="https://img.shields.io/badge/position%20match%2C%20no%20towers-49.4%25-orange?style=flat-square">
+  <img alt="Position within a quarter tile, towers left out" src="https://img.shields.io/badge/position%20match%2C%20no%20towers-56.5%25-orange?style=flat-square">
   <img alt="Hitpoints exact, towers left out" src="https://img.shields.io/badge/hitpoints%20exact%2C%20no%20towers-81.4%25-2ea043?style=flat-square">
   <img alt="Corpus" src="https://img.shields.io/badge/corpus-67%20recorded%20battles-555?style=flat-square">
   <img alt="Moving" src="https://img.shields.io/badge/expect%20it%20to-keep%20moving-8957e5?style=flat-square">
@@ -34,10 +34,15 @@ yet.
 
 How often the engine agrees with the recording:
 
-| how often the engine agrees | counting towers | towers left out |
-|---|---|---|
-| a unit is within a quarter of a tile of where it really was | 83.9% | 49.4% |
-| a unit's hitpoints are exactly right | 83.3% | 81.4% |
+| how often the engine agrees | counting towers | towers left out | from the run at |
+|---|---|---|---|
+| a unit is within a quarter of a tile of where it really was | 85.1% | 56.5% | `d872d792711934c2` |
+| a unit's hitpoints are exactly right | 81.7% | 79.4% | the run before it |
+
+The two rows are from different runs and the table says so per row rather than in a note above it,
+because a reader who arrives at this table from a link never sees a note above it. The position row
+moved on 2026-09-22 when the spawner emission point was corrected, from 49.4%, over the same 73
+fixtures and the same harness. The hitpoints row has not been re-measured since.
 
 The right-hand column is the one to look at. Towers do not move and there are six of them in
 every battle, so counting them flatters the result. A tower that sits still is not evidence that

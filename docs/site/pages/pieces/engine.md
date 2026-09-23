@@ -208,9 +208,12 @@ rather than experience.
 
 **Accuracy.** Real matches are replayed in the engine and compared tick by tick. The six towers
 are left out, because towers do not move and counting them flatters the result. Without them, a
-unit is within a quarter of a tile of where it really was 49.4% of the time, and its hitpoints
-are exactly right 81.4% of the time. Single units are much better than swarms. A Knight is
-within a quarter tile 82.5% of the time. Goblins manage 42.5%.
+unit is within a quarter of a tile of where it really was 56.5% of the time, measured at build
+`d872d792711934c2`. Single units are much better than swarms, by a wide margin.
+
+The per-card figures used to be repeated here and are not any more. The same claim living on three
+pages meant fixing one of them left two wrong, twice over, and the numbers on this page were two
+runs behind before anyone noticed. They live in one place now.
 
 Check [How accurate is the engine](../accuracy.md) before you rely on a specific interaction, and
 check it again in a month, because these numbers are moving.
