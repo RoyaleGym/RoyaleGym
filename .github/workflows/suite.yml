@@ -114,6 +114,14 @@ jobs:
             echo "commit=$(git -C RoyaleGym rev-parse HEAD)"
             echo "sim=$(git -C RoyaleSim rev-parse HEAD)"
             echo "population=what this runner could collect, NOT the whole suite; see skips"
+            # THE COLLECTED COUNT IS EMITTED, NOT LEFT TO BE RECONSTRUCTED. Under the
+            # certification standard the collected figure is load-bearing: two pass counts
+            # invite subtraction and the subtraction is meaningless without it. The
+            # integrator derived 856 for this repo as 840 + 15 + 1, which works ONLY while
+            # xfail is the sole extra bucket -- add a marker class, an error or a
+            # deselection and that arithmetic reads wrong with nothing saying so. So the
+            # instrument states it and the certifier reads it.
+            echo "collected=$(cd "$GITHUB_WORKSPACE/RoyaleGym" && ../.venv/bin/python -m pytest -q --collect-only 2>/dev/null | tail -1)"
             .venv/bin/python -c "from royalegym.rust_engine import build_digest, engine_binary_digest; print(f'build_digest={build_digest()}'); print(f'engine_binary={engine_binary_digest()}')" || true
             .venv/bin/python -c "from royalegym.protocol import derived_cards_vintage; print(f'cards_vintage={derived_cards_vintage()}')" || true
           } >> "$GITHUB_STEP_SUMMARY"

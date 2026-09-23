@@ -150,3 +150,29 @@ def test_the_workflow_reports_what_it_could_not_exercise() -> None:
         "never which or why. On a clean runner the skips are the card-table tests, which "
         "makes the count a statement about a smaller population than a reader will assume."
     )
+
+
+def test_the_workflow_emits_the_collected_count_rather_than_leaving_it_derived() -> None:
+    """Under the certification standard the COLLECTED figure is the load-bearing one.
+
+    Two pass counts invite subtraction and the subtraction is meaningless without it: it
+    cannot tell a different population from a different selection from missing tests. The
+    integrator derived this repo's 856 as 840 + 15 + 1, which works only while xfail is the
+    sole extra bucket. Add a marker class, an error or a deselection and that arithmetic
+    reads wrong with nothing saying so.
+
+    So the instrument states it. Pinned here because it is one line in a summary block, it
+    looks like duplication of the suite step to anyone tidying, and removing it puts the
+    certifier back to reconstructing a number the run already knew.
+    """
+    text = WORKFLOW.read_text(encoding="utf-8")
+    marker = "- name: record what this run was"
+    body = text.split(marker, 1)[1].split("\n      - name:", 1)[0]
+    assert "collected=" in body, (
+        "the recording step no longer emits a collected count, so a certifier has to "
+        "reconstruct it by adding up the summary buckets"
+    )
+    assert "--collect-only" in body, (
+        "the collected count is not taken from pytest --collect-only, so it is a number "
+        "about something other than what this run collected"
+    )
