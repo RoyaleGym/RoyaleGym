@@ -1645,3 +1645,50 @@ def test_a_play_missed_because_two_came_from_one_slot_is_flagged():
     assert mem.foe_plays == 1, "the fixture must actually hide a play"
     assert mem.enemy_elixir_milli() != st.players[RED].elixir_milli
     assert not mem.exact, "a wrong count must never be a quiet one"
+
+
+def test_the_state_corpus_exercises_every_entity_channel_non_trivially():
+    """`entity_channel_errors` compares each channel against the entity list. A channel
+    that is ZERO in every state compares zeros with zeros and passes whatever the builder
+    does with it, so the test above would keep its universal name and lose the channel.
+
+    This is the I10 shape from the integration harness, checked here rather than assumed:
+    that check asserted determinism over 92 hash observations in which 0 contained a unit,
+    so a planted defect landed and had nothing to act on. The population was empty of the
+    thing the check existed to catch, and nothing said so.
+
+    Measured when written, over 32 states x 2 seats: the thinnest channel is
+    `own_deploying` at 20 of 64 and none is ever absent. The floor is low on purpose --
+    this exists to catch a channel dropping to ZERO, not to pin a distribution.
+    """
+    builder = SpatialObsBuilder()
+    builder.bind(ENG, PARSER)
+    arena = ENG.arena()
+    names = builder.channel_names()[: obs_mod.ENTITY_CHANNELS]
+    seen = dict.fromkeys(names, 0)
+    for state in STATES:
+        for seat in (BLUE, RED):
+            want = {n: np.zeros((32, 18)) for n in names}
+            for e in state.entities:
+                ox, oy = to_own(arena, seat, e.x, e.y)
+                ty = min(max(oy // arena.subtile, 0), 31)
+                tx = min(max(ox // arena.subtile, 0), 17)
+                side = "own" if e.team == seat else "enemy"
+                if e.kind == EntityKind.TROOP:
+                    want[f"{side}_{'air' if e.flying else 'ground'}_troops"][ty, tx] += 1
+                elif e.kind == EntityKind.BUILDING:
+                    want[f"{side}_buildings"][ty, tx] += 1
+                else:
+                    want[f"{side}_towers"][ty, tx] += 1
+                want[f"{side}_hp"][ty, tx] += e.hp / obs_mod.HP_SCALE
+                if e.deploy_ticks > 0:
+                    want[f"{side}_deploying"][ty, tx] += 1
+            for name, grid in want.items():
+                if grid.any():
+                    seen[name] += 1
+    never = sorted(n for n, count in seen.items() if count == 0)
+    assert not never, (
+        f"these entity channels are zero in every one of {len(STATES)} states on both "
+        f"seats, so comparing them proves nothing: {never}. Add a state that exercises "
+        "them, or the universal name on the check above is no longer true."
+    )
