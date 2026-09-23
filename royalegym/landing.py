@@ -123,10 +123,32 @@ def landings(
     intend to read. The results are returned rather than only the landings because a
     caller still needs the statuses, and re-deriving them from the landings would lose
     the refusal reasons.
+
+    POSITIONS ARE READ AT THE DEPLOY TICK, not after ``ticks`` of them. The first version
+    read them after the whole step, which is correct for a building and quietly wrong for
+    anything that walks: at a decision's ten ticks a troop has half a second of movement
+    in it, and this would have reported where it WENT as where it landed. Nothing about
+    the number would have looked wrong.
+
+    Caught from the outside. The integrator measured a group card on a pre-change core and
+    got three Minions up to 2.5 tiles from the tap, all displaced toward the enemy, where
+    reading at the deploy tick gives a ring of 0.58 tile centred on it. Units on one side
+    of a tap is movement; a formation is not lopsided. The same reading mistake was sitting
+    in this function, one caller away.
+
+    So the step is split: one tick with the commands, snapshot, then the rest. The protocol
+    validates commands up front and tick-by-tick is the same battle as one multi-tick call,
+    which ``env.py`` already relies on and its tests check by state hash. The split is only
+    paid when there are commands.
     """
     before = {e.uid for e in engine.state().entities}
-    results = engine.step(commands, ticks)
-    created = [e for e in engine.state().entities if e.uid not in before]
+    if commands and ticks > 1:
+        results = engine.step(commands, 1)
+        created = [e for e in engine.state().entities if e.uid not in before]
+        engine.step([], ticks - 1)
+    else:
+        results = engine.step(commands, ticks)
+        created = [e for e in engine.state().entities if e.uid not in before]
 
     # Which (team, card_id) pairs are claimed by more than one ACCEPTED result in this
     # same step. Those cannot be attributed, and saying so is the whole point.

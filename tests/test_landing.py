@@ -227,3 +227,49 @@ def test_a_multi_unit_card_keeps_its_entities_and_refuses_a_single_position() ->
     assert land[0].y is None
     assert land[0].displacement is None
     assert "group" in land[0].reason
+
+
+def test_a_walking_unit_is_reported_where_it_LANDED_not_where_it_went() -> None:
+    """The reading mistake this function was one caller away from making.
+
+    Positions read after a whole decision's ticks are where a troop WALKED to, not where
+    it landed, and nothing about the number looks wrong. A building does not move, so the
+    defect is invisible in exactly the case the module was written for.
+
+    Graded by comparing a long step against a one-tick step for the same deploy, rather
+    than against a pinned coordinate: a literal would pin this engine's formation and go
+    red on any formation change, which is a different claim than the one being made here.
+    """
+    eng, idx = engine_with("Minions")
+    x, y = tap(9, 8)
+
+    eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+    eng.step([], 10)
+    _, short = landings(eng, [DeployCommand(team=0, hand_slot=0, x=x, y=y)], 1)
+
+    eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+    eng.step([], 10)
+    _, long_ = landings(eng, [DeployCommand(team=0, hand_slot=0, x=x, y=y)], 20)
+
+    if not short[0].entities or not long_[0].entities:
+        pytest.skip("the Minions tap was refused, so this measured nothing; a skip is not a pass")
+    at_landing = sorted((e.x, e.y) for e in short[0].entities)
+    reported = sorted((e.x, e.y) for e in long_[0].entities)
+    assert reported == at_landing, (
+        f"a 20-tick step reported {reported} and the deploy tick has them at {at_landing}. "
+        "The longer step is reading where the units walked to. That is the defect: it is "
+        "invisible for a building, which does not move, and a building is the case this "
+        "module was written for."
+    )
+    # Non-vacuity: if these units never move, the test above passes for the wrong reason.
+    eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+    eng.step([], 10)
+    before = {e.uid for e in eng.state().entities}
+    eng.step([DeployCommand(team=0, hand_slot=0, x=x, y=y)], 1)
+    mine = [e.uid for e in eng.state().entities if e.uid not in before]
+    eng.step([], 60)
+    after = sorted((e.x, e.y) for e in eng.state().entities if e.uid in mine)
+    assert after != at_landing, (
+        "these units did not move at all over 60 further ticks, so the comparison above "
+        "could not have told a landing from a walk. Use a card that walks."
+    )
