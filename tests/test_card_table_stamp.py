@@ -27,6 +27,14 @@ PLANTS (each on a green baseline)
     ignore the engine's own hash; state the file's vintage beside an engine hash the
     file does not have; the mock hashing card names only; the recorder not stamping;
     a card-table header field with no default.
+
+HOW THESE PLANTS DIFFER FROM THE ONES ELSEWHERE IN THIS SUITE, since both conventions are
+in use here and the difference matters. Ten other files carry plants as TESTS -- fifty-odd
+of them, `test_plant_*` -- which re-verify on every run that a check still bites. The list
+above is a DATED RECORD: each plant was run once, on a green baseline, and each maps to a
+test below that would catch it. So the tests are the standing enforcement and the list is
+the evidence that they were once shown to bite, not a property anything re-checks. If one
+of these tests loses its sensitivity, nothing here will say so.
 """
 
 from __future__ import annotations
