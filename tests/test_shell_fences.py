@@ -101,13 +101,28 @@ def test_the_guard_runs_standalone_on_a_fresh_clone() -> None:
     )
 
 
-def test_the_checker_is_the_vendored_copy_and_not_a_local_rewrite() -> None:
+def test_the_vendored_checker_still_has_the_shape_of_a_copy() -> None:
     """It is a copy on purpose, and a copy that has drifted is worth knowing about.
 
     This cannot compare against the original, which lives outside this repo and is not
     present in a clone. What it can do is hold the copy to the shape that makes it a
     copy: no imports beyond the standard library, so it runs anywhere, and the self-test
     and entry point still present so a reader can run it.
+
+    RENAMED 2026-09-23, on docs' point. It was
+    ``test_the_checker_is_the_vendored_copy_and_not_a_local_rewrite``, which reads as an
+    identity check to anyone scanning pytest output -- and pytest shows names, not
+    docstrings. The body never could prove identity; the docstring said so and the name
+    did not. Now the name claims what the body proves.
+
+    AND THE LIMIT IS NOT HYPOTHETICAL. On 2026-09-23 this copy was found 49 lines behind
+    the original: it was correct when vendored at 22:03 and the original gained a rule at
+    22:22. All three vendored copies were identical to EACH OTHER and all three were
+    behind, so no amount of comparing copies could have seen it -- three copies agreeing
+    is not confirmation when the thing they agree with is each other. The source side
+    already knew: ``vendored_guard_drift.py`` had named all three as DRIFTED, with both
+    hashes, and nobody read it. Running a check and not reading its output is the same
+    failure as not having the check.
     """
     text = CHECKER.read_text(encoding="utf-8")
     assert "def selftest(" in text, "the vendored checker has lost its self-test"

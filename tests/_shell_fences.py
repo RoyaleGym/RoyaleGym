@@ -108,8 +108,49 @@ def control_characters(text: str, name: str) -> list[str]:
     return out
 
 
+COUNT = re.compile(r"\b(\d[\d,]*)\s+(passed|failed|skipped|xfailed|tests?\b)", re.I)
+SUITE_NAMED = re.compile(
+    r"pytest|cargo\s+test|collect-only|npm\s+test|go\s+test|"
+    r"(python|rust|fast|full|cargo)\s+suite|suite\s+(is|has|gives)",
+    re.I,
+)
+
+
+def counts_without_a_suite(text: str, name: str) -> list[str]:
+    """A test count that never says WHICH suite it counted.
+
+    RoyaleSim's Rust suite was red for four hours on 2026-09-22 while four sessions, this one
+    included, quoted "179 passed, 10 skipped, nothing failing" at each other. Every one of those
+    figures was measured and correct. Every one of them was the PYTHON suite, and none said so, on
+    pages about a Rust engine. Nothing was false and the reader would have been wrong.
+
+    So this refuses the SHAPE, the same way the fence rules do. It does not know whether 179 is
+    right and never will. It asks only whether a number sitting next to "passed", "failed",
+    "skipped" or "tests" has a suite named or a command shown near it.
+
+    WHAT IT CANNOT DO, and these are the reasons it is a partial gate rather than a solution:
+    it cannot tell whether the count is current, it cannot tell whether the suite named is the one
+    that actually ran, and it cannot tell a real count from an example of one. It converts this
+    defect from "somebody has to notice" into "somebody has to override", which is the whole claim.
+    """
+    out = []
+    for m in COUNT.finditer(text):
+        window = text[max(0, m.start() - 600):m.end() + 300]
+        if SUITE_NAMED.search(window):
+            continue
+        if "```" in window or "    " in window.split("\n")[0]:
+            continue
+        line = text[:m.start()].count(chr(10)) + 1
+        out.append(
+            f"{name}:{line}: '{m.group(0)}' names no suite. Say which suite it counted, or show "
+            f"the command, within a few lines. A count that does not say what it counted reads as "
+            f"all of them."
+        )
+    return out
+
+
 def check_text(text: str, name: str = "<text>") -> list[str]:
-    problems = control_characters(text, name)
+    problems = control_characters(text, name) + counts_without_a_suite(text, name)
     for pos, tag, body in fences(text):
         if tag in PROSE_TAGS:
             continue
@@ -176,6 +217,14 @@ SELFTEST = [
     ("a non-breaking space", "## Install\n\nRun the" + chr(0xA0) + "command.\n", True),
     # The rule must not fire on ordinary text, or nobody will keep it switched on.
     ("ordinary accented prose passes", "## Install\n\nNaïve café résumé.\n", False),
+    # The instance nearly missed tonight: a count on a page about a Rust engine, no suite named.
+    ("a count with no suite named", "## Status\n\nIt gives 108 passed on a clean clone.\n", True),
+    ("a count that names its suite passes",
+     "## Status\n\nThe Python suite gives 179 passed, 10 skipped.\n", False),
+    ("a count beside its command passes",
+     "## Status\n\n```\npytest -q\n```\n\nThat prints 179 passed, 10 skipped.\n", False),
+    # Must not fire on numbers that are not test counts, or it becomes noise and gets switched off.
+    ("a ledger count is not a test count", "## Ledger\n\nAll 155 carry a status.\n", False),
 ]
 
 
