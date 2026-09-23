@@ -109,7 +109,30 @@ BOARDS = {
         },
         None,
     ),
+    # A board with no USABLE gap, which is a different thing from a full one and is the
+    # only shape that reaches the engine's refusal. Measured 2026-09-22: buildings on a
+    # 3-tile lattice leave holes that fit nothing, and the engine's ring search runs out,
+    # so EVERY tap is refused. Scattered buildings do not do this however many there are,
+    # because the space between them still fits another building and relocation finds it.
+    # Without this board the tests below only ever saw boards where relocation succeeds.
+    "no usable gap": (
+        {"spawns": [("Cannon", t, tx, ty) for t in (BLUE, RED) for tx in range(1, 17, 3)
+                    for ty in range(1, 14, 3)]},
+        None,
+    ),
 }
+
+
+def engine_accepts_any(engine: RustEngine, team: int, card: str) -> bool:
+    """Whether the engine will build ``card`` anywhere at all for ``team``."""
+    a = engine.arena()
+    t = a.subtile
+    return any(
+        engine.building_placement(team, card, *to_engine(a, team, tx * t + t // 2, ty * t + t // 2))
+        is not None
+        for ty in range(a.tiles_y)
+        for tx in range(a.tiles_x)
+    )
 
 
 def build(engine: RustEngine, card: str, name: str) -> None:
@@ -134,6 +157,15 @@ def test_every_tap_the_arm_offers_puts_the_building_on_the_tile_that_was_tapped(
     state = engine.state()
     for team in (BLUE, RED):
         taps = offered(honest, state, team)
+        if not engine_accepts_any(engine, team, card):
+            # The board has no usable gap, so the engine builds nothing anywhere. The
+            # right mask is then EMPTY, and a mask offering anything here would be
+            # offering a tap the engine refuses.
+            assert not taps, (
+                f"{SEAT[team]} {card} on {name!r}: the engine builds nothing anywhere on "
+                f"this board, and the arm still offered {len(taps)} taps"
+            )
+            continue
         assert taps, f"{SEAT[team]} was offered no {card} tap at all on {name!r}"
         broken = {t: landing_tile(engine, team, card, *t) for t in taps}
         moved = {t: got for t, got in broken.items() if got != t}
@@ -265,3 +297,32 @@ def test_a_building_card_is_what_these_boards_are_made_of(engine) -> None:
     cards = {c.name: c for c in engine.cards()}
     for name in BUILDINGS:
         assert cards[name].placement == Placement.BUILDING, f"{name} is not a building card"
+
+
+@pytest.mark.parametrize("card", BUILDINGS)
+def test_the_board_set_spans_the_case_that_matters(engine, card) -> None:
+    """Vacuity guard on the BOARDS above, and it caught a real gap in them.
+
+    Every test in this file is parametrised over BOARDS, so what those boards fail to
+    contain, nothing here checks. Until 2026-09-22 all four were boards where relocation
+    always succeeds: the one called "a crowded own half" refused exactly as many taps as
+    the EMPTY board, because the refusals on both are the enemy half and nothing else. So
+    the arm was only ever exercised where every tap builds something.
+
+    The distinction is not how full a board is, it is whether a gap is USABLE. Buildings
+    scattered at random leave space another building fits into, and the engine's search
+    finds it however many are standing. A regular lattice leaves holes that fit nothing.
+
+    So the set has to contain both: a board the engine can always build on, and a board
+    it can build nothing on. If a future edit drops the second, this says so rather than
+    letting the file go quietly back to testing the easy half.
+    """
+    spans = {}
+    for name in BOARDS:
+        build(engine, card, name)
+        spans[name] = engine_accepts_any(engine, BLUE, card)
+    assert any(spans.values()), f"{card}: no board lets the engine build anything"
+    assert not all(spans.values()), (
+        f"{card}: the engine can build on EVERY board here, so nothing exercises a tap "
+        f"it refuses. Boards and whether they accept: {spans}"
+    )
