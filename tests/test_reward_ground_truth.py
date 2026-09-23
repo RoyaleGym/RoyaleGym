@@ -115,6 +115,60 @@ def make_engine(kind: str):
     return RustEngine() if kind == "rust" else MockEngine()
 
 
+#: The tower slots in the order ``MatchSetup.tower_hp`` wants them.
+SCENARIO_SLOTS = (TowerSlot.KING, TowerSlot.LEFT, TowerSlot.RIGHT)
+
+#: Starting tower hp as a FRACTION of each tower's own maximum, and the uniformity is the
+#: whole point. Until 2026-09-23 these were a MIXTURE: two absolute subtractions and a
+#: tracking full for the leader, a tracking full, a HALVING and an absolute subtraction for
+#: the trailer. Reading ``full`` live from the engine is correct and is what lets the
+#: scenario follow a ladder change at all; mixing the two kinds of offset is what made it
+#: follow UNEVENLY.
+#:
+#: A rebuild lowered the ladder (princess 3584 -> 3052, king 6144 -> 4824). A halving
+#: tracks the maximum and a subtraction does not, so the leader's target lost 266 hp while
+#: the trailer's two targets lost 532 each. Fixed window, fixed spawns: the race moved
+#: toward the trailer, for every seed, because it is arithmetic and not luck. That is what
+#: the ``rust-red-leads`` expected failure was, and it was recorded as a tower-hp TIEBREAK
+#: having moved -- a cause that named ``overtime_tiebreak``, which is consulted only when
+#: OVERTIME runs out level and which this scenario, ending at regulation, never reaches. A
+#: reader following that reason landed in code that could not be wrong.
+#:
+#: The fractions are the tuned 15.535.29 values exactly, so the scenario is unchanged on the
+#: table it was built for and now scales with any other.
+LEADER_HP = (Fraction(5844, 6144), Fraction(2884, 3584), Fraction(1))
+TRAILER_HP = (Fraction(1), Fraction(1, 2), Fraction(3484, 3584))
+
+#: What the scenario actually rests on: the leader's target must stay materially easier
+#: than the trailer's easiest, or the leader does not take its crown inside the window.
+#: Asserted as a RATIO because a ratio is what the fractions above hold constant across
+#: ladders -- 0.621 on both the old and the new one, against 0.649 under the old mixed
+#: scheme, which is the drift that flipped the battle.
+#:
+#: This is a NECESSARY condition and not a proof of the outcome: it says the scenario still
+#: poses the race it was built to pose, not that the leader wins it. Its value is that the
+#: next ladder change moves a number with both hp values printed beside it, instead of
+#: flipping a battle for a reason someone has to reconstruct.
+MARGIN_BAND = (Fraction(60, 100), Fraction(64, 100))
+
+
+def check_scenario_margin(tower_hp: list[list[int]], leader: int, trailer: int) -> None:
+    """Refuse a board that no longer poses the race, and say by how much it is off."""
+    left, right = 1, 2  # positions in SCENARIO_SLOTS
+    leader_target = tower_hp[trailer][left]
+    trailer_target = min(tower_hp[leader][left], tower_hp[leader][right])
+    assert trailer_target > 0, "the trailer has no target, so there is no race to pose"
+    ratio = Fraction(leader_target, trailer_target)
+    lo, hi = MARGIN_BAND
+    assert lo <= ratio <= hi, (
+        f"the scenario no longer poses its race: the leader must destroy {leader_target} hp "
+        f"and the trailer's easiest target is {trailer_target} hp, a ratio of "
+        f"{float(ratio):.3f} outside [{float(lo):.2f}, {float(hi):.2f}]. The tower ladder "
+        "has moved and the offsets above no longer track it together. Re-derive the "
+        "fractions from the current ladder rather than widening this band."
+    )
+
+
 def scenario_setup(engine, leader: int) -> MatchSetup:
     """The battle in the module doc, laid out in the leader's own frame."""
     trailer = 1 - leader
@@ -127,15 +181,14 @@ def scenario_setup(engine, leader: int) -> MatchSetup:
     full = {(e.team, e.tower_slot): e.max_hp for e in probe.entities if e.kind in TOWERS}
     tower_hp = [[0, 0, 0], [0, 0, 0]]
     tower_hp[leader] = [
-        full[(leader, TowerSlot.KING)] - 300,
-        full[(leader, TowerSlot.LEFT)] - 700,
-        full[(leader, TowerSlot.RIGHT)],
+        int(full[(leader, slot)] * frac)
+        for slot, frac in zip(SCENARIO_SLOTS, LEADER_HP, strict=True)
     ]
     tower_hp[trailer] = [
-        full[(trailer, TowerSlot.KING)],
-        full[(trailer, TowerSlot.LEFT)] // 2,
-        full[(trailer, TowerSlot.RIGHT)] - 100,
+        int(full[(trailer, slot)] * frac)
+        for slot, frac in zip(SCENARIO_SLOTS, TRAILER_HP, strict=True)
     ]
+    check_scenario_margin(tower_hp, leader, trailer)
 
     def unit(team, name, tx, ty):
         x, y = to_engine(arena, team, int(tx * tile), int(ty * tile))
@@ -408,16 +461,51 @@ CASES = [
 # xfail that passes is a failure, which is what told us it had landed, and that is the
 # behaviour to keep for the next one.
 #
-# RED_LEADS_OUTCOME. The scripted scenario is not a mirror of itself (on MockEngine the
-# Blue-leader battle ends at tick 3600 and the Red-leader one at 4182), so "the leader
-# wins" is a claim about this scenario and not a symmetry property. On the compiled
-# engine the Red-leader battle now ends at regulation with Blue ahead, and it does so for
-# every reset seed 0..9, so it is structural rather than luck. The likely cause is the
-# tower-maximum fix of the same rebuild moving a tower-hp tiebreak. Reported to sim.
-# The scenario needs a leader advantage that does not rest on a tiebreak.
+# RED_LEADS_OUTCOME. RESOLVED 2026-09-23, and the recorded CAUSE was wrong in a way worth
+# keeping, because it sent readers somewhere nothing could be wrong.
+#
+# The allowance said "the leader's advantage rests on a tower-hp TIEBREAK that moved".
+# `overtime_tiebreak` is consulted only when OVERTIME runs out with crowns level, and this
+# scenario's own note says the battle ends at REGULATION -- so the named path is one it
+# never executes. A reader following that reason arrives at code that is not wrong and
+# cannot be made to look wrong.
+#
+# The mechanism was arithmetic in this fixture. The tower hp mixed ABSOLUTE offsets with a
+# PROPORTIONAL one, so when a rebuild lowered the ladder the two seats' targets softened by
+# different amounts -- the leader's by 266 hp, the trailer's by 532 each -- and the race
+# moved toward the trailer for every seed. See LEADER_HP / TRAILER_HP above: the offsets are
+# now one kind throughout, and `check_scenario_margin` asserts the derived ratio the race
+# rests on, so the next ladder change moves a printed number instead of flipping a battle.
+#
+# The old note half-reached it: "the scenario needs a leader advantage that does not rest on
+# a tiebreak." The sharper form is that it must not mix absolute with proportional offsets,
+# and reading `full` live from the engine was never the fault -- that is what lets the
+# scenario follow a ladder at all.
+#
+# Diagnosed by sim, verified independently by the director.
+#
+# THE REPAIR LANDED AND THE OUTCOME STILL DOES NOT HOLD, so the allowance stays -- with a
+# reason that now says what is known rather than what was guessed. Measured on the
+# 2026-09-23 build with the fractions above in place:
+#
+#     leader=Blue   winner=Blue   crowns [1, 0]   tick 3600     <- the leader wins
+#     leader=Red    winner=Blue   crowns [2, 1]   tick 3600     <- the TRAILER takes two
+#
+# The mixed-offset defect was real and is fixed: the board now tracks any ladder uniformly
+# and `check_scenario_margin` holds the race ratio at 0.6216 where the old scheme drifted
+# to 0.649. It was not the whole cause. What is left is a SEAT asymmetry -- the scenario
+# has never been a mirror of itself, and with Red leading the trailer now takes two crowns
+# rather than the leader failing to take one, which is a larger effect than a softened
+# ladder can explain and is the fact worth chasing next.
+#
+# Keeping it marked is the honest state: the fixture is repaired, the scenario is not, and
+# saying otherwise would be a green test standing for a claim nobody checked.
 RED_LEADS_REASON = (
-    "the scripted Red-leader battle no longer ends with Red ahead on the compiled engine, "
-    "for any reset seed; the leader's advantage rests on a tower-hp tiebreak that moved"
+    "the scripted Red-leader battle ends with Blue ahead on the compiled engine. The "
+    "fixture's mixed absolute/proportional tower hp is FIXED and was not the whole cause: "
+    "with Red leading the TRAILER takes two crowns (2-1 at tick 3600), which a softened "
+    "ladder does not explain. The scenario is not a mirror of itself; the seat asymmetry "
+    "is the open part"
 )
 RED_LEADS_XFAIL = pytest.mark.xfail(strict=True, raises=AssertionError, reason=RED_LEADS_REASON)
 
