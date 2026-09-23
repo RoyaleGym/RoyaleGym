@@ -92,6 +92,7 @@ from .protocol import (
     Placement,
     TowerSlot,
     to_engine,
+    to_own,
 )
 
 NOOP = 0
@@ -372,13 +373,58 @@ class ActionParser(ABC):
         return NOOP
 
 
+#: What a BUILDING tap is allowed to do, as an action-space choice rather than a rule.
+#:
+#: ``any_tap`` is the shipped default and the engine's own answer: every tap the engine
+#: accepts is offered, and the engine moves the building when its box does not fit where
+#: you tapped.
+#:
+#: ``taps_where_the_building_stays`` offers only the taps that put the building on the
+#: tile that was tapped. Measured 2026-09-22 on the compiled engine, both seats, a board
+#: with buildings and towers standing: of the 240 tiles the default offers a Cannon, 124
+#: put it on a tile the agent did not choose, and 73 of 240 for a Tesla. So under the
+#: default a policy asks for one cell and gets another more often than not, and nothing
+#: in its observation says which taps are which.
+#:
+#: This arm is lossless over the boards it was checked on: every landing tile reachable
+#: by any tap is also reachable by a tap that stays put, so it removes aliases and no
+#: placement. ``tests/test_building_tap_arms.py`` checks that per board rather than
+#: trusting the sweep, because it is a property of the board and not of the engine.
+BUILDING_TAP_ARMS = ("any_tap", "taps_where_the_building_stays")
+
+
 class GridActionParser(ActionParser):
-    """Discrete(1 + HAND_SIZE * ny * nx) over a regular grid of placement points."""
+    """Discrete(1 + HAND_SIZE * ny * nx) over a regular grid of placement points.
+
+    ``buildings`` picks what a building tap means; see ``BUILDING_TAP_ARMS``. It changes
+    the ACTION SPACE and not the rules, so two parsers with different arms describe the
+    same battles and a policy trained under one is not comparable to a policy trained
+    under the other without saying so.
+    """
 
     pitch_div = 1
 
+    def __init__(self, buildings: str = "any_tap") -> None:
+        if buildings not in BUILDING_TAP_ARMS:
+            raise ValueError(f"buildings must be one of {BUILDING_TAP_ARMS}, not {buildings!r}")
+        self.buildings = buildings
+        self._engine: Engine | None = None
+
     def bind(self, engine: Engine) -> None:
         super().bind(engine)
+        if self.buildings == "taps_where_the_building_stays":
+            # Where a building LANDS is the engine's rule, and asking the engine is the
+            # point: working it out here would be a second copy of that rule, drifting
+            # from the first. An engine that cannot answer is refused now rather than
+            # quietly behaving like the default arm.
+            if not hasattr(engine, "building_placement"):
+                raise NotImplementedError(
+                    f"{type(engine).__name__} cannot say where a building would land, so "
+                    f"the {self.buildings!r} arm cannot be built on it. It needs a "
+                    "building_placement(team, card_name, x, y) method returning the "
+                    "landing, or None when the tap is refused."
+                )
+            self._engine = engine
         self.nx = self.arena.tiles_x * self.pitch_div
         self.ny = self.arena.tiles_y * self.pitch_div
         self.pitch = self.arena.subtile // self.pitch_div
@@ -399,7 +445,11 @@ class GridActionParser(ActionParser):
         return (HAND_SIZE, self.ny, self.nx)
 
     def config(self) -> dict[str, object]:
-        return {"pitch_div": self.pitch_div, "n_actions": self.n_actions}
+        return {
+            "pitch_div": self.pitch_div,
+            "n_actions": self.n_actions,
+            "buildings": self.buildings,
+        }
 
     def encode(self, slot: int, x_idx: int, y_idx: int) -> int:
         return 1 + slot * self.nx * self.ny + y_idx * self.nx + x_idx
@@ -427,8 +477,39 @@ class GridActionParser(ActionParser):
             grid = self.oracle.point_grid(state, team, card, self.pitch_div)
             if team == RED:
                 grid = grid[::-1, ::-1]  # engine frame -> Red's own frame
+            if self._engine is not None and card.placement == Placement.BUILDING:
+                grid = grid & self.stays_put(team, card)
             mask[1 + slot * per : 1 + (slot + 1) * per] = grid.reshape(-1)
         return mask
+
+    def stays_put(self, team: int, card: CardInfo) -> np.ndarray:
+        """Own-frame grid: True where tapping puts ``card`` on the tile that was tapped.
+
+        Asks the engine, once per cell, where the building would land. It reads the
+        engine's CURRENT battle, which is the state the caller is masking for; a parser
+        handed a snapshot of some other battle would get a mask for the live one. The
+        env masks the battle it just stepped, so this holds there, and
+        ``tests/test_building_tap_arms.py`` grades the mask against the engine rather
+        than assuming it.
+
+        Not memoised. Measured 2026-09-22: 0.7 ms for a whole 576-tile grid against
+        0.05 ms for the memoised legality mask, on an iteration whose collection is a
+        fifth of its time. A memo here would have to key on every building and tower on
+        the board, which the legality memo no longer does, and a memo keyed on too
+        little is worse than none.
+        """
+        assert self._engine is not None
+        out = np.zeros((self.ny, self.nx), dtype=bool)
+        pitch, half = self.pitch, self.pitch // 2
+        for yi in range(self.ny):
+            for xi in range(self.nx):
+                x, y = to_engine(self.arena, team, xi * pitch + half, yi * pitch + half)
+                landed = self._engine.building_placement(team, card.name, x, y)
+                if landed is None:
+                    continue
+                ox, oy = to_own(self.arena, team, landed[0], landed[1])
+                out[yi, xi] = (ox // self.arena.subtile, oy // self.arena.subtile) == (xi, yi)
+        return out
 
     def parse(self, action: int, state: BattleState, team: int) -> DeployCommand | None:
         action = int(action)

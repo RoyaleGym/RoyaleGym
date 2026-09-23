@@ -613,6 +613,28 @@ class RustEngine:
     def check_deploy(self, command: DeployCommand) -> int:
         return self._status(self._battle.check_deploy(*self._wire(command)))
 
+    def building_placement(
+        self, team: int, card_name: str, x: int, y: int
+    ) -> tuple[int, int, tuple[int, int, int, int]] | None:
+        """Where a building tapped at ENGINE-frame ``(x, y)`` would end up, or None.
+
+        ``(centre_x, centre_y, (x0, y0, x1, y1))``, engine frame, subtiles. A tap whose
+        box does not fit is not refused: the engine moves the building to the nearest
+        place it does fit, so the centre this returns is often not the point tapped.
+        None means the tap is refused outright, which a tap outside the arena, on water,
+        on a no-deploy cell or outside the card's territory still is.
+
+        This is on the engine because WHERE a building lands is the engine's rule.
+        Working it out here would be a second copy of that rule, and the two would part.
+        ``action.GridActionParser`` asks it for the ``taps_where_the_building_stays``
+        arm, and an engine that cannot answer refuses that arm rather than pretending.
+        """
+        got = self._battle.building_placement(int(team), str(card_name), int(x), int(y))
+        if got is None:
+            return None
+        cx, cy, box = got
+        return int(cx), int(cy), (int(box[0]), int(box[1]), int(box[2]), int(box[3]))
+
     def step(self, commands: Sequence[DeployCommand], ticks: int) -> list[DeployResult]:
         if ticks < 0:
             raise ValueError("ticks must be >= 0")
