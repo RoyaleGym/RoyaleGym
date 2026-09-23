@@ -194,6 +194,17 @@ accounting, which is the one outcome that creates no new discrepancy between the
 **Default OFF until train's policy-head arm has run.** Flipping an observation shape under
 a paired comparison invalidates both arms and looks like a result.
 
+**FLIPPING THE FLAG IS A TWO-REPO CHANGE, NOT A CONFIG EDIT** (learn). A new observation
+KEY is the right storage decision and it is not free on the learner's side, where a new
+float channel inside `spatial` would have cost nothing. It touches four things there: the
+codec learns a third key, since it reads `spatial` and `vector` and derives `mask_planes`
+from the mask and has no general any-key path; the buffer's row layout and `row_bytes`
+change, and that is the number the shared-memory rectangle is sized from; `ObsBatch` gains
+a field, and so does every site that constructs one; and the stem does the lookup and
+concatenates. So the flag is off by default on BOTH sides, and turning it on is a
+coordinated change rather than a switch. The cost is worth paying: the alternative was a
+card id stored as a scaled half, which fails silently, and silent is worse than work.
+
 
 ## 4. The flat `vector`, float32 `[12n + 37]` (fair)
 
