@@ -208,6 +208,10 @@ def board_setup(engine: Engine, board: str, decks: list[list[int]]) -> MatchSetu
         elixir_milli=FULL_ELIXIR,
         tower_hp=tower_hp,
         spawns=spawns,
+        # Past the opening deploy lockout, or every tap below answers TOO_EARLY and these
+        # tests grade a timing rule instead of a footprint one. Read from the engine: 0 is
+        # a real calibration arm, so a literal would be wrong on a build without a lockout.
+        start_tick=engine.rules().deploy_lockout_ticks,
     )
 
 

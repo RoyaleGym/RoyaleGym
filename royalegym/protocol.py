@@ -269,6 +269,13 @@ class DeployStatus(enum.IntEnum):
     OCCUPIED = 9
     GAME_OVER = 10
     DUPLICATE_TEAM = 11
+    # The battle's opening deploy lockout (`match.DEPLOY_LOCKOUT_TICKS`, 90 ticks as of
+    # 2026-09-23): a command before it is refused. The VALUE is not the engine's reason
+    # index -- that is 13 -- because `RustEngine` maps reasons to statuses BY NAME, and
+    # these values are persisted in recorded traces, so they are appended rather than
+    # renumbered. Added after a rebuild returned the reason with no exported name and
+    # every consumer deploying before tick 90 died in `list index out of range`.
+    TOO_EARLY = 12
 
 
 class Winner(enum.IntEnum):
@@ -794,6 +801,17 @@ class DeployRules(msgspec.Struct, frozen=True):
     # building card different legal cells on the same board. Trailing and defaulted:
     # an engine that states nothing is the pre-relocation one.
     illegal_building_tap: str = "refuse"
+    # Ticks from the start of a match during which the engine refuses EVERY deploy
+    # (`match.DEPLOY_LOCKOUT_TICKS`, `DeployStatus.TOO_EARLY`). It is here because this
+    # struct is the rules the mask and the engine must share, and a lockout the mask does
+    # not know about is precisely a rule they do not share: the mask offers every card,
+    # the engine refuses all of them, and a policy is penalised for obeying its own mask
+    # on the opening steps of every battle.
+    #
+    # Trailing and defaulted to 0, which is BOTH "an engine that states nothing" and a
+    # real arm -- calibration keeps 0 runnable as the behaviour this engine used to have,
+    # so the value is read rather than assumed and 0 disables the rule honestly.
+    deploy_lockout_ticks: int = 0
 
     @classmethod
     def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
@@ -815,6 +833,12 @@ class DeployRules(msgspec.Struct, frozen=True):
             raise NotImplementedError(
                 f"ILLEGAL_TAP={illegal_tap!r}: only {sorted(ILLEGAL_BUILDING_TAP)} are implemented"
             )
+        try:
+            lockout = int(calibration.value("match.DEPLOY_LOCKOUT_TICKS"))
+        except KeyError:
+            lockout = 0
+        if lockout < 0:
+            raise ValueError(f"DEPLOY_LOCKOUT_TICKS={lockout}: a lockout cannot be negative")
         subtile = calibration.int("representation.SUBTILE_PER_TILE")
         sizes = load_tower_no_deploy_sizes(cards_path)
 
@@ -834,6 +858,7 @@ class DeployRules(msgspec.Struct, frozen=True):
             princess_no_deploy_size=in_subtiles(PRINCESS_TOWER_NAME),
             footprint_model=model,
             illegal_building_tap=illegal_tap,
+            deploy_lockout_ticks=lockout,
         )
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:

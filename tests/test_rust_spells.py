@@ -53,6 +53,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _lockout import lockout_ticks
 from royalegym import rust_engine as rust_engine_module
 from royalegym.action import PlacementOracle
 from royalegym.done_condition import GameOverCondition, StepLimitCondition
@@ -160,6 +161,12 @@ SPELL_DECKS = [
 ]
 
 
+#: Ticks a match refuses every deploy for. Battles here start past it, or Rust answers
+#: TOO_EARLY where Mock answers a placement verdict and the comparison grades timing
+#: instead of territory. Read from an engine because 0 is a real calibration arm.
+LOCKOUT = lockout_ticks()
+
+
 def spell_setup(arena, tower_hp) -> MatchSetup:
     s = arena.subtile
     w, h = arena.width, arena.height
@@ -168,6 +175,7 @@ def spell_setup(arena, tower_hp) -> MatchSetup:
         shuffle=ShuffleMode.NONE,
         elixir_milli=[10000, 10000],
         tower_hp=tower_hp,
+        start_tick=LOCKOUT,
         spawns=[
             # Buildings on both sides (footprints the Log ignores and troops may not use):
             # a Cannon on a tile corner on each side, a Tesla on a tile centre and on a

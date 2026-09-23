@@ -35,6 +35,21 @@ from royalegym.landing import landings
 from royalegym.protocol import DeployCommand, DeployStatus, MatchSetup, derived_cards_vintage
 from royalegym.rust_engine import core_available
 
+
+def battle_setup(engine, idx: int) -> MatchSetup:
+    """One card in every slot, starting PAST the opening deploy lockout.
+
+    A match refuses every command for its first `deploy_lockout_ticks` ticks, so a battle
+    beginning at 0 answers TOO_EARLY to every tap here and these tests would grade a timing
+    rule rather than the one they are about. Read from the engine: 0 is a real calibration
+    arm, so a literal 90 would be wrong on a build without a lockout.
+    """
+    return MatchSetup(
+        decks=[[idx] * 8] * 2,
+        elixir_milli=[10000] * 2,
+        start_tick=engine.rules().deploy_lockout_ticks,
+    )
+
 pytestmark = pytest.mark.skipif(
     not core_available(), reason="the compiled engine is not built; a skip here is not a pass"
 )
@@ -80,7 +95,7 @@ def test_a_deploys_units_stand_where_they_did(card: str) -> None:
     if card not in names:
         pytest.skip(f"this catalogue has no {card!r}; a skip here is not a pass")
     idx = names.index(card)
-    engine.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+    engine.reset(seed=0, setup=battle_setup(engine, idx))
     engine.step([], 10)
     x, y = 9 * TILE + TILE // 2, 8 * TILE + TILE // 2
     results, land = landings(engine, [DeployCommand(team=0, hand_slot=0, x=x, y=y)], 2)
@@ -119,7 +134,7 @@ def offsets_at(engine, idx: int, tx: int, ty: int = 8) -> tuple[tuple[int, int],
     """Sorted per-unit offsets from a tap at that tile centre, at the DEPLOY tick."""
     from royalegym.landing import landings
 
-    engine.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+    engine.reset(seed=0, setup=battle_setup(engine, idx))
     engine.step([], 10)
     x, y = tx * TILE + TILE // 2, ty * TILE + TILE // 2
     results, land = landings(engine, [DeployCommand(team=0, hand_slot=0, x=x, y=y)], 1)

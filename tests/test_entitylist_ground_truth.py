@@ -71,6 +71,9 @@ def fresh(engine, seed=5, tower_hp=None, names=DECK_NAMES):
             shuffle=ShuffleMode.NONE,
             elixir_milli=[100000, 100000],
             tower_hp=tower_hp,
+            # Past the opening deploy lockout, or every play() below is refused and the
+            # rows this file grades are never produced.
+            start_tick=engine.rules().deploy_lockout_ticks,
         ),
     )
     return cards

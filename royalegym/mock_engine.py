@@ -358,9 +358,18 @@ class MockEngine:
         self.calibration = cal
         self._arena = Arena.load(cal, arena_path)
         # Say what this engine does, not what the ledger describes: it refuses a
-        # building tap it cannot honour, having no box to move (``FOOTPRINT_MODEL``).
+        # building tap it cannot honour, having no box to move (``FOOTPRINT_MODEL``),
+        # and it has no opening deploy lockout, accepting a command at tick 0.
+        #
+        # The lockout override matters because the MASK reads this field. Left at the
+        # ledger's 90 it would describe a rule this engine does not enforce, and the mask
+        # would hide ninety ticks of legal actions from every Mock-backed battle -- the
+        # same mask/engine disagreement the field exists to prevent, pointing the other
+        # way. A rule that is reported must be the rule that is applied.
         self._rules = msgspec.structs.replace(
-            DeployRules.load(cal), illegal_building_tap=ILLEGAL_BUILDING_TAP
+            DeployRules.load(cal),
+            illegal_building_tap=ILLEGAL_BUILDING_TAP,
+            deploy_lockout_ticks=0,
         )
         g = load_globals_csv()
 

@@ -22,6 +22,21 @@ from royalegym.landing import landings
 from royalegym.protocol import DeployCommand, DeployResult, DeployStatus, MatchSetup
 from royalegym.rust_engine import core_available
 
+
+def battle_setup(engine, idx: int) -> MatchSetup:
+    """One card in every slot, starting PAST the opening deploy lockout.
+
+    A match refuses every command for its first `deploy_lockout_ticks` ticks, so a battle
+    beginning at 0 answers TOO_EARLY to every tap here and these tests would grade a timing
+    rule rather than the one they are about. Read from the engine: 0 is a real calibration
+    arm, so a literal 90 would be wrong on a build without a lockout.
+    """
+    return MatchSetup(
+        decks=[[idx] * 8] * 2,
+        elixir_milli=[10000] * 2,
+        start_tick=engine.rules().deploy_lockout_ticks,
+    )
+
 pytestmark = pytest.mark.skipif(
     not core_available(), reason="the compiled engine is not built; a skip here is not a pass"
 )
@@ -40,7 +55,7 @@ def engine_with(card_name: str):
             f"this catalogue has no {card_name!r}; a skip here is not a pass, it means the "
             "card table changed and this test needs a different card"
         )
-    eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000, 10000]))
+    eng.reset(seed=0, setup=battle_setup(eng, idx))
     eng.step([], 10)
     return eng, idx
 
@@ -58,7 +73,7 @@ def test_a_relocated_building_reports_where_it_stands_not_where_it_was_tapped() 
     eng, idx = engine_with("Cannon")
     for tx in range(18):
         for ty in range(1, 15):
-            eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+            eng.reset(seed=0, setup=battle_setup(eng, idx))
             eng.step([], 10)
             x, y = tap(tx, ty)
             _, land = landings(eng, [DeployCommand(team=0, hand_slot=0, x=x, y=y)], 2)
@@ -92,7 +107,7 @@ def test_a_tap_that_fits_is_reported_unmoved() -> None:
     unmoved = []
     for tx in range(18):
         for ty in range(1, 15):
-            eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+            eng.reset(seed=0, setup=battle_setup(eng, idx))
             eng.step([], 10)
             x, y = tap(tx, ty)
             _, land = landings(eng, [DeployCommand(team=0, hand_slot=0, x=x, y=y)], 2)
@@ -243,11 +258,11 @@ def test_a_walking_unit_is_reported_where_it_LANDED_not_where_it_went() -> None:
     eng, idx = engine_with("Minions")
     x, y = tap(9, 8)
 
-    eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+    eng.reset(seed=0, setup=battle_setup(eng, idx))
     eng.step([], 10)
     _, short = landings(eng, [DeployCommand(team=0, hand_slot=0, x=x, y=y)], 1)
 
-    eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+    eng.reset(seed=0, setup=battle_setup(eng, idx))
     eng.step([], 10)
     _, long_ = landings(eng, [DeployCommand(team=0, hand_slot=0, x=x, y=y)], 20)
 
@@ -262,7 +277,7 @@ def test_a_walking_unit_is_reported_where_it_LANDED_not_where_it_went() -> None:
         "module was written for."
     )
     # Non-vacuity: if these units never move, the test above passes for the wrong reason.
-    eng.reset(seed=0, setup=MatchSetup(decks=[[idx] * 8] * 2, elixir_milli=[10000] * 2))
+    eng.reset(seed=0, setup=battle_setup(eng, idx))
     eng.step([], 10)
     before = {e.uid for e in eng.state().entities}
     eng.step([DeployCommand(team=0, hand_slot=0, x=x, y=y)], 1)

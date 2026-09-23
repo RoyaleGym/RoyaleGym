@@ -44,7 +44,10 @@ pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERR
 #: Archer do not move at all. So this number changing again means a placement rule
 #: changed, and the per-slot breakdown says which card.
 PROOF = {
-    "01_one_battle.py": "legal moves on the first step: 1623 of 2305",
+    # The first step now offers only the no-op -- a match refuses every deploy for its
+    # opening ticks -- so the informative figure moved to the step where play opens. 1623
+    # is the same count as before; what changed is which step it describes.
+    "01_one_battle.py": "legal moves once play opens, on step 9: 1623 of 2305",
     "02_one_seat_against_a_bot.py": "against rush-left",
     "03_self_play_batch.py": "agent-episodes finished in 400 vector steps",
     "04_your_own_reward.py": "% of the signal",

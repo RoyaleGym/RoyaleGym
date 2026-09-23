@@ -511,6 +511,18 @@ class GridActionParser(ActionParser):
         mask[NOOP] = 1
         if state.game_over:
             return mask
+        # THE OPENING LOCKOUT, asked of the engine's rules rather than assumed. A match
+        # refuses every deploy for its first `deploy_lockout_ticks` ticks, and a mask that
+        # does not know that offers all four cards while the engine refuses all four --
+        # which is not a cosmetic disagreement. `IllegalActionPenalty` fires when a seat
+        # commands and nothing of its appears, so a policy would be punished for obeying
+        # its own mask on the opening steps of EVERY battle, and would have to learn from
+        # that penalty a rule the mask could simply have told it.
+        #
+        # 0 disables it, which is both the default for an engine that states nothing and a
+        # real calibration arm, so this needs no special case for MockEngine.
+        if state.tick < self.oracle.rules.deploy_lockout_ticks:
+            return mask
         player = state.players[team]
         per = self.nx * self.ny
         for slot, card_id in enumerate(player.hand):

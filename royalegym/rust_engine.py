@@ -766,6 +766,28 @@ class RustEngine:
         return team, slot, min(max(x, -1), lim_x), min(max(y, -1), lim_y)
 
     def _status(self, reason: int) -> int:
+        # A REASON THE ENGINE DID NOT EXPORT IS A VERSION MISMATCH, and it is worth one
+        # sentence rather than an IndexError. The table is built from the engine's own
+        # DEPLOY_REASONS, so a code past its end means the compiled engine grew a refusal
+        # whose NAME was not added to that list -- which happened on 2026-09-23, when a
+        # rebuild introduced the deploy lockout and returned reason 13 against 13 exported
+        # names. Every consumer deploying before tick 90 died in `list index out of range`,
+        # a message that names neither deploys nor lockouts.
+        #
+        # This REFUSES rather than falling back to a generic "refused". A fallback would let
+        # a policy read a verdict this wrapper cannot name, and the whole point of the enum
+        # is that a refusal says which rule refused it. Mapping an unknown code to a known
+        # status is inventing that answer.
+        if not 0 <= reason < len(self._status_of_reason):
+            known = ", ".join(_core.DEPLOY_REASONS)  # type: ignore[union-attr]
+            raise RuntimeError(
+                f"the engine returned deploy reason {reason}, past the "
+                f"{len(self._status_of_reason)} reasons it exports ({known}). The compiled "
+                f"engine (binary {engine_binary_digest()}, data {build_digest()}) has a "
+                "refusal this wrapper cannot name. Add the name to the engine's "
+                "DEPLOY_REASONS and the matching member to protocol.DeployStatus; do not "
+                "map it to an existing status, which would report a rule that did not fire."
+            )
         status = self._status_of_reason[reason]
         if status is None:
             raise RuntimeError(
@@ -890,7 +912,17 @@ def rotation_probe(engine: RustEngine, tiles: Sequence[tuple[int, int]] = PROBE_
             if not (0 < tx < arena.tiles_x and 0 < ty < arena.tiles_y // 2):
                 continue
             deck = [card.card_id] * HAND_SIZE * 2
-            engine.reset(_PROBE_SEED, MatchSetup(decks=[deck, deck], shuffle=0))
+            # Start past the opening deploy lockout, or every probe command is refused
+            # and the probe reports no asymmetry because it never placed anything --
+            # which reads exactly like a symmetric engine.
+            engine.reset(
+                _PROBE_SEED,
+                MatchSetup(
+                    decks=[deck, deck],
+                    shuffle=0,
+                    start_tick=engine.rules().deploy_lockout_ticks,
+                ),
+            )
             commands = []
             for team in TEAMS:
                 ex, ey = to_engine(arena, team, tx * tile, ty * tile)

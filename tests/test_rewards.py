@@ -46,6 +46,7 @@ from fractions import Fraction
 
 import pytest
 
+from _lockout import lockout_ticks
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
     BLUE,
@@ -64,6 +65,12 @@ from royalegym.reward import ElixirTradeReward
 from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 
 needs_rust = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+
+#: Ticks a match refuses every deploy for. These battles start past it: a reward that
+#: scores a PLAY needs the play to land, and at tick 0 every command is TOO_EARLY, so
+#: the terms below would be graded over an empty set of deploys. Read from an engine
+#: because 0 is a real calibration arm.
+LOCKOUT = lockout_ticks()
 
 TOWERS = (EntityKind.KING_TOWER, EntityKind.PRINCESS_TOWER)
 SCALE = 4.0
@@ -155,7 +162,10 @@ def test_a_spell_that_kills_nothing_still_costs_the_seat_that_cast_it(kind, burn
     archer = 1 - burner  # the other seat casts the cheaper spell
     deck = tbl.deck(SPELL_DECK)
     engine.reset(
-        1, MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE, elixir_milli=[10**7] * 2)
+        1, MatchSetup(
+            decks=[deck, deck], shuffle=ShuffleMode.NONE,
+            elixir_milli=[10**7] * 2, start_tick=LOCKOUT,
+        )
     )
 
     prev = engine.state()
@@ -194,6 +204,7 @@ def test_a_spell_that_kills_is_billed_for_the_cast_and_paid_for_the_kill(kind, b
         1,
         MatchSetup(
             decks=[deck, deck],
+            start_tick=LOCKOUT,
             shuffle=ShuffleMode.NONE,
             elixir_milli=[10**7] * 2,
             # One hit point each, so whichever spell reaches one kills it on both engines.
@@ -262,7 +273,10 @@ def test_every_card_the_catalogue_calls_a_spell_is_charged_once_at_the_tap(kind,
         elixir = [0, 0]
         elixir[caster] = 10**7
         engine.reset(
-            1, MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE, elixir_milli=elixir)
+            1, MatchSetup(
+                decks=[deck, deck], shuffle=ShuffleMode.NONE,
+                elixir_milli=elixir, start_tick=LOCKOUT,
+            )
         )
 
         prev = engine.state()
@@ -315,6 +329,7 @@ def test_a_unit_a_card_produced_is_not_billed_at_that_cards_price(owner):
         1,
         MatchSetup(
             decks=[deck, deck],
+            start_tick=LOCKOUT,
             shuffle=ShuffleMode.NONE,
             elixir_milli=[10**7] * 2,
             spawns=[SpawnSpec(team=owner, card_id=tomb.card_id, x=x, y=y, hp=1)],
@@ -380,7 +395,8 @@ def tap_everything(engine, tbl: Table):
             engine.reset(
                 1,
                 MatchSetup(
-                    decks=[deck, deck], shuffle=ShuffleMode.NONE, elixir_milli=[10**7] * 2
+                    decks=[deck, deck], shuffle=ShuffleMode.NONE,
+                    elixir_milli=[10**7] * 2, start_tick=LOCKOUT,
                 ),
             )
             prev = engine.state()
@@ -471,6 +487,7 @@ def test_no_unit_a_card_produced_looks_like_the_card_itself():
         1,
         MatchSetup(
             decks=[deck, deck],
+            start_tick=LOCKOUT,
             shuffle=ShuffleMode.NONE,
             spawns=[
                 SpawnSpec(

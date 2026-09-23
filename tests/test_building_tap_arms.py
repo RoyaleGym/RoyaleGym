@@ -66,7 +66,16 @@ def ids_of(engine: RustEngine) -> dict[str, int]:
 def board(engine: RustEngine, card: str, spawns=(), tower_hp=None) -> MatchSetup:
     """A battle holding ``card`` in every hand slot, so both seats always hold it."""
     deck = [ids_of(engine)[card]] * 8
-    kw: dict = {"decks": [deck, deck], "elixir_milli": [10000, 10000]}
+    # START PAST THE OPENING DEPLOY LOCKOUT. A match refuses every command for its first
+    # `deploy_lockout_ticks` ticks, so a battle beginning at 0 answers TOO_EARLY to every
+    # tap here and these tests would grade a timing rule instead of a placement one. Read
+    # from the engine, because 0 is a real calibration arm and a literal 90 would have to
+    # be chased the next time the value moves.
+    kw: dict = {
+        "decks": [deck, deck],
+        "elixir_milli": [10000, 10000],
+        "start_tick": engine.rules().deploy_lockout_ticks,
+    }
     if spawns:
         kw["spawns"] = list(spawns)
     if tower_hp is not None:

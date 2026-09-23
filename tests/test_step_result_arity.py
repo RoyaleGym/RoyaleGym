@@ -87,7 +87,9 @@ def an_engine():
 
     engine = RustEngine()
     engine.reset(seed=0, setup=MatchSetup(decks=[[0] * 8] * 2, elixir_milli=[10000] * 2))
-    engine.step([], 10)
+    # Past the opening deploy lockout, not a flat 10 ticks: the probe tap below has to be
+    # ACCEPTED for this to measure anything, and the test says so when it is not.
+    engine.step([], max(10, engine.rules().deploy_lockout_ticks + 10))
     return engine
 
 

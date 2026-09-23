@@ -29,6 +29,17 @@ from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 TILE = 18000
 
 
+def warm(engine, extra: int = 10) -> None:
+    """Step past the engine's opening deploy lockout before commanding anything.
+
+    Read from the engine's rules rather than fixed at 10 ticks, which is what these used
+    to be: a rebuild introduced a 90-tick lockout and every deploy here came back refused.
+    A literal would have to be chased again the next time the value moves, and 0 is a real
+    arm, so a build without a lockout still gets its short warm-up.
+    """
+    engine.step([], max(extra, engine.rules().deploy_lockout_ticks + extra))
+
+
 def distinct_deck(engine) -> list[int]:
     """Eight different cards, so a slot and its card are not the same number twice."""
     ids = [c.card_id for c in engine.cards()][:8]
@@ -117,7 +128,7 @@ def test_the_recorded_landing_is_where_the_engine_PUT_it_not_where_the_tap_asked
     for tx in range(2, 16):
         for ty in range(3, 13, 2):
             engine.reset(seed=0, setup=setup)
-            engine.step([], 10)
+            warm(engine)
             rec = ReplayRecorder()
             rec.begin(engine, 0, setup)
             x, y = tx * TILE + TILE // 2, ty * TILE + TILE // 2
@@ -183,7 +194,7 @@ def test_the_three_criteria_disagree_and_the_struct_keeps_them_apart(card, footp
     setup = MatchSetup(decks=[[ids[card]] * 8] * 2, elixir_milli=[10000, 10000])
     rec = ReplayRecorder()
     engine.reset(seed=0, setup=setup)
-    engine.step([], 10)
+    warm(engine)
     rec.begin(engine, 0, setup)
     for tx in range(2, 16):
         for ty in range(3, 13, 2):
@@ -265,7 +276,7 @@ def test_every_criterion_answers_for_a_card_with_no_footprint():
     deck = (deck * 8)[:8]
     setup = MatchSetup(decks=[deck, deck], elixir_milli=[10000, 10000])
     engine.reset(seed=0, setup=setup)
-    engine.step([], 10)
+    warm(engine)
     rec = ReplayRecorder()
     rec.begin(engine, 0, setup)
     for slot in range(4):
@@ -311,7 +322,7 @@ def test_a_card_id_the_table_does_not_have_is_named_rather_than_guessed():
     engine = RustEngine()
     setup = MatchSetup(decks=[list(range(8))] * 2, elixir_milli=[10000, 10000])
     engine.reset(seed=0, setup=setup)
-    engine.step([], 10)
+    warm(engine)
     rec = ReplayRecorder()
     rec.begin(engine, 0, setup)
     command = DeployCommand(team=0, hand_slot=0, x=9 * TILE, y=5 * TILE)
@@ -351,7 +362,7 @@ def test_the_map_agrees_with_the_rate_that_was_measured_by_sweep():
         if card not in names:
             pytest.skip(f"this card table has no {card}")
         engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
-        engine.step([], 10)
+        warm(engine)
         m = tile_loss_map(engine, card)
         assert int(m.offered.sum()) == 240, (
             f"{card} was offered {int(m.offered.sum())} tiles, not the 240 the sweep saw; "
@@ -379,7 +390,7 @@ def test_two_cards_of_one_footprint_give_the_SAME_map():
         pytest.skip("need two 3x3 cards and a Tesla on this table")
 
     engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
-    engine.step([], 10)
+    warm(engine)
     maps = {n: tile_loss_map(engine, n) for n in [*threes, "Tesla"]}
     first = maps[threes[0]]
     for other in threes[1:]:
@@ -402,7 +413,7 @@ def test_an_unoffered_tile_says_None_rather_than_keeps_its_tile():
     if "Cannon" not in {c.name for c in engine.cards()}:
         pytest.skip("this card table has no Cannon")
     engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
-    engine.step([], 10)
+    warm(engine)
     m = tile_loss_map(engine, "Cannon")
     unoffered = np.argwhere(~m.offered)
     assert len(unoffered), "every tile was offered, so this test checks nothing"

@@ -66,6 +66,7 @@ import numpy as np
 import pytest
 from gymnasium import spaces
 
+from _lockout import lockout_ticks
 from royalegym import mock_engine as mock_engine_module
 from royalegym.action import (
     ActionParser,
@@ -129,6 +130,11 @@ pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERR
 SHARED = ("Knight", "Minions", "Cannon", "Giant", "Archer", "Goblins", "MiniPekka", "HogRider")
 KNIGHT, MINIONS, CANNON, GIANT = 0, 1, 2, 3
 DECK = list(range(DECK_SIZE))
+#: Ticks a match refuses every deploy for. Battles below start here rather than at 0, or
+#: the engine answers TOO_EARLY to commands these tests send to measure something else.
+#: Read from an engine because 0 is a real calibration arm and a literal would be wrong on
+#: a build without a lockout.
+LOCKOUT = lockout_ticks()
 
 
 @pytest.fixture(scope="module")
@@ -157,7 +163,7 @@ def test_protocol_conformance(rust):
     assert {c.placement for c in cards} == {Placement.TROOP, Placement.BUILDING}
     assert isinstance(rust.arena(), Arena)
     assert isinstance(rust.rules(), DeployRules)
-    assert rust.reset(5, MatchSetup(decks=[DECK, DECK])) is None
+    assert rust.reset(5, MatchSetup(decks=[DECK, DECK], start_tick=LOCKOUT)) is None
     cmd = DeployCommand(BLUE, 0, rust.arena().width // 2, rust.arena().subtile * 10)
     assert type(rust.check_deploy(cmd)) is int
     res = rust.step([cmd, DeployCommand(RED, 9, 0, 0)], 3)
@@ -168,7 +174,9 @@ def test_protocol_conformance(rust):
     assert res[1].card_id == -1
     s = rust.state()
     assert isinstance(s, BattleState)
-    assert s.tick == 3
+    # LOCKOUT + 3, not 3: the battle starts past the deploy lockout so the command above
+    # is not refused, and what this line checks is that stepping 3 ticks advances 3.
+    assert s.tick == LOCKOUT + 3
     assert all(isinstance(p, PlayerState) for p in s.players)
     assert all(isinstance(e, EntityState) for e in s.entities)
     assert all(len(p.hand) == HAND_SIZE for p in s.players)
@@ -184,7 +192,7 @@ def test_protocol_conformance(rust):
 
 
 def test_check_deploy_is_pure_and_matches_step(rust):
-    rust.reset(8, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE))
+    rust.reset(8, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE, start_tick=LOCKOUT))
     a = rust.arena()
     before = rust.state_hash()
     cmds = [DeployCommand(BLUE, 0, a.subtile * 4 + a.subtile // 2, a.subtile * 10 + a.subtile // 2)]
@@ -682,6 +690,10 @@ def legality_disagreements(rust, mock, tower_hp) -> tuple[collections.Counter, c
         shuffle=ShuffleMode.NONE,
         elixir_milli=[10000, 10000],
         tower_hp=tower_hp,
+        # Past the opening deploy lockout. Rust refuses every command before it and
+        # Mock has none, so a battle starting at 0 makes these two answer TOO_EARLY
+        # against a placement verdict and the comparison grades timing, not territory.
+        start_tick=rust.rules().deploy_lockout_ticks,
         spawns=[
             SpawnSpec(BLUE, CANNON, s * 9, s * 10),
             SpawnSpec(RED, CANNON, a.width - s * 5 - s // 2, a.height - s * 12 - s // 2),
@@ -777,7 +789,14 @@ def territory_disagreements(rust, mock, oracle, tower_hp) -> tuple[collections.C
     three-way comparison runs on, or the comparison would certify the wrong code.
     """
     setup = MatchSetup(
-        decks=[DECK, DECK], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 10000], tower_hp=tower_hp
+        decks=[DECK, DECK],
+        shuffle=ShuffleMode.NONE,
+        elixir_milli=[10000, 10000],
+        tower_hp=tower_hp,
+        # Past the opening deploy lockout. Rust refuses every command before it and
+        # Mock has none, so a battle starting at 0 makes these two answer TOO_EARLY
+        # against a placement verdict and the comparison grades timing, not territory.
+        start_tick=rust.rules().deploy_lockout_ticks,
     )
     rust.reset(4, setup)
     mock.reset(4, setup)
@@ -1575,7 +1594,10 @@ def elixir_after_full_bar_deploy(eng) -> tuple[int, int, int, int]:
     t = a.subtile
     cost = eng.cards()[KNIGHT].elixir * 1000
     spot = DeployCommand(BLUE, 0, 9 * t // 2, 21 * t // 2)
-    full = MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 10000])
+    full = MatchSetup(
+        decks=[DECK, DECK], shuffle=ShuffleMode.NONE,
+        elixir_milli=[10000, 10000], start_tick=LOCKOUT,
+    )
     eng.reset(1, full)
     (r,) = eng.step([spot], 0)
     assert r.status == DeployStatus.OK
@@ -1653,7 +1675,7 @@ def test_save_between_paying_and_spawning_round_trips(engine_name):
     )
     eng, other = make(), make()
     t = eng.arena().subtile
-    eng.reset(1, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE))
+    eng.reset(1, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE, start_tick=LOCKOUT))
     a = eng.arena()
     cmds = [
         DeployCommand(BLUE, 1, 9 * t // 2, 21 * t // 2),  # Minions: three units
@@ -1698,7 +1720,7 @@ def command_order_hash_splits(eng, seed: int, steps: int = 300) -> tuple[list[st
     commands in both orders from the same saved state and compare."""
     parser = TileActionParser()
     parser.bind(eng)
-    eng.reset(seed, MatchSetup(decks=[DECK, list(reversed(DECK))]))
+    eng.reset(seed, MatchSetup(decks=[DECK, list(reversed(DECK))], start_tick=LOCKOUT))
     rng = np.random.default_rng(seed)
     splits, pairs = [], 0
     for i in range(steps):

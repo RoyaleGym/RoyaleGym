@@ -38,7 +38,8 @@ WHY IT VALIDATES ITS OWN INSTRUMENT FIRST
     to say what it compared, so it prints both counts rather than a verdict.
 
 WHAT THIS SAMPLE IS, SO THE FIGURE IS NOT READ WIDER THAN IT WAS MEASURED
-    Every tile of the board, tile centres, one seat, a near-empty board ten ticks in.
+    Every tile of the board, tile centres, one seat, a near-empty board just past the
+    engine opening deploy lockout, before anything has been placed.
     Tile centres are the right population because ``GridActionParser`` has
     ``pitch_div = 1`` and taps tile centres.
 
@@ -72,7 +73,9 @@ def fresh(engine: RustEngine, card_id: int) -> None:
     engine.reset(
         seed=0, setup=MatchSetup(decks=[[card_id] * 8] * 2, elixir_milli=[10000, 10000])
     )
-    engine.step([], 10)
+    # Past the opening deploy lockout, read from the engine rather than fixed: a build
+    # with one refuses every command before it, and the validation below deploys for real.
+    engine.step([], max(10, engine.rules().deploy_lockout_ticks + 10))
 
 
 def validate_resolver(engine: RustEngine, cards) -> bool:
