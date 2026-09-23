@@ -288,31 +288,41 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="pytest on your own clone at fa380b3, 2026-09-22: 781 passed, 3 skipped, nothing failing" src="https://img.shields.io/badge/your%20clone%20at%20fa380b3-781%20passed%2C%203%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on a clean runner at 267afc4, 2026-09-23: 887 passed, 9 skipped, nothing failing" src="https://img.shields.io/badge/clean%20runner%20at%20267afc4-887%20passed%2C%209%20skipped-2ea043?style=flat-square">
   <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
-  <img alt="pytest on the project's own machine at 56da55d, 2026-09-22; its 8 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%20at%2056da55d-778%20passed%2C%208%20skipped-2ea043?style=flat-square">
+  <img alt="The runner and a developer machine now see the same nine skips, which they never did before" src="https://img.shields.io/badge/runner%20and%20laptop-same%209%20skips-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>
 
-**As of 2026-09-22.** Two things about what your clone gives you, and the second is the one to
+**As of 2026-09-23.** Two things about what your clone gives you, and the second is the one to
 read.
 
-The install itself works from nothing. On 2026-09-22 the recipe above was run verbatim from a
-fresh clone in Windows PowerShell 5.1, with no virtual environment active and nothing repaired as
-it went: all 18 lines, including `maturin develop --release`, which took 119 seconds.
+The install itself works from nothing. The recipe above was run verbatim from a fresh clone in
+Windows PowerShell 5.1, with no virtual environment active and nothing repaired as it went: all 18
+lines, including `maturin develop --release`, which took 119 seconds.
 
-**The pytest suite passes on a clean clone: 781 passed, 3 skipped, 4 expected failures, nothing
-failing.** This repo has one suite and it is pytest; there is no separate Rust suite here, and the
-engine's own tests live in RoyaleSim.
-Measured on a fresh clone at commit `fa380b3` on 2026-09-22, not on the machine that wrote this. A
-clone count belongs to the commit it was taken at, so it names one.
+**The pytest suite passes on a clean runner: 897 collected, 887 passed, 9 skipped, 1 expected
+failure, nothing failing.** This repo has one suite and it is pytest; there is no separate Rust
+suite here, and the engine's own tests live in RoyaleSim. Measured at commit `267afc4` on a clean
+runner rather than on the machine that wrote this, on engine build `d6715210f21ca0c3` against the
+15.535.29 card table. A count belongs to the commit and the build it was taken at, so it names
+both.
 
-The three skips are worth reading rather than ignoring. Your clone builds the 2018 card table,
-which has 66 cards the engine can load. Three tests need the newer table, which gives 100, and it
-is not published and cannot be, so they skip and name the table they wanted. Earlier today they FAILED
-instead of skipping, which is a different thing: a skip that says why is information, and a failure
-would have told you your install was broken when it was not.
+**The runner and a developer machine now see the same nine skips**, which they never did before,
+and that is the substantive change behind the numbers. Until today a clean runner ran a different
+population from every machine here, because the two built different card tables; the install now
+puts the same table in both places. A figure measured there is a figure about your clone.
+
+The nine skips are worth reading rather than ignoring, and they are **not** the old nine with four
+removed. Twelve tests pinned to the current card table now run, where they used to skip for want of
+it. Six comparisons between the compiled engine and the pure-Python stand-in now skip, because the
+stand-in reads the 2018 tables while the engine reads the current one, and running them across two
+vintages would measure the card data rather than the engines. Those six still run in RoyaleSim's
+cross-repo job, with both halves on one table.
+
+A skip that names what it wanted is information. Earlier in this repo's life some of these FAILED
+instead, which is a different thing: a failure tells you your install is broken when it is not.
 
 The `pytest` badge is from the project's own machine, which also holds a newer card table that
 is not distributed. Six tests skip there because of that table. A clone built with the Install
