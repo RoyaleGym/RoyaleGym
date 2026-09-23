@@ -1,0 +1,5 @@
+name: cross-repo
+on: [push, workflow_dispatch]
+jobs:
+  cross:
+    uses: RoyaleGym/RoyaleSim/.github/workflows/cross-repo.yml@main
