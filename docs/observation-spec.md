@@ -194,6 +194,14 @@ accounting, which is the one outcome that creates no new discrepancy between the
 **Default OFF until train's policy-head arm has run.** Flipping an observation shape under
 a paired comparison invalidates both arms and looks like a result.
 
+**These planes enter at the STEM, and the trunk is unchanged** (learn). `card_ids` is a
+separate key, embedded and concatenated into the channels, so adding it widens one
+convolution and adds one embedding table whose input width is a constructor argument. That
+is the fact that makes landing them after the Rust port cheap rather than a rework, and it
+is why the port targets today's shape: the equality harness holds both implementations to
+each other, so a new plane is a change both sides make and the harness catches the
+divergence.
+
 **FLIPPING THE FLAG IS A TWO-REPO CHANGE, NOT A CONFIG EDIT** (learn). A new observation
 KEY is the right storage decision and it is not free on the learner's side, where a new
 float channel inside `spatial` would have cost nothing. It touches four things there: the
