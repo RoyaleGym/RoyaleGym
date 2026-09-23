@@ -47,7 +47,21 @@ from royalegym.opponents import (
 #: patient beating random is 13-27 at forty and "too close to call" at twenty. Checking
 #: the second one with twenty games fails -- I wrote that version first and it failed,
 #: correctly, for the reason this module is about.
-MEASURED_ORDERINGS = (("noop", "random", 20), ("random", "patient", 40))
+#: (weaker, stronger, games) -- each at the sample size that ESTABLISHES it, which is not
+#: the same for all of them. Twenty games is plenty to show noop losing; the patient
+#: orderings need two hundred and read "too close to call" at forty, which is how the
+#: 40-game table that stood in opponents.py came to describe them as similar strength.
+MEASURED_ORDERINGS = (
+    ("noop", "random", 20),
+    ("first-affordable", "random", 200),
+    ("random", "patient", 200),
+    ("first-affordable", "patient", 200),
+    ("defend", "patient", 200),
+    ("push", "patient", 200),
+)
+#: The ones cheap enough to re-run on every suite; the rest carry the `slow` marker.
+CHEAP_ORDERINGS = tuple(o for o in MEASURED_ORDERINGS if o[2] <= 20)
+SLOW_ORDERINGS = tuple(o for o in MEASURED_ORDERINGS if o[2] > 20)
 
 
 def env_fn(max_steps: int = 700):
@@ -211,22 +225,32 @@ def test_an_observation_with_no_planes_gets_a_noop_rather_than_a_crash() -> None
 # ---------------------------------------------------------------------------
 
 
-def test_the_ladder_holds_the_orderings_it_claims() -> None:
-    """Re-measure the two results opponents.py says are established.
-
-    Each ordering is checked with the number of games that established it, because
-    those numbers differ: twenty is plenty to show noop losing and not enough to show
-    patient beating random, which is 13-27 at forty and inside the interval at twenty.
-    """
+def check_ordering(weaker: str, stronger: str, games: int) -> None:
     rungs = dict(ladder())
-    for weaker, stronger, games in MEASURED_ORDERINGS:
-        result = evaluate(
-            rungs[weaker], rungs[stronger], env_fn(), games=games, seed=0, names=(weaker, stronger)
-        )
-        assert result.better == stronger, (
-            f"opponents.py claims {stronger} beats {weaker}, and 20 games say "
-            f"{result.summary()}"
-        )
+    result = evaluate(
+        rungs[weaker], rungs[stronger], env_fn(), games=games, seed=0, names=(weaker, stronger)
+    )
+    assert result.better == stronger, (
+        f"opponents.py claims {stronger} beats {weaker}; {games} games say {result.summary()}"
+    )
+
+
+@pytest.mark.parametrize(("weaker", "stronger", "games"), CHEAP_ORDERINGS)
+def test_the_ladder_holds_the_orderings_it_claims(weaker, stronger, games) -> None:
+    """Re-measure the results opponents.py says are established, cheaply."""
+    check_ordering(weaker, stronger, games)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(("weaker", "stronger", "games"), SLOW_ORDERINGS)
+def test_the_ladder_holds_its_two_hundred_game_orderings(weaker, stronger, games) -> None:
+    """The same check at the sample size those orderings needed -- about 50 s each.
+
+    Marked `slow` so the cost is declared and `-m "not slow"` can drop it. It is not
+    optional information: these four are the orderings a 40-game run reported as "too
+    close to call", so dropping them leaves the ladder's main claims unchecked.
+    """
+    check_ordering(weaker, stronger, games)
 
 
 def test_the_middle_rungs_are_not_claimed_to_be_ordered() -> None:
@@ -243,5 +267,5 @@ def test_the_middle_rungs_are_not_claimed_to_be_ordered() -> None:
     claimed = {(weaker, stronger) for weaker, stronger, _ in MEASURED_ORDERINGS}
     assert not middle & claimed, (
         "an ordering between the middle rungs has been claimed; the round robin in "
-        "opponents.py found all three too close to call at 40 games"
+        "opponents.py found all three too close to call at 200 games"
     )

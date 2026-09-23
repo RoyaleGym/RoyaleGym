@@ -20,24 +20,48 @@ HOW THEY READ THE BOARD
     stable thing you measure against.
 
 WHAT THE LADDER ACTUALLY MEASURES, WHICH IS LESS THAN IT LOOKS
-    A full round robin on MockEngine, 40 games each pairing, both seats, seed 0::
+    A full round robin on MockEngine, both seats, seed 0. RE-MEASURED 2026-09-23 at 200
+    games a pairing, after a calibration change doubled OVERTIME_S from 60 s to 120 s.
+    That is worth stating rather than quietly restating the numbers: MockEngine reads
+    calibration.json at RUNTIME and is pure Python, so the change moved every battle that
+    reaches overtime with no rebuild and no commit in this repo. The 40-game table that
+    stood here was measured under the old value::
 
-        noop             vs everything      0-40      beaten by all five
-        random           vs patient        13-27      patient is better
-        random           vs first/defend   22-18      too close to call
-        random           vs push           18-22      too close to call
-        first-affordable vs defend         19-19      too close to call
-        first-affordable vs push           20-19      too close to call
-        first-affordable vs patient        18-22      too close to call
-        defend           vs push           20-19      too close to call
-        defend           vs patient        18-22      too close to call
-        push             vs patient        16-24      too close to call
+        noop             vs everything        0-40   beaten by all five   (40 games)
+        random           vs first-affordable 114-86  random is better     (57.0%)
+        random           vs defend           109-91  too close to call
+        random           vs push              99-101 too close to call
+        random           vs patient           65-135 patient is better    (32.5%)
+        first-affordable vs defend            84-99  too close to call    (17 draws)
+        first-affordable vs push              96-101 too close to call
+        first-affordable vs patient           75-122 patient is better    (38.1%)
+        defend           vs push             101-98  too close to call
+        defend           vs patient           79-120 patient is better    (39.7%)
+        push             vs patient           65-135 patient is better    (32.5%)
 
-    So TWO orderings are established and no more: noop is beneath everything, and
-    patient beats random. The three middle rungs are indistinguishable at forty games
-    -- they are different STRATEGIES of similar strength, not steps on a staircase, and
-    this file does not pretend otherwise. ``tests/test_opponents.py`` asserts the two
-    orderings that hold and asserts that the others are NOT claimed.
+    SIX orderings are established and no more: noop is beneath everything, patient is
+    above all four of the middle strategies, and random beats first-affordable. The last
+    is the awkward one and is kept because it is what the sample says: the naive policy
+    beats the first-affordable heuristic, marginally (lower bound 50.1%), which is a
+    reason to distrust first-affordable as a baseline rather than a reason to hide it.
+
+    FORTY GAMES WAS NOT ENOUGH, and that is the substantive change. Three of the patient
+    orderings sat inside the interval at 40 games and are comfortably outside it at 200 --
+    patient beating random reads 14-26 at forty and 65-135 at two hundred. The old table
+    called them "too close to call", which was true of that sample and read as "these are
+    the same strength". A wider sample separated them.
+
+    first-affordable, defend and push remain mutually indistinguishable AT 200 GAMES --
+    they are different STRATEGIES of similar strength, not steps on a staircase, and this
+    file does not pretend otherwise. ``tests/test_opponents.py`` asserts the orderings that
+    hold, at the sample size that establishes each, and asserts that the middle three are
+    NOT claimed to be ordered.
+
+    THE SEAT GAPS ARE LARGE and are recorded because nothing here explains them: +12.0%
+    (random/first-affordable), +13.0% (random/push), +13.5% (defend/patient). A seat gap
+    that size on a scripted pairing is not obviously a property of the strategies, and it
+    is the same shape as the seat asymmetry that keeps the ``rust-red-leads`` scenario
+    marked in tests/test_reward_ground_truth.py. Whether they are one thing is unmeasured.
 
     That is worth reading twice if you are about to report that your bot improved.
     Three of these look like a progression, are described in increasing order of
