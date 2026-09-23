@@ -89,15 +89,22 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3600
+winner 0  crowns [2, 1]  tick 3600
 ```
 
-That is a whole match (re-run 2026-09-22 on engine build `abac02d398ec90cb`). Blue took one of
-Red's princess towers and Red took none, so Blue wins on crowns. The build is named because this
-output depends on it: the same program on a different engine can end a different way, and with the
-digest beside it you can tell whether your result differs because of your machine or because the
-engine moved. `RustEngine().config()` prints yours. Tick 3600 is exactly three minutes, so this one finished in
-regulation and never reached overtime.
+That is a whole match, re-run 2026-09-23 on engine build `d6715210f21ca0c3` with the **15.535 card
+table**, which is what the install above puts at `cards.json`. Blue took two of Red's princess
+towers and Red took one, so Blue wins on crowns.
+
+**Two stamps, because two things move this output independently.** The build is one: the same
+program on a different engine can end a different way. The card table is the other, and it is not a
+smaller effect. The same program at this same build, run against the 2018 table, ends
+`winner 1  crowns [0, 1]` - a different winner. So if your result differs, the digest and the
+vintage together tell you which of the two moved, rather than leaving you to suspect your install.
+`RustEngine().config()` prints yours.
+
+Tick 3600 is exactly three minutes, so this one finished in regulation and never reached
+overtime.
 
 Both players are picking at random from the legal moves, and one of them still took a tower. That
 is the bar your bot starts from.
@@ -178,7 +185,7 @@ which no clone carries, and the engine cannot start without it:
 cd RoyaleSim
 ..\.venv\Scripts\python tools\extract_arena.py
 ..\.venv\Scripts\python tools\extract_cards.py --vintage 2018
-..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 --out data\derived\cards.json
+Copy-Item data\derived\cards-15.535.json data\derived\cards.json
 ..\.venv\Scripts\python tools\extract_globals.py
 ```
 
@@ -207,9 +214,24 @@ Only if you want to train, and it is a multi-GB download:
 You can stop after the `pip install -e RoyaleGym` line. RoyaleViser is optional. It is the
 viewer, plus one test that sends a frame through it. RoyaleLearn is not needed at all.
 
-Keep `--vintage 2018` on both `extract_cards.py` runs. Without that flag the extractor asks for
-card data that is not shipped with the repo, and a fresh clone does not have it. The 2018 card
-table is tracked, so that is the one that works everywhere.
+Two card tables get written and only one of them is the one the engine loads.
+`cards-15.535.json` is committed to RoyaleSim, so the copy line puts the current game's table at
+`cards.json`, which is what the engine reads. That is the table this README's numbers are measured
+on and the one you want.
+
+`extract_cards.py --vintage 2018` builds the older table beside it, under its own name. Keep the
+`--vintage 2018` flag on that line: without it the extractor asks for card data that is not shipped
+with the repo. The 2018 table is not left over - it is what the cross-engine comparisons use, and
+that is the next paragraph.
+
+On macOS or Linux the copy line is `cp data/derived/cards-15.535.json data/derived/cards.json`.
+
+**Six tests that compare the two engines skip on this install, and that is correct.** `MockEngine`
+reads RoyaleSim's raw 2018 CSVs while the compiled engine reads `cards.json`; with different
+vintages those tests would be measuring the card data rather than the engines, so they decline and
+say so. The comparison still happens: RoyaleSim's cross-repo job runs exactly those files with the
+2018 table written to `cards.json`, so both halves are on one vintage. One table for running the
+simulator, another for the one check that puts two engines side by side.
 
 The order of those two lines matters. The build copies the arena and the calibration constants
 into the engine, so the data has to exist first. The card table works differently. Every time
