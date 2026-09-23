@@ -1,5 +1,5 @@
 """royalegym.viser: nothing leaves the env until a viewer says hello; then one datagram per
-publish that RoyaleViser's StreamSource decodes as a sound Frame (RoyaleViser installed)."""
+ENGINE TICK that RoyaleViser's StreamSource decodes as a sound Frame (RoyaleViser installed)."""
 
 from __future__ import annotations
 
@@ -25,7 +25,13 @@ def test_publisher_to_stream_source_round_trip() -> None:
     time.sleep(0.05)
     pub._last_poll = 0.0  # heartbeats are polled at most once a second
     env.step({"blue": 0, "red": 0})
-    assert pub.sent == 1
+    # One datagram per ENGINE TICK, not per decision. This said 1 until the viewer
+    # was found to be running at 2 fps: the env published once per decision, which at
+    # decision_ms 500 over a 50 ms tick is ten ticks and so two frames a second
+    # however fast the engine ran. Compared against decision_ticks rather than a
+    # literal 10, because a literal would silently stop meaning 'every tick' the day
+    # decision_ms or tick_ms moves.
+    assert pub.sent == env.decision_ticks
     frame = None
     for _ in range(50):
         time.sleep(0.01)

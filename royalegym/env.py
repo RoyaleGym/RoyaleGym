@@ -300,6 +300,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         # state, which is the authority if an engine ever reports a different tick.
         self.decision_ticks = max(1, -(-decision_ms // self.calibration.int("time.TICK_MS")))
         self.last_results: list[DeployResult] = []
+        #: True when _advance published a frame for every tick of the last decision,
+        #: so step() must not publish the final one a second time.
+        self._published_per_tick = False
         self._episode_steps = 0
         self._start_tick = 0
         self._leak_steps = dict.fromkeys(TEAMS, 0)
@@ -414,7 +417,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             self.agents = []
             if self.recorder is not None:
                 self.recorder.end(self.engine)
-        if self.viser is not None:
+        if self.viser is not None and not self._published_per_tick:
+            # _advance already published every tick of this decision, the last of which is
+            # this state. Publishing again here would send the final frame twice.
             self._publish(state, commands, results)
         return obs, rewards, terms, truncs, infos
 
@@ -437,9 +442,27 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self.viser.publish(state, cards, self.engine.arena(), self._decks, events)
 
     def _advance(self, commands: list[DeployCommand]) -> list[DeployResult]:
+        """Run one decision's worth of ticks, and feed the recorder and the viewer.
+
+        THE VIEWER GETS ONE FRAME PER ENGINE TICK, NOT ONE PER DECISION. Publishing once
+        per decision is what the owner saw as a low frame rate, and the arithmetic is
+        exact rather than a guess: at ``decision_ms`` 500 over ``tick_ms`` 50 a decision is
+        ten ticks, so a viewer got 2 frames a second however fast anything ran. One frame
+        per tick is 20, which is the viewer's target and sits inside its 60 fps draw cap,
+        so nothing is dropped. Found by train, who could work around it for a tool of their
+        own through the recorder hook but not for ``royalelearn play --viser``, which
+        builds its own env.
+
+        Only when a viewer is ATTACHED. Otherwise this is the one-call path it always was,
+        because turning a 1-in-10 publish into 10-in-10 for every training run that nobody
+        is watching would be a real cost for nothing.
+        """
         tick_before = self.battle_state.tick
         rec = self.recorder
-        if rec is None or not rec.frame_every_tick:
+        watching = self.viser is not None and self.viser.attached
+        recording_ticks = rec is not None and rec.frame_every_tick
+        self._published_per_tick = watching
+        if not (watching or recording_ticks):
             results = self.engine.step(commands, self.decision_ticks)
             if rec is not None:
                 rec.record_frame(self.engine)
@@ -447,11 +470,24 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             # Tick-by-tick is the same battle as one multi-tick call (the protocol
             # validates commands up front); tests check the hashes agree.
             results = self.engine.step(commands, 1)
-            rec.record_frame(self.engine)
+            if recording_ticks:
+                rec.record_frame(self.engine)
+            if watching:
+                # The deploys belong on the tick they actually happened, not repeated on
+                # all ten, or the viewer's event log would show every play ten times.
+                self._publish(self.engine.state(), commands, results)
             for _ in range(self.decision_ticks - 1):
                 if self.engine.state().game_over:
                     break
                 self.engine.step([], 1)
+                if recording_ticks:
+                    rec.record_frame(self.engine)
+                if watching:
+                    self._publish(self.engine.state(), [], [])
+            if rec is not None and not recording_ticks:
+                # Exactly the single frame the one-call path records. A recorder that did
+                # not ask for per-tick frames must not start getting them because somebody
+                # opened the viewer: that would make a recording depend on who was looking.
                 rec.record_frame(self.engine)
         if rec is not None:
             rec.record_step(tick_before, self.decision_ticks, commands, results)
