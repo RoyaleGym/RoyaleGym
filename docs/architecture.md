@@ -234,9 +234,21 @@ exactly.
 ## Tests
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 697 passed, 7 skipped, 4 xfailed (2026-09-22)
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 793 passed, 8 skipped, 4 xfailed at 5ceeb2c
 ..\.venv\Scripts\python -m ruff check royalegym tests examples   # All checks passed!
 ```
+
+That count names the commit it was measured at, because a count is only a fact about one
+tree and this suite grows daily. A test checks it, and only on that commit: anywhere else
+it says so rather than comparing two different trees.
+
+The split moves between a workspace and a fresh clone even when the total does not. At
+5ceeb2c this machine gives 793 passed and 8 skipped and a clone gives 797 and 4, both 805.
+More tests RUN on the clone, which is the opposite of what you would expect. The reason is
+the card table: six of the skips here are two-engine comparisons that refuse to run while
+this machine's compiled engine carries a newer table than MockEngine reads, and on a clone
+both sides read the 2018 table, so the comparison measures the engines rather than the
+data. Four of the eight is the measured flip; which four has not been pinned down.
 
 Without `royalesim` built the Rust-backed tests skip, not pass. A `royalesim` build older
 than `calibration.json` or `derived/arena.json` on disk is a failure, not a skip: `RustEngine()`

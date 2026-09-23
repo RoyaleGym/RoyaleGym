@@ -35,6 +35,7 @@ from pathlib import Path
 
 import pytest
 
+from _pinned_count import collected_excluding_xfail, skip_reason, why_it_cannot_be_checked
 from royalegym.protocol import derived_cards_vintage
 from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
 from royalegym.rust_engine import build_digest as engine_build_digest
@@ -154,54 +155,14 @@ def test_the_badge_count_matches_what_the_suite_collects() -> None:
         "without the tree it was taken on is a claim about a moving target. Label it "
         "`our machine at <sha>`."
     )
-    head = subprocess.run(
-        ["git", "rev-parse", "--short=" + str(len(at.group(1))), "HEAD"],
-        capture_output=True, text=True, cwd=REPO,
-    )
-    dirty = subprocess.run(
-        ["git", "status", "--porcelain"], capture_output=True, text=True, cwd=REPO
-    )
-    if head.returncode != 0:
-        pytest.skip("not a git checkout, so the badge's commit cannot be compared with HEAD")
-    tracked_changes = [ln for ln in dirty.stdout.splitlines() if not ln.startswith("??")]
-    if head.stdout.strip() != at.group(1) or tracked_changes:
-        pytest.skip(
-            f"SKIPPED, NOT PASSED: the badge states {ours[0][0]} passed and {ours[0][1]} "
-            f"skipped at {at.group(1)}, and this tree is "
-            + (
-                f"at {head.stdout.strip()}"
-                if head.stdout.strip() != at.group(1)
-                else "that commit with uncommitted changes"
-            )
-            + ". The count is only checkable on the tree it was taken on; anywhere else "
-            "collection answers a different question. Re-measure and re-pin the badge "
-            "rather than making this compare numbers from two different trees."
-        )
+    # The rule itself lives in tests/_pinned_count.py, because docs/architecture.md
+    # states a count too and two copies of a rule drift exactly like two copies of a
+    # number. That file is also where the reasoning is written down.
+    reason = why_it_cannot_be_checked(at.group(1))
+    if reason:
+        pytest.skip(skip_reason("the badge", ours[0][0], ours[0][1], at.group(1), reason))
 
-    # Deselect the expected failures. They are collected but a run reports them as
-    # xfailed, so they are in neither number the badge states, and counting them would
-    # make the badge wrong by exactly the number of open defects the suite is marking.
-    done = subprocess.run(
-        [sys.executable, "-m", "pytest", "--collect-only", "-q", "-m", "not xfail"],
-        capture_output=True,
-        text=True,
-        timeout=600,
-        cwd=REPO,
-    )
-    # Collection has to have SUCCEEDED. A test file that cannot be imported is a
-    # collection ERROR, and pytest still prints a count of what it did manage to
-    # collect, so reading that number without the exit code lets this certify a badge
-    # against a suite that does not run. Planted: three unimportable test files with the
-    # badge lowered to match, and it passed while the rest never imported. A count is
-    # only a fact about the suite if the suite could be read.
-    assert done.returncode == 0, (
-        f"pytest could not collect the suite (exit {done.returncode}), so the count it "
-        f"printed is of whatever survived. This is a broken suite, not a wrong badge:\n"
-        f"{(done.stdout + done.stderr)[-1500:]}"
-    )
-    found = re.search(r"(\d+)(?:/\d+)? tests? (?:collected|deselected)", done.stdout)
-    assert found, f"could not read a collected count:\n{done.stdout[-800:]}"
-    collected = int(found.group(1))
+    collected = collected_excluding_xfail()
     assert claimed == collected, (
         f"the README badge for this machine says {ours[0][0]} passed and {ours[0][1]} "
         f"skipped, which is {claimed} tests, and pytest collects {collected}."

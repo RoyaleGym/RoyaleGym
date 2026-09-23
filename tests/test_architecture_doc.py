@@ -29,6 +29,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
+from _pinned_count import collected_excluding_xfail, skip_reason, why_it_cannot_be_checked
+
 REPO = Path(__file__).resolve().parents[1]
 ARCHITECTURE = REPO / "docs" / "architecture.md"
 PACKAGE = REPO / "royalegym"
@@ -93,6 +97,46 @@ def test_the_documented_gate_commands_name_the_scopes_that_are_gated() -> None:
     assert doc == readme, (
         f"docs/architecture.md gates ruff on {sorted(doc)} and README.md on "
         f"{sorted(readme)}. Whichever is narrower names code that nobody lints."
+    )
+
+
+def test_the_test_count_in_this_doc_is_pinned_and_true_where_it_can_be_checked() -> None:
+    """This page states how many tests pass, so hold it to the same rule as the badge.
+
+    It used to be pinned to a DATE, which is not a pin at all here: five sessions commit
+    to this repo many times a day, and the figure was 96 tests stale when this was
+    written. The shared rule is in tests/_pinned_count.py, along with why chasing the
+    number is the wrong fix.
+    """
+    text = ARCHITECTURE.read_text(encoding="utf-8")
+    claim = re.search(
+        r"#\s*(?P<passed>\d+) passed, (?P<skipped>\d+) skipped, \d+ xfailed "
+        r"at (?P<sha>[0-9a-f]{7,40})",
+        text,
+    )
+    assert claim, (
+        "the Tests section of docs/architecture.md no longer states a test count pinned "
+        "to a commit. It should read like `# 793 passed, 8 skipped, 4 xfailed at "
+        "<sha>`: a count without the tree it was taken on is a claim about a moving "
+        "target, and this page had one for days."
+    )
+    reason = why_it_cannot_be_checked(claim.group("sha"))
+    if reason:
+        pytest.skip(
+            skip_reason(
+                "docs/architecture.md",
+                claim.group("passed"),
+                claim.group("skipped"),
+                claim.group("sha"),
+                reason,
+            )
+        )
+    claimed = int(claim.group("passed")) + int(claim.group("skipped"))
+    collected = collected_excluding_xfail()
+    assert claimed == collected, (
+        f"docs/architecture.md says {claim.group('passed')} passed and "
+        f"{claim.group('skipped')} skipped, which is {claimed} tests, and pytest "
+        f"collects {collected}."
     )
 
 
