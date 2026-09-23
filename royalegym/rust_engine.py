@@ -155,6 +155,43 @@ def core_available() -> bool:
     return _core is not None
 
 
+@functools.lru_cache(maxsize=1)
+def engine_binary_digest() -> str:
+    """A short hash of the compiled extension FILE that is loaded, or "unknown".
+
+    ``build_digest`` identifies the DATA an engine was built with. Nothing identified
+    the CODE: the extension exposes no version, and its distribution version is a
+    constant, so an engine rebuilt from a modified or uncommitted Rust tree was
+    indistinguishable from the one before it. Every guard here, and the ones in the
+    sibling repos, compared data and would have passed.
+
+    This does not say which commit built it, which is the engine's to publish. It says
+    whether the binary is the same binary, which is the part that was invisible: two
+    builds from different sources do not produce the same file. Read it beside
+    ``build_digest`` -- one moving without the other is the interesting case, and a
+    result recorded against a binary nobody can identify is worth less than one that
+    names it.
+
+    Cached: about 4 ms over 2.3 MB, paid once per process. "unknown" rather than raising
+    when the module is not a file on disk, because a missing provenance stamp should not
+    stop a battle.
+    """
+    if _core is None:
+        raise ImportError(CORE_IMPORT_ERROR)
+    # The COMPILED submodule, not the package. ``royalesim.__file__`` is a 119-byte
+    # __init__.py that re-exports it, and hashing that would give a stamp identical
+    # across every rebuild: a provenance check that can never notice anything, which is
+    # worse than none because it reads as evidence. Tested for, below.
+    native = getattr(_core, "royalesim", _core)
+    path = getattr(native, "__file__", None)
+    if not path or Path(path).suffix.lower() in {".py", ".pyc"}:
+        return "unknown"
+    try:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:16]
+    except OSError:
+        return "unknown"
+
+
 def build_digest() -> str:
     """A short hash of the data the loaded extension was COMPILED with.
 
@@ -699,6 +736,11 @@ class RustEngine:
             "ground_y_clamp": self.ground_y_clamp,
             "ground_deploy_point": self.ground_deploy_point,
             "calibration_digest": calibration_digest(self.calibration),
+            # The three things an engine is: the data compiled in, the card table read
+            # at construction, and the binary itself. The third was missing, so a
+            # rebuild from a changed Rust tree left no trace anywhere.
+            "build_digest": build_digest(),
+            "engine_binary_sha256": engine_binary_digest(),
             **self._card_table,
         }
 

@@ -31,9 +31,11 @@ PLANTS (each on a green baseline)
 
 from __future__ import annotations
 
+import hashlib
 import json
 import types
 from pathlib import Path
+from unittest import mock
 
 import msgspec
 import pytest
@@ -50,7 +52,12 @@ from royalegym.replay import (
     save_trace,
     verify_trace,
 )
-from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
+from royalegym.rust_engine import (
+    CORE_IMPORT_ERROR,
+    RustEngine,
+    core_available,
+    engine_binary_digest,
+)
 
 needs_core = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -323,3 +330,67 @@ def test_a_trace_from_before_the_stamp_still_decodes(make):
     assert old.frames == trace.frames
     old_msgpack = msgspec.msgpack.decode(msgspec.msgpack.encode(doc), type=Trace)
     assert old_msgpack.header.cards_vintage == ""
+
+
+# ---------------------------------------------------------------------------
+# Which BINARY is loaded, as opposed to which data it was built with
+
+
+def test_the_engine_binary_stamp_is_the_compiled_module_not_the_package_stub() -> None:
+    """The stamp has to hash the .pyd, and the difference is not cosmetic.
+
+    ``royalesim.__file__`` is a 119-byte ``__init__.py`` that re-exports the compiled
+    submodule. Hashing THAT gives a value identical across every rebuild, so the stamp
+    would read as provenance while being unable to notice a new engine: worse than no
+    stamp, because it looks like evidence. The first version of this did exactly that
+    and was caught by printing the value rather than trusting it.
+    """
+    import royalesim
+
+    native = royalesim.royalesim
+    on_disk = Path(native.__file__)
+    assert on_disk.suffix.lower() not in {".py", ".pyc"}, (
+        f"the compiled module resolved to {on_disk.name}, which is source, not a binary"
+    )
+    want = hashlib.sha256(on_disk.read_bytes()).hexdigest()[:16]
+    assert engine_binary_digest() == want
+
+    stub = Path(royalesim.__file__)
+    stub_hash = hashlib.sha256(stub.read_bytes()).hexdigest()[:16]
+    assert engine_binary_digest() != stub_hash, (
+        "the stamp is the hash of the package's __init__.py, so it cannot change when "
+        "the engine is rebuilt"
+    )
+
+
+def test_the_binary_stamp_notices_a_different_binary(tmp_path) -> None:
+    """A stamp that never moves is the thing being guarded against, so move it.
+
+    The cache is per-process and keyed on nothing, which is right for a file that
+    cannot change under a running engine. This reaches past it deliberately.
+    """
+    import royalesim
+
+    real = Path(royalesim.royalesim.__file__)
+    first = engine_binary_digest()
+
+    changed = tmp_path / real.name
+    changed.write_bytes(real.read_bytes() + b"\x00not the same engine")
+    stand_in = type("Native", (), {"__file__": str(changed)})()
+
+    engine_binary_digest.cache_clear()
+    try:
+        with mock.patch.object(rust_engine, "_core", type("Pkg", (), {"royalesim": stand_in})()):
+            assert engine_binary_digest() != first
+    finally:
+        engine_binary_digest.cache_clear()
+    assert engine_binary_digest() == first
+
+
+def test_the_binary_stamp_is_in_config(rust) -> None:
+    """A checkpoint says which data an engine used; it should say which engine too."""
+    config = rust.config()
+    assert config["engine_binary_sha256"] == engine_binary_digest()
+    assert config["build_digest"] == rust_engine.build_digest()
+    # The three are different questions and must not be the same answer.
+    assert len({config["engine_binary_sha256"], config["build_digest"]}) == 2
