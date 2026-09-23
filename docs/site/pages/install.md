@@ -59,7 +59,8 @@ layout is not optional.
 === "Windows"
 
     ```
-    mkdir Royale && cd Royale
+    mkdir Royale
+    cd Royale
     git clone https://github.com/RoyaleGym/RoyaleSim.git
     git clone https://github.com/RoyaleGym/RoyaleGym.git
     git clone https://github.com/RoyaleGym/RoyaleViser.git

@@ -145,23 +145,60 @@ right thing to learn the API on and the wrong thing to believe a trained bot aga
 
 ## Install
 
-You need this repo and [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim). Here is the whole
-thing from an empty folder:
+You need this repo and [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim).
+
+Before you start you need three things, and the build fails late and unhelpfully without the
+third: **Python 3.12**, **git**, and a **Rust toolchain** from [rustup.rs](https://rustup.rs).
+On Windows, rustup will offer to install the Microsoft C++ build tools; say yes, because the
+engine cannot link without them. The Rust build tree grows to a few GB.
+
+The commands below are for **Windows**, one per line. Paste them one at a time rather than as a
+block: Windows PowerShell cannot chain commands with `&&`, and a pasted comment is not a comment
+in `cmd`. On macOS and Linux the interpreter is `.venv/bin/python` with forward slashes, and the
+[install page](docs/site/pages/install.md) has those commands in full.
 
 ```
-mkdir Royale && cd Royale
+mkdir Royale
+cd Royale
 git clone https://github.com/RoyaleGym/RoyaleSim.git
 git clone https://github.com/RoyaleGym/RoyaleGym.git
 git clone https://github.com/RoyaleGym/RoyaleViser.git
 git clone https://github.com/RoyaleGym/RoyaleLearn.git
-python -m venv .venv                                                    # Python 3.12
-.venv\Scripts\python -m pip install maturin pytest hypothesis ruff
-cd RoyaleSim && ..\.venv\Scripts\python tools\extract_arena.py && ..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 && ..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 --out data\derived\cards.json && ..\.venv\Scripts\python tools\extract_globals.py && cd ..   # generates RoyaleSim/data/derived/
-cd RoyaleSim && ..\.venv\Scripts\maturin develop --release && cd ..     # builds the engine into the venv. Give it a few minutes and some free memory.
+python -m venv .venv
+.venv\Scripts\python -m pip install maturin pytest hypothesis ruff numpy
+```
+
+Now generate the card and arena data the engine reads. This writes `RoyaleSim/data/derived/`,
+which no clone carries, and the engine cannot start without it:
+
+```
+cd RoyaleSim
+..\.venv\Scripts\python tools\extract_arena.py
+..\.venv\Scripts\python tools\extract_cards.py --vintage 2018
+..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 --out data\derived\cards.json
+..\.venv\Scripts\python tools\extract_globals.py
+```
+
+Then build the engine, from that same folder. It takes a few minutes and a couple of GB of
+memory, and it prints very little while it works:
+
+```
+..\.venv\Scripts\maturin develop --release
+cd ..
+```
+
+Then install the Python packages:
+
+```
 .venv\Scripts\python -m pip install -e RoyaleGym
 .venv\Scripts\python -m pip install -e RoyaleViser
 .venv\Scripts\python -m pip install -e RoyaleLearn
-.venv\Scripts\python -m pip install -e "RoyaleLearn[torch]"   # only if you want to train; it is a big download
+```
+
+Only if you want to train, and it is a multi-GB download:
+
+```
+.venv\Scripts\python -m pip install -e "RoyaleLearn[torch]"
 ```
 
 You can stop after the `pip install -e RoyaleGym` line. RoyaleViser is optional. It is the
@@ -227,7 +264,7 @@ for the learner.
 
 <p align="center">
   <img alt="Tests on a fresh clone, 2026-09-22, debug engine build" src="https://img.shields.io/badge/fresh%20clone%2C%202026--09--22-385%20passed%2C%200%20skipped-2ea043?style=flat-square">
-  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-770%20passed%2C%207%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on the project's own machine, 2026-09-22; its 7 skips need a card table that is not distributed" src="https://img.shields.io/badge/our%20machine%2C%202026--09--22-772%20passed%2C%207%20skipped-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>
@@ -319,7 +356,8 @@ Open:
 Tests:
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q
+cd RoyaleGym
+..\.venv\Scripts\python -m pytest -q
 ..\.venv\Scripts\python -m ruff check royalegym tests examples
 ```
 
