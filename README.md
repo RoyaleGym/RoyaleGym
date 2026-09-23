@@ -92,8 +92,11 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 winner 0  crowns [1, 0]  tick 3600
 ```
 
-That is a whole match (re-run 2026-09-22). Blue took one of Red's princess towers and Red took
-none, so Blue wins on crowns. Tick 3600 is exactly three minutes, so this one finished in
+That is a whole match (re-run 2026-09-22 on engine build `abac02d398ec90cb`). Blue took one of
+Red's princess towers and Red took none, so Blue wins on crowns. The build is named because this
+output depends on it: the same program on a different engine can end a different way, and with the
+digest beside it you can tell whether your result differs because of your machine or because the
+engine moved. `RustEngine().config()` prints yours. Tick 3600 is exactly three minutes, so this one finished in
 regulation and never reached overtime.
 
 Both players are picking at random from the legal moves, and one of them still took a tower. That
