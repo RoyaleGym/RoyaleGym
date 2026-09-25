@@ -54,6 +54,7 @@ from royalegym.mock_engine import RAW_CARD_PACK, MockEngine
 from royalegym.protocol import DATA_DIR_ENV, MatchSetup, Placement, fnv1a64
 from royalegym.replay import (
     CARD_TABLE_FIELDS,
+    ENGINE_IDENTITY_FIELDS,
     ReplayRecorder,
     Trace,
     load_trace,
@@ -360,9 +361,10 @@ def test_the_trace_header_carries_the_stamp(make, suffix, tmp_path):
 def test_a_trace_from_before_the_stamp_still_decodes(make):
     trace = record_short_battle(make())
     doc = json.loads(msgspec.json.encode(trace))
-    for key in CARD_TABLE_FIELDS:
+    for key in (*CARD_TABLE_FIELDS, *ENGINE_IDENTITY_FIELDS):
         del doc["header"][key]
     old = msgspec.json.decode(json.dumps(doc).encode(), type=Trace)
+    assert old.header.build_digest == old.header.engine_binary_sha256 == ""
     assert old.header.cards_vintage == old.header.cards_json_fnv1a64 == ""
     assert old.header.cards_json_hash_source == old.header.cards_loaded_fnv1a64 == ""
     assert old.frames == trace.frames
@@ -423,6 +425,51 @@ def test_the_binary_stamp_notices_a_different_binary(tmp_path) -> None:
     finally:
         engine_binary_digest.cache_clear()
     assert engine_binary_digest() == first
+
+
+def test_the_trace_header_names_the_engine_that_recorded_it(rust) -> None:
+    header = record_short_battle(rust).header
+    assert header.engine_binary_sha256 == engine_binary_digest() != ""
+    assert header.build_digest == rust_engine.build_digest() != ""
+    # MockEngine states no engine identity: its fields stay "not stated".
+    mock_header = record_short_battle(MockEngine()).header
+    assert mock_header.engine_binary_sha256 == mock_header.build_digest == ""
+
+
+class _NamedMock(MockEngine):
+    """A MockEngine that states an engine identity, as a RustEngine build does."""
+
+    def __init__(self, binary: str) -> None:
+        super().__init__()
+        self.binary = binary
+
+    def engine_identity(self) -> dict[str, str]:
+        return {"build_digest": "d" * 16, "engine_binary_sha256": self.binary}
+
+
+def _zero_one_hash(trace: Trace) -> Trace:
+    frames = list(trace.frames)
+    frames[-1] = msgspec.structs.replace(frames[-1], state_hash="0" * 16)
+    return msgspec.structs.replace(trace, frames=frames)
+
+
+def test_a_divergence_on_another_engine_build_says_so_first() -> None:
+    trace = record_short_battle(_NamedMock("a" * 16))
+    assert trace.header.engine_binary_sha256 == "a" * 16
+    bad = _zero_one_hash(trace)
+    found = verify_trace(bad, _NamedMock("b" * 16))
+    assert found[0].startswith("the trace was recorded on another engine"), found
+    assert f"engine_binary_sha256 {'a' * 16} there and {'b' * 16} here" in found[0]
+    assert "build_digest" not in found[0], "only what moved is named"
+    assert any("hash" in p for p in found[1:]), found
+    # Control, same build: the same divergence carries no such line.
+    same = verify_trace(bad, _NamedMock("a" * 16))
+    assert same, "the plant must diverge"
+    assert not any("another engine" in p for p in same), same
+    # A different build that replays exactly is ordinary, and says nothing.
+    assert verify_trace(trace, _NamedMock("b" * 16)) == []
+    # An engine that states nothing is never compared.
+    assert not any("another engine" in p for p in verify_trace(bad, MockEngine()))
 
 
 def test_the_binary_stamp_is_in_config(rust) -> None:

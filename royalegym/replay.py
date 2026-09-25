@@ -131,6 +131,12 @@ class TraceHeader(msgspec.Struct):
     # ProjectileState columns, named like spell_fields so a reader decodes a frame's
     # projectile rows by name. Empty in a trace recorded before projectiles existed.
     projectile_fields: list[str] = []
+    # Which ENGINE recorded it (its ``engine_identity()``), taken in the recording process:
+    # the data compiled in and the binary itself. The card table above says what was
+    # read; these say what read it, which moves on every rebuild that loads a new card.
+    # "" = not stated: MockEngine, and every trace from before 2026-09-25.
+    build_digest: str = ""
+    engine_binary_sha256: str = ""
 
 
 class TraceResult(msgspec.Struct):
@@ -170,6 +176,39 @@ def _card_table_fields(engine: Engine) -> dict[str, str]:
     if stamp is None:
         return {}
     return {k: str(v) for k, v in stamp().items() if k in CARD_TABLE_FIELDS}
+
+
+# The TraceHeader fields an engine's ``engine_identity()`` can fill.
+ENGINE_IDENTITY_FIELDS = ("build_digest", "engine_binary_sha256")
+
+
+def _engine_identity_fields(engine: Engine) -> dict[str, str]:
+    """The header's engine fields, from an engine that states them ("" otherwise)."""
+    identity = getattr(engine, "engine_identity", None)
+    if identity is None:
+        return {}
+    return {k: str(v) for k, v in identity().items() if k in ENGINE_IDENTITY_FIELDS}
+
+
+def _another_engine(header: TraceHeader, engine: Engine) -> str | None:
+    """One line naming how the verifying engine differs from the recording one, or None.
+
+    Only fields BOTH state are compared, so an old trace or a MockEngine says nothing.
+    """
+    have = _engine_identity_fields(engine)
+    moved = [
+        f"{k} {getattr(header, k)} there and {have[k]} here"
+        for k in ENGINE_IDENTITY_FIELDS
+        if getattr(header, k) and have.get(k) and getattr(header, k) != have[k]
+    ]
+    if not moved:
+        return None
+    return (
+        "the trace was recorded on another engine (" + "; ".join(moved) + "). A rebuilt "
+        "engine can move every hash while the battle itself does not change, for instance "
+        "when a newly loadable card shifts the card indices the hash reads, so the lines "
+        "below may say only that."
+    )
 
 
 def _frame(engine: Engine) -> TraceFrame:
@@ -227,6 +266,7 @@ class ReplayRecorder:
             spell_fields=list(SpellState.__struct_fields__),
             projectile_fields=list(ProjectileState.__struct_fields__),
             **_card_table_fields(engine),
+            **_engine_identity_fields(engine),
         )
         self.trace = Trace(header=header, steps=[], frames=[_frame(engine)])
         self._open = True
@@ -291,6 +331,11 @@ def verify_trace(trace: Trace, engine: Engine) -> list[str]:
     Checks the catalogue first, then the deploy statuses of every step, every recorded
     frame hash, and the final hash. The first divergence is usually the informative one;
     later ones are consequences.
+
+    WHEN THE REPLAY DIVERGES AND THE ENGINE IS ANOTHER BUILD, the first line says so,
+    naming both. It is said only on a divergence: a different binary that replays exactly
+    is ordinary (a CI runner compiles its own), and the note is there so that a list of
+    hash lines is not read as a changed battle when it may be a changed build.
 
     THE CARDS A SETUP DEALS ARE COMPARED BY NAME first. A setup names its cards by
     POSITION (a deck is a list of catalogue ids), and the catalogue renumbers whenever a
@@ -361,6 +406,10 @@ def verify_trace(trace: Trace, engine: Engine) -> list[str]:
             problems.append(f"step {i}: statuses {got_status} != recorded {st.statuses}")
     if trace.result is not None and _hex(engine.state_hash()) != trace.result.final_hash:
         problems.append("final hash differs")
+    if problems:
+        note = _another_engine(h, engine)
+        if note is not None:
+            problems.insert(0, note)
     return problems
 
 

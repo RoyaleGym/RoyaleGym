@@ -850,6 +850,13 @@ class RustEngine:
             **self._card_table,
         }
 
+    def engine_identity(self) -> dict[str, str]:
+        """Which engine this is: the data compiled in (``build_digest``) and the binary
+        loaded in THIS process (``engine_binary_sha256``). A trace header records both,
+        taken while it records, which is the moment the docstring of
+        ``engine_binary_digest`` asks for."""
+        return {"build_digest": build_digest(), "engine_binary_sha256": engine_binary_digest()}
+
     def card_table_stamp(self) -> dict[str, str]:
         """Which card table this engine read, taken when it was constructed.
 
