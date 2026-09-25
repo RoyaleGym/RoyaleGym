@@ -395,7 +395,8 @@ cd RoyaleGym
 ```
 
 Read that as: 957 env steps per second, which is 957 decisions per player per second, with the
-Rust engine. That run had five other jobs going on the machine.
+Rust engine. That run, recorded on 2026-09-22, was on a laptop with 8 GB of memory and five
+other jobs going.
 
 Your number will be different, and the spread is much wider than you would expect. The same
 command on one laptop has printed anywhere from about 350 to about 960 env steps per

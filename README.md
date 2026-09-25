@@ -138,8 +138,8 @@ random eight, which is the default.
 
 One env step is half a second of game time, which is 10 ticks. The battle ended at tick 3728,
 so each player made 373 decisions, the last one cut short when the tower fell. The whole battle takes well under a second of real time, and how far under depends
-entirely on what else your machine is doing: four runs on 2026-09-22 with several other jobs
-going gave 0.57 to 0.74 s. Treat any timing on this page the same way.
+entirely on what else your machine is doing: four runs on 2026-09-22, on a laptop with 8 GB of
+memory and several other jobs going, gave 0.57 to 0.74 s. Treat any timing on this page the same way.
 
 Both players here just pick at random from the moves that are legal. That is already a working
 opponent, so you have something to train against from the first minute.
