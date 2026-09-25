@@ -424,11 +424,15 @@ class ProjectileState(msgspec.Struct, frozen=True, array_like=True):
     firer_card_id: int  # catalogue id; FIRER_TOWER (-1) a crown tower; FIRER_UNKNOWN (-2)
 
 
-#: ``ProjectileState.firer_card_id`` for a shot from a crown tower.
+#: ``ProjectileState.firer_card_id`` for a shot from a crown tower, and only for that: the
+#: engine decides it from the firer's own card (RoyaleSim 0468c60). Any other firer
+#: carries the catalogue id of the card that put it on the board, so a unit summoned by
+#: another card fires under its summoner's id (a Rascal Girl's shot names Rascals).
 FIRER_TOWER = -1
-#: ``ProjectileState.firer_card_id`` when the engine does not know: a projectile restored
-#: from a snapshot older than the field. Kept apart from FIRER_TOWER on purpose -- sim's
-#: words -- so that "unknown" never reads as "a tower fired this".
+#: ``ProjectileState.firer_card_id`` when the engine cannot name the card: the firing card
+#: is not in this catalogue, or the projectile was restored from a snapshot older than the
+#: field. Kept apart from FIRER_TOWER on purpose -- sim's words -- so that "unknown" never
+#: reads as "a tower fired this".
 FIRER_UNKNOWN = -2
 
 
