@@ -160,9 +160,11 @@ centre and corner, both teams, seven tower states. So a silently wrong mask fail
 instead of a training run. The mask covers elixir, territory, water, the river band,
 building footprints and the no-deploy rectangle around each living enemy crown tower.
 
-Measured at `reset(seed=0)` with the default random decks, 2026-09-22: 921 of 2305 actions
-are legal on the first step on `RustEngine` and 1235 on `MockEngine` (whose cards run at CSV
-level 1). Read that pair carefully rather than as a property of either engine. A random deck
+Measured at `reset(seed=0)` with the default random decks, 2026-09-24. On `RustEngine` the
+first step offers only the no-op, because no card can be played during the opening lockout
+(`DeployRules.deploy_lockout_ticks`, 90 ticks). After nine no-op steps, at tick 90, 921 of 2305
+actions are legal. `MockEngine` has no lockout and offers 1235 on the first step (its cards run
+at CSV level 1). Read that pair carefully rather than as a property of either engine. A random deck
 is drawn from the catalogue, so which cards land in the first hand moves with the catalogue,
 and a hand of four troops offers far fewer tiles than one holding a spell, which is legal
 almost everywhere. The `RustEngine` figure here is a hand of four troops. Every
