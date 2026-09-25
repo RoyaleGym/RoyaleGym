@@ -100,8 +100,11 @@ from .protocol import (
     DeployResult,
     DeployRules,
     DeployStatus,
+    EntityState,
     MatchSetup,
     Placement,
+    ProjectileState,
+    SpellState,
     TowerSlot,
     calibration_digest,
     calibration_values,
@@ -626,6 +629,10 @@ class RustEngine:
             int(DeployStatus[n]) if n in DeployStatus.__members__ else None
             for n in _core.DEPLOY_REASONS
         ]
+        #: Which positional layouts were checked against the engine's own export, by name.
+        #: False means the engine exports no field list, so that layout is TRUSTED, not
+        #: verified -- see ``check_field_order``.
+        self.field_order_checked = check_field_order(_core)
         self._decode_state = msgspec.json.Decoder(BattleState)
         self._reset_called = False
         #: Whether the last step's results carried the engine's RESOLVED deploy
@@ -875,6 +882,59 @@ PROBE_TILES = ((1, 2), (4, 3), (9, 4), (13, 2), (16, 5))
 #: Probe verdicts, keyed by engine build, card table and constructor arguments. The probe costs a
 #: handful of resets and a tick; a test suite builds hundreds of these.
 _PROBE_CACHE: dict[tuple, list[str]] = {}
+
+
+#: Positional structs and the engine export that names each one's columns.
+POSITIONAL_LAYOUTS = (
+    ("ENTITY_FIELDS", EntityState),
+    ("SPELL_FIELDS", SpellState),
+    ("PROJECTILE_FIELDS", ProjectileState),
+)
+
+
+def check_field_order(core: Any) -> dict[str, bool]:
+    """Refuse an engine whose positional columns do not line up with this package's.
+
+    WHY THIS EXISTS. EntityState, SpellState and ProjectileState are ``array_like``: the
+    engine's state_json sends each row as a JSON ARRAY and it is decoded BY POSITION. A
+    type mismatch raises on its own, but two adjacent fields of one type do not -- on
+    2026-09-24 the engine gained ``target_uid`` and ``attack_phase``, two ints side by
+    side, and a swap between sim's order and this package's would have drawn a uid as an
+    attack phase without a word. The day before, DEPLOY_REASONS had failed exactly this
+    way: a positional list grew in one repo and not the other.
+
+    THE RULE. The engine's list must be a PREFIX of ours. Ours may be longer -- a newer
+    royalegym reading an older engine, whose missing trailing columns decode to their
+    "not reported" defaults. The engine's may not be longer, and no shared column may be
+    in a different place.
+
+    Returns, per export name, whether that layout was actually checked. An engine that
+    exports no field list passes UNCHECKED, and says so, rather than passing silently.
+    """
+    checked: dict[str, bool] = {}
+    for export, struct in POSITIONAL_LAYOUTS:
+        theirs = getattr(core, export, None)
+        if theirs is None:
+            checked[export] = False
+            continue
+        theirs = [str(f) for f in theirs]
+        ours = list(struct.__struct_fields__)
+        if len(theirs) > len(ours):
+            raise RuntimeError(
+                f"the engine sends {len(theirs)} {struct.__name__} columns and this royalegym "
+                f"knows {len(ours)}: {theirs[len(ours):]} are new. The engine is newer than "
+                "this package; update royalegym before decoding its state."
+            )
+        for i, (a, b) in enumerate(zip(theirs, ours, strict=False)):
+            if a != b:
+                raise RuntimeError(
+                    f"{struct.__name__} column {i} is {a!r} in the engine and {b!r} here. These "
+                    "rows are decoded BY POSITION, so every column from here on would be read "
+                    f"into the wrong field without an error.\n  engine: {theirs}\n"
+                    f"  here:   {ours}"
+                )
+        checked[export] = True
+    return checked
 
 
 def rotation_probe(engine: RustEngine, tiles: Sequence[tuple[int, int]] = PROBE_TILES) -> list[str]:

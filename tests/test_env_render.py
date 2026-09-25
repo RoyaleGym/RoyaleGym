@@ -120,11 +120,23 @@ def test_plant_external_reference_checker_fires():
     assert "<link href=...>" in found
 
 
+def as_json(obj):
+    """What ``obj`` looks like after a trip through JSON, which is all a page can hold.
+
+    JSON has no tuples, so a frozen struct's tuple fields -- ``footprint``, and since
+    2026-09-24 ``facing`` and ``buffs`` -- come back from the page as lists. Comparing the
+    page with ``to_builtins`` alone compares ``[0, 0]`` with ``(0, 0)`` and fails on a
+    representation the page cannot have rather than on its content. The footprint half of
+    that was latent for as long as this test's battle had no building box in it.
+    """
+    return msgspec.json.decode(msgspec.json.encode(obj))
+
+
 def test_embedded_json_is_exactly_the_recorded_battle():
     view = extract_view(render_html(TRACE))
     assert view["entity_fields"] == list(EntityState.__struct_fields__)
-    assert view["frames"] == msgspec.to_builtins(TRACE.frames)
-    assert view["cards"] == msgspec.to_builtins(TRACE.header.cards)
+    assert view["frames"] == as_json(TRACE.frames)
+    assert view["cards"] == as_json(TRACE.header.cards)
     arena = Arena.load(Calibration.load())
     assert view["arena"]["grid"] == arena.grid
     assert (view["arena"]["tiles_x"], view["arena"]["tiles_y"]) == (18, 32)
@@ -132,7 +144,7 @@ def test_embedded_json_is_exactly_the_recorded_battle():
     assert view["source"]["seed"] == str(TRACE.header.seed)
     n_commands = sum(len(st.commands) for st in TRACE.steps)
     assert len(view["deploys"]) == n_commands
-    assert view["result"] == msgspec.to_builtins(TRACE.result)
+    assert view["result"] == as_json(TRACE.result)
 
 
 def test_deploy_markers_name_the_card_that_was_in_the_slot():
@@ -248,7 +260,7 @@ def test_cli_round_trip_through_msgpack_and_json(tmp_path, capsys):
         out = tmp_path / f"t{suffix}.html"
         assert render.main([str(src), "-o", str(out), "--stride", "2"]) == 0
         view = extract_view(out.read_text(encoding="utf-8"))
-        assert view["frames"][0] == msgspec.to_builtins(load_trace(src).frames[0])
+        assert view["frames"][0] == as_json(load_trace(src).frames[0])
     assert "wrote" in capsys.readouterr().out
     assert render.main([str(tmp_path / "missing.msgpack"), "-o", str(tmp_path / "x.html")]) == 2
     bad = tmp_path / "bad.json"

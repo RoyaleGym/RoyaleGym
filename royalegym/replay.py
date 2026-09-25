@@ -37,6 +37,7 @@ from .protocol import (
     Engine,
     EntityState,
     MatchSetup,
+    ProjectileState,
     SpellState,
 )
 
@@ -92,6 +93,12 @@ class TraceFrame(msgspec.Struct, array_like=True):
     # positional, so a trace recorded before this existed is a shorter array and still
     # decodes, with []. Asked for by train, whose player block reported it unknown.
     next_cards: list[int] = []
+    # Projectiles in flight, so a REPLAY can draw arrows and tower shots. EntityState's new
+    # fields ride into a trace for free because a frame stores entities wholesale; these do
+    # not, and the owner watches battles through replays built from traces, so anything
+    # absent here never reaches the screen however complete the engine's export is.
+    # Trailing and defaulted: an older trace is a shorter array and decodes with [].
+    projectiles: list[ProjectileState] = []
 
 
 class TraceHeader(msgspec.Struct):
@@ -121,6 +128,9 @@ class TraceHeader(msgspec.Struct):
     cards_json_fnv1a64: str = ""
     cards_json_hash_source: str = ""
     cards_loaded_fnv1a64: str = ""
+    # ProjectileState columns, named like spell_fields so a reader decodes a frame's
+    # projectile rows by name. Empty in a trace recorded before projectiles existed.
+    projectile_fields: list[str] = []
 
 
 class TraceResult(msgspec.Struct):
@@ -173,6 +183,7 @@ def _frame(engine: Engine) -> TraceFrame:
         state_hash=_hex(engine.state_hash()),
         spells=list(s.spells),
         next_cards=[p.next_card for p in s.players],
+        projectiles=list(s.projectiles),
     )
 
 
@@ -214,6 +225,7 @@ class ReplayRecorder:
             frame_fields=list(TraceFrame.__struct_fields__),
             step_fields=list(TraceStep.__struct_fields__),
             spell_fields=list(SpellState.__struct_fields__),
+            projectile_fields=list(ProjectileState.__struct_fields__),
             **_card_table_fields(engine),
         )
         self.trace = Trace(header=header, steps=[], frames=[_frame(engine)])

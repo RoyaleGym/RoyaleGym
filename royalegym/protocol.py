@@ -384,6 +384,52 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # Trailing and defaulted like the timers, so a trace or an engine row without it
     # decodes with None. Never derived here: a box drawn or masked is the engine's own.
     footprint: tuple[int, int, int, int] | None = None
+    # WHAT A UNIT IS DOING, for the viewer (asked for by the viser session, 2026-09-24):
+    # who it attacks, where it faces, which part of an attack it is in, and what is on it.
+    # Trailing and defaulted like everything above, so MockEngine, a RustEngine built
+    # before sim exported these, and every trace recorded before them decode unchanged.
+    #
+    # THE ORDER HERE IS THE CONTRACT. This struct is array_like: state_json sends each
+    # entity as a JSON ARRAY and it is decoded BY POSITION, so these must sit in exactly
+    # sim's order. target_uid and attack_phase are adjacent ints, and a swap would raise
+    # nothing -- a uid would be drawn as an attack phase. RustEngine compares this field
+    # list against the engine's own ENTITY_FIELDS whenever the engine exports one.
+    #
+    # A DEFAULT HERE MEANS "THE ENGINE DID NOT SAY", which is why attack_phase defaults to
+    # -1 and not to sim's 0. Sim's 0 means IDLE; defaulting to it would make an engine that
+    # exports nothing look like every unit on the board is standing still.
+    target_uid: int = -1  # uid of the entity it attacks; -1 for none, or a dead target
+    attack_phase: int = -1  # sim: 0 idle, 1 windup, 2 cooldown/fire; -1 not reported
+    facing: tuple[int, int] = (0, 0)  # a DIRECTION in engine-frame subtiles, any length
+    shield: int = 0  # shield hp left; 0 for none
+    buffs: tuple[tuple[str, int], ...] = ()  # (name, ms_left); names kept whole, "|" and all
+
+
+class ProjectileState(msgspec.Struct, frozen=True, array_like=True):
+    """A projectile in flight (Rust core ``combat.rs`` Projectile, via py.rs ``state_json``).
+
+    ENGINE frame, subtiles. A projectile homes on ``target_uid``; when that target dies it
+    keeps flying to ``aim``, the target's last known position, which is why both are here.
+    Positional like EntityState, so the field ORDER is the contract with the engine and is
+    checked against its PROJECTILE_FIELDS when the engine exports one.
+    """
+
+    team: int
+    x: int
+    y: int
+    aim_x: int
+    aim_y: int
+    target_uid: int  # -1 once the target is gone; it then flies on to aim
+    splash: int  # splash radius in subtiles; 0 = single-target (combat.rs Projectile.splash)
+    firer_card_id: int  # catalogue id; FIRER_TOWER (-1) a crown tower; FIRER_UNKNOWN (-2)
+
+
+#: ``ProjectileState.firer_card_id`` for a shot from a crown tower.
+FIRER_TOWER = -1
+#: ``ProjectileState.firer_card_id`` when the engine does not know: a projectile restored
+#: from a snapshot older than the field. Kept apart from FIRER_TOWER on purpose -- sim's
+#: words -- so that "unknown" never reads as "a tower fired this".
+FIRER_UNKNOWN = -2
 
 
 class SpellState(msgspec.Struct, frozen=True, array_like=True):
@@ -431,6 +477,9 @@ class BattleState(msgspec.Struct, frozen=True):
     game_over: bool
     winner: int  # Winner
     spells: list[SpellState] = []  # live spell objects, engine order (not seat-canonical)
+    # Projectiles in flight. Keyed rather than positional (BattleState is a JSON object),
+    # so this one is safe by name. Empty from an engine that exports none.
+    projectiles: list[ProjectileState] = []
 
 
 class SpawnSpec(msgspec.Struct, frozen=True):

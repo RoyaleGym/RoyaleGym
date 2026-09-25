@@ -51,11 +51,13 @@ import msgspec
 
 from .protocol import (
     EMPTY_CARD,
+    FIRER_TOWER,
     BattleState,
     CardInfo,
     EntityKind,
     EntityState,
     PlayerState,
+    ProjectileState,
     SpellState,
 )
 
@@ -80,11 +82,21 @@ def names_of(cards: Sequence[CardInfo]) -> Callable[[int], str]:
 
 
 def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
-    """royaleviser.model.Unit as a dict. Path and target are not in an engine state.
+    """royaleviser.model.Unit as a dict. Path is not in an engine state.
 
     ``footprint`` is the engine's own box for a building or tower, passed through as it
     came: None for a troop and for an engine that reports no box, so the viewer draws
     its marked stand-in rather than a box made up here.
+
+    NOT REPORTED IS None, NEVER A VALUE. ``target``, ``direction`` and ``state`` were
+    hard-coded None until the engine exported them (2026-09-24). An engine that still
+    exports nothing decodes to EntityState's "did not say" defaults, and each maps back
+    to None here: no target, a zero facing, and attack_phase -1. A zero facing in
+    particular must not reach the viewer as [0, 0], because the viewer normalises the
+    direction's length and a zero vector has none.
+
+    ``status`` is the buff list as the engine names it, names whole: the viewer splits
+    sim's "|"-joined names itself.
     """
     name = TOWER_NAMES.get(e.kind) if e.card_id == EMPTY_CARD else None
     return {
@@ -100,12 +112,41 @@ def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
         "flying": e.flying,
         "deploy_ticks": e.deploy_ticks,
         "stun_ticks": e.stun_ticks,
-        "target": None,
+        "target": e.target_uid if e.target_uid >= 0 else None,
         "path": [],
-        "direction": None,
-        "state": None,
-        "extra": {"tower_slot": e.tower_slot, "knockback_ticks": e.knockback_ticks},
+        "direction": list(e.facing) if e.facing != (0, 0) else None,
+        "state": e.attack_phase if e.attack_phase >= 0 else None,
+        "status": [[buff, ms_left] for buff, ms_left in e.buffs],
+        "extra": {
+            "tower_slot": e.tower_slot,
+            "knockback_ticks": e.knockback_ticks,
+            "shield": e.shield,
+        },
         "footprint": list(e.footprint) if e.footprint is not None else None,
+    }
+
+
+def projectile_dict(p: ProjectileState, name_of: Callable[[int], str]) -> dict[str, Any]:
+    """One projectile in flight, for the viewer. ENGINE frame, subtiles, like units.
+
+    ``name`` is what fired it: the card, "tower" for a crown tower (firer -1), and None
+    when the engine does not know (firer -2, a projectile restored from a snapshot older
+    than the field). Sim keeps -2 apart from -1 so that "unknown" never reads as "a tower
+    fired this", and mapping every negative id to "tower" would undo exactly that.
+    """
+    return {
+        "team": p.team,
+        "x": p.x,
+        "y": p.y,
+        "aim_x": p.aim_x,
+        "aim_y": p.aim_y,
+        "target": p.target_uid if p.target_uid >= 0 else None,
+        "splash": p.splash,
+        "name": (
+            name_of(p.firer_card_id) if p.firer_card_id >= 0
+            else "tower" if p.firer_card_id == FIRER_TOWER
+            else None
+        ),
     }
 
 
@@ -170,6 +211,7 @@ def frame_dict(
         ],
         "units": [unit_dict(e, name_of) for e in state.entities],
         "spells": [spell_dict(s, name_of) for s in state.spells],
+        "projectiles": [projectile_dict(p, name_of) for p in state.projectiles],
         "overtime": state.overtime,
         "game_over": state.game_over,
         "winner": state.winner,
