@@ -51,10 +51,13 @@ from .evaluate import MatchResult, SeatResult, evaluate
 from .mock_engine import MockEngine
 from .obs import (
     EntityListObsBuilder,
+    MatchClock,
+    MatchMemory,
     ObsBuilder,
     Reveal,
     SpatialObsBuilder,
     Variability,
+    fair_fields,
     measure_variability,
 )
 from .opponents import (
@@ -160,6 +163,8 @@ __all__ = [
     "GameOverCondition",
     "HalfTileActionParser",
     "IllegalActionPenalty",
+    "MatchClock",
+    "MatchMemory",
     "MatchResult",
     "MidGameStateMutator",
     "MidGameStateSetter",
@@ -199,6 +204,7 @@ __all__ = [
     "core_available",
     "default_reward",
     "evaluate",
+    "fair_fields",
     "ladder",
     "load_trace",
     "make_gym_vec_env",

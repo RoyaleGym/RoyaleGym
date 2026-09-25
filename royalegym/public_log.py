@@ -6,11 +6,12 @@ cards the opponent has shown, how long since the last play. ``PublicLogMemory`` 
 those fields from such a log, so a model can be trained on recorded matches without
 replaying them through an engine, and read exactly the numbers the env would show.
 
-ONE SET OF FORMULAS. It holds a ``MatchMemory`` and moves it with
-``MatchMemory.advance``, the same call the env's ``observe`` makes, and it reads the
-fields through ``build_vector``, the function that writes the env's vector. The only
-thing this module adds is where the inputs come from: plays from the log instead of
-from hand slots changing, and the hand from the deck order instead of from the engine.
+ONE SET OF FORMULAS. It is a thin wrapper over the published primitive in ``obs``: it
+starts a ``MatchMemory`` with ``MatchMemory.start``, moves it with
+``MatchMemory.advance`` (the call the env's ``observe`` makes), and reads the fields with
+``fair_fields`` (the function ``build_vector`` gets them from), on ``MatchClock.at``.
+What this module adds is only where the inputs come from: plays from a log, and the
+own hand from the dealt deck order.
 
 WHAT IT CANNOT FILL. The board: tower hitpoints, crowns and which kings are awake
 (``BOARD_FIELDS``). A log of plays does not say what the plays did.
@@ -30,28 +31,19 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from .obs import MatchMemory, Reveal, build_vector, vector_offsets
+from .obs import BOARD_FIELDS, FAIR_FIELDS, MatchClock, MatchMemory, fair_fields
 from .protocol import (
     DECK_SIZE,
-    EMPTY_CARD,
     HAND_SIZE,
-    BattleState,
     Calibration,
     CardInfo,
     ElixirLaw,
-    PlayerState,
-    Winner,
     default_calibration,
 )
 
-#: Vector fields a log of plays cannot fill. ``observe`` leaves them out.
-BOARD_FIELDS = ("own_tower_hp", "enemy_tower_hp", "crowns", "king_active")
+__all__ = ["BOARD_FIELDS", "PublicLogMemory"]
 
-_OWN, _ENEMY = 0, 1  # seats of the stand-in state build_vector reads
-
-
-def _ceil_div(a: int, b: int) -> int:
-    return -(-a // b)
+_OWN, _ENEMY = 0, 1
 
 
 class PublicLogMemory:
@@ -90,12 +82,13 @@ class PublicLogMemory:
             raise ValueError(f"deck_order must be {DECK_SIZE} distinct card ids, got {deck}")
         if not all(0 <= c < n for c in deck):
             raise ValueError(f"deck_order {deck} has ids outside a {n}-card catalogue")
+        self.calibration = calibration
         cal = calibration if calibration is not None else default_calibration()
         self.law = ElixirLaw.load(cal)
         self.max_mana = cal.int("match.MAX_MANA")
-        self.tick_ms = cal.int("time.TICK_MS")
-        self.regular_ticks = _ceil_div(cal.int("match.REGULAR_TIME_S") * 1000, self.tick_ms)
-        self.overtime_ticks = _ceil_div(cal.int("match.OVERTIME_S") * 1000, self.tick_ms)
+        clock = MatchClock.at(start_tick, calibration)
+        self.regular_ticks = clock.regular_ticks
+        self.overtime_ticks = clock.overtime_ticks
         start = 1000 * cal.int("match.START_MANA")
         self.enemy_last_card = enemy_last_card
         self.hand = deck[:HAND_SIZE]
@@ -104,19 +97,13 @@ class PublicLogMemory:
         self._fed = 0
         self.memory = MatchMemory(n, self.law)
         self.memory.bind(self.cards)
-        self.memory.seed(
-            self._state(
-                start_tick,
-                start if own_elixir_milli is None else own_elixir_milli,
-                start if enemy_elixir_milli is None else enemy_elixir_milli,
-            ),
-            _OWN,
+        self.memory.start(
+            start_tick,
+            start if own_elixir_milli is None else own_elixir_milli,
+            start if enemy_elixir_milli is None else enemy_elixir_milli,
+            self.hand,
+            self.queue[0],
         )
-        self._offsets = {
-            k: s
-            for k, s in vector_offsets(n, None, enemy_last_card).items()
-            if k not in BOARD_FIELDS
-        }
 
     # -- the log ---------------------------------------------------------------
 
@@ -145,17 +132,18 @@ class PublicLogMemory:
 
     def overtime_at(self, tick: int) -> bool:
         """Whether a match still running at ``tick`` is in overtime."""
-        return tick >= self.regular_ticks
+        return MatchClock.at(tick, self.calibration).overtime
 
     def fields(self) -> list[str]:
         """The field names ``observe`` returns, in vector order."""
-        return list(self._offsets)
+        return [*FAIR_FIELDS, *(["enemy_last_card"] if self.enemy_last_card else [])]
 
     def observe(self, tick: int) -> dict[str, np.ndarray]:
         """The fields at ``tick``, from every play made before it. The clock only moves on."""
         memory = self.memory
         if tick < memory.tick:
             raise ValueError(f"tick {tick} is before the last observation, {memory.tick}")
+        clock = MatchClock.at(tick, self.calibration)
         if tick > memory.tick:
             due = sorted(p for p in self._pending if p[0] < tick)
             self._pending = [p for p in self._pending if p[0] >= tick]
@@ -167,14 +155,18 @@ class PublicLogMemory:
                     own.append((when, card))
                 else:
                     enemy.append((when, card))
-            memory.advance(tick, self.regular_ticks, self.overtime_at(tick), own, enemy)
+            memory.advance(tick, clock.regular_ticks, clock.overtime, own, enemy)
             memory.show_own_hand(self.hand, self.queue[0])
-        state = self._state(
-            tick, self.law.to_milli(memory.own_fine), self.law.to_milli(memory.foe_fine)
+        return fair_fields(
+            memory,
+            clock,
+            self.hand,
+            self.queue[0],
+            self.law.to_milli(memory.own_fine),
+            self.cards,
+            self.max_mana,
+            enemy_last_card=self.enemy_last_card,
         )
-        extra = {"enemy_last_card": True} if self.enemy_last_card else {}
-        vec = build_vector(state, _OWN, self.cards, self.max_mana, Reveal(), memory, **extra)
-        return {k: vec[s].copy() for k, s in self._offsets.items()}
 
     # -- internals ---------------------------------------------------------------
 
@@ -187,35 +179,3 @@ class PublicLogMemory:
             )
         self.hand[self.hand.index(card)] = self.queue.pop(0)
         self.queue.append(card)
-
-    def _state(self, tick: int, own_milli: int, enemy_milli: int) -> BattleState:
-        """A stand-in for the state build_vector reads. Its board is empty and unread."""
-        overtime = self.overtime_at(tick)
-
-        def player(team: int, milli: int, hand: list[int], next_card: int) -> PlayerState:
-            return PlayerState(
-                team=team,
-                elixir_milli=milli,
-                hand=hand,
-                next_card=next_card,
-                crowns=0,
-                tower_hp=[0, 0, 0],
-                tower_max_hp=[1, 1, 1],
-                king_active=False,
-            )
-
-        return BattleState(
-            tick=tick,
-            tick_ms=self.tick_ms,
-            regular_ticks=self.regular_ticks,
-            overtime_ticks=self.overtime_ticks,
-            elixir_rate=self.law.rate_at(tick, self.regular_ticks, overtime),
-            overtime=overtime,
-            players=[
-                player(_OWN, own_milli, list(self.hand), self.queue[0]),
-                player(_ENEMY, enemy_milli, [EMPTY_CARD] * HAND_SIZE, EMPTY_CARD),
-            ],
-            entities=[],
-            game_over=False,
-            winner=Winner.NONE,
-        )

@@ -106,6 +106,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 from typing import Any, NamedTuple
 
 import numpy as np
@@ -130,6 +131,7 @@ from .protocol import (
     SpellMotion,
     TowerSlot,
     default_calibration,
+    default_elixir_law,
     to_own,
 )
 
@@ -403,14 +405,33 @@ class MatchMemory:
     def seed(self, state: BattleState, team: int) -> None:
         """Start of a match: everything forgotten, the two bars read once."""
         me, foe = state.players[team], state.players[1 - team]
-        self.tick = state.tick
+        self.start(
+            state.tick, me.elixir_milli, foe.elixir_milli, me.hand, me.next_card, foe.hand
+        )
+
+    def start(
+        self,
+        tick: int,
+        own_elixir_milli: int,
+        enemy_elixir_milli: int,
+        own_hand: Sequence[int],
+        next_card: int,
+        enemy_hand: Sequence[int] | None = None,
+    ) -> None:
+        """``seed`` without a state: the start of a match, from what a player sees at it.
+
+        Both bars are public at the start, and so is the player's own hand. The enemy
+        hand is only used by ``observe`` to notice plays, so a caller that feeds dated
+        plays to ``advance`` instead leaves it out.
+        """
+        self.tick = tick
         self.exact = True
-        self.own_fine = self.law.seed_fine(me.elixir_milli)
-        self.foe_fine = self.law.seed_fine(foe.elixir_milli)
+        self.own_fine = self.law.seed_fine(own_elixir_milli)
+        self.foe_fine = self.law.seed_fine(enemy_elixir_milli)
         self.leak_fine = 0
-        self.own_hand = list(me.hand)
-        self.foe_hand = list(foe.hand)
-        self.own_cycle = [me.next_card] + [EMPTY_CARD] * (DECK_SIZE - HAND_SIZE - 1)
+        self.own_hand = list(own_hand)
+        self.foe_hand = list(enemy_hand) if enemy_hand is not None else [EMPTY_CARD] * HAND_SIZE
+        self.own_cycle = [next_card] + [EMPTY_CARD] * (DECK_SIZE - HAND_SIZE - 1)
         self.own_deck = np.zeros(self.num_cards, dtype=bool)
         self.own_last_card = EMPTY_CARD
         self.own_last_play_tick = -1
@@ -558,6 +579,140 @@ class MatchMemory:
         return out
 
 
+class MatchClock(NamedTuple):
+    """Where a match is in time: everything the ``clock`` and ``elixir_rate`` fields read."""
+
+    tick: int
+    regular_ticks: int
+    overtime_ticks: int
+    overtime: bool
+    elixir_rate: int  # 1 or 2
+
+    @classmethod
+    def of(cls, state: BattleState) -> MatchClock:
+        """The clock an engine reports."""
+        return cls(
+            state.tick, state.regular_ticks, state.overtime_ticks, state.overtime, state.elixir_rate
+        )
+
+    @classmethod
+    def at(cls, tick: int, calibration: Calibration | None = None) -> MatchClock:
+        """The clock of a match still running at ``tick``, from the rules alone.
+
+        A match decided at the end of regulation has no later ticks, so one still running
+        there is in overtime. The rate is ``ElixirLaw.rate_at``. Both rules are checked
+        against MockEngine and RustEngine, tick by tick, in tests/test_fair_fields.py.
+        """
+        cal = calibration if calibration is not None else default_calibration()
+        law = default_elixir_law() if calibration is None else ElixirLaw.load(cal)
+        tick_ms = cal.int("time.TICK_MS")
+        regular = -(-cal.int("match.REGULAR_TIME_S") * 1000 // tick_ms)
+        overtime_ticks = -(-cal.int("match.OVERTIME_S") * 1000 // tick_ms)
+        overtime = tick >= regular
+        return cls(tick, regular, overtime_ticks, overtime, law.rate_at(tick, regular, overtime))
+
+
+#: The fair vector fields that need no board, in vector order. ``fair_fields`` writes them.
+FAIR_FIELDS = (
+    "own_elixir",
+    "enemy_elixir",
+    "own_hand_cards",
+    "own_hand_cost",
+    "own_hand_affordable",
+    "own_next_card",
+    "own_cycle_6_8",
+    "own_deck",
+    "own_last_card",
+    "own_ticks_since_play",
+    "own_elixir_leaked",
+    "enemy_cards_seen",
+    "enemy_possible_hand",
+    "enemy_plays",
+    "clock",
+    "elixir_rate",
+)
+#: The four fair fields the board decides. Only ``build_vector`` writes them.
+BOARD_FIELDS = ("own_tower_hp", "enemy_tower_hp", "crowns", "king_active")
+
+
+def fair_fields(
+    memory: MatchMemory,
+    clock: MatchClock,
+    hand: Sequence[int],
+    next_card: int,
+    own_elixir_milli: int,
+    cards: Sequence[CardInfo],
+    max_mana: int,
+    *,
+    enemy_elixir_milli: int | None = None,
+    enemy_last_card: bool = False,
+) -> dict[str, np.ndarray]:
+    """Every fair vector field but the board's four, by name, from what a player sees.
+
+    THE CONTRACT. These are the exact numbers ``build_vector`` puts in the env's vector:
+    it calls this function for them. So anything that can keep a ``MatchMemory`` without
+    an engine -- dated plays through ``MatchMemory.advance`` -- gets the env's fields
+    without building a state. The player supplies what a player sees anyway: the own
+    hand, the next card, the own bar, and the clock (``MatchClock.of`` a state, or
+    ``MatchClock.at`` a tick). ``memory`` must already have been moved to ``clock.tick``.
+
+    ``enemy_elixir_milli`` is the true enemy bar for ``Reveal.enemy_elixir`` only; left
+    at None, the field is the memory's count, which is the fair one.
+
+    Keys are ``FAIR_FIELDS`` in order, then ``enemy_last_card`` when asked for. Each
+    array is float32 and already clipped to [0, 1], as in the vector.
+    """
+    num_cards = len(cards)
+    onehot = num_cards + 1
+    full = 1000 * max_mana
+    foe_milli = memory.enemy_elixir_milli() if enemy_elixir_milli is None else enemy_elixir_milli
+    one, cost, afford = _hand_block(hand, cards, own_elixir_milli, num_cards, max_mana)
+    cycle = np.zeros((DECK_SIZE - HAND_SIZE - 1, onehot), dtype=np.float32)
+    for i, card in enumerate(memory.own_cycle[1:]):
+        cycle[i, num_cards if card == EMPTY_CARD else card] = 1
+    reg_left = max(0, clock.regular_ticks - clock.tick) / max(1, clock.regular_ticks)
+    ot_left = 0.0
+    if clock.overtime:
+        ot_end = clock.regular_ticks + clock.overtime_ticks
+        ot_left = max(0, ot_end - clock.tick) / max(1, clock.overtime_ticks)
+    out = {
+        "own_elixir": np.array([own_elixir_milli / full], dtype=np.float32),
+        "enemy_elixir": np.array([foe_milli / full], dtype=np.float32),
+        "own_hand_cards": one,
+        "own_hand_cost": cost,
+        "own_hand_affordable": afford,
+        "own_next_card": _one_hot(next_card, onehot, num_cards),
+        "own_cycle_6_8": cycle.reshape(-1),
+        "own_deck": memory.own_deck.astype(np.float32),
+        "own_last_card": _one_hot(memory.own_last_card, onehot, num_cards),
+        "own_ticks_since_play": np.array(
+            [min(1.0, memory.ticks_since_own_play(clock.tick) / PLAY_GAP_TICKS)], dtype=np.float32
+        ),
+        "own_elixir_leaked": np.array(
+            [min(1.0, memory.leaked_elixir() / LEAK_SCALE)], dtype=np.float32
+        ),
+        "enemy_cards_seen": memory.foe_seen.astype(np.float32),
+        "enemy_possible_hand": memory.enemy_possible_hand().astype(np.float32),
+        "enemy_plays": np.array([min(1.0, memory.foe_plays / PLAYS_SCALE)], dtype=np.float32),
+        "clock": np.array([reg_left, float(clock.overtime), ot_left], dtype=np.float32),
+        "elixir_rate": np.array(
+            [float(clock.elixir_rate == 1), float(clock.elixir_rate == 2)], dtype=np.float32
+        ),
+    }
+    if enemy_last_card:
+        # The newest entry of the cycle memory the vector already uses for
+        # enemy_possible_hand, so it is derived from tested state, not kept twice.
+        last = memory.foe_recent[-1] if memory.foe_recent else EMPTY_CARD
+        out["enemy_last_card"] = _one_hot(last, onehot, num_cards)
+    return {k: np.clip(v, 0.0, 1.0).astype(np.float32, copy=False) for k, v in out.items()}
+
+
+@lru_cache(maxsize=64)
+def _vector_keys(reveal: Reveal, enemy_last_card: bool) -> tuple[str, ...]:
+    """The vector's field order, from ``vector_layout``, which is the one definition of it."""
+    return tuple(f.key for f in vector_layout(1, reveal, enemy_last_card))
+
+
 def build_vector(
     state: BattleState,
     team: int,
@@ -567,69 +722,48 @@ def build_vector(
     memory: MatchMemory,
     enemy_last_card: bool = False,
 ) -> np.ndarray:
-    """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``."""
+    """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``.
+
+    The fields a player's own view decides come from ``fair_fields``; this adds the four
+    the board decides and any reveal, and lays them out in ``vector_layout`` order.
+    """
     me, foe = state.players[team], state.players[1 - team]
     num_cards = len(cards)
     onehot = num_cards + 1
-    full = 1000 * max_mana
-    out: list[np.ndarray] = []
-    out.append(np.array([me.elixir_milli / full], dtype=np.float32))
-    foe_milli = foe.elixir_milli if reveal.enemy_elixir else memory.enemy_elixir_milli()
-    out.append(np.array([foe_milli / full], dtype=np.float32))
-    out += _hand_block(me.hand, cards, me.elixir_milli, num_cards, max_mana)
-    out.append(_one_hot(me.next_card, onehot, num_cards))
-    cycle = np.zeros((DECK_SIZE - HAND_SIZE - 1, onehot), dtype=np.float32)
-    for i, card in enumerate(memory.own_cycle[1:]):
-        cycle[i, num_cards if card == EMPTY_CARD else card] = 1
-    out.append(cycle.reshape(-1))
-    out.append(memory.own_deck.astype(np.float32))
-    out.append(_one_hot(memory.own_last_card, onehot, num_cards))
-    out.append(
-        np.array(
-            [
-                min(1.0, memory.ticks_since_own_play(state.tick) / PLAY_GAP_TICKS),
-                min(1.0, memory.leaked_elixir() / LEAK_SCALE),
-            ],
-            dtype=np.float32,
-        )
+    parts = fair_fields(
+        memory,
+        MatchClock.of(state),
+        me.hand,
+        me.next_card,
+        me.elixir_milli,
+        cards,
+        max_mana,
+        enemy_elixir_milli=foe.elixir_milli if reveal.enemy_elixir else None,
+        enemy_last_card=enemy_last_card,
     )
-    out.append(memory.foe_seen.astype(np.float32))
-    out.append(memory.enemy_possible_hand().astype(np.float32))
-    out.append(np.array([min(1.0, memory.foe_plays / PLAYS_SCALE)], dtype=np.float32))
-    for p in (me, foe):
-        out.append(
-            np.array(
-                [p.tower_hp[s] / max(1, p.tower_max_hp[s]) for s in TowerSlot], dtype=np.float32
-            )
-        )
-    out.append(np.array([me.crowns / 3.0, foe.crowns / 3.0], dtype=np.float32))
-    out.append(np.array([float(me.king_active), float(foe.king_active)], dtype=np.float32))
-    reg_left = max(0, state.regular_ticks - state.tick) / max(1, state.regular_ticks)
-    ot_left = 0.0
-    if state.overtime:
-        ot_end = state.regular_ticks + state.overtime_ticks
-        ot_left = max(0, ot_end - state.tick) / max(1, state.overtime_ticks)
-    out.append(np.array([reg_left, float(state.overtime), ot_left], dtype=np.float32))
-    out.append(
-        np.array([float(state.elixir_rate == 1), float(state.elixir_rate == 2)], dtype=np.float32)
+    own_hp, foe_hp = (
+        np.array([p.tower_hp[s] / max(1, p.tower_max_hp[s]) for s in TowerSlot], dtype=np.float32)
+        for p in (me, foe)
     )
-    if enemy_last_card:
-        # The newest entry of the cycle memory the vector already uses for
-        # enemy_possible_hand, so it is derived from tested state, not kept twice.
-        last = memory.foe_recent[-1] if memory.foe_recent else EMPTY_CARD
-        out.append(_one_hot(last, onehot, num_cards))
+    parts["own_tower_hp"] = own_hp
+    parts["enemy_tower_hp"] = foe_hp
+    parts["crowns"] = np.array([me.crowns / 3.0, foe.crowns / 3.0], dtype=np.float32)
+    parts["king_active"] = np.array(
+        [float(me.king_active), float(foe.king_active)], dtype=np.float32
+    )
     if reveal.enemy_hand:
         one, _cost, _afford = _hand_block(foe.hand, cards, foe.elixir_milli, num_cards, max_mana)
-        out.append(one)
+        parts["enemy_hand_cards"] = one
     if reveal.enemy_next_card:
-        out.append(_one_hot(foe.next_card, onehot, num_cards))
+        parts["enemy_next_card"] = _one_hot(foe.next_card, onehot, num_cards)
     if reveal.enemy_deck:
         deck = np.zeros(num_cards, dtype=np.float32)
         for c in (*foe.hand, foe.next_card):
             if c != EMPTY_CARD:
                 deck[c] = 1
         deck[memory.foe_seen] = 1
-        out.append(deck)
+        parts["enemy_deck"] = deck
+    out = [parts[k] for k in _vector_keys(reveal, enemy_last_card)]
     vec: np.ndarray = np.clip(np.concatenate(out), 0.0, 1.0).astype(np.float32)
     return vec
 

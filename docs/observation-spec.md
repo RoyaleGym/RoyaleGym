@@ -394,42 +394,49 @@ Tests replay a seeded episode twice in the same env and require the two observat
 sequences to be identical, with a plant that removes both guards and shows the
 difference.
 
-### The same fields from a log of plays
+### The same fields without an engine
 
-`public_log.PublicLogMemory` fills these vector fields from a timed log of card
-plays, with no engine running. It needs the seat's own deck in dealt order (hand
-slots first, then the queue) and each play as a tick and a card. That is enough to
-train on recorded matches and still read the numbers the env would show.
+Most of the vector is what a player remembers, not what the board shows. Four published
+names let code outside the env compute those fields with no engine running: for recorded
+matches, for a bot playing through a client, for any tool that has a log of plays. The
+env computes its own vector through the same four, so the numbers match by construction.
 
-It fills every fair field except the four the board decides: `own_tower_hp`,
-`enemy_tower_hp`, `crowns` and `king_active` (`BOARD_FIELDS`). It fills
-`enemy_last_card` when asked.
+* `MatchMemory.start(tick, own_elixir_milli, enemy_elixir_milli, own_hand, next_card)`
+  begins a match from what a player sees at its start.
+* `MatchMemory.advance(tick, regular_ticks, overtime, own_plays, enemy_plays)` moves it
+  to `tick` through the plays since the last call, each a `(tick, card)` pair. A play
+  inside the interval splits the regeneration at its tick. The env's `observe` calls
+  the same method, dating every play at the previous observation, because the engine
+  pays a command before the step's first tick.
+* `MatchClock.at(tick)` is the clock of a match still running at `tick`, from the rules.
+  `MatchClock.of(state)` is the clock an engine reports.
+* `fair_fields(memory, clock, hand, next_card, own_elixir_milli, cards, max_mana)`
+  returns every fair field except the four the board decides (`BOARD_FIELDS`: tower
+  hitpoints, crowns, awake kings), by name, as `FAIR_FIELDS` lists them.
+  `build_vector` calls it for those fields.
 
-The formulas are not copied. The log memory drives a `MatchMemory` through
-`MatchMemory.advance`, the call the env's `observe` makes. It reads the fields
-through `build_vector`, the function that writes the env's vector. The one
-difference is where a play's time comes from. `observe` dates every play at the
-previous observation, because the engine pays a command before the step's first
-tick. A log dates each play at its own tick. A play inside an observation gap splits
-the regeneration at that tick. Splitting is exact, so both routes give the same bar
-whenever plays fall on observation ticks.
+The caller supplies what a player sees anyway: the own hand, the next card and the
+own bar. Rules a caller has to get right:
 
-Four rules link a log to what the env shows:
+* A play at tick p is paid before tick p runs. An observation at tick T sees the plays
+  made before T.
+* `own_ticks_since_play` counts from the observation that first showed the play, not
+  from the play. That is what the env has always recorded.
+* `MatchMemory.unaffordable` counts plays the counted bar could not pay, (own, enemy).
+  It stays at zero on an engine's own log. Anywhere else it means a missing play or a
+  different elixir law.
 
-* A play at tick p is paid before tick p runs. An observation at tick T sees exactly
-  the plays made before T.
-* The played card's hand slot takes the next card, and the played card joins the
-  back of the queue.
-* A match still running at the end of regulation is in overtime.
-* `own_ticks_since_play` counts from the observation that first showed the play,
-  not from the play. That is what the env has always recorded.
+`tests/test_fair_fields.py` plays battles on MockEngine and RustEngine, dates every
+accepted play, and compares every field with the env's vector at every step, for both
+seats. It also holds `MatchClock.at` to the engine's clock at every step. The battles
+cover a full turn of both queues, spells in flight, the switch to 2x, the exact tick
+regulation ends, ticks past 4800, gaps of 1 to 13 ticks, and a seat that leaks at a
+full bar. Plays dated one tick late must fail, and so must an overtime rule one tick
+late. When `fair_fields` was split out of `build_vector`, every vector the builders
+wrote over those battles was compared byte for byte before and after, on both engines.
 
-`tests/test_public_log.py` plays battles on MockEngine and RustEngine and compares
-every field at every step, for both seats. The battles cover a full turn of both
-queues, the switch to 2x, the end of regulation, gaps of 1 to 13 ticks, and a seat
-that leaks at a full bar. A log shifted one tick late must fail. `unaffordable`
-counts plays the counted bar could not pay. It stays at zero on an engine's own log.
-Anywhere else it means a missing play or a different elixir law.
+`public_log.PublicLogMemory` wraps these for a log whose own hand comes from a known
+dealt deck order.
 
 ---
 
