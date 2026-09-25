@@ -483,80 +483,83 @@ def _deploy_a_building_each(engine) -> None:
     engine.step([c for c in cmds if c is not None], 20)
 
 
-def live_vs_reloaded_divergences(
-    seed: int, windows: int = 14, horizon: int = 8, nudge: bool = False
-) -> tuple[list[tuple[int, int, int]], int]:
-    """Snapshot the LIVE engine at the start of every window, load it into a twin, drive
-    both with the same commands for ``horizon`` steps, and record where they part.
+#: Four buildings and four held units in rotation, on BOTH sides: sim's probe deck. A hole
+#: in save_state that only a building change exposes needs changes all battle long --
+#: deploys, deaths, lifetimes running out -- not one early Cannon.
+SAVELOAD_DECK = (
+    "Knight", "Giant", "Prince", "MiniPekka", "Cannon", "Tesla", "InfernoTower", "Tombstone"
+)
 
-    Many snapshot points rather than one, because a dropped field only matters if the
-    snapshot lands while something is holding it: sim's occ_prev hole needed a unit whose
-    replan was deferred across a building change at the moment of saving. Returns
-    ``[(window, step, tick)]`` for every window that diverged, and the most buildings
-    seen standing at any snapshot.
+
+def live_vs_fresh_twin(
+    seed: int, steps: int = 600, ticks: int = 5, nudge_at: int | None = None
+) -> tuple[int | None, int]:
+    """Before EVERY step, load the live engine's snapshot into a FRESH engine, step both
+    with the same commands, and compare. Returns the first step at which they parted
+    (None if never) and the most buildings standing at any snapshot.
+
+    Fresh, not reused: a twin loaded over its own previous state would still hold any
+    scratch the snapshot omits, and would agree with the live engine for that reason.
+    This is sim's probe (2026-09-25) through RustEngine: it found the path grid's occ_prev
+    missing from snapshots at steps 23 to 200 on 5 of 5 seeds.
     """
-    live = RustEngine(card_names=SHARED)
+    live = RustEngine(card_names=SAVELOAD_DECK)
     live.reset(seed, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE,
-                                elixir_milli=[10000, 10000], start_tick=LOCKOUT))
-    _deploy_a_building_each(live)
-    twin = RustEngine(card_names=SHARED)
-    parser = TileActionParser()
-    parser.bind(live)
+                                elixir_milli=[10000, 10000], start_tick=200))
+    twin = RustEngine(card_names=SAVELOAD_DECK)
+    a = live.arena()
+    sub = a.subtile // 1000  # subtiles per millitile, as sim's probe places its taps
     rng = np.random.default_rng(seed)
-    parted: list[tuple[int, int, int]] = []
-    most_buildings = 0
-    for w in range(windows):
-        if live.state().game_over:
+    most = 0
+    for i in range(steps):
+        s = live.state()
+        if s.game_over:
             break
-        most_buildings = max(
-            most_buildings, sum(e.kind == EntityKind.BUILDING for e in live.state().entities)
-        )
-        twin.load_state(live.save_state())
-        if nudge:  # the plant: one native unit on the twin, as a dropped field would be
+        most = max(most, sum(e.kind == EntityKind.BUILDING for e in s.entities))
+        cmds = []
+        for team in (BLUE, RED):
+            if rng.random() < 0.3:
+                x = int(rng.integers(1, 17)) * 1000 + 500
+                y = int(rng.integers(2, 14)) * 1000 + 500
+                y = y if team == BLUE else a.tiles_y * 1000 - y
+                cmds.append(DeployCommand(team, int(rng.integers(0, 4)), x * sub, y * sub))
+        blob = live.save_state()
+        twin._battle = type(live._battle)(list(SAVELOAD_DECK), live.slot_of_k)
+        twin.load_state(blob)
+        if nudge_at == i:  # the plant: the twin differs by one native unit after loading
             troop = next((e for e in twin.state().entities if e.kind == EntityKind.TROOP), None)
-            if troop is not None:
-                assert twin.debug_nudge(troop.uid, 0, 18), "plant did not land"
-        for j in range(horizon):
-            s = live.state()
-            if s.game_over:
-                break
-            cmds = []
-            for team in (BLUE, RED):
-                legal = np.flatnonzero(parser.action_mask(s, team))[1:]
-                if legal.size and rng.random() < 0.3:
-                    cmds.append(parser.parse(int(rng.choice(legal)), s, team))
-            live.step(cmds, 10)
-            twin.step(cmds, 10)
-            if live.state_hash() != twin.state_hash():
-                parted.append((w, j, s.tick))
-                break
-    return parted, most_buildings
+            assert troop is not None, "plant did not land: no troop to nudge"
+            assert twin.debug_nudge(troop.uid, 0, 18), "plant did not land"
+        live.step(cmds, ticks)
+        twin.step(cmds, ticks)
+        if live.state_hash() != twin.state_hash():
+            return i, most
+    return None, most
 
 
-@pytest.mark.parametrize("seed", [3, 17, 29])
+@pytest.mark.parametrize("seed", [7, 11])
 def test_a_reloaded_battle_continues_exactly_like_the_live_one(seed):
     """save_state -> load_state must lose nothing the engine reads later.
 
     The test above cannot see a dropped field, because both of its runs start from a
-    reload. This one drives the LIVE engine against a twin loaded from it, re-snapshotting
-    every window. Sim found the gap on 2026-09-25 with buildings in play: the path grid's
-    occ_prev was not in the snapshot, and a unit whose replan was deferred across a
-    building change read it. So both teams put a building down first.
+    reload. This one loads the LIVE engine into a fresh twin before every step and holds
+    the two together, through a battle built for building churn on both sides.
     """
-    parted, buildings = live_vs_reloaded_divergences(seed)
-    assert buildings >= 1, "no building stood at any snapshot, so this measured the easy case"
-    assert not parted, (
-        f"seed {seed}: a twin loaded from the live engine parted from it in "
-        f"{len(parted)} window(s), first (window, step, tick) = {parted[0]}, with up to "
-        f"{buildings} buildings standing at a snapshot. Some state the engine reads is "
-        "not in save_state."
+    parted, buildings = live_vs_fresh_twin(seed)
+    # The divergence first: the scan stops at it, so the building count is only complete
+    # when the twin held all the way.
+    assert parted is None, (
+        f"seed {seed}: a fresh twin loaded from the live engine parted from it at step "
+        f"{parted}, with up to {buildings} buildings standing. Some state the engine reads "
+        "is not in save_state."
     )
+    assert buildings >= 2, f"at most {buildings} building(s) stood at once: too little churn"
 
 
 def test_plant_a_twin_that_differs_after_loading_is_seen():
-    """The comparison above, fed a twin nudged one native unit after each load."""
-    parted, _ = live_vs_reloaded_divergences(3, nudge=True)
-    assert parted, "PLANT DID NOT LAND: a nudged twin never parted from the live engine"
+    """The comparison above, fed a twin nudged one native unit after one load."""
+    parted, _ = live_vs_fresh_twin(7, steps=60, nudge_at=40)
+    assert parted is not None, "PLANT DID NOT LAND: a nudged twin never parted"
 
 
 def test_plant_one_subtile_after_load_is_seen(rust):
