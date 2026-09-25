@@ -97,6 +97,63 @@ def test_the_recorded_battle_is_real_evidence():
     assert any(e.flying for e in troops)
 
 
+class _CountingMock(MockEngine):
+    """A MockEngine that counts resets, to see whether a verifier replayed at all."""
+
+    resets = 0
+
+    def reset(self, seed, setup):
+        self.resets += 1
+        return super().reset(seed, setup)
+
+
+def _renamed(swap):
+    """TRACE with the header names of two card ids exchanged, as a renumbering does."""
+    cards = list(TRACE.header.cards)
+    i, j = swap
+    cards[i] = msgspec.structs.replace(TRACE.header.cards[i], name=TRACE.header.cards[j].name)
+    cards[j] = msgspec.structs.replace(TRACE.header.cards[j], name=TRACE.header.cards[i].name)
+    return msgspec.structs.replace(TRACE, header=msgspec.structs.replace(TRACE.header, cards=cards))
+
+
+def test_a_trace_on_a_different_catalogue_is_refused_by_card_name():
+    """Card ids are positions. Swap the names of a dealt card and an undealt one, as a
+    renumbered catalogue does, and the verifier names the card without replaying."""
+    setup = TRACE.header.setup
+    assert setup is not None
+    dealt = sorted({c for deck in setup.decks for c in deck})
+    undealt = [c.card_id for c in TRACE.header.cards if c.card_id not in dealt]
+    assert dealt, "fixture must deal cards"
+    assert len(undealt) >= 2, "fixture must hold two undealt cards"
+    names = {c.card_id: c.name for c in TRACE.header.cards}
+    d, u = dealt[0], undealt[0]
+    engine = _CountingMock()
+    found = verify_trace(_renamed((d, u)), engine)
+    assert len(found) == 1, found
+    assert found[0].startswith(f"card {d} is {names[u]} in the trace and {names[d]} on this")
+    assert f"(1 of the {len(dealt)} card ids the setup deals differ)" in found[0], found
+    assert engine.resets == 0, "a trace whose cards differ was replayed anyway"
+    # Two undealt ids exchanged change nothing a replay reads: it verifies.
+    engine = _CountingMock()
+    assert verify_trace(_renamed((undealt[0], undealt[1])), engine) == []
+    assert engine.resets == 1, "control: a clean trace is replayed"
+    # A dealt id past this engine's list is named as absent, before any reset.
+    past = len(MockEngine().cards())
+    decks = [list(setup.decks[0]), list(setup.decks[1])]
+    decks[0][0] = past
+    extra = msgspec.structs.replace(TRACE.header.cards[0], card_id=past, name="NotACard")
+    header = msgspec.structs.replace(
+        TRACE.header,
+        cards=[*TRACE.header.cards, extra],
+        setup=msgspec.structs.replace(setup, decks=decks),
+    )
+    engine = _CountingMock()
+    found = verify_trace(msgspec.structs.replace(TRACE, header=header), engine)
+    assert len(found) == 1, found
+    assert f"card {past} is NotACard in the trace and absent" in found[0], found
+    assert engine.resets == 0
+
+
 def test_page_is_one_self_contained_document():
     page = render_html(TRACE)
     parsed = parse_page(page)
@@ -332,6 +389,7 @@ const D = JSON.parse(DATA);
 const FF = {}; D.frame_fields.forEach((n, i) => { FF[n] = i; });
 const scrub = el("scrub"), board = el("board"), tip = el("tip");
 let spellTips = 0, stunTips = 0, framesDrawn = 0, spellFrames = 0;
+const spellTipTexts = new Set();
 for (let i = 0; i < D.frames.length; i++) {
   scrub.value = String(i); scrub.fire("input"); framesDrawn++;
   if (!(D.frames[i][FF.spells] || []).length) continue;
@@ -341,13 +399,18 @@ for (let i = 0; i < D.frames.length; i++) {
     for (let y = 0; y < 700; y += 2) {
       board.fire("mousemove", { clientX: x, clientY: y });
       if (tip.style.display === "block") {
-        if (tip.textContent.includes(" spell, ")) spellTips++;
+        if (tip.textContent.includes(" spell, ")) {
+          spellTips++;
+          spellTipTexts.add(tip.textContent.split("\n")[0]);
+        }
         if (tip.textContent.includes("stunned: ")) stunTips++;
       }
     }
   }
 }
-console.log(JSON.stringify({ framesDrawn, spellFrames, spellTips, stunTips, calls }));
+console.log(JSON.stringify({
+  framesDrawn, spellFrames, spellTips, stunTips, calls, spellTipTexts: [...spellTipTexts],
+}));
 """
 
 
@@ -439,6 +502,47 @@ def test_viewer_runs_every_frame_and_shows_spells_and_stuns(tmp_path):
     got_old = run_viewer(tmp_path, old)
     assert "error" not in got_old, got_old["error"]
     assert got_old["spellFrames"] == 0
+
+
+def _with_spell_rows(motions):
+    """TRACE with one Zap row per motion in its later frames, each aimed away from its
+    centre, so a drawn aim line would show."""
+    t_ = TRACE.header.subtile
+    zap = {c.name: c.card_id for c in TRACE.header.cards}["Zap"]
+    rows = [
+        SpellState(k % 2, zap, m, (3 + 4 * k) * t_, 20 * t_, (5 + 4 * k) * t_, 12 * t_, 4, 0, 0, 0)
+        for k, m in enumerate(motions)
+    ]
+    half = len(TRACE.frames) // 2
+    frames = [
+        f if k < half else msgspec.structs.replace(f, spells=rows)
+        for k, f in enumerate(TRACE.frames)
+    ]
+    return msgspec.structs.replace(TRACE, frames=frames)
+
+
+@pytest.mark.skipif(NODE is None, reason="node not on PATH: the viewer is NOT executed")
+def test_viewer_draws_a_fuse_strikes_and_a_schedule_as_it_draws_an_area(tmp_path):
+    """All three sit at their centre: a ring, no aim line. Compared as whole call counts
+    against the same rows drawn as AREA, with FLIGHT as the control that draws a line."""
+    new = (SpellMotion.FUSE, SpellMotion.STRIKES, SpellMotion.SCHEDULED)
+    got = run_viewer(tmp_path, _with_spell_rows(new))
+    area = run_viewer(tmp_path, _with_spell_rows([SpellMotion.AREA] * len(new)))
+    flight = run_viewer(tmp_path, _with_spell_rows([SpellMotion.FLIGHT] * len(new)))
+    for run in (got, area, flight):
+        assert "error" not in run, run["error"]
+    assert got["calls"] == area["calls"]
+    assert flight["calls"]["lineTo"] > area["calls"]["lineTo"], "control: FLIGHT draws a line"
+    assert {"fuse", "strikes", "scheduled"} <= {
+        t.split(" spell, ")[1].rstrip(")") for t in got["spellTipTexts"]
+    }, got["spellTipTexts"]
+
+
+@pytest.mark.skipif(NODE is None, reason="node not on PATH: the viewer is NOT executed")
+def test_viewer_names_a_motion_it_does_not_know_by_its_code(tmp_path):
+    got = run_viewer(tmp_path, _with_spell_rows([99]))
+    assert "error" not in got, got["error"]
+    assert any(t.endswith("spell, motion 99)") for t in got["spellTipTexts"]), got["spellTipTexts"]
 
 
 @pytest.mark.skipif(NODE is None, reason="node not on PATH: the viewer is NOT executed")

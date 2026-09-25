@@ -1374,6 +1374,26 @@ def entity_row_key(row: tuple[Any, ...]) -> tuple[Any, ...]:
     return row[:-1]
 
 
+# Which of the four motion bits each engine motion sets. A new motion maps onto an old
+# bit, so a spells row keeps its width (a learner's network is sized by that width).
+# FUSE reads as FLIGHT, not AREA: a Rage bottle's row (its centre, aim at the centre,
+# delay = the fuse left) is otherwise the same row as the Rage area it releases in that
+# area's last ticks, and "Rage starts in 10 ticks" would read as "Rage ends in 10 ticks".
+# FLIGHT already means "acts at its aim after delay_ticks". STRIKES (Lightning) and
+# SCHEDULED (the Graveyard) are each the only motion their card has, so the card tells
+# them apart from any other area.
+MOTION_BIT = {
+    SpellMotion.FLIGHT: SpellMotion.FLIGHT,
+    SpellMotion.AIRBORNE: SpellMotion.AIRBORNE,
+    SpellMotion.ROLLING: SpellMotion.ROLLING,
+    SpellMotion.AREA: SpellMotion.AREA,
+    SpellMotion.PULSING: SpellMotion.AREA,
+    SpellMotion.FUSE: SpellMotion.FLIGHT,
+    SpellMotion.STRIKES: SpellMotion.AREA,
+    SpellMotion.SCHEDULED: SpellMotion.AREA,
+}
+
+
 def spell_row_key(row: tuple[Any, ...]) -> tuple[Any, ...]:
     """Sort key of a ``spells`` row: every field but the spell itself (as entity rows).
 
@@ -1448,9 +1468,12 @@ class EntityListObsBuilder(ObsBuilder):
     Live spell objects, ``spells`` [max_spells, S] (S = 14 + num_cards), named by
     ``SPELL_FEATURE_NAMES``:
         0 present, 1 own, 2 enemy, 3..6 motion one-hot (flight, airborne, rolling,
-        area; a pulsing area effect sets the area bit), 7 x_own / width, 8 y_own /
-        height, 9 and 10 the aim point of YOUR spells (0 on an enemy row),
-        11 delay_ticks / 100 (clipped; a pulsing area's life left), 12 travelled /
+        area; ``MOTION_BIT`` maps every engine motion onto these four: a fuse sets
+        flight, and pulsing, strikes and scheduled set area; a motion code it does not
+        name is refused, on every row and not only the kept ones), 7 x_own / width,
+        8 y_own / height, 9 and 10 the aim point of YOUR spells (0 on an enemy row),
+        11 delay_ticks / 100 (clipped; a pulsing area's life left, a fuse's time left),
+        12 travelled /
         length (0 when length is 0), 13 hits / 16 (clipped), 14.. card one-hot, and
         then two APPENDED columns under ``Reveal.enemy_spell_aim`` holding the
         opponent's aim point. Rows past ``max_spells`` are dropped in sort order.
@@ -1584,6 +1607,16 @@ class EntityListObsBuilder(ObsBuilder):
         a = self.arena
         rows = []
         for sp in state.spells:
+            if sp.motion not in MOTION_BIT:
+                # Checked on EVERY row, before any is dropped past max_spells: a check on
+                # the kept rows alone passes until the unknown one sorts into them.
+                # Written as nothing, it would be a spell with no motion bit set, which a
+                # network reads as a motion of its own that no test ever named.
+                raise ValueError(
+                    f"spell motion {sp.motion} (card {sp.card_id}) is not a protocol."
+                    "SpellMotion. The engine added a motion; add it to SpellMotion and "
+                    "to obs.MOTION_BIT, deciding which bit it sets."
+                )
             ox, oy = to_own(a, team, sp.x, sp.y)
             ax, ay = to_own(a, team, sp.aim_x, sp.aim_y)
             rows.append(
@@ -1611,10 +1644,7 @@ class EntityListObsBuilder(ObsBuilder):
             f = out[i]
             f[0] = 1
             f[1 + enemy] = 1
-            if 0 <= motion < 4:
-                f[3 + motion] = 1
-            elif motion == SpellMotion.PULSING:
-                f[3 + SpellMotion.AREA] = 1
+            f[3 + MOTION_BIT[motion]] = 1
             f[7] = ox / a.width
             f[8] = oy / a.height
             if enemy:

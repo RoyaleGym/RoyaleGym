@@ -68,6 +68,7 @@ from gymnasium import spaces
 
 from _lockout import lockout_ticks
 from royalegym import mock_engine as mock_engine_module
+from royalegym import rust_engine as rust_engine_module
 from royalegym.action import (
     ActionParser,
     GridActionParser,
@@ -878,6 +879,42 @@ def test_deploy_verdict_and_reason_agree_over_the_grid(rust, mock, towers):
         assert seen[reason] >= 20, (reason, dict(seen))
 
 
+def test_every_exported_reason_but_engine_error_is_a_deploy_status():
+    """The one reason name with no status is ENGINE_ERROR, which raises when it fires."""
+    eng = RustEngine(card_names=SHARED)
+    reasons = rust_engine_module._core.DEPLOY_REASONS
+    assert len(eng._status_of_reason) == len(reasons)
+    unmapped = [n for n, s in zip(reasons, eng._status_of_reason, strict=True) if s is None]
+    assert unmapped == ["ENGINE_ERROR"], unmapped
+    for n, s in zip(reasons, eng._status_of_reason, strict=True):
+        if s is not None:
+            assert DeployStatus(s).name == n, "mapped by NAME, whatever the index"
+
+
+def test_a_reason_name_with_no_deploy_status_refuses_construction(monkeypatch):
+    """Plant: the engine exports a refusal gym cannot name. Before 2026-09-25 this
+    built, and raised on the first deploy the new rule refused."""
+    core = rust_engine_module._core
+    monkeypatch.setattr(core, "DEPLOY_REASONS", [*core.DEPLOY_REASONS, "SOME_NEW_RULE"])
+    assert core.DEPLOY_REASONS[-1] == "SOME_NEW_RULE", "plant did not land"
+    with pytest.raises(RuntimeError, match=r"SOME_NEW_RULE.*DeployStatus"):
+        RustEngine(card_names=SHARED)
+
+
+def test_nothing_to_mirror_maps_by_name_where_the_engine_puts_it(monkeypatch):
+    """Gym maps the engine's Mirror refusal by NAME, wherever the engine puts it. Before
+    an engine exports it, the name is appended to today's list, which is where the plan
+    puts it; once one does, its own index is used."""
+    core = rust_engine_module._core
+    reasons = list(core.DEPLOY_REASONS)
+    if "NOTHING_TO_MIRROR" not in reasons:
+        monkeypatch.setattr(core, "DEPLOY_REASONS", [*reasons, "NOTHING_TO_MIRROR"])
+    at = list(core.DEPLOY_REASONS).index("NOTHING_TO_MIRROR")
+    assert at != int(DeployStatus.NOTHING_TO_MIRROR), "the index and the value differ"
+    eng = RustEngine(card_names=SHARED)
+    assert eng._status(at) == DeployStatus.NOTHING_TO_MIRROR == 13
+
+
 def test_plant_dropped_reason_mapping_is_caught(rust, mock):
     eng = RustEngine(card_names=SHARED)
     occupied = eng._status_of_reason.index(int(DeployStatus.OCCUPIED))
@@ -1199,6 +1236,9 @@ class RotationStats(collections.Counter):
 OBS_CHANNEL = {name: i for i, (name, _) in enumerate(spatial_channels())}
 SPELL_OBS_CHANNELS = ("own_spells", "enemy_spells", "own_spell_aim")
 STUN_OBS_CHANNELS = ("own_stunned", "enemy_stunned")
+# The placements a spell has, named rather than read off the enum's order: Placement
+# grows (spawn-pathfind troops, Mirror), and ``>= SPELL`` would call those spells.
+SPELL_PLACEMENTS = (Placement.SPELL, Placement.ROLLING, Placement.SPELL_NOT_ON_WATER)
 
 def rotation_divergence(
     seed: int,
@@ -1309,7 +1349,7 @@ def rotation_divergence(
             assert cmd is not None
             card = cards[s.players[BLUE].hand[cmd.hand_slot]]
             stats["deploys"] += 1
-            if card.placement >= Placement.SPELL:
+            if card.placement in SPELL_PLACEMENTS:
                 # One shared policy, so Red cast its rotated twin in this same step.
                 stats["same_step_spell_casts"] += 1
                 stats[f"cast:{card.name}"] += 1

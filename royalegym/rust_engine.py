@@ -152,6 +152,11 @@ _PLACEMENT_OF_KIND = {
     3: Placement.ROLLING,
     4: Placement.SPELL_NOT_ON_WATER,
 }
+# Deploy reason names the engine exports that are NOT a DeployStatus, on purpose.
+# ENGINE_ERROR marks a failure a slot command cannot produce (py.rs DEPLOY_REASONS), and
+# ``_status`` raises if it ever arrives. Every other exported name must be a DeployStatus
+# member: construction refuses one that is not.
+_UNMAPPED_REASONS = frozenset({"ENGINE_ERROR"})
 _I32_MAX = 2**31 - 1
 
 
@@ -625,6 +630,23 @@ class RustEngine:
             )
             for cid, (name, kind, elixir, count, radius, flying, hp, *rest) in enumerate(rows)
         ]
+        # A REASON NAME WITH NO STATUS IS REFUSED HERE, NOT WHEN IT FIRES. Mapped to None,
+        # it raises in ``_status`` on the first deploy the rule refuses, which can be hours
+        # into a training run: a Mirror played before any other card is the first time an
+        # engine that exports NOTHING_TO_MIRROR would say it. Refusing at construction
+        # costs one failed start, and it names the member to add.
+        unnamed = [
+            n
+            for n in _core.DEPLOY_REASONS
+            if n not in DeployStatus.__members__ and n not in _UNMAPPED_REASONS
+        ]
+        if unnamed:
+            raise RuntimeError(
+                f"the engine exports deploy reasons {unnamed} that protocol.DeployStatus "
+                "has no member for, so a deploy it refuses for one of them could not be "
+                "reported. Add each as a DeployStatus member with the next free value "
+                "(values are stored in traces: append, never renumber)."
+            )
         self._status_of_reason: list[int | None] = [
             int(DeployStatus[n]) if n in DeployStatus.__members__ else None
             for n in _core.DEPLOY_REASONS

@@ -237,6 +237,10 @@ class SpellMotion(enum.IntEnum):
     ROLLING = 2  # The Log rolling toward ``aim`` (the roll's end point)
     AREA = 3  # an area effect sitting at its centre (Zap)
     PULSING = 4  # an area effect that hits every HitSpeed until its life runs out (Poison)
+    # Three more that sit at their centre. The numbers are the engine's own codes.
+    FUSE = 5  # a spell waiting out a fuse before it acts (the Rage bottle)
+    STRIKES = 6  # an area that strikes chosen targets one after another (Lightning)
+    SCHEDULED = 7  # an area that acts at scheduled points and times (the Graveyard)
 
 
 class EntityKind(enum.IntEnum):
@@ -276,6 +280,10 @@ class DeployStatus(enum.IntEnum):
     # renumbered. Added after a rebuild returned the reason with no exported name and
     # every consumer deploying before tick 90 died in `list index out of range`.
     TOO_EARLY = 12
+    # A Mirror played before its owner has played a card it can copy. The engine's reason
+    # index is 14. The member exists before any engine sends it, because RustEngine
+    # refuses to construct against an engine exporting a reason name missing here.
+    NOTHING_TO_MIRROR = 13
 
 
 class Winner(enum.IntEnum):
@@ -462,7 +470,7 @@ class SpellState(msgspec.Struct, frozen=True, array_like=True):
     """A live spell object: cast and not yet finished (Rust core, py.rs ``state_json``).
 
     ENGINE frame, subtiles. ``aim`` is the landing point (FLIGHT, AIRBORNE), the roll's
-    END point (ROLLING) or the centre itself (AREA, PULSING). A spell that resolves inside the
+    END point (ROLLING) or the centre itself (AREA, PULSING, FUSE). A spell that resolves inside the
     tick it materialises never appears here -- MockEngine's spells all do, so its
     ``BattleState.spells`` is always empty (mock_engine.py WHAT IT IS NOT).
     """
@@ -474,7 +482,9 @@ class SpellState(msgspec.Struct, frozen=True, array_like=True):
     y: int
     aim_x: int
     aim_y: int
-    delay_ticks: int  # FLIGHT: ticks before it starts moving; PULSING: ticks of life left
+    # FLIGHT: ticks before it starts moving; PULSING: ticks of life left; FUSE: ticks of
+    # fuse left before it acts
+    delay_ticks: int
     travelled: int  # ROLLING: subtiles rolled so far (0 otherwise)
     length: int  # ROLLING: total roll length in subtiles (0 otherwise)
     hits: int  # ROLLING: units hit so far (0 otherwise)

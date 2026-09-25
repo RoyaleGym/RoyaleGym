@@ -84,7 +84,12 @@ from royalegym.rust_engine import (
 )
 from royalegym.selfplay import RandomLegalOpponent
 from royalegym.state_mutator import DefaultStateMutator
-from test_rust_engine import TERRITORY_STATES, every_half_cell_point, rotation_divergence
+from test_rust_engine import (
+    SPELL_PLACEMENTS,
+    TERRITORY_STATES,
+    every_half_cell_point,
+    rotation_divergence,
+)
 
 pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -123,7 +128,7 @@ def test_thin_slice_catalogue_agrees_between_engines_and_the_default_catalogue_b
             m.count,
             m.flying,
         ), (r, m)
-        if r.placement >= Placement.SPELL:
+        if r.placement in SPELL_PLACEMENTS:
             assert (r.count, r.radius, r.hitpoints, m.radius, m.hitpoints) == (0, 0, 0, 0, 0), r
         else:
             assert r.radius == m.radius, (r, m)  # hp differs: card level (rust_engine.py)
@@ -204,7 +209,7 @@ def spell_legality(rust, mock, oracle, tower_hp):
     for team in (BLUE, RED):
         for slot in range(4):
             card = rust.cards()[st.players[team].hand[slot]]
-            assert card.placement >= Placement.SPELL, card
+            assert card.placement in SPELL_PLACEMENTS, card
             for pitch in (1, 2):
                 px, py = oracle.points(pitch)
                 if not np.array_equal(

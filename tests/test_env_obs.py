@@ -830,6 +830,67 @@ def test_the_fair_spell_rows_do_not_change_when_only_the_hidden_aim_changes():
     assert not np.array_equal(sa, sb)
 
 
+def test_every_motion_sets_one_motion_bit_and_an_unknown_motion_is_refused():
+    """Every engine motion sets exactly one of the four motion bits, so a spells row keeps
+    its width when the engine adds a motion. A fuse reads as a flight (it acts at its aim
+    after its delay), so a Rage bottle is not the Rage area it releases. A code SpellMotion
+    does not name raises: written as nothing, it would be a row with no motion bit set."""
+    bit = {
+        SpellMotion.FLIGHT: "motion_flight",
+        SpellMotion.AIRBORNE: "motion_airborne",
+        SpellMotion.ROLLING: "motion_rolling",
+        SpellMotion.AREA: "motion_area",
+        SpellMotion.PULSING: "motion_area",
+        SpellMotion.FUSE: "motion_flight",
+        SpellMotion.STRIKES: "motion_area",
+        SpellMotion.SCHEDULED: "motion_area",
+    }
+    assert set(bit) == set(SpellMotion), "a motion this test does not name"
+    t = ENG.arena().subtile
+    zap = card_id("Zap", ENG)
+    col = {n: i for i, n in enumerate(obs_mod.SPELL_FEATURE_NAMES)}
+    motion_cols = [col[n] for n in ("motion_flight", "motion_airborne", "motion_rolling")]
+    motion_cols.append(col["motion_area"])
+    b = EntityListObsBuilder()
+    b.bind(ENG, PARSER)
+
+    def row(motion):
+        spell = SpellState(BLUE, zap, motion, 3 * t, 20 * t, 3 * t, 20 * t, 0, 0, 0, 0)
+        s = msgspec.structs.replace(MOCK_STATES[0], spells=[spell])
+        return b.build(s, BLUE, PARSER.action_mask(s, BLUE))["spells"][0]
+
+    for motion in SpellMotion:
+        got = row(motion)
+        assert got[motion_cols].sum() == 1, (motion, got[motion_cols])
+        assert got[col[bit[motion]]] == 1, (motion, got[motion_cols])
+    for unknown in (len(SpellMotion), -1):
+        with pytest.raises(ValueError, match=rf"spell motion {unknown} "):
+            row(unknown)
+
+
+def test_an_unknown_motion_is_refused_even_on_a_row_past_max_spells():
+    """The refusal reads every spell, not only the rows the builder keeps: a check on the
+    kept rows alone would pass until the unknown spell sorted into them."""
+    t = ENG.arena().subtile
+    zap = card_id("Zap", ENG)
+    b = EntityListObsBuilder(max_spells=2)
+    b.bind(ENG, PARSER)
+    own = [
+        SpellState(BLUE, zap, SpellMotion.AREA, 3 * t, y * t, 3 * t, y * t, 0, 0, 0, 0)
+        for y in (2, 3)
+    ]
+    # An enemy row sorts after both own rows, so it is the one dropped.
+    enemy = SpellState(RED, zap, len(SpellMotion), 9 * t, 20 * t, 9 * t, 20 * t, 0, 0, 0, 0)
+    s = msgspec.structs.replace(MOCK_STATES[0], spells=[*own, enemy])
+    with pytest.raises(ValueError, match=rf"spell motion {len(SpellMotion)} "):
+        b.build(s, BLUE, PARSER.action_mask(s, BLUE))
+    # Control: the same three rows with a known motion build, and the enemy row is dropped.
+    ok = msgspec.structs.replace(s, spells=[*own, msgspec.structs.replace(enemy, motion=0)])
+    rows = b.build(ok, BLUE, PARSER.action_mask(ok, BLUE))["spells"]
+    assert rows.shape[0] == 2
+    assert not rows[:, 2].any(), "the enemy row should be the one past max_spells"
+
+
 def test_plant_the_aim_ranked_early_in_the_spell_key_leaks_it(monkeypatch):
     """Put the defect back: rank the hidden aim before the visible fields."""
     t = ENG.arena().subtile

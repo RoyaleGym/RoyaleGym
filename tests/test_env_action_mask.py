@@ -146,7 +146,18 @@ def test_masked_legal_actions_are_never_rejected(parser_cls):
         decision_ms=250,
     )
     rejected = []
-    deploys = {p: 0 for p in Placement}
+    # Every placement the two decks hold, and not every Placement: the enum grows with
+    # the engine, and a deck without a Miner cannot deploy one.
+    cards = env.engine.cards()
+    held = {Placement(cards[c].placement) for c in {*MIXED, *MIXED_BARREL}}
+    assert held == {
+        Placement.TROOP,
+        Placement.BUILDING,
+        Placement.SPELL,
+        Placement.ROLLING,
+        Placement.SPELL_NOT_ON_WATER,
+    }, held
+    deploys = dict.fromkeys(held, 0)
     for seed in range(2):
         obs, _ = env.reset(seed=seed)
         rng = np.random.default_rng(seed)

@@ -160,14 +160,15 @@ centre and corner, both teams, seven tower states. So a silently wrong mask fail
 instead of a training run. The mask covers elixir, territory, water, the river band,
 building footprints and the no-deploy rectangle around each living enemy crown tower.
 
-Measured at `reset(seed=0)` with the default random decks, 2026-09-24. On `RustEngine` the
-first step offers only the no-op, because no card can be played during the opening lockout
-(`DeployRules.deploy_lockout_ticks`, 90 ticks). After nine no-op steps, at tick 90, 921 of 2305
-actions are legal. `MockEngine` has no lockout and offers 1235 on the first step (its cards run
-at CSV level 1). Read that pair carefully rather than as a property of either engine. A random deck
-is drawn from the catalogue, so which cards land in the first hand moves with the catalogue,
-and a hand of four troops offers far fewer tiles than one holding a spell, which is legal
-almost everywhere. The `RustEngine` figure here is a hand of four troops. Every
+Measured 2026-09-25 on engine build 8218abee7e4f0497, at `reset(seed=0)` with both decks set
+to Knight, Giant, Cannon, Log, Fireball, Zap, Minions, Valkyrie and no shuffle, so the first
+hand is Knight, Giant, Cannon and Log whatever the catalogue holds. On `RustEngine` the first
+nine steps offer only the no-op, because no card can be played during the opening lockout
+(`DeployRules.deploy_lockout_ticks`, 90 ticks). At tick 90, 941 of 2305 actions are legal.
+`MockEngine` has no lockout and offers 923 on the first step, for the same hand. The count
+belongs to the hand more than to the engine: Fireball or Zap is legal almost anywhere in the
+arena, so a hand holding one offers far more tiles than this one. A random deck is drawn from
+the catalogue, so its first hand, and the count with it, moves whenever the catalogue grows. Every
 observation dict carries the mask as `int8`, which is what PettingZoo's `parallel_api_test`
 and Gymnasium's `Discrete.sample(mask=...)` expect. Beside it sits `mask_planes`, the same
 mask minus the no-op, reshaped to `[4, 32, 18]` for a convolutional trunk. `action_masks()`

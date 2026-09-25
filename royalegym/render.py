@@ -621,13 +621,18 @@ footer { color:var(--muted); font-size:11px; padding:4px 14px 12px; }
     return FR[cur][FF.spells] || [];
   }
 
+  // Motions that sit at their centre: no line to an aim point, a dashed ring.
+  var AT_CENTRE = ["AREA", "PULSING", "FUSE", "STRIKES", "SCHEDULED"].map(function (k) {
+    return MOTION[k];
+  });
+
   function drawSpell(q) {
     var team = q[SF.team], motion = q[SF.motion];
     var p = px(q[SF.x], q[SF.y]), aim = px(q[SF.aim_x], q[SF.aim_y]);
     var m = Math.max(4, scale * 0.35);
     ctx.save();
     ctx.strokeStyle = TEAM_DARK[team]; ctx.fillStyle = TEAM[team]; ctx.lineWidth = 2;
-    if (motion !== MOTION.AREA && motion !== MOTION.PULSING) {
+    if (AT_CENTRE.indexOf(motion) < 0) {
       ctx.setLineDash([5, 4]);
       ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(aim[0], aim[1]); ctx.stroke();
       ctx.setLineDash([]);
@@ -794,8 +799,9 @@ footer { color:var(--muted); font-size:11px; padding:4px 14px 12px; }
       var q = hit.spell, mname = Object.keys(MOTION).filter(function (k) {
         return MOTION[k] === q[SF.motion];
       })[0];
+      var mtext = mname === undefined ? "motion " + q[SF.motion] : mname.toLowerCase();
       tip.textContent = cardName(q[SF.card_id]) + "  (" + NAMES[q[SF.team]] + " spell, " +
-        String(mname).toLowerCase() + ")\ntile (" + (q[SF.x] / S).toFixed(2) + ", " +
+        mtext + ")\ntile (" + (q[SF.x] / S).toFixed(2) + ", " +
         (q[SF.y] / S).toFixed(2) + ")\naim (" + (q[SF.aim_x] / S).toFixed(2) + ", " +
         (q[SF.aim_y] / S).toFixed(2) + ")" +
         (SF.delay_ticks !== undefined && q[SF.delay_ticks] > 0 ?

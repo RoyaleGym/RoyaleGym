@@ -288,11 +288,41 @@ def load_trace(path: str | Path) -> Trace:
 def verify_trace(trace: Trace, engine: Engine) -> list[str]:
     """Re-simulate ``trace`` on ``engine`` and list every divergence (empty = identical).
 
-    Checks the deploy statuses of every step, every recorded frame hash, and the
-    final hash. The first divergence is usually the informative one; later ones
-    are consequences.
+    Checks the catalogue first, then the deploy statuses of every step, every recorded
+    frame hash, and the final hash. The first divergence is usually the informative one;
+    later ones are consequences.
+
+    THE CARDS A SETUP DEALS ARE COMPARED BY NAME first. A setup names its cards by
+    POSITION (a deck is a list of catalogue ids), and the catalogue renumbers whenever a
+    card becomes loadable, so the same setup on an engine with a different table deals
+    different cards: the first deploy diverges and the hash list says nothing about why.
+    So when a dealt id names another card on this engine, or none, the result is one
+    line naming it, and nothing is replayed. Only the ids the setup uses are compared: an
+    id no deck or spawn holds changes nothing a replay reads. A trace that starts from a
+    snapshot is not compared, since the snapshot holds the engine's own card indices.
     """
     h = trace.header
+    if h.setup is not None:
+        have = [c.name for c in engine.cards()]
+        named = {c.card_id: c.name for c in h.cards}
+        dealt = sorted(
+            {c for deck in h.setup.decks for c in deck} | {s.card_id for s in h.setup.spawns}
+        )
+        differ = [
+            (cid, named.get(cid), have[cid] if 0 <= cid < len(have) else None)
+            for cid in dealt
+            if not 0 <= cid < len(have) or have[cid] != named.get(cid)
+        ]
+        if differ:
+            cid, want, got = differ[0]
+            return [
+                f"card {cid} is {want} in the trace and {got or 'absent'} on this engine "
+                f"({len(differ)} of the {len(dealt)} card ids the setup deals differ). Replay "
+                "it on the engine kind and build that recorded it, loaded with the trace's "
+                "own card list (card_names=[c.name for c in trace.header.cards] for a "
+                "RustEngine). A build that loads a card the recording build refused moves "
+                "every hash as well, so such a trace verifies only on the recording build."
+            ]
     problems: list[str] = []
     if h.setup is not None:
         engine.reset(h.seed, h.setup)

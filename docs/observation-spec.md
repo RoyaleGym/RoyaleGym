@@ -143,7 +143,7 @@ close it without a new trunk.
 | key | `card_ids`, its OWN key, not a slice of `spatial` |
 | shape | `[2, 32, 18]` — plane 0 own, plane 1 enemy, in the seat's own frame |
 | dtype | `uint8`, declared `Box(0, vocab - 1, dtype=np.uint8)` |
-| vocab | `num_cards + 2`, from the LOADED card table (103 on 2026-09-24: 101 loadable cards) |
+| vocab | `num_cards + 2`, from the LOADED card table: one index per card, plus empty ground and crown towers |
 | switch | `SpatialObsBuilder(card_identity=True)`, shipped 2026-09-24; OFF by default |
 
 **Why its own key and not a channel of `spatial`.** `spatial` is declared
