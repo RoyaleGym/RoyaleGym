@@ -24,7 +24,7 @@ import types
 import msgspec
 import pytest
 
-from royalegym.protocol import BattleState, EntityState, PlayerState, ProjectileState
+from royalegym.protocol import BattleState, EntityState, MatchSetup, PlayerState, ProjectileState
 from royalegym.replay import TraceFrame, TraceHeader
 from royalegym.rust_engine import (
     CORE_IMPORT_ERROR,
@@ -230,14 +230,41 @@ def test_an_engine_newer_than_this_package_is_refused():
         check_field_order(core_with(ENTITY_FIELDS=[*ENTITY, "halo"]))
 
 
+#: Columns every engine sent before target_uid arrived. Derived, not written as 15.
+LEGACY_WIDTH = EntityState.__struct_fields__.index("target_uid")
+
+
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
-def test_the_installed_engine_had_its_layout_checked():
-    """Loud when the engine exports no field list: the layout is then trusted, not verified."""
-    checked = RustEngine().field_order_checked
-    if not checked["ENTITY_FIELDS"]:
-        pytest.skip(
-            "SKIPPED, NOT PASSED: the installed engine exports no ENTITY_FIELDS, so the "
-            "positional order of EntityState is TRUSTED rather than checked. Requested from "
-            "sim on 2026-09-24 beside the status and projectile export."
-        )
-    assert checked["ENTITY_FIELDS"] is True
+def test_no_engine_column_is_decoded_by_position_without_its_name():
+    """Either every column is checked by name, or the engine sends none of the new ones.
+
+    THIS WAS A SKIP, AND THE SKIP WAS THE WRONG INSTRUMENT. It skipped whenever the engine
+    exported no ENTITY_FIELDS, which was true of every engine built from RoyaleSim's main
+    on the day it was written -- and RoyaleSim's cross-repo job rejects any skip it has not
+    declared, so this turned RoyaleLearn's and RoyaleViser's rows red for a state they could
+    not change. Worse, it reported nothing: "the list is absent" was all it could say.
+
+    The hazard is narrower than "the list is absent". A positional column is dangerous
+    only if the engine SENDS it without naming it. So this measures that directly:
+      * the engine exports ENTITY_FIELDS -- RustEngine checked every column at construction
+        and would have refused to exist on a mismatch;
+      * it exports none -- then every row it sends must be the legacy width, so nothing
+        beyond the columns this package has decoded since footprints lands in a field
+        whose order nobody checked. A wider row is a FAILURE, naming the width.
+    Both branches assert something; neither can pass by saying nothing.
+    """
+    import json
+
+    engine = RustEngine()
+    if engine.field_order_checked["ENTITY_FIELDS"]:
+        return  # every column was compared by name when the engine was constructed
+    engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
+    raw = json.loads(engine._battle.state_json())  # the rows as SENT, before any default
+    widths = {len(row) for row in raw["entities"]}
+    assert raw["entities"], "the engine sent no entities, so no row width was measured"
+    assert widths == {LEGACY_WIDTH}, (
+        f"the engine sends {sorted(widths)} columns per entity and exports no ENTITY_FIELDS, "
+        f"so every column past {LEGACY_WIDTH} is decoded BY POSITION with nothing checking "
+        "its order -- two adjacent ints could be swapped without a word. Export the list "
+        "from the engine (royalesim.ENTITY_FIELDS) before shipping the wider rows."
+    )

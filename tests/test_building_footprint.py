@@ -561,7 +561,12 @@ def transport_problems(
         want = [list(e.footprint) if e.footprint is not None else None for e in s.entities]
         if [u.get("footprint") for u in d["units"]] != want:
             out.append(f"frame {i}: the viewer frame's footprints are not the state's")
-    if trace.header.entity_fields[-1:] != ["footprint"]:
+    # The header must NAME the footprint column, so a reader finds it by name. This used to
+    # read `entity_fields[-1:] != ["footprint"]`, which also claimed footprint is the LAST
+    # column -- true only while it was the newest trailing field. On 2026-09-24 five columns
+    # were appended after it (target_uid .. buffs) and this failed without the footprint
+    # carriage having changed at all. Position is not the property; being named is.
+    if "footprint" not in trace.header.entity_fields:
         out.append(f"trace header entity_fields {trace.header.entity_fields}")
     for suffix in (".json", ".msgpack"):
         loaded = load_trace(save_trace(trace, tmp_path / f"trace{suffix}"))
