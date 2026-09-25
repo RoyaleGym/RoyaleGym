@@ -51,7 +51,9 @@ from royalegym.rust_engine import build_digest as engine_build_digest
 REPO = Path(__file__).resolve().parents[1]
 PAGES = REPO / "docs" / "site" / "pages"
 FENCE = re.compile(r"^( *)```(\w*)[^\n]*\n(.*?)^\1```", re.MULTILINE | re.DOTALL)
-STAMP = re.compile(r"engine build\s+`([0-9a-f]{16})`")
+#: "engine" and "build" may sit on two lines: rewards.md wraps there, and a pattern with
+#: one literal space read that page as unstamped (found by the docs session).
+STAMP = re.compile(r"engine\s+build\s+`([0-9a-f]{16})`")
 MARK = "@@SITE_EXAMPLE_RESULT@@"
 
 #: (page path suffix, text the block contains) -> why its output cannot be compared here.
@@ -342,11 +344,20 @@ def test_a_stamped_page_on_another_build_skips_instead_of_failing(tmp_path: Path
 def test_plant_a_real_page_with_one_output_line_changed_fails(tmp_path: Path) -> None:
     """The self-test page proves the rules; this proves they reach a real page.
 
-    rewards.md stamps no build, so a changed output on it must FAIL whatever the engine.
+    Judged as on the build the page stamps, where a changed output must FAIL, beside a
+    blind control: the same page unchanged, judged the same way, must not fail. The first
+    version of this plant asserted rewards.md was unstamped. It is stamped, across a line
+    break, and the plant passed only because the stamp pattern missed that stamp.
     """
     page = PAGES / "rewards.md"
     text = page.read_text(encoding="utf-8")
-    assert not STAMP.search(text), "rewards.md stamps a build now; plant on an unstamped page"
+    stamps = STAMP.findall(text)
+    assert stamps, "rewards.md no longer stamps a build; pick a stamped page for this plant"
+    control = check_page(page, text, stamps[0], tmp_path)
+    assert not control.failures, (
+        "the control failed: rewards.md is stale on this engine, so the plant would prove "
+        f"nothing\n{control.failures[0]}"
+    )
     fs = fences(text)
     at = next(
         i for i, f in enumerate(fs[:-1])
@@ -355,6 +366,13 @@ def test_plant_a_real_page_with_one_output_line_changed_fails(tmp_path: Path) ->
     )
     out_start = text.index(chr(10), fs[at + 1][0]) + 1  # first line inside the output fence
     planted = text[:out_start] + "PLANTED " + text[out_start:]
-    v = check_page(page, planted, engine_build_digest(), tmp_path)
+    v = check_page(page, planted, stamps[0], tmp_path)
     assert v.failures, "PLANT DID NOT LAND: a changed output on rewards.md passed"
     assert "PLANTED" in v.failures[0], v.failures[0]
+
+
+def test_a_stamp_wrapped_across_a_line_is_still_a_stamp() -> None:
+    assert STAMP.findall("run on engine\nbuild `0123456789abcdef` today") == ["0123456789abcdef"]
+    assert STAMP.findall((PAGES / "rewards.md").read_text(encoding="utf-8")), (
+        "rewards.md's stamp is not found"
+    )

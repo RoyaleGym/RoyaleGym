@@ -57,7 +57,7 @@ README = REPO / "README.md"
 #: exactly the way two copies of a rule do. The page is the publication, so the page is
 #: the source; this parses what it says.
 _PROVENANCE = re.compile(
-    r"(?:re-run (\d{4}-\d{2}-\d{2}) )?on engine build `([0-9a-f]{8,64})` with the "
+    r"(?:re-run\s+(\d{4}-\d{2}-\d{2})\s+)?on\s+engine\s+build\s+`([0-9a-f]{8,64})`\s+with\s+the\s+"
     r"\*\*([^*]+?)\s*card\s*\n?table\*\*",
     re.S,
 )
