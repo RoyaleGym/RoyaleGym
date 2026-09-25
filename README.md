@@ -89,17 +89,24 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3755
+winner 1  crowns [0, 1]  tick 3600
 ```
 
-That is a whole match, re-run 2026-09-23 on engine build `8952c1c4aa7d7923` with the **15.535 card
-table**, which is what the install above puts at `cards.json`. Blue took one of Red's princess
-towers and Red took none, so Blue wins on crowns.
+That is a whole match, re-run 2026-09-24 on engine build `565def31a74817fe` with the **15.535 card
+table**, which is what the install above puts at `cards.json`. Red took one of Blue's princess
+towers and Blue took none, so Red wins on crowns.
 
-Measured on a clean runner, not here: RoyaleGym suite run 35930514103, building the engine from
-**RoyaleSim `f3cd4ca`**. An earlier CI run built from RoyaleSim `49777a6` printed the same pair, and
-those two commits differ only in a README and a `.gitignore` - no Rust, no data - so they are the
-same engine. A developer machine printed it too.
+Measured on a clean runner, not here: RoyaleGym suite run 36092246108, building the engine from
+**RoyaleSim `ec19a79`**. The compiled engine in that run is `engine_binary` `1ae45a2af5d367b1`.
+
+**This result has moved twice, and each move is traced to one engine rule.** Both were found the
+same way: switch that one rule back, run this exact program, and get the previous result exactly.
+
+- On 2026-09-23 it went from `winner 0  crowns [2, 1]  tick 3600` to `winner 0  crowns [1, 0]  tick
+  3755`, when a tower whose target dies started carrying its attack timing on to the next target
+  instead of starting again (`combat.RETARGET_PROGRESS`).
+- On 2026-09-24 it moved to the result above, when attacking units started being pushed apart by
+  their neighbours, as recordings of real matches show (`movement.ATTACKING_UNIT_MOVEMENT`).
 
 **The RoyaleSim commit is written here because the digest cannot supply it.** `build_digest` hashes
 the calibration values and the arena compiled into the extension; it has no access to the Rust at
@@ -108,12 +115,11 @@ future engine could change behaviour, keep this digest, and be compared against 
 though nothing had moved. The commit beside it is what closes that gap, and `engine_binary` is the
 stamp that identifies the compiled artefact if you need to tell two builds apart directly.
 
-**Two stamps, because two things move this output independently.** The build is one: the same
-program on a different engine can end a different way. The card table is the other, and it is not a
-smaller effect. The same program at this same build, run against the 2018 table, ends
-`winner 1  crowns [0, 1]` - a different winner. So if your result differs, the digest and the
-vintage together tell you which of the two moved, rather than leaving you to suspect your install.
-`RustEngine().config()` prints yours.
+**Two stamps, because two things move this output independently.** The build is one, as above.
+The card table is the other, and it is not a smaller effect: at an earlier build,
+`d6715210f21ca0c3`, this program chose a different winner on the 2018 table than on the 15.535 one.
+So if your result differs, the digest and the vintage together tell you which of the two moved,
+rather than leaving you to suspect your install. `RustEngine().config()` prints yours.
 
 The digest covers `data/calibration.json` and `arena.json` - the data the engine was built from,
 not the compiled Rust. That is why two engines compiled from different source trees can share one,
@@ -121,10 +127,8 @@ and it is the right stamp here: this battle last moved because a ledger value mo
 engines built from the same data apart you want `engine_binary`, which is a different stamp and not
 this one.
 
-Tick 3755 is past the three-minute mark, so this one ran into overtime rather than finishing in
-regulation. It used to end at 3600, and the engine change that moved it has not been attributed to
-a specific rule: two changes landed together and the experiment that would separate them has not
-been run, so this page names the number and not a cause.
+Tick 3600 is exactly three minutes, so this one was decided when regulation ended and never
+reached overtime.
 
 Both players are picking at random from the legal moves, and one of them still took a tower. That
 is the bar your bot starts from.
