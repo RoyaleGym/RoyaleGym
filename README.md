@@ -89,24 +89,30 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 1  crowns [0, 1]  tick 3600
+winner 0  crowns [1, 0]  tick 3728
 ```
 
-That is a whole match, re-run 2026-09-24 on engine build `565def31a74817fe` with the **15.535 card
-table**, which is what the install above puts at `cards.json`. Red took one of Blue's princess
-towers and Blue took none, so Red wins on crowns.
+That is a whole match, re-run 2026-09-24 on engine build `cb784bb583586789` with the **15.535 card
+table**, which is what the install above puts at `cards.json`. Neither side had a crown when the
+three minutes ran out, so the match went to overtime, and Blue won it by taking one of Red's
+princess towers at tick 3728.
 
-Measured on a clean runner, not here: RoyaleGym suite run 36092246108, building the engine from
-**RoyaleSim `ec19a79`**. The compiled engine in that run is `engine_binary` `1ae45a2af5d367b1`.
+Measured on a clean runner, not here: RoyaleGym suite run 36095561188, building the engine from
+**RoyaleSim `e8e307a`**. The compiled engine in that run is `engine_binary` `32a34a7b395b737a`.
 
-**This result has moved twice, and each move is traced to one engine rule.** Both were found the
-same way: switch that one rule back, run this exact program, and get the previous result exactly.
+**This result has moved three times, and each move is traced to one engine rule.** All three were
+found the same way: switch that one rule back, run this exact program, and get the previous result
+exactly.
 
 - On 2026-09-23 it went from `winner 0  crowns [2, 1]  tick 3600` to `winner 0  crowns [1, 0]  tick
   3755`, when a tower whose target dies started carrying its attack timing on to the next target
   instead of starting again (`combat.RETARGET_PROGRESS`).
-- On 2026-09-24 it moved to the result above, when attacking units started being pushed apart by
-  their neighbours, as recordings of real matches show (`movement.ATTACKING_UNIT_MOVEMENT`).
+- On 2026-09-24 it moved to `winner 1  crowns [0, 1]  tick 3600`, when attacking units started
+  being pushed apart by their neighbours, as recordings of real matches show
+  (`movement.ATTACKING_UNIT_MOVEMENT`).
+- Later on 2026-09-24 it moved to the result above, when a walking unit stopped turning aside for
+  a unit next to it that is still deploying and faces the same way, again as recordings of real
+  matches show (`movement.DEPLOYING_HEADING`).
 
 **The RoyaleSim commit is written here because the digest cannot supply it.** `build_digest` hashes
 the calibration values and the arena compiled into the extension; it has no access to the Rust at
@@ -121,15 +127,6 @@ The card table is the other, and it is not a smaller effect: at an earlier build
 So if your result differs, the digest and the vintage together tell you which of the two moved,
 rather than leaving you to suspect your install. `RustEngine().config()` prints yours.
 
-The digest covers `data/calibration.json` and `arena.json` - the data the engine was built from,
-not the compiled Rust. That is why two engines compiled from different source trees can share one,
-and it is the right stamp here: this battle last moved because a ledger value moved. To tell two
-engines built from the same data apart you want `engine_binary`, which is a different stamp and not
-this one.
-
-Tick 3600 is exactly three minutes, so this one was decided when regulation ended and never
-reached overtime.
-
 Both players are picking at random from the legal moves, and one of them still took a tower. That
 is the bar your bot starts from.
 
@@ -139,8 +136,8 @@ against recordings, which `cards.json` lists under `thin_slice`, so the example 
 best-measured part of the engine. Any eight will do. Leave the deck out and each team is dealt a
 random eight, which is the default.
 
-One env step is half a second of game time, which is 10 ticks. The battle ended at tick 3600,
-so each player made 360 decisions. The whole battle takes well under a second of real time, and how far under depends
+One env step is half a second of game time, which is 10 ticks. The battle ended at tick 3728,
+so each player made 373 decisions, the last one cut short when the tower fell. The whole battle takes well under a second of real time, and how far under depends
 entirely on what else your machine is doing: four runs on 2026-09-22 with several other jobs
 going gave 0.57 to 0.74 s. Treat any timing on this page the same way.
 

@@ -20,10 +20,9 @@ The rest of this page is the exact detail, all of it printed by programs that we
 
 !!! warning "Your widths will not match these widths"
     Several numbers below depend on how many cards are in your card catalogue, and that
-    depends on the card table your engine reads. The run that produced this page had 100
+    depends on the card table your engine reads. The run that produced this page had 101
     cards in its catalogue. A clean install reads the same 15.535 table, but the catalogue grows
-    as more cards become loadable (101 on 2026-09-24), so yours may report something
-    else. Nothing in RoyaleGym or RoyaleLearn types these widths in. They are read from
+    as more cards become loadable, so yours may report something else. Nothing in RoyaleGym or RoyaleLearn types these widths in. They are read from
     the environment at startup, and you should do the same. Never treat a width on this
     page as a constant of the project.
 
@@ -53,12 +52,16 @@ print("legal actions right now:", int(obs["blue"]["action_mask"].sum()), "of", o
 
 ```
 spatial      shape (20, 32, 18)   dtype float32
-vector       shape (1177,)        dtype float32
+vector       shape (1249,)        dtype float32
 action_mask  shape (2305,)        dtype int8
 mask_planes  shape (4, 32, 18)    dtype int8
-cards in this catalogue: 100
-legal actions right now: 1623 of 2305
+cards in this catalogue: 101
+legal actions right now: 1 of 2305
 ```
+
+Every figure on this page was run on 2026-09-24 on engine build `cb784bb583586789` with the
+15.535 card table. Only one move is legal at the start, the wait, because a match refuses every
+deploy for its opening seconds. The mask section below comes back to that.
 
 The deck is named card by card on purpose. With no deck named, each side is dealt eight
 random cards out of your catalogue, so the same seed gives a different battle on a
@@ -190,7 +193,7 @@ rng, policy = np.random.default_rng(0), RandomLegalOpponent(noop_prob=0.7)
 for step in range(1, 61):
     actions = {a: policy.act(obs[a], obs[a]["action_mask"], rng) for a in env.agents}
     obs, reward, terminated, truncated, info = env.step(actions)
-    if step in (1, 20, 60):
+    if step in (1, 9, 20, 60):
         mask = obs["blue"]["action_mask"]
         print(f"step {step:3}  legal actions {int(mask.sum()):5}"
               f"  elixir {env.battle_state.players[0].elixir_milli / 1000:.2f}")
@@ -228,14 +231,20 @@ and waiting is just picking index 0.
 The second half of that program printed this:
 
 ```
-step   1  legal actions  1623  elixir 6.18
+step   1  legal actions     1  elixir 6.18
+step   9  legal actions  1623  elixir 7.61
 step  20  legal actions     1  elixir 0.57
 step  60  legal actions     1  elixir 0.71
 ```
 
-Read the last two lines. At steps 20 and 60 exactly one action was legal, and that one is the
-wait action. At step 20 the player had 0.57 elixir and was holding Giant, Knight, Minions and
-Archer, the cheapest of them 3. It could not afford anything at all, which is the whole point:
+At step 1 the only legal move is the wait. On the Rust engine a match refuses every deploy for its
+first 90 ticks, as the game does, so for the first nine decisions there is nothing else to choose,
+whatever the deck. Step 9 ends at tick 90, and play opens: the player has 7.61 elixir, can afford
+all four cards in hand, and 1623 of the 2305 moves are legal.
+
+At steps 20 and 60 exactly one move is legal again, the wait. At step 20 the player had 0.57
+elixir and was holding Knight, Cannon, Minions and Giant, the cheapest of them 3. It could not
+afford anything at all, which is the whole point:
 what you can play depends on the elixir you have and on the four cards you happen to be holding,
 not on the eight you chose. Without a mask your bot would spend thousands of steps discovering
 that by being refused.
@@ -245,11 +254,8 @@ with the buildings already on the board. The mask covers elixir, which half of t
 arena you may play in, water, the river, the footprint of buildings already down, and
 the rectangle around each enemy crown tower that is still alive.
 
-On the Rust engine a match refuses every deploy for its first 90 ticks, so for the first nine
-decisions the only legal move is the wait, whatever the deck. After that the count depends on the
-deck, the card table and the elixir, so it is not a property of the game. The step rows above were
-recorded on 2026-09-22, after the starting elixir moved from 5 to 6 but before that rule reached
-the engine, and are due a re-run.
+Once play opens, the count depends on the deck, the card table and the elixir, so 1623 is not a
+property of the game.
 
 Two details worth trusting the project for:
 
@@ -308,8 +314,8 @@ print("recorded in the config:", env.config()["obs_builder"]["params"]["reveal"]
 ```
 
 ```
-fair             vector 1177  spatial channels 20
-enemy_hand shown vector 1561  spatial channels 20
+fair             vector 1249  spatial channels 20
+enemy_hand shown vector 1657  spatial channels 20
 recorded in the config: {'enemy_elixir': False, 'enemy_hand': True, 'enemy_next_card': False, 'enemy_deck': False, 'enemy_spell_aim': False}
 ```
 

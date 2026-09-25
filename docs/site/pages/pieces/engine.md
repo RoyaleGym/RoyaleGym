@@ -76,8 +76,13 @@ b = royalesim.Battle(card_names=deck, slot_of_k=[[0, 1, 2], [0, 1, 2]])
 b.reset(seed=1, decks=[list(range(8))] * 2, shuffle=0, start_tick=0,
         elixir_milli=[10_000, 10_000], tower_hp=None, spawns=[])
 
+# Like the real game, a match refuses every deploy for its opening seconds. Wait them out.
+calib = json.loads(royalesim.EMBEDDED_CALIBRATION_JSON)
+b.step([], calib["match"]["DEPLOY_LOCKOUT_TICKS"]["value"])
+
 T = royalesim.SUBTILE                   # positions are in subtiles: 18000 to one arena tile
-b.step([(0, 0, 5 * T, 10 * T)], 0)      # Blue plays hand slot 0 (the Giant) on tile (5, 10)
+played = b.step([(0, 0, 5 * T, 10 * T)], 0)   # Blue plays hand slot 0 (the Giant) on tile (5, 10)
+print("play:", royalesim.DEPLOY_REASONS[played[0][1]])
 for _ in range(6):
     b.step([], 80)                      # 80 ticks = four seconds of game time, one call
     s = json.loads(bytes(b.state_json()))
@@ -87,16 +92,22 @@ for _ in range(6):
 ```
 
 ```
-t=80  giant at (4.34, 12.56)  hp=3968  red left tower hp=3052
-t=160  giant at (3.86, 16.15)  hp=3968  red left tower hp=3052
-t=240  giant at (3.77, 19.82)  hp=3532  red left tower hp=3052
-t=320  giant at (3.77, 22.57)  hp=2987  red left tower hp=2799
-t=400  giant at (3.77, 22.57)  hp=2442  red left tower hp=2293
-t=480  giant at (3.77, 22.57)  hp=1897  red left tower hp=1534
+play: OK
+t=170  giant at (4.34, 12.56)  hp=3968  red left tower hp=3052
+t=250  giant at (3.86, 16.15)  hp=3968  red left tower hp=3052
+t=330  giant at (3.77, 19.82)  hp=3532  red left tower hp=3052
+t=410  giant at (3.77, 22.57)  hp=2987  red left tower hp=2799
+t=490  giant at (3.77, 22.57)  hp=2442  red left tower hp=2293
+t=570  giant at (3.77, 22.57)  hp=1897  red left tower hp=1534
 ```
 
-Read that as a story. The Giant slid left onto the bridge column, crossed the river around t=160,
-walked into princess-tower fire, stopped within its own reach of the tower at t=320 and started
+Run on engine build `cb784bb583586789`, RoyaleSim `09a3b84`, with the 15.535 card table. The
+`play: OK` line is there on purpose. `step` does not raise when a play is refused, it returns the
+reason. An earlier version of this program played at tick 0, was refused as `TOO_EARLY`, and then
+failed looking for a Giant that was never placed.
+
+Read that as a story. The Giant slid left onto the bridge column, crossed the river around t=250,
+walked into princess-tower fire, stopped within its own reach of the tower at t=410 and started
 hitting it. Nobody steered it. It picked its own route.
 
 !!! warning "Your hitpoints may not match, and that is fine"
