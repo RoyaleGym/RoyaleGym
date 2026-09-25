@@ -273,13 +273,13 @@ without it. `RustEngine()` then raises an `ImportError` that names the build com
 `RustEngine()` also refuses to start if the calibration or arena file on disk differs from the
 copy built into the engine. Rebuild after you change either one.
 
-### The five repos
+### The repos
 
-<p align="center"><img src="docs/media/family.svg" width="100%" alt="The five Royale repos: RoyaleLearn trains on RoyaleGym, which steps RoyaleSim; RoyaleViser draws traces and streams; RoyaleLive's recordings calibrate RoyaleSim"></p>
+<p align="center"><img src="docs/media/family.svg" width="100%" alt="How the Royale repos depend on each other: RoyaleLearn trains on RoyaleGym, which steps RoyaleSim; RoyaleViser draws traces and streams; RoyaleLive's recordings calibrate RoyaleSim"></p>
 
-You only need this repo and RoyaleSim to train a bot. The other three are there when you want
-them: a trainer, a viewer, and the recordings the engine is calibrated against. RoyaleGym is
-the front door of the five, and the project is named after it.
+You only need this repo and RoyaleSim to train a bot. The others are there when you want them: a
+trainer and an add-on for it, a viewer, and the recordings the engine is calibrated against.
+RoyaleGym is the front door, and the project is named after it.
 
 The layout copies the one the Rocket League community settled on: a fast engine (RocketSim), an
 environment API over it (RLGym), a trainer on top (RLGym-PPO) and a viewer beside them
@@ -291,6 +291,7 @@ environment API over it (RLGym), a trainer on top (RLGym-PPO) and a viewer besid
 | **RoyaleGym** (this repo) | the environment API: what the bot sees, what its moves mean, what it is rewarded for. Gymnasium, PettingZoo and self-play envs | package `royalegym`, which puts the five pieces together into the envs |
 | [RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) | the training harness: self-play rollouts, PPO, a ladder of frozen opponents, checkpoints | it runs on these envs. No bot has come out of it yet, and every run before the evening of 2026-09-22 trained on a mis-aligned reward. A fix landed that day and nothing has been published from a run on it |
 | [RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) | the viewer: recordings, engine traces and running environments, drawn in its own window | reads this package's recordings and its live UDP frames. The picture above is its window |
+| [RoyaleImitate](https://github.com/RoyaleGym/RoyaleImitate) | an optional add-on to RoyaleLearn: config sections that start a bot from saved weights and keep it near a reference policy while it learns | it imports this package's fair observation fields and action numbering, and plugs into RoyaleLearn |
 | RoyaleLive | records real matches. It is private | nothing directly. Its recordings are what RoyaleSim is calibrated against, so the accuracy reaches your envs through the engine |
 
 Each layer only talks downward: RoyaleLearn to RoyaleGym to RoyaleSim. The engine knows

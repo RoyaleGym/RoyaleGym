@@ -113,7 +113,7 @@ the environments, so you have something to play against from your first minute.
 
 ## The four repos
 
-The project is four public repositories that sit side by side in one folder. You install all four
+The stack is four public repositories that sit side by side in one folder. You install all four
 in one go. Most of the time you only think about one of them.
 
 | Repo | What it is | When you touch it |
@@ -126,6 +126,11 @@ in one go. Most of the time you only think about one of them.
 There is a fifth repository, RoyaleLive. It records real matches, and it is private. Its
 recordings are what the engine's movement and combat rules were measured against.
 You never install it. Its accuracy reaches you through the engine.
+
+And there is a public add-on, [RoyaleImitate](https://github.com/RoyaleGym/RoyaleImitate), which is
+not part of the install above. It gives RoyaleLearn two extra config sections: one starts a bot
+from saved weights, the other keeps it near a reference policy while it learns. Leave it out and
+RoyaleLearn behaves as if it did not exist. Its README says how to add it.
 
 Each layer only talks downwards. RoyaleLearn talks to RoyaleGym, which talks to RoyaleSim. The
 engine knows nothing about rewards. That is why you can change a reward function without
