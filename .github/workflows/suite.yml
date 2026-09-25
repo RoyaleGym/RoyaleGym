@@ -69,9 +69,7 @@ jobs:
       # A workflow that installs some other way than the README tests nothing a reader meets,
       # and for a while this one was the other way round: the README moved first and CI kept
       # writing 2018, which is why `test_readme_program` went red pointing at the workflow.
-      # Mirrors README.md stage 3. NOTE for whoever reads this next: as of f37dd5d,
-      # docs/site/pages/install.md still publishes the two `--vintage 2018` lines and does NOT
-      # match README.md. That page is the docs session's; this file follows the README.
+      # Mirrors README.md stage 3.
       - name: generate the data the engine reads
         working-directory: RoyaleSim
         run: |
