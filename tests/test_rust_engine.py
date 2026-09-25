@@ -94,6 +94,7 @@ from royalegym.protocol import (
     DeployRules,
     DeployStatus,
     Engine,
+    EntityKind,
     EntityState,
     MatchSetup,
     Placement,
@@ -379,6 +380,26 @@ def test_plant_flipped_y_in_adapter_is_rejected(rust, monkeypatch):
 # c. determinism through Python
 
 
+def continue_hashes(engine, seed: int, steps: int) -> list[int]:
+    """Scripted play from wherever ``engine`` is now: no reset, no reload."""
+    parser = TileActionParser()
+    parser.bind(engine)
+    rng = np.random.default_rng(seed)
+    out = []
+    for _ in range(steps):
+        s = engine.state()
+        if s.game_over:
+            break
+        cmds = []
+        for team in (BLUE, RED):
+            legal = np.flatnonzero(parser.action_mask(s, team))[1:]
+            if legal.size and rng.random() < 0.3:
+                cmds.append(parser.parse(int(rng.choice(legal)), s, team))
+        engine.step(cmds, 10)
+        out.append(engine.state_hash())
+    return out
+
+
 def scripted_hashes(engine, seed: int, steps: int, chunk: int, start_blob: bytes | None = None):
     parser = TileActionParser()
     parser.bind(engine)
@@ -436,9 +457,106 @@ def _resume_divergence(rust, nudge: bool) -> tuple[list[int], list[int]]:
 
 
 def test_save_load_mid_battle_resumes_identically(rust):
+    """Two reloads of one blob replay the same battle. This compares a reload with a
+    reload, so it cannot see a field that save_state drops: both copies lack it alike.
+    ``test_a_reloaded_battle_continues_exactly_like_the_live_one`` is the test for that."""
     after, again = _resume_divergence(rust, nudge=False)
     assert after == again
     assert len(set(after)) > 60
+
+
+def _deploy_a_building_each(engine) -> None:
+    """Put a Cannon down for both teams, on a tile the mask offers, and let it land."""
+    parser = TileActionParser()
+    parser.bind(engine)
+    s = engine.state()
+    cmds = []
+    for team in (BLUE, RED):
+        slot = s.players[team].hand.index(CANNON) if CANNON in s.players[team].hand else None
+        if slot is None:
+            continue
+        mask = parser.action_mask(s, team)[1:].reshape(4, -1)
+        tiles = np.flatnonzero(mask[slot])
+        if tiles.size:
+            action = 1 + slot * mask.shape[1] + int(tiles[tiles.size // 2])
+            cmds.append(parser.parse(action, s, team))
+    engine.step([c for c in cmds if c is not None], 20)
+
+
+def live_vs_reloaded_divergences(
+    seed: int, windows: int = 14, horizon: int = 8, nudge: bool = False
+) -> tuple[list[tuple[int, int, int]], int]:
+    """Snapshot the LIVE engine at the start of every window, load it into a twin, drive
+    both with the same commands for ``horizon`` steps, and record where they part.
+
+    Many snapshot points rather than one, because a dropped field only matters if the
+    snapshot lands while something is holding it: sim's occ_prev hole needed a unit whose
+    replan was deferred across a building change at the moment of saving. Returns
+    ``[(window, step, tick)]`` for every window that diverged, and the most buildings
+    seen standing at any snapshot.
+    """
+    live = RustEngine(card_names=SHARED)
+    live.reset(seed, MatchSetup(decks=[DECK, DECK], shuffle=ShuffleMode.NONE,
+                                elixir_milli=[10000, 10000], start_tick=LOCKOUT))
+    _deploy_a_building_each(live)
+    twin = RustEngine(card_names=SHARED)
+    parser = TileActionParser()
+    parser.bind(live)
+    rng = np.random.default_rng(seed)
+    parted: list[tuple[int, int, int]] = []
+    most_buildings = 0
+    for w in range(windows):
+        if live.state().game_over:
+            break
+        most_buildings = max(
+            most_buildings, sum(e.kind == EntityKind.BUILDING for e in live.state().entities)
+        )
+        twin.load_state(live.save_state())
+        if nudge:  # the plant: one native unit on the twin, as a dropped field would be
+            troop = next((e for e in twin.state().entities if e.kind == EntityKind.TROOP), None)
+            if troop is not None:
+                assert twin.debug_nudge(troop.uid, 0, 18), "plant did not land"
+        for j in range(horizon):
+            s = live.state()
+            if s.game_over:
+                break
+            cmds = []
+            for team in (BLUE, RED):
+                legal = np.flatnonzero(parser.action_mask(s, team))[1:]
+                if legal.size and rng.random() < 0.3:
+                    cmds.append(parser.parse(int(rng.choice(legal)), s, team))
+            live.step(cmds, 10)
+            twin.step(cmds, 10)
+            if live.state_hash() != twin.state_hash():
+                parted.append((w, j, s.tick))
+                break
+    return parted, most_buildings
+
+
+@pytest.mark.parametrize("seed", [3, 17, 29])
+def test_a_reloaded_battle_continues_exactly_like_the_live_one(seed):
+    """save_state -> load_state must lose nothing the engine reads later.
+
+    The test above cannot see a dropped field, because both of its runs start from a
+    reload. This one drives the LIVE engine against a twin loaded from it, re-snapshotting
+    every window. Sim found the gap on 2026-09-25 with buildings in play: the path grid's
+    occ_prev was not in the snapshot, and a unit whose replan was deferred across a
+    building change read it. So both teams put a building down first.
+    """
+    parted, buildings = live_vs_reloaded_divergences(seed)
+    assert buildings >= 1, "no building stood at any snapshot, so this measured the easy case"
+    assert not parted, (
+        f"seed {seed}: a twin loaded from the live engine parted from it in "
+        f"{len(parted)} window(s), first (window, step, tick) = {parted[0]}, with up to "
+        f"{buildings} buildings standing at a snapshot. Some state the engine reads is "
+        "not in save_state."
+    )
+
+
+def test_plant_a_twin_that_differs_after_loading_is_seen():
+    """The comparison above, fed a twin nudged one native unit after each load."""
+    parted, _ = live_vs_reloaded_divergences(3, nudge=True)
+    assert parted, "PLANT DID NOT LAND: a nudged twin never parted from the live engine"
 
 
 def test_plant_one_subtile_after_load_is_seen(rust):
@@ -1799,7 +1917,13 @@ def command_order_hash_splits(eng, seed: int, steps: int = 300) -> tuple[list[st
         if len(cmds) < 2:
             eng.step(cmds, 10)
             continue
+        # BOTH orders run from a reload of the same blob. The first version stepped the
+        # forward order on the LIVE engine and the backward order on a RELOADED one, so any
+        # field that save_state drops read as an order split (the integrator's catch,
+        # 2026-09-25, after sim found the path grid's occ_prev missing from snapshots).
+        # Save/load fidelity has its own test, live against reloaded; this one is order only.
         blob = eng.save_state()
+        eng.load_state(blob)
         forward = eng.step(cmds, 10)
         h_forward = eng.state_hash()
         after = eng.save_state()
