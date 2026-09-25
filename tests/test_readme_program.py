@@ -141,8 +141,8 @@ def try_it_program() -> tuple[str, str]:
 
 
 def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
-    """The program must RUN on any build; its printed battle is only checkable on the
-    build it was recorded on.
+    """The program must RUN on any build. Its printed battle must match on the build it was
+    recorded on, and passes on any other build that still prints it.
 
     THE SPLIT IS THE POINT, and it was one assertion until 2026-09-23. A printed battle is
     the outcome of a whole simulation, so a different engine build produces a different
@@ -158,7 +158,8 @@ def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
 
     What is NOT weakened: on the build the figure was recorded on, a changed battle is
     still a hard failure, and that is where a real regression shows. A build that moved is
-    reported as an unchecked claim with both digests named, which is what it is.
+    still compared: if it prints the page's battle, the page is right on it too and this
+    passes; if it prints another, that is an unchecked claim, reported with both digests.
 
     THE SKIP CAN GO QUIET, which is the cost of that repair and was pointed out the same
     night: a skip fires on every later build move, nothing re-records the pin, and after a
@@ -186,6 +187,15 @@ def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
     )
     measured_against = f"RoyaleSim {p.sim_commit}" if p.sim_commit else "an unnamed RoyaleSim"
     if engine_build_digest() != p.build:
+        if done.stdout.strip() == expected.strip():
+            # A new build that still prints the page's battle: the claim holds here too, so
+            # this PASSES rather than skipping. Until 2026-09-25 it skipped, and a ledger key
+            # that moved the digest but not this battle (RoyaleSim 8e7927d,
+            # spawner.RELEASE_TIMING; the deck has no death spawns) turned RoyaleSim's
+            # cross-repo gym row red, whose gate refuses any undeclared skip, for a page
+            # that was still right. The page's stamp keeps naming the build it was
+            # recorded on, which stays true.
+            return
         pytest.skip(
             f"SKIPPED, NOT PASSED: the README's battle was {p.age()}, on engine build "
             f"{p.build} ({measured_against}), and this engine is {engine_build_digest()}. "
@@ -217,6 +227,27 @@ def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
         "the block, and updating the 're-run <date> on engine build ...' sentence and the "
         "RoyaleSim commit beside it. Every stamp is read from the page."
     )
+
+
+def test_a_moved_build_that_prints_the_page_battle_passes(monkeypatch) -> None:
+    """The pass path above, taken on purpose: the digest moved, the battle did not."""
+    monkeypatch.setattr(sys.modules[__name__], "engine_build_digest", lambda: "0" * 16)
+    try:
+        test_the_try_it_program_runs_and_prints_what_the_readme_says()
+    except pytest.skip.Exception as skipped:
+        # Caught, because a skip raised in here would skip THIS test too, and a pass path
+        # that broke would read as one more skip rather than as a failure.
+        pytest.fail(f"a moved build that prints the page's battle skipped: {skipped}")
+
+
+def test_plant_a_moved_build_that_prints_another_battle_still_skips(monkeypatch) -> None:
+    """The same moved digest with a page that says something else must not pass."""
+    program, _expected = try_it_program()
+    monkeypatch.setattr(sys.modules[__name__], "engine_build_digest", lambda: "0" * 16)
+    another = (program, "winner 9  crowns [9, 9]  tick 1")
+    monkeypatch.setattr(sys.modules[__name__], "try_it_program", lambda: another)
+    with pytest.raises(pytest.skip.Exception, match="SKIPPED, NOT PASSED"):
+        test_the_try_it_program_runs_and_prints_what_the_readme_says()
 
 
 def test_the_badge_count_matches_what_the_suite_collects() -> None:
