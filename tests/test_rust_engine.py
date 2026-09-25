@@ -103,6 +103,7 @@ from royalegym.protocol import (
     SpellMotion,
     TowerSlot,
     default_calibration,
+    derived_cards_vintage,
     mirror_state,
     spawn_violation,
     to_engine,
@@ -1813,6 +1814,48 @@ def command_order_hash_splits(eng, seed: int, steps: int = 300) -> tuple[list[st
     return splits, pairs
 
 
+#: ONE KNOWN ORDER-DEPENDENCE, expected exactly and nothing wider (2026-09-25). Sim's words:
+#: "the named cause ... is RoyaleSim's combat.POST_KILL_RETARGET_WAIT =
+#: client16402_measured_list, shipped in f1a91ed. Cross-repo runs with only that key
+#: reverted pass the row; reverting any other flip key does not (Integrator verified the
+#: logs). It reproduces only under the 2018 table: 0 splits on 15.535 over 16 seeds. I'm
+#: fixing forward." So under exactly that arm and that table, seed 7's first split is
+#: expected at this step and tick. Anything else is not: no split means it was fixed and
+#: this must be removed, and a different split is a new defect.
+KNOWN_ORDER_SPLIT_ARM = ("combat.POST_KILL_RETARGET_WAIT", "client16402_measured_list")
+KNOWN_ORDER_SPLIT_FIRST = "step 267 tick 2760:"
+
+
+def known_order_split_expected(engine_name: str) -> bool:
+    """Whether this run is exactly the case sim named: RustEngine, 2018 table, that arm."""
+    if engine_name != "rust" or "2018" not in derived_cards_vintage():
+        return False
+    key, arm = KNOWN_ORDER_SPLIT_ARM
+    try:
+        return str(default_calibration().value(key)) == arm
+    except KeyError:
+        return False
+
+
+def judge_order_splits(splits: list[str], expected: bool) -> None:
+    """Fail, or xfail on exactly the known split. Split out so the rule can be planted."""
+    if expected:
+        assert splits, (
+            "the known 2018-table order split is GONE: RoyaleSim fixed it. Remove "
+            "KNOWN_ORDER_SPLIT_ARM and this branch, so the property is asserted plainly again."
+        )
+        assert splits[0].startswith(KNOWN_ORDER_SPLIT_FIRST), (
+            f"a DIFFERENT order split from the known one ({KNOWN_ORDER_SPLIT_FIRST}): "
+            f"{splits[:3]}. That is a new order-dependence, not the one sim is fixing."
+        )
+        pytest.xfail(
+            "known: combat.POST_KILL_RETARGET_WAIT = client16402_measured_list (RoyaleSim "
+            "f1a91ed) splits the state hash by command order under the 2018 table only, "
+            "first at step 267 tick 2760; sim is fixing forward"
+        )
+    assert splits == [], splits[:5]
+
+
 @pytest.mark.parametrize("engine_name", ["rust", "mock"])
 def test_state_hash_does_not_depend_on_simultaneous_command_order(rust, mock, engine_name):
     """``step([blue, red])`` and ``step([red, blue])`` -- one set of simultaneous
@@ -1821,8 +1864,22 @@ def test_state_hash_does_not_depend_on_simultaneous_command_order(rust, mock, en
     canonical (team, slot) order; results still come back in input order."""
     eng = rust if engine_name == "rust" else mock
     splits, pairs = command_order_hash_splits(eng, 7)
-    assert splits == [], splits[:5]
+    judge_order_splits(splits, known_order_split_expected(engine_name))
     assert pairs >= 15, f"only {pairs} steps with both teams deploying: not evidence"
+
+
+def test_the_known_order_split_is_expected_exactly_and_nothing_wider() -> None:
+    """The xfail above, planted: only the named split passes as expected."""
+    known = [f"{KNOWN_ORDER_SPLIT_FIRST} 0x1 vs 0x2"]
+    with pytest.raises(pytest.xfail.Exception):
+        judge_order_splits(known, expected=True)
+    with pytest.raises(AssertionError, match="is GONE"):
+        judge_order_splits([], expected=True)
+    with pytest.raises(AssertionError, match="DIFFERENT order split"):
+        judge_order_splits(["step 12 tick 300: 0x1 vs 0x2"], expected=True)
+    with pytest.raises(AssertionError):
+        judge_order_splits(known, expected=False)  # outside the named case it still fails
+    judge_order_splits([], expected=False)
 
 
 def test_plant_mock_input_order_is_caught(mock, monkeypatch):
