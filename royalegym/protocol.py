@@ -403,6 +403,28 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     facing: tuple[int, int] = (0, 0)  # a DIRECTION in engine-frame subtiles, any length
     shield: int = 0  # shield hp left; 0 for none
     buffs: tuple[tuple[str, int], ...] = ()  # (name, ms_left); names kept whole, "|" and all
+    # D10 (2026-09-25): one int of bits, each set by the engine's own predicate, not a copy
+    # of it. STATUS_UNDERGROUND: tunnelling now (untargetable, immune to every hit).
+    # STATUS_INVISIBLE: invisible to enemies now (untargetable; area damage still lands).
+    # STATUS_HIDDEN: a building hidden in the ground (the Tesla). Higher bits reserved.
+    # -1 means the engine did not report, so read it through ``status_of``, never raw.
+    status_flags: int = -1
+
+
+#: ``EntityState.status_flags`` bits. Read them through ``status_of``.
+STATUS_UNDERGROUND = 1
+STATUS_INVISIBLE = 2
+STATUS_HIDDEN = 4
+
+
+def status_of(entity: EntityState) -> int | None:
+    """``entity.status_flags``, or None when the engine did not report it.
+
+    THE ONLY SAFE WAY TO READ THE BITS. The "not reported" default is -1, and in Python
+    ``-1 & STATUS_UNDERGROUND`` is 1: a raw mask would read an engine that said nothing as
+    every unit under ground, invisible and hidden at once.
+    """
+    return entity.status_flags if entity.status_flags >= 0 else None
 
 
 class ProjectileState(msgspec.Struct, frozen=True, array_like=True):

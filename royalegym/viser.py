@@ -59,6 +59,7 @@ from .protocol import (
     PlayerState,
     ProjectileState,
     SpellState,
+    status_of,
 )
 
 HOST = "127.0.0.1"
@@ -121,6 +122,8 @@ def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
             "tower_slot": e.tower_slot,
             "knockback_ticks": e.knockback_ticks,
             "shield": e.shield,
+            # None when the engine did not report it (status_of); bits in protocol.STATUS_*
+            "status_flags": status_of(e),
         },
         "footprint": list(e.footprint) if e.footprint is not None else None,
     }

@@ -28,6 +28,9 @@ from royalegym.mock_engine import UNREPORTED_ENTITY_FIELDS, MockEngine
 from royalegym.protocol import (
     BLUE,
     RED,
+    STATUS_HIDDEN,
+    STATUS_INVISIBLE,
+    STATUS_UNDERGROUND,
     BattleState,
     DeployCommand,
     DeployStatus,
@@ -36,6 +39,7 @@ from royalegym.protocol import (
     MatchSetup,
     PlayerState,
     ProjectileState,
+    status_of,
     to_engine,
 )
 from royalegym.replay import TraceFrame, TraceHeader
@@ -74,6 +78,29 @@ def test_the_new_columns_land_in_the_fields_they_name():
     assert e.buffs == (("Rage|Slow", 1200), ("Poison", 800))
     # The legacy columns must not move either: the new ones are TRAILING.
     assert (e.uid, e.card_id, e.stun_ticks, e.knockback_ticks) == (101, 7, 3, 4)
+
+
+def test_status_flags_is_the_trailing_column_and_reads_as_not_reported_when_absent():
+    """D10 (2026-09-25): an engine that sends no status column, which is every engine
+    until sim appends it, decodes as -1, and status_of turns that into None. The raw
+    value is never a bitmask to test: in Python ``-1 & STATUS_UNDERGROUND`` is 1."""
+    e = decode_entity(LEGACY + NEW)
+    assert e.status_flags == -1
+    assert status_of(e) is None
+    assert unit_dict(e, name_of)["extra"]["status_flags"] is None
+    assert -1 & STATUS_UNDERGROUND, "the trap status_of exists for: a raw mask of -1 is set"
+    # The legacy and 2026-09-24 columns keep their places with the new one appended.
+    assert (e.target_uid, e.attack_phase, e.shield) == (37, 2, 140)
+
+
+def test_status_flags_bits_land_where_the_engine_puts_them():
+    e = decode_entity([*LEGACY, *NEW, STATUS_UNDERGROUND | STATUS_HIDDEN])
+    assert status_of(e) == 5
+    assert status_of(e) & STATUS_UNDERGROUND
+    assert not status_of(e) & STATUS_INVISIBLE
+    assert status_of(e) & STATUS_HIDDEN
+    assert unit_dict(e, name_of)["extra"]["status_flags"] == 5
+    assert status_of(decode_entity([*LEGACY, *NEW, 0])) == 0, "0 is a reported value"
 
 
 def test_an_engine_that_sends_only_the_old_columns_decodes_as_not_reported():

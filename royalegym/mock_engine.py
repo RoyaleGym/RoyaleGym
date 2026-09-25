@@ -114,8 +114,9 @@ FOOTPRINT_MODEL = "collision_radius_circle"
 ILLEGAL_BUILDING_TAP = "refuse"
 
 # EntityState fields this engine never reports: every entity carries their "not
-# reported" defaults. It has no windup to phase, no heading, no shields and no status
-# effects, and it keeps each unit's target to itself. An engine that models them sends
+# reported" defaults. It has no windup to phase, no heading, no shields, no status
+# effects and no tunnelling, invisible or hidden units, and it keeps each unit's target
+# to itself. An engine that models them sends
 # real values, and tests/test_rust_engine.py lets the two differ on these fields only
 # where this engine's value is still the default. tests/test_unit_status_and_projectiles.py
 # refuses the list once this engine starts sending one of them.
@@ -125,6 +126,7 @@ UNREPORTED_ENTITY_FIELDS: tuple[str, ...] = (
     "facing",
     "shield",
     "buffs",
+    "status_flags",
 )
 
 # The card subset the mock supports. A mock design choice (a spread of placement
