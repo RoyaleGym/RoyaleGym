@@ -1826,15 +1826,26 @@ KNOWN_ORDER_SPLIT_ARM = ("combat.POST_KILL_RETARGET_WAIT", "client16402_measured
 KNOWN_ORDER_SPLIT_FIRST = "step 267 tick 2760:"
 
 
-def known_order_split_expected(engine_name: str) -> bool:
-    """Whether this run is exactly the case sim named: RustEngine, 2018 table, that arm."""
-    if engine_name != "rust" or "2018" not in derived_cards_vintage():
-        return False
-    key, arm = KNOWN_ORDER_SPLIT_ARM
+def ledger_arm(key: str) -> str | None:
+    """The arm a calibration key is set to, or None when the ledger has no such key.
+
+    A key's value is either the arm itself or a dict carrying it under ``"arm"`` with its
+    parameters beside it, as combat.POST_KILL_RETARGET_WAIT does. The first version of the
+    detector below compared str() of that dict with the arm name, which is never equal, so
+    on the one row it existed for it said "not the named case" and the xfail never engaged.
+    """
     try:
-        return str(default_calibration().value(key)) == arm
+        value = default_calibration().value(key)
     except KeyError:
-        return False
+        return None
+    return str(value["arm"]) if isinstance(value, dict) else str(value)
+
+
+def known_order_split_expected(engine_name: str, vintage: str | None = None) -> bool:
+    """Whether this run is exactly the case sim named: RustEngine, 2018 table, that arm."""
+    vintage = derived_cards_vintage() if vintage is None else vintage
+    key, arm = KNOWN_ORDER_SPLIT_ARM
+    return engine_name == "rust" and "2018" in vintage and ledger_arm(key) == arm
 
 
 def judge_order_splits(splits: list[str], expected: bool) -> None:
@@ -1873,6 +1884,24 @@ def test_state_hash_does_not_depend_on_simultaneous_command_order(rust, mock, en
     splits, pairs = command_order_hash_splits(eng, 7)
     judge_order_splits(splits, known_order_split_expected(engine_name))
     assert pairs >= 15, f"only {pairs} steps with both teams deploying: not evidence"
+
+
+def test_the_named_case_is_recognised_where_it_holds_and_nowhere_else() -> None:
+    """The detector, which the judging plant below cannot see: the half that did not land.
+
+    The 2018 row's own vintage string, and this ledger's arm, must make the named case
+    true; the other engine and the 15.535 table must not. Read on whatever ledger is here,
+    so it goes red here, not only on the one CI row, if the arm's shape or name moves.
+    """
+    key, arm = KNOWN_ORDER_SPLIT_ARM
+    assert ledger_arm(key) == arm, (
+        f"{key} reads as {ledger_arm(key)!r} here, not {arm!r}. If sim moved the arm, the "
+        "known split is no longer the named case; if the value changed shape, fix ledger_arm."
+    )
+    row_2018 = "~2018 client data (PRE-2025)"  # extract_cards.py --vintage 2018 writes this
+    assert known_order_split_expected("rust", row_2018)
+    assert not known_order_split_expected("mock", row_2018)
+    assert not known_order_split_expected("rust", "15.535.29 client (2026, LIVE build family)")
 
 
 def order_outcome(splits: list[str], expected: bool) -> str:
