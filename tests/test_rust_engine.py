@@ -103,7 +103,6 @@ from royalegym.protocol import (
     SpellMotion,
     TowerSlot,
     default_calibration,
-    derived_cards_vintage,
     mirror_state,
     spawn_violation,
     to_engine,
@@ -436,6 +435,9 @@ def _resume_divergence(rust, nudge: bool) -> tuple[list[int], list[int]]:
 
 
 def test_save_load_mid_battle_resumes_identically(rust):
+    """Two reloads of one blob replay the same battle. Both runs start from a reload, so
+    this cannot see a field that save_state drops: both copies lack it alike. Comparing
+    the LIVE engine with a reloaded twin is what catches that."""
     after, again = _resume_divergence(rust, nudge=False)
     assert after == again
     assert len(set(after)) > 60
@@ -1799,7 +1801,15 @@ def command_order_hash_splits(eng, seed: int, steps: int = 300) -> tuple[list[st
         if len(cmds) < 2:
             eng.step(cmds, 10)
             continue
+        # BOTH orders run from a reload of the same blob. Until 2026-09-25 the forward order
+        # ran on the LIVE engine and the backward order on a RELOADED one, so anything
+        # save_state drops read as an order split. It did: the 2018 cross-repo row's "order
+        # split" at step 267, tick 2760, xfailed for a day as a command-order defect, went
+        # away the moment both orders reloaded (the integrator's catch, measured on
+        # RoyaleGym cross-repo run 36172148010). It was a save/load hole, which is sim's
+        # to fix and not this test's to measure; this one measures order only.
         blob = eng.save_state()
+        eng.load_state(blob)
         forward = eng.step(cmds, 10)
         h_forward = eng.state_hash()
         after = eng.save_state()
@@ -1814,66 +1824,6 @@ def command_order_hash_splits(eng, seed: int, steps: int = 300) -> tuple[list[st
     return splits, pairs
 
 
-#: ONE KNOWN ORDER-DEPENDENCE, expected exactly and nothing wider (2026-09-25). Sim's words:
-#: "the named cause ... is RoyaleSim's combat.POST_KILL_RETARGET_WAIT =
-#: client16402_measured_list, shipped in f1a91ed. Cross-repo runs with only that key
-#: reverted pass the row; reverting any other flip key does not (Integrator verified the
-#: logs). It reproduces only under the 2018 table: 0 splits on 15.535 over 16 seeds. I'm
-#: fixing forward." So under exactly that arm and that table, seed 7's first split is
-#: expected at this step and tick. Anything else is not: no split means it was fixed and
-#: this must be removed, and a different split is a new defect.
-KNOWN_ORDER_SPLIT_ARM = ("combat.POST_KILL_RETARGET_WAIT", "client16402_measured_list")
-KNOWN_ORDER_SPLIT_FIRST = "step 267 tick 2760:"
-
-
-def ledger_arm(key: str) -> str | None:
-    """The arm a calibration key is set to, or None when the ledger has no such key.
-
-    A key's value is either the arm itself or a dict carrying it under ``"arm"`` with its
-    parameters beside it, as combat.POST_KILL_RETARGET_WAIT does. The first version of the
-    detector below compared str() of that dict with the arm name, which is never equal, so
-    on the one row it existed for it said "not the named case" and the xfail never engaged.
-    """
-    try:
-        value = default_calibration().value(key)
-    except KeyError:
-        return None
-    return str(value["arm"]) if isinstance(value, dict) else str(value)
-
-
-def known_order_split_expected(engine_name: str, vintage: str | None = None) -> bool:
-    """Whether this run is exactly the case sim named: RustEngine, 2018 table, that arm."""
-    vintage = derived_cards_vintage() if vintage is None else vintage
-    key, arm = KNOWN_ORDER_SPLIT_ARM
-    return engine_name == "rust" and "2018" in vintage and ledger_arm(key) == arm
-
-
-def judge_order_splits(splits: list[str], expected: bool) -> None:
-    """Fail, or xfail on exactly the known split. Split out so the rule can be planted."""
-    if expected:
-        assert splits, (
-            "the known 2018-table order split is GONE: RoyaleSim fixed it. Remove "
-            "KNOWN_ORDER_SPLIT_ARM and this branch, so the property is asserted plainly again."
-        )
-        assert splits[0].startswith(KNOWN_ORDER_SPLIT_FIRST), (
-            f"a DIFFERENT order split from the known one ({KNOWN_ORDER_SPLIT_FIRST}): "
-            f"{splits[:3]}. That is a new order-dependence, not the one sim is fixing."
-        )
-        # Exactly one: a second defect that split LATER in the same run would otherwise sit
-        # behind the known first split, excused with it (the integrator's catch; their
-        # control run 36161198480 shows exactly this one split).
-        assert len(splits) == 1, (
-            f"the known split plus {len(splits) - 1} more: {splits[:4]}. Only the first is "
-            "sim's named defect; the rest are not excused."
-        )
-        pytest.xfail(
-            "known: combat.POST_KILL_RETARGET_WAIT = client16402_measured_list (RoyaleSim "
-            "f1a91ed) splits the state hash by command order under the 2018 table only, "
-            "first at step 267 tick 2760; sim is fixing forward"
-        )
-    assert splits == [], splits[:5]
-
-
 @pytest.mark.parametrize("engine_name", ["rust", "mock"])
 def test_state_hash_does_not_depend_on_simultaneous_command_order(rust, mock, engine_name):
     """``step([blue, red])`` and ``step([red, blue])`` -- one set of simultaneous
@@ -1882,60 +1832,8 @@ def test_state_hash_does_not_depend_on_simultaneous_command_order(rust, mock, en
     canonical (team, slot) order; results still come back in input order."""
     eng = rust if engine_name == "rust" else mock
     splits, pairs = command_order_hash_splits(eng, 7)
-    judge_order_splits(splits, known_order_split_expected(engine_name))
+    assert splits == [], splits[:5]
     assert pairs >= 15, f"only {pairs} steps with both teams deploying: not evidence"
-
-
-def test_the_named_case_is_recognised_where_it_holds_and_nowhere_else() -> None:
-    """The detector, which the judging plant below cannot see: the half that did not land.
-
-    The 2018 row's own vintage string, and this ledger's arm, must make the named case
-    true; the other engine and the 15.535 table must not. Read on whatever ledger is here,
-    so it goes red here, not only on the one CI row, if the arm's shape or name moves.
-    """
-    key, arm = KNOWN_ORDER_SPLIT_ARM
-    assert ledger_arm(key) == arm, (
-        f"{key} reads as {ledger_arm(key)!r} here, not {arm!r}. If sim moved the arm, the "
-        "known split is no longer the named case; if the value changed shape, fix ledger_arm."
-    )
-    row_2018 = "~2018 client data (PRE-2025)"  # extract_cards.py --vintage 2018 writes this
-    assert known_order_split_expected("rust", row_2018)
-    assert not known_order_split_expected("mock", row_2018)
-    assert not known_order_split_expected("rust", "15.535.29 client (2026, LIVE build family)")
-
-
-def order_outcome(splits: list[str], expected: bool) -> str:
-    """What judge_order_splits does, as a VALUE: "xfail", "pass" or "fail: <message>".
-
-    Read as a value because an xfail raised straight inside a test marks that test xfailed:
-    a judge that wrongly xfailed would then turn this plant into one more expected failure
-    instead of a red.
-    """
-    try:
-        judge_order_splits(splits, expected)
-    except pytest.xfail.Exception:
-        return "xfail"
-    except AssertionError as e:
-        return f"fail: {e}"
-    return "pass"
-
-
-def test_the_known_order_split_is_expected_exactly_and_nothing_wider() -> None:
-    """The xfail above, planted: only the named split, alone, passes as expected."""
-    known = [f"{KNOWN_ORDER_SPLIT_FIRST} 0x1 vs 0x2"]
-    extra = "step 300 tick 3090: 0x3 vs 0x4"
-    cases = {
-        "the named split alone": (known, True, "xfail"),
-        "no split while it is expected": ([], True, "is GONE"),
-        "a different first split": (["step 12 tick 300: 0x1 vs 0x2"], True, "DIFFERENT"),
-        "the named split plus one more": ([*known, extra], True, "plus 1 more"),
-        "the named split outside its case": (known, False, "fail: "),
-        "no split outside its case": ([], False, "pass"),
-    }
-    for what, (splits, expected, want) in cases.items():
-        got = order_outcome(splits, expected)
-        ok = got == want if want in ("xfail", "pass") else got.startswith("fail: ") and want in got
-        assert ok, f"{what}: judged {got!r}, wanted {want!r}"
 
 
 def test_plant_mock_input_order_is_caught(mock, monkeypatch):
