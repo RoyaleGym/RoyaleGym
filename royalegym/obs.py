@@ -184,13 +184,21 @@ class VectorField(NamedTuple):
     fair: bool = True
 
 
-def vector_layout(num_cards: int, reveal: Reveal | None = None) -> list[VectorField]:
+def vector_layout(
+    num_cards: int, reveal: Reveal | None = None, enemy_last_card: bool = False
+) -> list[VectorField]:
     """The flat vector, field by field, in order. THE definition of the layout.
 
     Fair fields come first and in a fixed order, so enabling a reveal never moves
     a fair feature: the slice holding "own elixir" is the same in a fair run and in
     a cheating one. tests/test_env_obs.py asserts the resulting width rather than
     trusting arithmetic done here.
+
+    ``enemy_last_card`` (D2, 2026-09-22; off by default) appends one FAIR field, the
+    enemy's last play, at the END of the fair block -- after every fair field that
+    existed before it, so turning it on moves no existing fair offset, and before the
+    reveal fields, so the fair block stays contiguous. It is fair because anyone
+    watching sees what the opponent just played.
     """
     rev = reveal or Reveal()
     n = num_cards
@@ -242,6 +250,12 @@ def vector_layout(num_cards: int, reveal: Reveal | None = None) -> list[VectorFi
         ),
         VectorField("elixir_rate", 2, "elixir rate one-hot [1x, 2x]"),
     ]
+    if enemy_last_card:
+        fields.append(
+            VectorField(
+                "enemy_last_card", onehot, "last card the enemy played, one-hot [n+1]; n = none yet"
+            )
+        )
     if rev.enemy_hand:
         fields.append(
             VectorField(
@@ -269,16 +283,23 @@ def vector_layout(num_cards: int, reveal: Reveal | None = None) -> list[VectorFi
     return fields
 
 
-def vector_fields(num_cards: int, reveal: Reveal | None = None) -> list[tuple[str, int]]:
+def vector_fields(
+    num_cards: int, reveal: Reveal | None = None, enemy_last_card: bool = False
+) -> list[tuple[str, int]]:
     """``(description, size)`` per field, in order. The suite checks the sizes add up."""
-    return [(f"{f.key}: {f.doc}", f.size) for f in vector_layout(num_cards, reveal)]
+    return [
+        (f"{f.key}: {f.doc}", f.size)
+        for f in vector_layout(num_cards, reveal, enemy_last_card)
+    ]
 
 
-def vector_offsets(num_cards: int, reveal: Reveal | None = None) -> dict[str, slice]:
+def vector_offsets(
+    num_cards: int, reveal: Reveal | None = None, enemy_last_card: bool = False
+) -> dict[str, slice]:
     """``key -> slice`` into the flat vector, so nothing has to count slots by hand."""
     out: dict[str, slice] = {}
     at = 0
-    for f in vector_layout(num_cards, reveal):
+    for f in vector_layout(num_cards, reveal, enemy_last_card):
         out[f.key] = slice(at, at + f.size)
         at += f.size
     return out
@@ -483,6 +504,7 @@ def build_vector(
     max_mana: int,
     reveal: Reveal,
     memory: MatchMemory,
+    enemy_last_card: bool = False,
 ) -> np.ndarray:
     """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``."""
     me, foe = state.players[team], state.players[1 - team]
@@ -530,6 +552,11 @@ def build_vector(
     out.append(
         np.array([float(state.elixir_rate == 1), float(state.elixir_rate == 2)], dtype=np.float32)
     )
+    if enemy_last_card:
+        # The newest entry of the cycle memory the vector already uses for
+        # enemy_possible_hand, so it is derived from tested state, not kept twice.
+        last = memory.foe_recent[-1] if memory.foe_recent else EMPTY_CARD
+        out.append(_one_hot(last, onehot, num_cards))
     if reveal.enemy_hand:
         one, _cost, _afford = _hand_block(foe.hand, cards, foe.elixir_milli, num_cards, max_mana)
         out.append(one)
@@ -683,6 +710,9 @@ class ObsBuilder(ABC):
 
     calibration: Calibration
     reveal: Reveal
+    #: Whether the vector carries ``enemy_last_card``. Only SpatialObsBuilder's
+    #: ``card_identity`` turns it on; every other builder keeps the shipped vector.
+    enemy_last_card: bool = False
 
     def __init__(
         self, reveal: Reveal | None = None, calibration: Calibration | None = None
@@ -732,11 +762,11 @@ class ObsBuilder(ABC):
 
     def vector_layout(self) -> list[VectorField]:
         """The flat vector's fields, in order, for this builder's ``Reveal``."""
-        return vector_layout(self.num_cards, self.reveal)
+        return vector_layout(self.num_cards, self.reveal, self.enemy_last_card)
 
     def vector_offsets(self) -> dict[str, slice]:
         """``key -> slice`` into the flat vector this builder writes."""
-        return vector_offsets(self.num_cards, self.reveal)
+        return vector_offsets(self.num_cards, self.reveal, self.enemy_last_card)
 
     @abstractmethod
     def channel_names(self) -> list[str]:
@@ -782,7 +812,14 @@ class ObsBuilder(ABC):
     def _vector(self, state: BattleState, team: int) -> np.ndarray:
         memory = self.memory[team]
         memory.observe(state, team)
-        return build_vector(state, team, self.cards, self.max_mana, self.reveal, memory)
+        # The flag goes only when it is ON, and by keyword. With it off this is the exact call
+        # it was before D2, so anything that wraps or substitutes build_vector with the old
+        # six arguments keeps working -- this suite's own plant tests do, and the first
+        # version of this line broke two of them by always passing a seventh.
+        extra = {"enemy_last_card": True} if self.enemy_last_card else {}
+        return build_vector(
+            state, team, self.cards, self.max_mana, self.reveal, memory, **extra
+        )
 
     @abstractmethod
     def observation_space(self) -> spaces.Dict: ...
@@ -925,13 +962,121 @@ def spell_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
     return out
 
 
+#: ``card_ids`` value for a tile nothing stands on.
+CARD_ID_EMPTY = 0
+#: ``card_ids`` value for a crown tower, the only entity class that carries no card. Kept
+#: apart from EMPTY so that 0 never means both "empty ground" and "a tower stands here" --
+#: which also makes a destroyed tower's tile read as genuinely empty.
+CARD_ID_TOWER = 1
+#: A catalogue card id ``c`` is written as ``CARD_ID_OFFSET + c``.
+CARD_ID_OFFSET = 2
+TOWER_KINDS = (EntityKind.KING_TOWER, EntityKind.PRINCESS_TOWER)
+
+
+def card_id_planes(
+    entities: Sequence[EntityState], team: int, arena: Arena, num_cards: int
+) -> np.ndarray:
+    """uint8 [2, tiles_y, tiles_x], seen by ``team``: plane 0 own, plane 1 enemy.
+
+    Which CARD occupies each tile, which the float ``spatial`` planes cannot say: they
+    count troops and sum hp, so a Giant and a Knight on one tile look alike
+    (docs/observation-spec.md 3b; decision D2). Tiles are the same own-frame centre tiles
+    ``entity_channels`` uses, so the two line up cell for cell.
+
+    TIES GO TO THE LOWEST UID, and that is not cosmetic. ``BattleState.entities`` is not in
+    uid order -- a live battle gives [0, 2, 4, 1, 3, 5] -- so "whichever comes first" would
+    make a plane a function of iteration order, and two runs of one seed could differ. A
+    uid is unique for a whole battle and never reused.
+
+    Spells in flight never appear: ``BattleState.spells`` is a separate list, so a live
+    spell has no entity and no tile. Units a spell releases do appear, under the releasing
+    spell's catalogue id, because that is what the engine reports for them.
+
+    Module-level so a test can plant a defect in it.
+    """
+    out = np.zeros((2, arena.tiles_y, arena.tiles_x), dtype=np.uint8)
+    for e in sorted(entities, key=lambda ent: ent.uid):
+        ox, oy = to_own(arena, team, e.x, e.y)
+        tx = min(max(ox // arena.subtile, 0), arena.tiles_x - 1)
+        ty = min(max(oy // arena.subtile, 0), arena.tiles_y - 1)
+        plane = 0 if e.team == team else 1
+        if out[plane, ty, tx] != CARD_ID_EMPTY:
+            continue  # a lower uid already holds this tile
+        if e.kind in TOWER_KINDS:
+            out[plane, ty, tx] = CARD_ID_TOWER
+        elif 0 <= e.card_id < num_cards:
+            out[plane, ty, tx] = CARD_ID_OFFSET + e.card_id
+        else:
+            # Writing it anyway would put an id outside the declared vocabulary into an
+            # embedding lookup, or fold an unknown entity into "tower". Neither is a value.
+            raise ValueError(
+                f"entity uid {e.uid} (kind {e.kind}) has card_id {e.card_id}, outside the "
+                f"{num_cards}-card catalogue, and is not a crown tower, so card_ids has no "
+                "index for it"
+            )
+    return out
+
+
 class SpatialObsBuilder(ObsBuilder):
     """Dict(spatial [C, 32, 18], mask_planes [4, 32, 18], vector [V], action_mask [A]).
 
     Entities are rasterised by the tile containing their centre in the own frame
     (``x_own // SUBTILE``, clamped). ``channel_names()`` lists the channels;
     ``spatial_channels(reveal)`` is the same list with each channel's meaning.
+
+    ``card_identity=True`` (D2; OFF by default) adds two things, as one switch because
+    they are one change to what a network sees: a ``card_ids`` key, uint8 [2, 32, 18],
+    naming the card on each tile (``card_id_planes``), and ``enemy_last_card`` in the
+    vector. It is its OWN key and not a channel of ``spatial``, because ``spatial`` is a
+    float Box: a learner's codec stores a float box as a scaled half, a card id comes
+    back as 6.997, and ``.long()`` reads card 6 with nothing failing.
+
+    THE VOCABULARY SIZE is ``num_cards + 2`` from the LOADED table, and it is published
+    as the ``card_ids`` Box's upper bound plus one, so a network sizes its embedding from
+    ``observation_space["card_ids"].high.max() + 1`` at construction.
+
+    CATALOGUE IDS ARE POSITIONAL: making one more card loadable renumbers every later id,
+    and an embedding indexed by them would read a different game from the same checkpoint
+    with nothing failing. So ``config()`` records the card NAMES in order, and a builder
+    constructed with ``card_names`` REFUSES to bind to an engine whose catalogue differs.
     """
+
+    def __init__(
+        self,
+        reveal: Reveal | None = None,
+        calibration: Calibration | None = None,
+        card_identity: bool = False,
+        card_names: Sequence[str] | None = None,
+    ) -> None:
+        super().__init__(reveal, calibration)
+        self.card_identity = bool(card_identity)
+        self.enemy_last_card = self.card_identity
+        if card_names is not None and not self.card_identity:
+            raise ValueError(
+                "card_names pins the card_ids vocabulary, which only exists with "
+                "card_identity=True"
+            )
+        self._pinned_card_names = list(card_names) if card_names is not None else None
+
+    def _check_card_names(self) -> list[str]:
+        """The catalogue's names, or a refusal if they are not the ones pinned."""
+        names = [c.name for c in self.cards]
+        pinned = self._pinned_card_names
+        if pinned is not None and pinned != names:
+            i = next(
+                (k for k, (a, b) in enumerate(zip(pinned, names, strict=False)) if a != b),
+                min(len(pinned), len(names)),
+            )
+            was = pinned[i] if i < len(pinned) else "<end>"
+            now = names[i] if i < len(names) else "<end>"
+            raise ValueError(
+                f"card_ids was built for a catalogue that has {was!r} at id {i}; this "
+                f"engine has {now!r} there ({len(pinned)} pinned names, {len(names)} "
+                "loaded). Catalogue ids are positional, so every card_ids value from here "
+                "on would name a different card than the checkpoint learned. Refusing "
+                "rather than reinterpreting."
+            )
+        return names
 
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
@@ -953,13 +1098,26 @@ class SpatialObsBuilder(ObsBuilder):
             for row, name in enumerate(SPELL_ROWS)
             if name in self._channel_index
         ]
-        self._space = spaces.Dict(
-            {
-                "spatial": spaces.Box(0.0, SPATIAL_CLIP, shape=self.shape, dtype=np.float32),
-                "vector": spaces.Box(0.0, 1.0, shape=(self.vec_size,), dtype=np.float32),
-                **self._mask_space_entries(),
-            }
-        )
+        entries: dict[str, spaces.Space[Any]] = {
+            "spatial": spaces.Box(0.0, SPATIAL_CLIP, shape=self.shape, dtype=np.float32),
+            "vector": spaces.Box(0.0, 1.0, shape=(self.vec_size,), dtype=np.float32),
+            **self._mask_space_entries(),
+        }
+        if self.card_identity:
+            self.card_names = self._check_card_names()
+            self.card_vocab = self.num_cards + CARD_ID_OFFSET
+            top = int(np.iinfo(np.uint8).max)
+            if self.card_vocab - 1 > top:
+                raise ValueError(
+                    f"card_ids needs {self.card_vocab} values for {self.num_cards} cards and "
+                    f"uint8 holds {top + 1}. Widening the dtype is a storage decision for "
+                    "every consumer of this key, so it is refused here rather than made "
+                    "silently."
+                )
+            entries["card_ids"] = spaces.Box(
+                0, self.card_vocab - 1, shape=(2, a.tiles_y, a.tiles_x), dtype=np.uint8
+            )
+        self._space = spaces.Dict(entries)
 
     def channel_names(self) -> list[str]:
         return [name for name, _ in self.channels]
@@ -991,11 +1149,23 @@ class SpatialObsBuilder(ObsBuilder):
         for row, channel in self._spell_map:
             sp[channel] = rows[row]
         np.clip(sp, 0.0, SPATIAL_CLIP, out=sp)
-        return {
+        out: dict[str, Any] = {
             "spatial": sp,
             "vector": self._vector(state, team),
             **self._mask_entries(action_mask),
         }
+        if self.card_identity:
+            out["card_ids"] = card_id_planes(state.entities, team, self.arena, self.num_cards)
+        return out
+
+    def config(self) -> dict[str, Any]:
+        """Constructor state, including the card names the ``card_ids`` ids refer to."""
+        out = super().config()
+        if self.card_identity:
+            out["card_identity"] = True
+            names = getattr(self, "card_names", None) or self._pinned_card_names or []
+            out["card_names"] = list(names)
+        return out
 
 
 # ---------------------------------------------------------------------------

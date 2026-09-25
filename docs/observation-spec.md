@@ -143,7 +143,8 @@ close it without a new trunk.
 | key | `card_ids`, its OWN key, not a slice of `spatial` |
 | shape | `[2, 32, 18]` — plane 0 own, plane 1 enemy, in the seat's own frame |
 | dtype | `uint8`, declared `Box(0, vocab - 1, dtype=np.uint8)` |
-| vocab | `num_cards + 2`, from the LOADED card table (102 here, 68 on a 2018 clone) |
+| vocab | `num_cards + 2`, from the LOADED card table (103 on 2026-09-24: 101 loadable cards) |
+| switch | `SpatialObsBuilder(card_identity=True)`, shipped 2026-09-24; OFF by default |
 
 **Why its own key and not a channel of `spatial`.** `spatial` is declared
 `Box(0.0, SPATIAL_CLIP, float32)`, and a learner's codec picks exact-versus-scaled-half
@@ -168,10 +169,15 @@ carries real information rather than a constant, because a destroyed tower's til
 genuinely empty. Units a spell releases are NOT in this class; the engine reports them
 under the releasing spell's catalogue id, so they are ordinary cards.
 
-**The vocabulary size is not a constant.** It is a fact about the table the engine loaded:
-100 cards on the 15.535 table, 66 on a 2018 clone. It is published in the EnvSpec so a
-network sizes `nn.Embedding(vocab, C)` at construction. A literal would be wrong on a
-clone, and an embedding sized by guessing truncates silently.
+**The vocabulary size is not a constant.** It is a fact about the table the engine loaded.
+This paragraph said "100 cards on the 15.535 table" until 2026-09-24, when the engine loaded
+101 -- the census moves as cards become loadable, which is the paragraph's own point made at
+its own expense. It is published as the `card_ids` Box's upper bound, so a network sizes
+`nn.Embedding(observation_space["card_ids"].high.max() + 1, C)` at construction. That also
+puts it in RoyaleLearn's `EnvSpec` with no separate channel: `rollout/envspec.py` records
+every observation key's shape, dtype, low and high from the observation space itself. A
+literal would be wrong on the next census, and an embedding sized by guessing truncates
+silently.
 
 **Catalogue ids are POSITIONAL, and that is the trap this ships with a guard against.**
 Making one more card loadable renumbers every later id, so an embedding table indexed by
@@ -192,7 +198,25 @@ no tile. This matches the same object being invisible to a learner's committed-e
 accounting, which is the one outcome that creates no new discrepancy between the two.
 
 **Default OFF until train's policy-head arm has run.** Flipping an observation shape under
-a paired comparison invalidates both arms and looks like a result.
+a paired comparison invalidates both arms and looks like a result. BUILDING it was never
+gated, only turning it on: with the switch off the observation is byte-for-byte the shipped
+one -- no new key, the same vector width and offsets, the same `config()`.
+
+**What the switch turns on, as shipped.** One switch, because it is one change to what a
+network sees:
+- `card_ids` as above (`obs.card_id_planes`).
+- `enemy_last_card` in the vector, one-hot `[n+1]`, the last card the enemy played (D2's
+  decision put it with the planes). It sits at the END of the fair block, so no existing fair
+  offset moves, and it is read from the same cycle memory `enemy_possible_hand` uses.
+- `config()` records `card_identity: true` and `card_names`, the catalogue in order; a builder
+  constructed with `card_names` REFUSES to bind to an engine whose names differ, naming the
+  first id that moved.
+
+The memory learns a play by diffing two hand snapshots, one per decision. That is exact
+because a seat plays at most one card per decision; a caller that steps twice without
+observing in between can let the second card -- the one that replaced the first -- enter and
+leave inside one gap, where no diff can see it. The env never does that; a hand-written
+harness can.
 
 **These planes enter at the STEM, and the trunk is unchanged** (learn). `card_ids` is a
 separate key, embedded and concatenated into the channels, so adding it widens one
