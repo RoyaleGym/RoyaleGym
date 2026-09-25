@@ -123,11 +123,12 @@ for p in out:
 ```
 
 ```
-shot.png 67707 bytes
+shot.png 69964 bytes
 ```
 
-That was run from the RoyaleViser folder with no display driver set at all, twice, and gave
-exactly the same file size both times.
+That was run from the RoyaleViser folder, at RoyaleViser `6754fc9` on 2026-09-24, with no display
+driver set at all, twice, and gave exactly the same file size both times. The size moves when the
+viewer's drawing changes, so yours may differ by a little.
 
 A clip is the same call with a different suffix. Ticks 0 to 400, every eighth tick, at half the
 pixel size:
@@ -135,10 +136,12 @@ pixel size:
 ```python
 out = capture(open_source("tests/fixtures/frames-synthetic-A.jsonl.gz"),
               "clip.gif", ticks=(0, 400, 8), scale=16, crop="left")
+for p in out:
+    print(p.name, p.stat().st_size, "bytes")
 ```
 
 ```
-clip.gif 256233 bytes
+clip.gif 258697 bytes
 ```
 
 A quarter of a megabyte for the scripted battle. The whole signature:
