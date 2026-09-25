@@ -435,8 +435,14 @@ full bar. Plays dated one tick late must fail, and so must an overtime rule one 
 late. When `fair_fields` was split out of `build_vector`, every vector the builders
 wrote over those battles was compared byte for byte before and after, on both engines.
 
-`public_log.PublicLogMemory` wraps these for a log whose own hand comes from a known
-dealt deck order.
+**The whole surface such a caller may rely on**, because it is more than the four names
+above. From `royalegym.obs`: `MatchMemory(num_cards, law)` with `bind(cards)`, `start`,
+`advance` and `show_own_hand(hand, next_card)`, and the attributes `tick`, `own_fine`,
+`foe_fine` and `unaffordable`; `MatchClock`, `fair_fields`, `FAIR_FIELDS` and
+`BOARD_FIELDS`. From `royalegym.protocol`: `ElixirLaw.load(calibration)` and
+`ElixirLaw.to_milli(fine)`, `default_calibration()`, `CardInfo`, `DECK_SIZE` and
+`HAND_SIZE`. `tests/test_fair_fields.py` names every one of them, so renaming or removing
+any fails this repo's own suite, not only a caller's.
 
 ---
 

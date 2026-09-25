@@ -271,7 +271,6 @@ otherwise.
 | `mock_engine.py` | `MockEngine`, the pure-Python reference engine the RL layer is tested against |
 | `rust_engine.py` | `RustEngine` over the compiled `royalesim` core; `SymmetricRustEngine` for the rotation-mirror gates |
 | `obs.py` | `ObsBuilder`: `SpatialObsBuilder`, `EntityListObsBuilder` |
-| `public_log.py` | `PublicLogMemory`: a timed log of card plays and a dealt deck order in, the vector's fair fields out, with no engine running. A thin wrapper over `obs.fair_fields`, `MatchMemory.advance` and `MatchClock` |
 | `action.py` | `ActionParser`: `TileActionParser`, `HalfTileActionParser`; `PlacementOracle` (the legality mask) |
 | `reward.py` | `RewardFunction` and the shipped terms; `default_reward()` |
 | `landing.py` | `landings()`: where a deploy actually put its units, read from `engine.state()`. A `DeployResult` carries the TAP, and the engine relocates a building whose footprint does not fit, so for buildings the two differ on half of accepted taps and by a full tile or more |

@@ -483,9 +483,9 @@ class MatchMemory:
         """Move to ``tick`` through the plays made since the last tick, each ``(tick, card)``.
 
         THE ONE PLACE A PLAY CHANGES THIS MEMORY. ``observe`` reads plays off hand slots
-        and dates them all at the previous observation; ``public_log.PublicLogMemory``
-        reads them off a timed log and dates each one at its own tick. Both come here,
-        so the counts, the cycle and the leak have one set of formulas.
+        and dates them all at the previous observation; a caller holding a timed log of
+        plays dates each one at its own tick. Both come here, so the counts, the cycle
+        and the leak have one set of formulas.
 
         A play dated inside the interval splits the regeneration at that tick: the bar
         fills up to it, pays, and fills on. Splitting is exact, because regeneration is

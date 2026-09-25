@@ -240,6 +240,40 @@ def memory_of(cards, deck, tick=0, own=None, enemy=None) -> MatchMemory:
     return m
 
 
+def test_the_whole_published_surface_is_still_here():
+    """Every name code outside this repo builds on, so a rename fails HERE, not only there.
+
+    The list is the one docs/observation-spec.md publishes ("The whole surface such a
+    caller may rely on"). An engine-free caller elsewhere (RoyaleImitate's log memory)
+    uses all of it; with only that repo's CI exercising these names, a rename in this
+    one would be found by somebody else's red.
+    """
+    import inspect
+
+    from royalegym import obs, protocol
+
+    memory = MatchMemory(3, ElixirLaw.load())
+    for name in ("bind", "start", "advance", "show_own_hand"):
+        assert callable(getattr(memory, name, None)), f"MatchMemory.{name} is gone"
+    for name in ("tick", "own_fine", "foe_fine", "unaffordable"):
+        assert hasattr(memory, name), f"MatchMemory.{name} is gone"
+    for name in ("MatchClock", "fair_fields", "FAIR_FIELDS", "BOARD_FIELDS", "MatchMemory"):
+        assert hasattr(obs, name), f"royalegym.obs.{name} is gone"
+    for name in ("ElixirLaw", "default_calibration", "CardInfo", "DECK_SIZE", "HAND_SIZE"):
+        assert hasattr(protocol, name), f"royalegym.protocol.{name} is gone"
+    assert callable(ElixirLaw.load)
+    assert callable(memory.law.to_milli)
+    assert list(inspect.signature(MatchMemory.show_own_hand).parameters) == [
+        "self", "hand", "next_card"
+    ]
+    assert list(inspect.signature(MatchMemory.start).parameters)[:6] == [
+        "self", "tick", "own_elixir_milli", "enemy_elixir_milli", "own_hand", "next_card"
+    ]
+    assert list(inspect.signature(MatchMemory.advance).parameters) == [
+        "self", "tick", "regular_ticks", "overtime", "own_plays", "foe_plays"
+    ]
+
+
 def test_the_published_names_cover_the_fair_block_exactly():
     fair = [f.key for f in vector_layout(5) if f.fair]
     assert [k for k in fair if k not in BOARD_FIELDS] == list(FAIR_FIELDS)
