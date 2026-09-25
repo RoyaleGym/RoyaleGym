@@ -394,6 +394,43 @@ Tests replay a seeded episode twice in the same env and require the two observat
 sequences to be identical, with a plant that removes both guards and shows the
 difference.
 
+### The same fields from a log of plays
+
+`public_log.PublicLogMemory` fills these vector fields from a timed log of card
+plays, with no engine running. It needs the seat's own deck in dealt order (hand
+slots first, then the queue) and each play as a tick and a card. That is enough to
+train on recorded matches and still read the numbers the env would show.
+
+It fills every fair field except the four the board decides: `own_tower_hp`,
+`enemy_tower_hp`, `crowns` and `king_active` (`BOARD_FIELDS`). It fills
+`enemy_last_card` when asked.
+
+The formulas are not copied. The log memory drives a `MatchMemory` through
+`MatchMemory.advance`, the call the env's `observe` makes. It reads the fields
+through `build_vector`, the function that writes the env's vector. The one
+difference is where a play's time comes from. `observe` dates every play at the
+previous observation, because the engine pays a command before the step's first
+tick. A log dates each play at its own tick. A play inside an observation gap splits
+the regeneration at that tick. Splitting is exact, so both routes give the same bar
+whenever plays fall on observation ticks.
+
+Four rules link a log to what the env shows:
+
+* A play at tick p is paid before tick p runs. An observation at tick T sees exactly
+  the plays made before T.
+* The played card's hand slot takes the next card, and the played card joins the
+  back of the queue.
+* A match still running at the end of regulation is in overtime.
+* `own_ticks_since_play` counts from the observation that first showed the play,
+  not from the play. That is what the env has always recorded.
+
+`tests/test_public_log.py` plays battles on MockEngine and RustEngine and compares
+every field at every step, for both seats. The battles cover a full turn of both
+queues, the switch to 2x, the end of regulation, gaps of 1 to 13 ticks, and a seat
+that leaks at a full bar. A log shifted one tick late must fail. `unaffordable`
+counts plays the counted bar could not pay. It stays at zero on an engine's own log.
+Anywhere else it means a missing play or a different elixir law.
+
 ---
 
 ## 5. `EntityListObsBuilder`

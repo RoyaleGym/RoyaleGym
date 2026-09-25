@@ -393,6 +393,7 @@ class MatchMemory:
         self.foe_seen = np.zeros(num_cards, dtype=bool)
         self.foe_plays = 0
         self.foe_recent: list[int] = []  # the cards behind the enemy hand, oldest first
+        self.unaffordable = [0, 0]  # plays the counted bar could not pay: own, enemy
 
     def bind(self, cards: Sequence[CardInfo]) -> None:
         self.cost = [c.elixir for c in cards]
@@ -416,6 +417,7 @@ class MatchMemory:
         self.foe_seen = np.zeros(self.num_cards, dtype=bool)
         self.foe_plays = 0
         self.foe_recent = []
+        self.unaffordable = [0, 0]
         self._note_own_cards()
 
     def observe(self, state: BattleState, team: int) -> None:
@@ -426,36 +428,95 @@ class MatchMemory:
         if state.tick == self.tick:
             return
         me, foe = state.players[team], state.players[1 - team]
-        own_played = cards_that_left(self.own_hand, me.hand)
-        foe_played = cards_that_left(self.foe_hand, foe.hand)
-        spent_own = sum(self.cost[c] for c in own_played)
-        spent_foe = sum(self.cost[c] for c in foe_played)
-        self.own_fine, leaked = self.law.advance(
-            self.own_fine, spent_own, self.tick, state.tick, state.regular_ticks, state.overtime
+        # The engine pays every accepted command before the first tick of a step, so a
+        # play seen between two observations is dated at the earlier one.
+        self.advance(
+            state.tick,
+            state.regular_ticks,
+            state.overtime,
+            [(self.tick, c) for c in cards_that_left(self.own_hand, me.hand)],
+            [(self.tick, c) for c in cards_that_left(self.foe_hand, foe.hand)],
         )
-        self.foe_fine, _ = self.law.advance(
-            self.foe_fine, spent_foe, self.tick, state.tick, state.regular_ticks, state.overtime
-        )
-        self.leak_fine += leaked
         if self.law.to_milli(self.own_fine) != me.elixir_milli:
             self.exact = False
             self.own_fine = self.law.seed_fine(me.elixir_milli)
         if self.law.to_milli(self.foe_fine) != foe.elixir_milli:
             self.exact = False
-        for card in own_played:
+        self.foe_hand = list(foe.hand)
+        self.show_own_hand(me.hand, me.next_card)
+
+    def show_own_hand(self, hand: Sequence[int], next_card: int) -> None:
+        """The player's own hand and next card, which the player always sees."""
+        self.own_hand = list(hand)
+        self.own_cycle[0] = next_card
+        self._note_own_cards()
+
+    def advance(
+        self,
+        tick: int,
+        regular_ticks: int,
+        overtime: bool,
+        own_plays: Sequence[tuple[int, int]],
+        foe_plays: Sequence[tuple[int, int]],
+    ) -> None:
+        """Move to ``tick`` through the plays made since the last tick, each ``(tick, card)``.
+
+        THE ONE PLACE A PLAY CHANGES THIS MEMORY. ``observe`` reads plays off hand slots
+        and dates them all at the previous observation; ``public_log.PublicLogMemory``
+        reads them off a timed log and dates each one at its own tick. Both come here,
+        so the counts, the cycle and the leak have one set of formulas.
+
+        A play dated inside the interval splits the regeneration at that tick: the bar
+        fills up to it, pays, and fills on. Splitting is exact, because regeneration is
+        never negative, so clamping at a split point and again at the end gives the same
+        bar and the same leak as clamping once. Plays dated at the start of the interval
+        therefore cost the single ``ElixirLaw.advance`` call ``observe`` always made.
+
+        A play the counted bar cannot pay is counted in ``unaffordable`` (own, enemy) and
+        the bar floors at zero. The engine refuses such a play, so on an engine's own log
+        this stays 0; anywhere else it means a missed play or a different elixir law.
+
+        ``own_last_play_tick`` becomes ``tick``, the moment the play is SEEN, not the
+        moment it was made. That is what ``observe`` has always recorded, and a policy
+        trained on it reads ``own_ticks_since_play`` that way.
+        """
+        clock = (tick, regular_ticks, overtime)
+        self.own_fine, leaked = self._bar(self.own_fine, own_plays, 0, *clock)
+        self.foe_fine, _ = self._bar(self.foe_fine, foe_plays, 1, *clock)
+        self.leak_fine += leaked
+        for _, card in sorted(own_plays, key=lambda p: p[0]):
             self.own_cycle = [*self.own_cycle[1:], card]
             self.own_last_card = card
-            self.own_last_play_tick = state.tick
-        for card in foe_played:
+            self.own_last_play_tick = tick
+        for _, card in sorted(foe_plays, key=lambda p: p[0]):
             self.foe_seen[card] = True
             self.foe_plays += 1
             self.foe_recent.append(card)
             del self.foe_recent[: -(DECK_SIZE - HAND_SIZE)]
-        self.own_hand = list(me.hand)
-        self.foe_hand = list(foe.hand)
-        self.own_cycle[0] = me.next_card
-        self.tick = state.tick
-        self._note_own_cards()
+        self.tick = tick
+
+    def _bar(
+        self,
+        fine: int,
+        plays: Sequence[tuple[int, int]],
+        side: int,
+        tick: int,
+        regular_ticks: int,
+        overtime: bool,
+    ) -> tuple[int, int]:
+        """One bar from ``self.tick`` to ``tick``: (fine units, fine units lost to the cap)."""
+        at, due, lost = self.tick, 0, 0
+        for when, card in sorted(plays, key=lambda p: p[0]):
+            if not self.tick <= when < tick:
+                raise ValueError(f"a play at tick {when} is outside [{self.tick}, {tick})")
+            if when != at:
+                fine, spilled = self.law.advance(fine, due, at, when, regular_ticks, overtime)
+                at, due, lost = when, 0, lost + spilled
+            due += self.cost[card]
+            if due * self.law.scale > fine:
+                self.unaffordable[side] += 1
+        fine, spilled = self.law.advance(fine, due, at, tick, regular_ticks, overtime)
+        return fine, lost + spilled
 
     def _note_own_cards(self) -> None:
         for c in (*self.own_hand, *self.own_cycle):

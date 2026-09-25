@@ -65,6 +65,7 @@ from .opponents import (
     ladder,
 )
 from .protocol import Engine
+from .public_log import PublicLogMemory
 from .replay import ReplayRecorder, load_trace, save_trace, verify_trace
 from .reward import (
     CombinedReward,
@@ -169,6 +170,7 @@ __all__ = [
     "PatientOpponent",
     "PlacementDepthReward",
     "PlacementOracle",
+    "PublicLogMemory",
     "PushOpponent",
     "RandomLegalOpponent",
     "ReplayRecorder",
