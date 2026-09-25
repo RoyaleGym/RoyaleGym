@@ -544,6 +544,24 @@ def footprint_allowance(rust, mock) -> set[str]:
     return FOOTPRINT_DISAGREEMENTS if reports[0] != reports[1] else set()
 
 
+#: The fields MockEngine never reports (``mock_engine.UNREPORTED_ENTITY_FIELDS``), under
+#: their own prefix. ``state_disagreements`` files a difference here only where the
+#: mock's value is still the "not reported" default, so this cannot excuse a mock that
+#: sends a real value and gets it wrong: that is filed as ``entity.<field>`` and fails.
+MOCK_UNREPORTED = {f"unreported.{f}" for f in mock_engine_module.UNREPORTED_ENTITY_FIELDS}
+ENTITY_DEFAULTS = dict(
+    zip(
+        EntityState.__struct_fields__[-len(EntityState.__struct_defaults__) :],
+        EntityState.__struct_defaults__,
+        strict=True,
+    )
+)
+
+
+def allowed_disagreements(rust, mock) -> set[str]:
+    return KNOWN_STATE_DISAGREEMENTS | footprint_allowance(rust, mock) | MOCK_UNREPORTED
+
+
 def state_disagreements(rust, mock, seed: int, setup: MatchSetup) -> set[str]:
     rust.reset(seed, setup)
     mock.reset(seed, setup)
@@ -567,7 +585,12 @@ def state_disagreements(rust, mock, seed: int, setup: MatchSetup) -> set[str]:
     else:
         for a, b in zip(er, em, strict=True):
             for f in EntityState.__struct_fields__:
-                if getattr(a, f) != getattr(b, f):
+                if getattr(a, f) == getattr(b, f):
+                    continue
+                unreported = f"unreported.{f}"
+                if unreported in MOCK_UNREPORTED and getattr(b, f) == ENTITY_DEFAULTS[f]:
+                    out.add(unreported)
+                else:
                     out.add(f"entity.{f}")
     return out
 
@@ -591,7 +614,7 @@ def test_mock_and_rust_agree_on_setup_state(rust, mock, name):
     split = catalogue_vintage_split(rust.cards(), mock.cards())
     if split is not None:
         pytest.skip(split)
-    allowed = KNOWN_STATE_DISAGREEMENTS | footprint_allowance(rust, mock)
+    allowed = allowed_disagreements(rust, mock)
     for seed in (1, 2, 77):
         got = state_disagreements(rust, mock, seed, SETUPS[name])
         unexpected = got - allowed
@@ -599,6 +622,40 @@ def test_mock_and_rust_agree_on_setup_state(rust, mock, name):
     if name == "opening":
         stale = KNOWN_STATE_DISAGREEMENTS - got
         assert not stale, f"allow-list entries no longer disagree: {sorted(stale)}"
+
+
+def _reporting(engine, **fields):
+    """``engine`` with every entity carrying ``fields``: an engine that reports them."""
+    real_state = engine.state
+
+    def state():
+        s = real_state()
+        return msgspec.structs.replace(
+            s, entities=[msgspec.structs.replace(e, **fields) for e in s.entities]
+        )
+
+    engine.state = state
+    return engine
+
+
+def test_the_unreported_allowance_covers_silence_and_not_a_wrong_value():
+    """Two mocks stand in for the pair, so this runs where the engine cannot be built.
+
+    The first plays an engine reporting phases and headings; the second stays the mock.
+    Then the second is made to report a DIFFERENT phase: the same field, now a real
+    disagreement, and it must be filed where it fails.
+    """
+    setup = SETUPS["opening"]
+    reporting = _reporting(MockEngine(card_names=SHARED), attack_phase=2, facing=(3, -4))
+    silent = state_disagreements(reporting, MockEngine(card_names=SHARED), 1, setup)
+    assert {"unreported.attack_phase", "unreported.facing"} <= silent, silent
+    assert not {"entity.attack_phase", "entity.facing"} & silent, silent
+    wrong = state_disagreements(
+        reporting, _reporting(MockEngine(card_names=SHARED), attack_phase=0), 1, setup
+    )
+    assert "entity.attack_phase" in wrong - MOCK_UNREPORTED, (
+        f"PLANT DID NOT LAND: a mock sending phase 0 against 2 was filed as silence: {wrong}"
+    )
 
 
 def test_midgame_setup_awards_crowns_and_wakes_kings(rust):
@@ -618,7 +675,11 @@ def test_plant_swapped_tower_slot_table_is_caught(mock):
     eng.slot_of_k = swapped
     eng._battle = type(eng._battle)(list(SHARED), swapped)
     got = state_disagreements(eng, mock, 1, SETUPS["midgame"])
-    assert got - KNOWN_STATE_DISAGREEMENTS, "PLANT DID NOT LAND: Red's tower names swapped unseen"
+    # Measured past EVERYTHING the comparison allows, not past one of its lists: an
+    # engine that reports footprints or attack phases disagrees on those whatever the
+    # tower names say, and would land this plant with the swap undone.
+    landed = got - allowed_disagreements(eng, mock)
+    assert landed, "PLANT DID NOT LAND: Red's tower names swapped unseen"
 
 
 # Tower states for the legality grid: [team][TowerSlot] hp, 0 = destroyed.

@@ -24,7 +24,20 @@ import types
 import msgspec
 import pytest
 
-from royalegym.protocol import BattleState, EntityState, MatchSetup, PlayerState, ProjectileState
+from royalegym.mock_engine import UNREPORTED_ENTITY_FIELDS, MockEngine
+from royalegym.protocol import (
+    BLUE,
+    RED,
+    BattleState,
+    DeployCommand,
+    DeployStatus,
+    EntityKind,
+    EntityState,
+    MatchSetup,
+    PlayerState,
+    ProjectileState,
+    to_engine,
+)
 from royalegym.replay import TraceFrame, TraceHeader
 from royalegym.rust_engine import (
     CORE_IMPORT_ERROR,
@@ -268,3 +281,88 @@ def test_no_engine_column_is_decoded_by_position_without_its_name():
         "its order -- two adjacent ints could be swapped without a word. Export the list "
         "from the engine (royalesim.ENTITY_FIELDS) before shipping the wider rows."
     )
+
+
+# -- the mock's statement of what it does not report --------------------------------
+#
+# tests/test_rust_engine.py lets RustEngine and MockEngine differ on these fields where
+# the mock's value is the default. That allowance is only as true as the list, so the
+# list is held to the mock's actual output across a battle, not just the opening towers.
+
+ENTITY_DEFAULTS = dict(
+    zip(
+        EntityState.__struct_fields__[-len(EntityState.__struct_defaults__) :],
+        EntityState.__struct_defaults__,
+        strict=True,
+    )
+)
+MOCK_DECK = [
+    "Knight", "Archer", "Giant", "Musketeer", "Valkyrie", "MiniPekka", "Minions", "HogRider"
+]
+
+
+def mock_battle_states(engine) -> list[BattleState]:
+    """Both seats play whatever they can afford every 120 ticks; a state every 10."""
+    card = {c.name: i for i, c in enumerate(engine.cards())}
+    deck = [card[n] for n in MOCK_DECK]
+    engine.reset(seed=3, setup=MatchSetup(decks=[deck, deck], elixir_milli=[10000, 10000],
+                                          start_tick=engine.rules().deploy_lockout_ticks))
+    a = engine.arena()
+    states = []
+    for turn in range(8):
+        x_own = (5 + 3 * (turn % 4)) * a.subtile + a.subtile // 2
+        y_own = 12 * a.subtile + a.subtile // 2
+        commands = [DeployCommand(t, 0, *to_engine(a, t, x_own, y_own)) for t in (BLUE, RED)]
+        for r in engine.step(commands, 1):
+            assert r.status in (DeployStatus.OK, DeployStatus.NOT_ENOUGH_ELIXIR), r
+        for _ in range(12):
+            engine.step([], 10)
+            states.append(engine.state())
+    return states
+
+
+def fields_the_mock_reports(states: list[BattleState]) -> dict[str, object]:
+    """Each declared-unreported field that some entity carried away from its default."""
+    seen: dict[str, object] = {}
+    for s in states:
+        for e in s.entities:
+            for f in UNREPORTED_ENTITY_FIELDS:
+                if getattr(e, f) != ENTITY_DEFAULTS[f]:
+                    seen.setdefault(f, getattr(e, f))
+    return seen
+
+
+def test_the_unreported_list_names_real_defaulted_fields():
+    assert set(UNREPORTED_ENTITY_FIELDS) <= set(ENTITY_DEFAULTS), (
+        f"not defaulted EntityState fields: {set(UNREPORTED_ENTITY_FIELDS) - set(ENTITY_DEFAULTS)}"
+    )
+
+
+def test_the_mock_reports_none_of_the_fields_it_says_it_does_not():
+    states = mock_battle_states(MockEngine())
+    troops = {e.uid for s in states for e in s.entities if e.kind == EntityKind.TROOP}
+    hurt = [e for s in states for e in s.entities if e.hp < e.max_hp]
+    vacuous = "the sample never reached a fight, so it could not see a target, phase or heading"
+    assert len(troops) >= 8, f"only {len(troops)} troops seen: {vacuous}"
+    assert hurt, f"nothing was hurt: {vacuous}"
+    reported = fields_the_mock_reports(states)
+    assert not reported, (
+        f"MockEngine now sends {reported}. Take those names out of "
+        "mock_engine.UNREPORTED_ENTITY_FIELDS: while listed, tests/test_rust_engine.py "
+        "reads a disagreement on them as the mock staying silent."
+    )
+
+
+def test_plant_a_mock_that_starts_reporting_a_phase_is_caught(monkeypatch):
+    engine = MockEngine()
+    real_state = engine.state
+
+    def state_with_phases():
+        s = real_state()
+        return msgspec.structs.replace(
+            s, entities=[msgspec.structs.replace(e, attack_phase=0) for e in s.entities]
+        )
+
+    monkeypatch.setattr(engine, "state", state_with_phases)
+    reported = fields_the_mock_reports(mock_battle_states(engine))
+    assert reported == {"attack_phase": 0}, f"PLANT DID NOT LAND: {reported}"

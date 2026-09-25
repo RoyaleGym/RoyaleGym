@@ -113,6 +113,20 @@ OVERTIME_TIEBREAK_RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction
 FOOTPRINT_MODEL = "collision_radius_circle"
 ILLEGAL_BUILDING_TAP = "refuse"
 
+# EntityState fields this engine never reports: every entity carries their "not
+# reported" defaults. It has no windup to phase, no heading, no shields and no status
+# effects, and it keeps each unit's target to itself. An engine that models them sends
+# real values, and tests/test_rust_engine.py lets the two differ on these fields only
+# where this engine's value is still the default. tests/test_unit_status_and_projectiles.py
+# refuses the list once this engine starts sending one of them.
+UNREPORTED_ENTITY_FIELDS: tuple[str, ...] = (
+    "target_uid",
+    "attack_phase",
+    "facing",
+    "shield",
+    "buffs",
+)
+
 # The card subset the mock supports. A mock design choice (a spread of placement
 # types, air/ground, splash, building-targeters), not a physics constant.
 MOCK_CARD_NAMES: tuple[str, ...] = (
