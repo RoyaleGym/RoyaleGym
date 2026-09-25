@@ -70,7 +70,10 @@ PINNED = {
     # corrected the wrong model, so it is worth a test of its own rather than a comment.
     "Musketeer": [(0, 0)],
     "Archer": [(-9018, 0), (9000, 0)],
-    "Minions": [(-8982, -5184), (0, 10422), (9036, -5184)],
+    # Re-taken 2026-09-25 on build_digest 734032113c44fbcc (RoyaleSim c63b832), where
+    # formation.STAGGER_WAIT took its measured arm. It was (9036, -5184) for the third
+    # member before: see test_the_three_unit_formation_is_the_measured_symmetric_ring.
+    "Minions": [(-8982, -5184), (0, 10422), (8982, -5184)],
 }
 
 
@@ -154,79 +157,79 @@ def a_card_with_count(engine, count: int) -> int:
     return idx
 
 
-def test_a_three_unit_formation_mirrors_about_the_arena_centre() -> None:
-    """The triple is internally asymmetric by 54 subtiles and the asymmetry MIRRORS.
+Offsets = tuple[tuple[int, int], ...]
 
-    This replaces a symmetry check that would have been wrong. The offsets are not
-    symmetric: they sum to 54 in x rather than 0. What IS exact is that a tap on the left
-    half gets the mirror image of a tap on the right half, and the boundary is the arena
-    centre -- columns 1..8 share one triple and 9..16 share its mirror.
 
-    Worth protecting because 0.003 of a tile is exactly the size of residual somebody
-    rounds away as noise, and this project has a standing rule (D12) that a measured
-    client asymmetry is reproduced rather than tidied. Whether this 54 comes from the
-    client or from integer rounding inside the formation is not decidable from out here;
-    what is decidable is that it is deterministic and structured, so it is not noise.
+def ring_problems(offs: Offsets, expected: Offsets) -> list[str]:
+    """What is wrong with a count-3 triple, against the measured symmetric ring."""
+    problems = []
+    if offs != expected:
+        problems.append(f"it is {offs}, not the measured {expected}")
+    if offs != mirrored(offs):
+        problems.append(f"it is not symmetric about the tap: its mirror is {mirrored(offs)}")
+    return problems
 
-    THE MIRROR CHECK ALONE CANNOT CATCH THE TIDYING, which is why each pair also asserts
-    HANDEDNESS. If somebody made the triple exactly symmetric, then left == right and
-    mirroring either leaves it unchanged, so `left == mirrored(right)` would hold and this
-    would pass while the thing it exists to protect had been removed. Verified rather than
-    reasoned: the symmetric triple (-9000, 0, +9000) satisfies the mirror relation exactly.
-    That is the same shape as three other assertions in this repo tonight -- the sentence
-    above the assertion asking a different question from the assertion.
+
+def test_the_three_unit_formation_is_the_measured_symmetric_ring() -> None:
+    """Minions land exactly symmetric about the tap, the same on every interior column.
+
+    THIS TEST ASSERTED THE OPPOSITE UNTIL 2026-09-25, and why it changed is the point.
+    The triple used to lean by 54 subtiles (+9036 on one side against -8982), and the lean
+    mirrored between arena halves. It was protected under D12 -- a measured client
+    asymmetry is reproduced, not tidied -- with the caveat that nobody could tell from out
+    here whether it came from the client or from the engine.
+
+    Sim decided it. The lean came from the ENGINE: its first-tick separation scan pushed a
+    member that was still waiting out its stagger by 3 native units (54 subtiles), and the
+    push order made the push mirror by half. Under formation.STAGGER_WAIT's measured arm a
+    waiting member does not move (1083 of 1083 corpus frame pairs still), and the lean is
+    gone. The client never showed it: in the 16.402 corpus, Minions deployed on the LEFT
+    half with a recorded tap sit at exactly +-499 native (+-8982 subtiles) on their first
+    frame in 15 of 16 groups, where the old engine put one at 502. There is no right-half
+    group with a recorded tap, so the right half here is the measured law applied, not a
+    measurement. D12 protects measured client asymmetries, and this one never was.
+
+    What this guards now is the lean coming back: every interior column must give the
+    pinned triple exactly, and the triple must be its own mirror.
     """
     from royalegym.rust_engine import RustEngine
 
     require_this_card_table()
     engine = RustEngine()
-    idx = a_card_with_count(engine, 3)
-    pairs = 0
-    for tx in range(9):
-        left, right = offsets_at(engine, idx, tx), offsets_at(engine, idx, 17 - tx)
-        if left is None or right is None:
+    names = [c.name for c in engine.cards()]
+    if "Minions" not in names:
+        pytest.skip("this catalogue has no Minions; a skip here is not a pass")
+    idx = names.index("Minions")
+    expected = tuple(sorted(PINNED["Minions"]))
+    columns = 0
+    for tx in range(1, 17):
+        offs = offsets_at(engine, idx, tx)
+        if offs is None:
             continue
-        pairs += 1
-        # Handedness first. Without it a symmetric formation satisfies the mirror
-        # relation trivially and this test reports health after the asymmetry is gone.
-        assert left != right, (
-            f"columns {tx} and {17 - tx} give the same triple {left}, so the formation has "
-            "no handedness at all. If it was made symmetric on purpose, this file's whole "
-            "subject has gone and these tests should be re-taken rather than left passing."
+        columns += 1
+        problems = ring_problems(offs, expected)
+        assert not problems, (
+            f"a Minions tap at column {tx}: {'; '.join(problems)}. If a lean like the old "
+            "54 subtiles is back, formation.STAGGER_WAIT or the first-tick separation scan "
+            "moved; do not relax this to a tolerance."
         )
-        assert left == mirrored(right), (
-            f"a count-3 tap at column {tx} gives {left} and its mirror column {17 - tx} "
-            f"gives {right}, whose mirror image is {mirrored(right)}. These were exact "
-            "mirrors when measured, including at the walls. If the formation was made "
-            "symmetric on purpose, re-take this; do not relax it to a tolerance, because "
-            "the residual being protected is 54 subtiles."
-        )
-    assert pairs >= 8, f"only {pairs} mirror pairs were testable; this used to be 9"
+    assert columns >= 14, f"only {columns} interior columns were testable; this used to be 16"
 
 
-def test_the_two_halves_are_not_simply_identical() -> None:
-    """Non-vacuity. If both halves gave the same triple, mirroring would be trivially true
-    for any symmetric formation and the test above would prove nothing."""
-    from royalegym.rust_engine import RustEngine
-
-    require_this_card_table()
-    engine = RustEngine()
-    idx = a_card_with_count(engine, 3)
-    left, right = offsets_at(engine, idx, 4), offsets_at(engine, idx, 13)
-    if left is None or right is None:
-        pytest.skip("a count-3 tap was refused on one side; a skip here is not a pass")
-    assert left != right, (
-        "the two halves give identical offsets, so the mirror check above passes without "
-        "the formation having any handedness at all and is not testing what it says"
-    )
+def test_plant_the_old_leaning_triple_is_refused() -> None:
+    """The check above, fed the triple the engine produced before 2026-09-25."""
+    expected = tuple(sorted(PINNED["Minions"]))
+    old = ((-8982, -5184), (0, 10422), (9036, -5184))
+    problems = ring_problems(old, expected)
+    assert len(problems) == 2, f"PLANT DID NOT LAND: the old lean gave {problems}"
 
 
 def test_the_walls_are_a_different_formation_and_still_mirror() -> None:
     """Columns 0 and 17 are NOT the interior triple: the units are pushed inward.
 
     Recorded because a mirror test written from interior samples alone would look correct
-    and would never have visited the case where the formation changes shape. The walls
-    still mirror each other, which is why the test above can span them.
+    and would never have visited the case where the formation changes shape. The ring
+    test above therefore covers columns 1 to 16 only.
     """
     from royalegym.rust_engine import RustEngine
 
