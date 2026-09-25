@@ -20,8 +20,9 @@ The rest of this page is the exact detail, all of it printed by programs that we
 
 !!! warning "Your widths will not match these widths"
     Several numbers below depend on how many cards are in your card catalogue, and that
-    depends on the card table your engine reads. The machine that produced this page had 95
-    cards. A clean public checkout builds the 2018 card table and will report something
+    depends on the card table your engine reads. The run that produced this page had 100
+    cards in its catalogue. A clean install reads the same 15.535 table, but the catalogue grows
+    as more cards become loadable (101 on 2026-09-24), so yours may report something
     else. Nothing in RoyaleGym or RoyaleLearn types these widths in. They are read from
     the environment at startup, and you should do the same. Never treat a width on this
     page as a constant of the project.
@@ -145,6 +146,14 @@ it, where you are in your eight card cycle, tower health on both sides, crowns, 
 clock and the elixir rate. Every slot is listed in
 [observation-spec.md](https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/observation-spec.md).
 
+The 20 planes count units and add up their hitpoints, so a Giant and a Knight on the same tile
+look alike. To let your bot tell them apart, pass `obs_builder=SpatialObsBuilder(card_identity=True)`
+to the env. It is off by default. It adds a fifth key, `card_ids`, with one plane for your side and
+one for the enemy, naming the card on each tile. It also adds the last card the enemy played to the
+vector, so the vector gets wider, and `config()` records that the switch was on. Size anything that
+reads `card_ids` from the observation space, `observation_space["card_ids"].high.max() + 1`, rather
+than typing a number in, because the number of cards changes as more become loadable.
+
 ## The action space, and the arithmetic
 
 There are 2305 possible moves. Here is where that comes from.
@@ -236,13 +245,11 @@ with the buildings already on the board. The mask covers elixir, which half of t
 arena you may play in, water, the river, the footprint of buildings already down, and
 the rectangle around each enemy crown tower that is still alive.
 
-For comparison, RoyaleGym's
-[architecture.md](https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/architecture.md)
-reports 691 legal actions of 2305 on the first step with default random decks on the
-Rust engine, and 1235 on `MockEngine`. This page got 1623 with the named deck above.
-Different deck, different card table, different starting elixir, different count. The number is
-not a property of the game. All three figures on this page were re-run on 2026-09-22, after the
-engine's starting elixir moved from 5 to 6, which is why the elixir column reads as it does.
+On the Rust engine a match refuses every deploy for its first 90 ticks, so for the first nine
+decisions the only legal move is the wait, whatever the deck. After that the count depends on the
+deck, the card table and the elixir, so it is not a property of the game. The step rows above were
+recorded on 2026-09-22, after the starting elixir moved from 5 to 6 but before that rule reached
+the engine, and are due a re-run.
 
 Two details worth trusting the project for:
 

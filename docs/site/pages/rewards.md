@@ -46,10 +46,13 @@ below it is the output that came back.
 
 </div>
 
-!!! note "One caveat about the numbers on this page"
-    The totals come from one battle, played on this machine, by two players choosing at
-    random. Your battle depends on the card table your checkout built, so your totals
-    will not match to the last digit. The comparisons between the rungs will.
+!!! warning "The numbers on this page describe an older battle"
+    Every program here plays the same battle, between two players choosing at random. The
+    engine has changed since these outputs were recorded. They come from a battle that went to
+    overtime, 480 steps, with one tower falling each way, and the prose below describes that
+    battle. The same program now ends differently: in RoyaleGym's README, re-run on 2026-09-24,
+    Red takes one of Blue's princess towers and wins at tick 3600, which is 360 steps with no
+    overtime. So the step counts and totals below are out of date and due a re-run.
 
 ## The interface
 

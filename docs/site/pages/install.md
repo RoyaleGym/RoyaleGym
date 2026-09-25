@@ -139,13 +139,14 @@ missing .../data/raw/cr-15.535.29/csv_logic: decode the 15.535.29 assets first
 That is not a broken install. It is the tool telling you it needs files that are not there,
 because they are not distributed. `--vintage 2018` builds the card table from the 2018 files
 instead, and those **are** in the repository: 23 tracked files (counted on 2026-09-22), along
-with the calibration data. So the 2018 path is self contained and it is the one that works for
-everybody.
+with the calibration data. So the 2018 path is self contained and works for everybody. It is not
+the table the engine plays, though: the copy line puts the committed 15.535 table in place for
+that.
 
-### Why `extract_cards.py` runs twice
+### Why there are two card table lines
 
-The two runs build the same card table and write it to two different names, because two different
-things read it by name.
+The two lines put two different card tables under two different names, because two different
+things read them by name.
 
 | The run | Writes | Read by |
 |---|---|---|
@@ -350,8 +351,8 @@ EVERY GATE GREEN.
 That took about two seconds: a whole match and five checks on it.
 
 **Do not expect the winner and the counts to match.** The tool deals each side a random deck out
-of the card table your clone built, so a `--vintage 2018` install plays a different battle from
-the one above, which used the 15.535 table. `--seed` defaults to 1, so the same checkout does
+of the card table your clone built, and the engine and its card list keep changing, so your
+battle can differ from the one above. `--seed` defaults to 1, so the same checkout does
 repeat the same battle, and `--seed 7` gives you another.
 
 **The five `[OK ]` lines are the part that should be green on any install.** That is what to
@@ -417,8 +418,9 @@ cd RoyaleGym
 
 On fresh clones with a debug engine build, on 2026-09-22, this printed **385 passed,
 0 skipped**. The suite has grown since (492 tests at commit `be58cac`), so expect a bigger
-count. Expect no skips either, unless Node.js is not on your PATH or you left RoyaleViser out:
-a few tests need one of those and skip without it. Add `-rs` to read the reason for any skip,
+count. Expect some skips. Six tests that compare the two engines skip on purpose, because the compiled
+engine and `MockEngine` read different card tables. Others skip if Node.js is not on your PATH or
+RoyaleViser is not installed. A clean runner on 2026-09-23 showed nine skips in all. Add `-rs` to read the reason for any skip,
 and see [tests that skip](troubleshooting.md#6-tests-that-skip-instead-of-failing).
 
 Without the engine built, the Rust backed tests skip instead of failing. An engine built from a

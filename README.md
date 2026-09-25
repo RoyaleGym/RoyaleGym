@@ -47,7 +47,7 @@ New here? The install steps are under [Install](#install).
 <table>
   <tr>
     <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.png" alt="Two APIs over one battle: ClashParallelEnv driving both seats through PettingZoo, and a Gymnasium env driving one seat, stepping the same board."><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat, and the env plays the other.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.png" alt="The legality mask: the actions playable on the first step, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. On the first step of the Try-it battle below, 1623 of the 2305 are, for each player (2026-09-22).</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.png" alt="The legality mask: the actions playable on one step of a battle, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. In the Try-it battle below, 1623 of the 2305 are once play opens on step 9. Before that only waiting is legal, because a match refuses every deploy for its first 90 ticks.</sub></td>
     <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.png" alt="Batched self-play: four boards become eight agent slots, and one policy is fed both seats' observations, each in its own frame."><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
   </tr>
   <tr>
@@ -139,8 +139,8 @@ against recordings, which `cards.json` lists under `thin_slice`, so the example 
 best-measured part of the engine. Any eight will do. Leave the deck out and each team is dealt a
 random eight, which is the default.
 
-One env step is half a second of game time, which is 10 ticks. So each player made 480
-decisions. The whole battle takes well under a second of real time, and how far under depends
+One env step is half a second of game time, which is 10 ticks. The battle ended at tick 3600,
+so each player made 360 decisions. The whole battle takes well under a second of real time, and how far under depends
 entirely on what else your machine is doing: four runs on 2026-09-22 with several other jobs
 going gave 0.57 to 0.74 s. Treat any timing on this page the same way.
 
@@ -348,9 +348,8 @@ cross-repo job, with both halves on one table.
 A skip that names what it wanted is information. Earlier in this repo's life some of these FAILED
 instead, which is a different thing: a failure tells you your install is broken when it is not.
 
-The `pytest` badge is from the project's own machine, which also holds a newer card table that
-is not distributed. Six tests skip there because of that table. A clone built with the Install
-steps does not have it.
+The `pytest` badge is from a clean runner, not the project's own machine, so it counts what a
+fresh clone runs, including the six comparisons that skip on this install.
 
 Working:
 
@@ -436,8 +435,9 @@ cd RoyaleGym
 Without the engine built, the Rust-backed tests skip. An engine built from a different
 calibration or arena file than the one on disk fails them instead of skipping.
 
-With the whole Install recipe done, expect no skips. A few tests do skip if Node.js is not on
-your PATH or RoyaleViser is not installed. Add `-rs` to the pytest line to read the reason for
+With the whole Install recipe done, expect some skips. The Status section above counts nine on a
+clean runner, and six of them are the engine comparisons the Install section explains. A few tests
+also skip if Node.js is not on your PATH or RoyaleViser is not installed. Add `-rs` to the pytest line to read the reason for
 each skip. A skip is not a pass.
 [Troubleshooting](docs/site/pages/troubleshooting.md#6-tests-that-skip-instead-of-failing)
 says which skips are expected and why.

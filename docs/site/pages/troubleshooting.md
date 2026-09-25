@@ -108,14 +108,17 @@ Copy-Item data\derived\cards-15.535.json data\derived\cards.json
 ..\.venv\Scripts\python tools\extract_globals.py
 ```
 
-Then build the engine, as in problem 1. These commands were run on fresh clones of the four
-repos on 2026-09-22, followed by a debug build, and RoyaleGym's suite passed against the result:
-385 passed, 0 skipped.
+Then build the engine, as in problem 1. An earlier version of these commands, which put the 2018
+table where the copy line now puts the 15.535 one, was run on fresh clones of the four repos on
+2026-09-22 with a debug build, and RoyaleGym's pytest suite gave 385 passed, 0 skipped. With the
+commands as they are now, six comparisons between the two engines skip on purpose. Problem 6
+explains why.
 
-!!! warning "Keep `--vintage 2018` on BOTH `extract_cards.py` lines"
-    They are not a typo of each other. One writes `data/derived/cards-2018.json`, which a Rust
-    test loads by that name. The other writes the same table over `data/derived/cards.json`,
-    which is the file the engine loads. You want both.
+!!! warning "Keep `--vintage 2018` on the `extract_cards.py` line, and keep the copy line"
+    The extract line writes `data/derived/cards-2018.json`, which a Rust test loads by that
+    name. Without the flag the extractor asks for card data that is not shipped. The
+    `Copy-Item` line puts the committed 15.535 table at `data/derived/cards.json`, which is
+    the file the engine loads. You want both.
 
 ## 3. `extract_cards.py` fails with no `--vintage`
 
@@ -253,23 +256,23 @@ Add `-rs` to any pytest run to see the reason for every skip. Without it you get
     engine, which is what makes comparing them worth anything. On the tracked 2018 table they
     agree across the measured set.
 
-    The one difference this check reports on a machine holding a newer card table is the
-    **unit count of Goblins: 4 in the newer table, 3 in the tracked one.** That is a difference
+    The one difference this check reports when the two engines read different card tables,
+    which is every install that follows the recipe, is the **unit count of Goblins: 4 in the
+    15.535 table, 3 in the 2018 one.** That is a difference
     between the two card tables rather than between the two engines, which is exactly why the
     comparison steps aside instead of failing.
 
     It is worth knowing before you meet it. If you compare a Goblins battle across the two
-    engines on a machine like that, the unit counts will not line up, and nothing is broken.
+    engines, the unit counts will not line up, and nothing is broken.
     The example deck used elsewhere in these docs is drawn entirely from the 18 cards whose
     behaviour is checked against recordings, and Goblins is not one of them.
 
-**What to do.** On a normal clone, nothing. Both engines come from the tracked 2018 table there,
-the check runs, and it passes. That was confirmed on fresh clones of all four repos on
-2026-09-22: RoyaleGym's whole pytest suite gave 385 passed, 0 skipped, on a debug engine build.
-
-The project's own machine does hold a newer card table, so six tests skip there in exactly this
-way. If you see a pytest result with 6 skipped quoted somewhere in the docs, that is where it
-came from.
+**What to do.** Nothing. The Install recipe puts the 15.535 table at `cards.json`, so the
+compiled engine reads that table while `MockEngine` reads the 2018 one. Six comparisons like
+this one skip on every normal clone, and that is correct. They still run in RoyaleSim's
+cross-repo job, with the 2018 table on both sides. Before the recipe switched tables, fresh
+clones on 2026-09-22 ran them and passed: RoyaleGym's pytest suite gave 385 passed, 0 skipped, on a
+debug engine build.
 
 If you see skips you did not expect, read the reason before you trust the green. Skips also
 happen when the engine is not built at all, which is problem 5. A few tests skip when Node.js is
@@ -306,9 +309,16 @@ in a throwaway venv instead of installing into the shared one:
 ```
 
 The build hash at the top of this page is the cheap check, but it only covers the calibration
-and arena built into the engine. It does not cover the card table. So print the hash and the
-card count above at the start of a run, and again at the end. If either changed, something
-changed underneath you.
+and arena built into the engine. It does not cover the card table, and it cannot see the engine's
+Rust code at all: two engines built from different code and the same data print the same hash.
+So run three checks at the start of a run and again at the end, each as its own command: the hash,
+the card count above, and this one, which tells two compiled engines apart:
+
+```
+..\.venv\Scripts\python -c "from royalegym.rust_engine import engine_binary_digest; print(engine_binary_digest())"
+```
+
+If any of them changed, something changed underneath you.
 
 ## Still stuck
 

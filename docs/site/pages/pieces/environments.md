@@ -98,16 +98,16 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3600
+winner 1  crowns [0, 1]  tick 3600
 ```
 
-Blue is player 0, and Blue took one of Red's princess towers. Tick 3600 is the full three minutes,
-so this one finished in regulation on crowns and never reached overtime (re-run 2026-09-22). Had
+Blue is player 0 and Red is player 1, and Red took one of Blue's princess towers. Tick 3600 is the full three minutes,
+so this one finished in regulation on crowns and never reached overtime (re-run 2026-09-24 on engine build `565def31a74817fe` with the 15.535 card table). Had
 it finished level, it would have gone to overtime and then to a tiebreak, where the side whose
 weakest standing tower has less health left loses.
 
-One env step is half a second of game time, which is 10 ticks. That battle was 480 steps, so
-each player made 480 decisions. It takes well under a second of real time.
+One env step is half a second of game time, which is 10 ticks. That battle was 360 steps, so
+each player made 360 decisions. It takes well under a second of real time.
 
 !!! warning "Name the deck, and name it card by card"
     Notice the deck is looked up by name and not by number. A card id is only a position in the
@@ -179,8 +179,9 @@ tile" separately would happily suggest putting a Knight on the enemy king. This 
 What it covers: elixir, territory, water, the river band, building footprints, and the no-deploy
 rectangle around each living enemy crown tower.
 
-In the run above, 1267 of the 2305 moves were legal on the first step of the battle. That number
-moves with your hand, your elixir and your deck.
+On the first step of a battle only the wait is legal, because a match refuses every deploy for
+its first 90 ticks, so the program above now prints 1 there rather than the 1267 shown, and that
+block is due a re-run. After that the number moves with your hand, your elixir and your deck.
 
 Three practical notes.
 

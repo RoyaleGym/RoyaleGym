@@ -56,7 +56,8 @@ random among their legal moves, and prints who won.
 !!! note "About the deck"
     These eight cards are here so the battle comes out the same every time you run it. Your
     numbers can still differ from ours. The output on this page came from the 15.535 card table,
-    and a fresh clone builds the 2018 one, where card stats differ. The eight cards are an
+    the same one the Install page gives you, but the engine keeps changing and a newer engine can
+    end the same battle differently. The eight cards are an
     example, not a recommendation. All eight are from the 18 whose behaviour is checked against
     recordings, which `cards.json` lists under `thin_slice`, so the example leans on the
     best-measured part of the engine. Any eight will do, and if you leave the deck
@@ -85,16 +86,16 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3600
+winner 1  crowns [0, 1]  tick 3600
 ```
 
-Blue is player 0. A *tick* is the game's own 50 ms step and there are 20 in a second, so tick
+Blue is player 0 and Red is player 1. A *tick* is the game's own 50 ms step and there are 20 in a second, so tick
 3600 is exactly three minutes. This match finished in regulation and never reached overtime.
-Blue took one of Red's princess towers, Red took none of Blue's, and a crown decides it without
-any tiebreak (re-run 2026-09-22). A match that finishes level on crowns goes to overtime and then
+Red took one of Blue's princess towers, Blue took none of Red's, and a crown decides it without
+any tiebreak (re-run 2026-09-24 on engine build `565def31a74817fe` with the 15.535 card table). A match that finishes level on crowns goes to overtime and then
 to a tiebreak, where the side whose weakest standing tower has less health left loses.
 
-One env step is half a second of game time, which is 10 ticks. So each player made 480 decisions
+One env step is half a second of game time, which is 10 ticks. So each player made 360 decisions
 in that battle. It took about half a second of real time.
 
 !!! tip "Always name the deck, card by card"
@@ -186,11 +187,11 @@ opponent is a floor and not a wall.
 
 Run it twice and you get the same two lines. Same seed, same battle, every time.
 
-!!! note "Your exact result can differ, and here is the one reason why"
-    The positions and the timing of a battle are the same on every checkout. The hitpoints are
-    not, because card levels come from the card table your checkout built. If you installed with
-    `--vintage 2018`, as the Install page tells you to, you may see a different crown count here.
-    The program is still correct. The cards are just at different levels.
+!!! note "Your exact result can differ, and here are the two reasons why"
+    The engine keeps changing, and a newer engine can end this same battle differently, even
+    with the same seed. And card levels come from the card table your engine reads: if it reads
+    the 2018 table rather than the 15.535 one the Install page sets up, you may see a different
+    crown count here. Either way the program is still correct.
 
 Things worth trying from here, all of them a few lines:
 

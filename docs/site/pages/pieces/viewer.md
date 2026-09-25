@@ -190,7 +190,10 @@ to draw something.
   per tick. Want every tick? Record a trace with `frame_every_tick=True` and open that.
 - A recording gives no unit a radius and no flying flag, so every unit is drawn at one size and
   air units look like ground units.
-- A trace or a stream gives no unit a path and no target, so those two overlays draw nothing.
+- A trace or a stream gives no unit a path, so the path overlay draws nothing. What each unit is
+  aiming at, its status effects and the shots in flight do come through, but only with an engine,
+  RoyaleGym and RoyaleViser new enough to carry them. All three gained this late on 2026-09-24, so
+  an older copy of any of the three, or a trace saved with one, shows none of them.
 - Spells in a recording arrive as projectiles, apart from the few whose effect is tagged with
   its card. There are no rage, poison or freeze zones.
 - A recording holds only the recording player's hand. The opponent's shows as

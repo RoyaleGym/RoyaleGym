@@ -100,9 +100,10 @@ walked into princess-tower fire, stopped within its own reach of the tower at t=
 hitting it. Nobody steered it. It picked its own route.
 
 !!! warning "Your hitpoints may not match, and that is fine"
-    The positions and the timing above are the same on any checkout. The hitpoints are not.
-    Card levels come from the card table your machine built, and the run above used the 15.535
-    table. On the `--vintage 2018` table, which is the one a fresh clone builds, the two
+    On the same engine and card table, the positions, the timing and the hitpoints above are
+    the same on any checkout. The engine keeps changing, though, and a newer one can move all
+    three. Card levels come from the card table your machine built, and the run above used the 15.535
+    table, which is the one a clean install reads. On the `--vintage 2018` table the two
     right-hand columns move. If your route matches and your hitpoints do not, nothing is wrong.
 
 To watch a battle instead of reading numbers, run `python tools\watch_battle.py --open` from the
@@ -124,8 +125,8 @@ EVERY GATE GREEN.
 ```
 
 Expect different numbers from these. The tool deals each side a random deck out of the card
-table your clone built, and the run above used the 15.535 table, so a `--vintage 2018` install
-plays a different battle. `--seed` defaults to 1, so one checkout repeats its own battle;
+table your clone built, and the engine and its card list keep changing, so your install can
+play a different battle. `--seed` defaults to 1, so one checkout repeats its own battle;
 `--seed N` gives another, and `--open` opens the page in a browser.
 
 The five `[OK ]` lines are the part that is the same everywhere, and they are what the tool is
@@ -142,7 +143,7 @@ building sits in the wrong place. That is engine behaviour, so it is fixed here.
 dash and morph, jump attacks like the Mega Knight's, the Rage and Heal spells, air units doing
 anything cleverer than flying straight at their target, evolutions, champion abilities and tower
 troops. Only the 18 cards in `thin_slice` are checked against recordings. The rest of the card
-table is not. That is 60 more cards in the 2018 table a fresh clone builds.
+table is not. That is every other card the engine loads from the 15.535 table a clean install reads.
 
 **You want a constant changed.** The engine's constants live in `data/calibration.json`. Each
 one has a status, from guess to measured, and nearly all of them say where they came from. You

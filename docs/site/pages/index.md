@@ -59,7 +59,7 @@ the environments, so you have something to play against from your first minute.
 
     Reset the environment, pick a move for each player, step, repeat until someone wins. One step
     is one decision for each player and covers half a second of game time, so a three minute match
-    is 480 decisions each.
+    is 360 decisions each.
 
 -   **Your own idea of what "good" means**
 
@@ -83,9 +83,9 @@ the environments, so you have something to play against from your first minute.
     ---
 
     Every observation tells your bot which of the 2305 card and tile moves it can actually
-    play right now. How many that is depends on the deck and on what is in hand: on the first
-    step of the Try-it battle it is 1623 for each player, and with randomly dealt decks it was
-    691 for one seat and 1259 for the other. Your bot never wastes a decision on a card it
+    play right now. How many that is depends on the deck and on what is in hand: in the Try-it
+    battle it is 1623 once play opens on step 9. Before that it is 1, the wait, because a match
+    refuses every deploy for its first 90 ticks. Your bot never wastes a decision on a card it
     cannot afford.
 
 -   **A battle you can watch, not guess at**
