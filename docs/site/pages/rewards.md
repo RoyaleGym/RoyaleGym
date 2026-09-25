@@ -36,7 +36,7 @@ below it is the output that came back.
 
     ---
 
-    The same goal, measured more often. It paid out on 54 steps out of 373.
+    The same goal, measured more often. It paid out on 55 steps out of 373.
 
 - __4. Both together__
 
@@ -48,8 +48,8 @@ below it is the output that came back.
 
 Every program here plays the same battle, between two players choosing at random. It is the
 battle from RoyaleGym's README: level when the three minutes run out, then won by Blue in
-overtime by taking one of Red's princess towers. The outputs were run on 2026-09-24 on engine
-build `cb784bb583586789` with the 15.535 card table. A newer engine can end the battle
+overtime by taking one of Red's princess towers. The outputs were run on 2026-09-25 on engine
+build `734032113c44fbcc` with the 15.535 card table. A newer engine can end the battle
 differently, and then every number below moves with it.
 
 ## The interface
@@ -195,10 +195,10 @@ play(TowerDamageReward())
 ```
 
 ```
-TowerDamageReward: blue total +0.283  over 373 steps, 54 of them non-zero
+TowerDamageReward: blue total +0.283  over 373 steps, 55 of them non-zero
 ```
 
-Same battle, same bots, and now 54 steps carry a number instead of 1. That is what
+Same battle, same bots, and now 55 steps carry a number instead of 1. That is what
 people mean when they call a reward *dense*. The bot gets told it is getting warmer
 long before anything falls over.
 
@@ -223,7 +223,7 @@ print("blue's last step, term by term:", shaped.terms_for(0))
 ```
 
 ```
-CombinedReward: blue total +1.228  over 373 steps, 54 of them non-zero
+CombinedReward: blue total +1.228  over 373 steps, 55 of them non-zero
 blue's last step, term by term: {'WinLossReward': 1.0, 'CrownReward': 0.2, 'TowerDamageReward': 0.0022935779816513737}
 ```
 
@@ -264,7 +264,7 @@ print(json.dumps(default_reward().config(), indent=2)[:400])
 ```
 
 ```
-CombinedReward: blue total +1.236  over 373 steps, 112 of them non-zero
+CombinedReward: blue total +1.236  over 373 steps, 111 of them non-zero
 {
   "terms": [
     {
@@ -291,7 +291,7 @@ CombinedReward: blue total +1.236  over 373 steps, 112 of them non-zero
       "class": "ElixirTradeReward
 ```
 
-112 non-zero steps out of 373, because `ElixirTradeReward` pays out whenever a unit dies and
+111 non-zero steps out of 373, because `ElixirTradeReward` pays out whenever a unit dies and
 whenever a spell is cast. The JSON is cut off at 400 characters by the `[:400]` in the program, which is why
 the last line stops mid word. It is the whole recipe, and it is how the reward ends up
 written into a checkpoint. `ClashParallelEnv.config()` carries the same thing under
