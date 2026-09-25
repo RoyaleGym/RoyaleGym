@@ -178,9 +178,10 @@ port, so eight envs each grabbing that port is an address-already-in-use error.
 
 Then start the viewer in another terminal:
 
-!!! warning "UNVERIFIED"
-    Nobody has run this from a clean install yet. The `--stream` flag is real and appears in the
-    viewer's own `--help`, but no window was opened while writing this page.
+!!! warning "Checked without a window"
+    On 2026-09-24 this command was run with the display switched off, on the machine that wrote
+    this page rather than a clean install. It attached: first-bot's streaming program, started
+    after it, sent it 3,528 frames. Nobody has yet watched the window itself from a clean install.
 
 ```
 ..\.venv\Scripts\python -m royaleviser --stream 127.0.0.1:9870
