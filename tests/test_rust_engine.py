@@ -1848,6 +1848,13 @@ def judge_order_splits(splits: list[str], expected: bool) -> None:
             f"a DIFFERENT order split from the known one ({KNOWN_ORDER_SPLIT_FIRST}): "
             f"{splits[:3]}. That is a new order-dependence, not the one sim is fixing."
         )
+        # Exactly one: a second defect that split LATER in the same run would otherwise sit
+        # behind the known first split, excused with it (the integrator's catch; their
+        # control run 36161198480 shows exactly this one split).
+        assert len(splits) == 1, (
+            f"the known split plus {len(splits) - 1} more: {splits[:4]}. Only the first is "
+            "sim's named defect; the rest are not excused."
+        )
         pytest.xfail(
             "known: combat.POST_KILL_RETARGET_WAIT = client16402_measured_list (RoyaleSim "
             "f1a91ed) splits the state hash by command order under the 2018 table only, "
@@ -1868,18 +1875,38 @@ def test_state_hash_does_not_depend_on_simultaneous_command_order(rust, mock, en
     assert pairs >= 15, f"only {pairs} steps with both teams deploying: not evidence"
 
 
+def order_outcome(splits: list[str], expected: bool) -> str:
+    """What judge_order_splits does, as a VALUE: "xfail", "pass" or "fail: <message>".
+
+    Read as a value because an xfail raised straight inside a test marks that test xfailed:
+    a judge that wrongly xfailed would then turn this plant into one more expected failure
+    instead of a red.
+    """
+    try:
+        judge_order_splits(splits, expected)
+    except pytest.xfail.Exception:
+        return "xfail"
+    except AssertionError as e:
+        return f"fail: {e}"
+    return "pass"
+
+
 def test_the_known_order_split_is_expected_exactly_and_nothing_wider() -> None:
-    """The xfail above, planted: only the named split passes as expected."""
+    """The xfail above, planted: only the named split, alone, passes as expected."""
     known = [f"{KNOWN_ORDER_SPLIT_FIRST} 0x1 vs 0x2"]
-    with pytest.raises(pytest.xfail.Exception):
-        judge_order_splits(known, expected=True)
-    with pytest.raises(AssertionError, match="is GONE"):
-        judge_order_splits([], expected=True)
-    with pytest.raises(AssertionError, match="DIFFERENT order split"):
-        judge_order_splits(["step 12 tick 300: 0x1 vs 0x2"], expected=True)
-    with pytest.raises(AssertionError):
-        judge_order_splits(known, expected=False)  # outside the named case it still fails
-    judge_order_splits([], expected=False)
+    extra = "step 300 tick 3090: 0x3 vs 0x4"
+    cases = {
+        "the named split alone": (known, True, "xfail"),
+        "no split while it is expected": ([], True, "is GONE"),
+        "a different first split": (["step 12 tick 300: 0x1 vs 0x2"], True, "DIFFERENT"),
+        "the named split plus one more": ([*known, extra], True, "plus 1 more"),
+        "the named split outside its case": (known, False, "fail: "),
+        "no split outside its case": ([], False, "pass"),
+    }
+    for what, (splits, expected, want) in cases.items():
+        got = order_outcome(splits, expected)
+        ok = got == want if want in ("xfail", "pass") else got.startswith("fail: ") and want in got
+        assert ok, f"{what}: judged {got!r}, wanted {want!r}"
 
 
 def test_plant_mock_input_order_is_caught(mock, monkeypatch):
