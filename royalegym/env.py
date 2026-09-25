@@ -272,8 +272,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self.log_reward_terms = log_reward_terms
         self.render_mode = render_mode
         self.recorder = recorder
-        # RoyaleViser (viser.py): one publish per reset/step, and only while a viewer is
-        # attached; None (the default) costs one ``if``. This env NEVER builds its own
+        # RoyaleViser (viser.py): one publish per reset and one per engine TICK while a
+        # step runs (``_advance``), and only while a viewer is attached; None (the
+        # default) costs one ``if``. This env NEVER builds its own
         # publisher -- see the module doc, THE VIEWER.
         self.viser = viser
         self._decks: list[list[int]] | None = None

@@ -46,9 +46,13 @@ INK = (24, 24, 32)
 
 def _battle(tower_hp):
     import royalesim
+    from royalegym.protocol import DeployRules, default_calibration
 
+    # Asked where play opens, not at tick 0: during the opening lockout check_deploy
+    # answers TOO_EARLY on every tile, which would paint the whole board one colour.
+    opens = DeployRules.load(default_calibration()).deploy_lockout_ticks
     b = royalesim.Battle(card_names=DECK, slot_of_k=[[0, 1, 2], [0, 1, 2]])
-    b.reset(seed=1, decks=[list(range(8))] * 2, shuffle=0, start_tick=0,
+    b.reset(seed=1, decks=[list(range(8))] * 2, shuffle=0, start_tick=opens,
             elixir_milli=[10_000, 10_000], tower_hp=tower_hp, spawns=[])
     return b
 
