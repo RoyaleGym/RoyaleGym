@@ -248,7 +248,7 @@ reward function at all.
 | `WinLossReward` | +1 for winning, -1 for losing. The real objective | 1.0 |
 | `CrownReward` | crowns taken minus crowns conceded | 0.2 |
 | `TowerHPReward` | tower hitpoints taken minus lost, as fractions of full | 0.1 |
-| `ElixirTradeReward` | elixir value of enemy units killed minus your own lost | 0.02 |
+| `ElixirTradeReward` | elixir the enemy spent and lost, in units that died and spells cast, minus your own | 0.02 |
 | `ElixirLeakPenalty` | sitting at full elixir, which wastes the regeneration | not in the default |
 | `PlacementDepthReward` | how far up the board your cards land, from -1 at your back line to +1 at the far end | not in the default, on purpose |
 | `IllegalActionPenalty` | a move the engine refused. Should always be zero | not in the default |
@@ -291,8 +291,8 @@ CombinedReward: blue total +1.236  over 373 steps, 112 of them non-zero
       "class": "ElixirTradeReward
 ```
 
-112 non-zero steps out of 373, because `ElixirTradeReward` pays out every time anything
-dies. The JSON is cut off at 400 characters by the `[:400]` in the program, which is why
+112 non-zero steps out of 373, because `ElixirTradeReward` pays out whenever a unit dies and
+whenever a spell is cast. The JSON is cut off at 400 characters by the `[:400]` in the program, which is why
 the last line stops mid word. It is the whole recipe, and it is how the reward ends up
 written into a checkpoint. `ClashParallelEnv.config()` carries the same thing under
 `reward_fn`, so a saved run always says what it was being paid for.
@@ -362,7 +362,7 @@ play, which decides in advance whether pushing or defending is better. That is f
 learn, so the term ships as an example to copy and stays out of the default.
 
 `ElixirTradeReward`, the third shaping term in the default, does not fit the rule either. It
-pays when units die, not for the change in one quantity. A player who never plays a card still
+pays when units die and charges when spells are cast, not for the change in one quantity. A player who never plays a card still
 collects when enemy units die at its towers, so it can pay for sitting back. Keep its weight
 small, as the default does (0.02). RoyaleLearn's own default reward swaps it for a term that
 does fit.

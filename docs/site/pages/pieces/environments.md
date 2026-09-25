@@ -186,8 +186,8 @@ What it covers: elixir, territory, water, the river band, building footprints, a
 rectangle around each living enemy crown tower.
 
 On the first step of a battle only the wait is legal, because a match refuses every deploy for
-its first 90 ticks, so the program above now prints 1 there rather than the 1267 shown, and that
-block is due a re-run. After that the number moves with your hand, your elixir and your deck.
+its first 90 ticks. That is why the program above prints 1 there. After that the number moves
+with your hand, your elixir and your deck.
 
 Three practical notes.
 

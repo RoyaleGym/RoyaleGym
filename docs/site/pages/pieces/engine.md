@@ -23,7 +23,7 @@ Your bot talks to [the environments](environments.md), and the environments talk
     ---
 
     Elixir, hands and the cycle, deploys, walking, targeting, fighting, spells, towers, double
-    elixir, 60 seconds of overtime, the three-crown win and the tiebreak.
+    elixir, two minutes of overtime, the three-crown win and the tiebreak.
 
 -   **The same seed gives the same battle**
 

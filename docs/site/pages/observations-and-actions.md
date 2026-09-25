@@ -238,7 +238,8 @@ step  60  legal actions     1  elixir 0.71
 ```
 
 At step 1 the only legal move is the wait. On the Rust engine a match refuses every deploy for its
-first 90 ticks, as the game does, so for the first nine decisions there is nothing else to choose,
+first 90 ticks. The real game has the same opening wait, and 90 ticks is the best measurement
+of its length so far. So for the first nine decisions there is nothing else to choose,
 whatever the deck. Step 9 ends at tick 90, and play opens: the player has 7.61 elixir, can afford
 all four cards in hand, and 1623 of the 2305 moves are legal.
 
