@@ -49,7 +49,7 @@ below it is the output that came back.
 Every program here plays the same battle, between two players choosing at random. It is the
 battle from RoyaleGym's README: level when the three minutes run out, then won by Blue in
 overtime by taking one of Red's princess towers. The outputs were run on 2026-09-26 on engine
-build `e2ab40401fe9395f` with the 15.535 card table. A newer engine can end the battle
+build `d539fbcd36c2184f` with the 15.535 card table. A newer engine can end the battle
 differently, and then every number below moves with it.
 
 ## The interface
@@ -195,7 +195,7 @@ play(TowerDamageReward())
 ```
 
 ```
-TowerDamageReward: blue total +0.320  over 373 steps, 56 of them non-zero
+TowerDamageReward: blue total +0.276  over 373 steps, 50 of them non-zero
 ```
 
 Same battle, same bots, and now 54 steps carry a number instead of 1. That is what
@@ -223,7 +223,7 @@ print("blue's last step, term by term:", shaped.terms_for(0))
 ```
 
 ```
-CombinedReward: blue total +1.232  over 373 steps, 56 of them non-zero
+CombinedReward: blue total +1.228  over 373 steps, 50 of them non-zero
 blue's last step, term by term: {'WinLossReward': 1.0, 'CrownReward': 0.2, 'TowerDamageReward': 0.0022935779816513737}
 ```
 
@@ -264,7 +264,7 @@ print(json.dumps(default_reward().config(), indent=2)[:400])
 ```
 
 ```
-CombinedReward: blue total +1.240  over 373 steps, 114 of them non-zero
+CombinedReward: blue total +1.236  over 373 steps, 115 of them non-zero
 {
   "terms": [
     {
@@ -332,7 +332,7 @@ both_seats(TowerDamageReward())
 
 ```
 CrownReward: blue +1.000  red -1.000  sum +0.000
-TowerDamageReward: blue +0.320  red -0.320  sum +0.000
+TowerDamageReward: blue +0.276  red -0.276  sum +0.000
 ```
 
 Every shipped term is meant to add to zero like this, except three that score only one

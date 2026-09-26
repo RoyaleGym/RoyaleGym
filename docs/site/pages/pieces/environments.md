@@ -153,7 +153,7 @@ print(f"steps {steps}  reward {total:.3f}  terminated {terminated}")
 
 ```
 legal moves on the first step: 1 of 2305
-steps 360  reward 1.343  terminated True
+steps 360  reward 1.555  terminated True
 ```
 
 Only the wait is legal on the first step, because a match refuses every deploy for its opening
@@ -169,7 +169,7 @@ out. Run it twice and you get the same numbers, because the seed fixes everythin
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
 treat them as "this ran", not as constants. These were run on 2026-09-26 on engine build
-`e2ab40401fe9395f` with the 15.535 card table.
+`d539fbcd36c2184f` with the 15.535 card table.
 
 ## The legality mask, which is the part people like
 
