@@ -174,16 +174,16 @@ print(f"blue deployed {blue.plays} times")
 ```
 
 ```
-winner 0  crowns [3, 1]  tick 4295
+winner 0  crowns [3, 1]  tick 4280
 blue deployed 34 times
 ```
 
 Read that result. Blue won with three crowns, but it did not take three towers. Red took one of
 Blue's princess towers first, Blue took one of Red's back, and it was level at one crown each when
-the three minutes ran out. In overtime Blue brought down Red's king tower at tick 4295, 34.75
+the three minutes ran out. In overtime Blue brought down Red's king tower at tick 4280, 34
 seconds in, and a fallen king tower counts as all three crowns. Blue deployed 34 times in the
 whole match, because it plays the instant it can afford whatever is in slot 0 and does nothing
-else at all (run 2026-09-25 on engine build `734032113c44fbcc` with the 15.535 card table).
+else at all (run 2026-09-25 on engine build `192dc2cec54da9d3` with the 15.535 card table).
 
 That is a stupid bot and it beat the random one here. That is the point. A fixed rule with no
 learning in it can already beat picking legal moves out of a hat, which tells you the random
