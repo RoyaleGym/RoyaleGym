@@ -101,7 +101,7 @@ t=490  giant at (3.77, 22.57)  hp=2442  red left tower hp=2293
 t=570  giant at (3.77, 22.57)  hp=1897  red left tower hp=1534
 ```
 
-Run on engine build `cb784bb583586789`, RoyaleSim `09a3b84`, with the 15.535 card table. The
+Run on engine build `cb784bb583586789`, RoyaleSim `2e5895c`, with the 15.535 card table. The
 `play: OK` line is there on purpose. `step` does not raise when a play is refused, it returns the
 reason. An earlier version of this program played at tick 0, was refused as `TOO_EARLY`, and then
 failed looking for a Giant that was never placed.

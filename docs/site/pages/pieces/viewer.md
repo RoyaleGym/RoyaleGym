@@ -126,7 +126,7 @@ for p in out:
 shot.png 69964 bytes
 ```
 
-That was run from the RoyaleViser folder, at RoyaleViser `6754fc9` on 2026-09-24, with no display
+That was run from the RoyaleViser folder, at RoyaleViser `63ecb80` on 2026-09-24, with no display
 driver set at all, twice, and gave exactly the same file size both times. The size moves when the
 viewer's drawing changes, so yours may differ by a little.
 

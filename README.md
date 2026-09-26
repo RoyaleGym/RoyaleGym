@@ -98,7 +98,7 @@ three minutes ran out, so the match went to overtime, and Blue won it by taking 
 princess towers at tick 3728.
 
 Measured on a clean runner, not here: RoyaleGym suite run 36095561188, building the engine from
-**RoyaleSim `e8e307a`**. The compiled engine in that run is `engine_binary` `32a34a7b395b737a`.
+**RoyaleSim `32a2997`**. The compiled engine in that run is `engine_binary` `32a34a7b395b737a`.
 
 **This result has moved three times, and each move is traced to one engine rule.** All three were
 found the same way: switch that one rule back, run this exact program, and get the previous result
@@ -310,7 +310,7 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="pytest on a clean runner at 267afc4, 2026-09-23: 887 passed, 9 skipped, nothing failing" src="https://img.shields.io/badge/clean%20runner%20at%20267afc4-887%20passed%2C%209%20skipped-2ea043?style=flat-square">
+  <img alt="pytest on a clean runner at ffb775c, 2026-09-23: 887 passed, 9 skipped, nothing failing" src="https://img.shields.io/badge/clean%20runner%20at%20267afc4-887%20passed%2C%209%20skipped-2ea043?style=flat-square">
   <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
   <img alt="The runner and a developer machine now see the same nine skips, which they never did before" src="https://img.shields.io/badge/runner%20and%20laptop-same%209%20skips-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
@@ -326,7 +326,7 @@ lines, including `maturin develop --release`, which took 119 seconds.
 
 **The pytest suite passes on a clean runner: 897 collected, 887 passed, 9 skipped, 1 expected
 failure, nothing failing.** This repo has one suite and it is pytest; there is no separate Rust
-suite here, and the engine's own tests live in RoyaleSim. Measured at commit `267afc4` on a clean
+suite here, and the engine's own tests live in RoyaleSim. Measured at commit `ffb775c` on a clean
 runner rather than on the machine that wrote this, on engine build `d6715210f21ca0c3` against the
 15.535.29 card table. A count belongs to the commit and the build it was taken at, so it names
 both.

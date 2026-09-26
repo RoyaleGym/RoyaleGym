@@ -70,7 +70,7 @@ PINNED = {
     # corrected the wrong model, so it is worth a test of its own rather than a comment.
     "Musketeer": [(0, 0)],
     "Archer": [(-9018, 0), (9000, 0)],
-    # Re-taken 2026-09-25 on build_digest 734032113c44fbcc (RoyaleSim c63b832), where
+    # Re-taken 2026-09-25 on build_digest 734032113c44fbcc (RoyaleSim 7bfcfd2), where
     # formation.STAGGER_WAIT took its measured arm. It was (9036, -5184) for the third
     # member before: see test_the_three_unit_formation_is_the_measured_symmetric_ring.
     "Minions": [(-8982, -5184), (0, 10422), (8982, -5184)],

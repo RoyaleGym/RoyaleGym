@@ -190,7 +190,7 @@ def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
         if done.stdout.strip() == expected.strip():
             # A new build that still prints the page's battle: the claim holds here too, so
             # this PASSES rather than skipping. Until 2026-09-25 it skipped, and a ledger key
-            # that moved the digest but not this battle (RoyaleSim 8e7927d,
+            # that moved the digest but not this battle (RoyaleSim 32e83bc,
             # spawner.RELEASE_TIMING; the deck has no death spawns) turned RoyaleSim's
             # cross-repo gym row red, whose gate refuses any undeclared skip, for a page
             # that was still right. The page's stamp keeps naming the build it was
@@ -259,7 +259,7 @@ def test_the_badge_count_matches_what_the_suite_collects() -> None:
     they are looking at.
 
     There is one copy now, and it is PINNED TO A COMMIT, which is what makes it
-    checkable at all. The badge reads "778 passed, 7 skipped at c94bb53", and this
+    checkable at all. The badge reads "778 passed, 7 skipped at e172ee1", and this
     compares those numbers against collection only when HEAD is that commit with a clean
     tree. Anywhere else it checks that the badge names a commit and says, out loud, that
     it cannot check further.

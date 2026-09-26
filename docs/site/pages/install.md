@@ -30,10 +30,10 @@ This matters more than it sounds, so it is near the top rather than in a footnot
     leftovers and no files that git ignores. The recipe below was then run as written, except
     that the engine was built in debug mode (`maturin develop` without `--release`). That build
     took **2 minutes 38 seconds**. RoyaleGym's test suite in that clone gave **385 passed,
-    0 skipped** (RoyaleGym at commit `afb6d1e`).
+    0 skipped** (RoyaleGym at commit `7fcafbe`).
 
     Nothing skipped, so every test ran. The suite has grown since (492 tests at commit
-    `be58cac`), and has not been re-run from a fresh clone.
+    `0691bb1`), and has not been re-run from a fresh clone.
 
 !!! warning "The release build has not been run from a fresh clone yet"
 
@@ -296,7 +296,7 @@ winner 0  crowns [2, 1]  tick 5950
 Each player took one tower in the three minutes, so the match went to overtime, and player 0 won
 it by taking a second tower at tick 5950, nearly two minutes into overtime. `MockEngine` reads
 RoyaleSim's calibration file each time it starts, so this result moves when that file does. It
-was run on 2026-09-24 against the calibration in RoyaleSim `09a3b84`.
+was run on 2026-09-24 against the calibration in RoyaleSim `2e5895c`.
 
 Be clear about what you are using, though. `MockEngine` is a stand in, not a second simulator. It
 carries 16 cards rather than the full catalogue, spells resolve instantly, there are no stuns or
@@ -378,7 +378,7 @@ cd RoyaleSim
 ```
 
 Give this one a couple of minutes. That is RoyaleSim's PYTHON suite on a fresh clone, measured on
-2026-09-22 at commit `2b85ce1`. It is not the Rust suite, which is a separate command with a
+2026-09-22 at commit `75a2682`. It is not the Rust suite, which is a separate command with a
 separate result, and which is failing today on one test. Read the ten skips rather than ignoring
 them: each names the thing it could not find and says a skip is not a pass.
 
@@ -420,7 +420,7 @@ cd RoyaleGym
 ```
 
 On fresh clones with a debug engine build, on 2026-09-22, this printed **385 passed,
-0 skipped**. The suite has grown since (492 tests at commit `be58cac`), so expect a bigger
+0 skipped**. The suite has grown since (492 tests at commit `0691bb1`), so expect a bigger
 count. Expect some skips. Six tests that compare the two engines skip on purpose, because the compiled
 engine and `MockEngine` read different card tables. Others skip if Node.js is not on your PATH or
 RoyaleViser is not installed. A clean runner on 2026-09-23 showed nine skips in all. Add `-rs` to read the reason for any skip,

@@ -455,7 +455,7 @@ class ProjectileState(msgspec.Struct, frozen=True, array_like=True):
 
 
 #: ``ProjectileState.firer_card_id`` for a shot from a crown tower, and only for that: the
-#: engine decides it from the firer's own card (RoyaleSim 0468c60). Any other firer
+#: engine decides it from the firer's own card (RoyaleSim 7f16a00). Any other firer
 #: carries the catalogue id of the card that put it on the board, so a unit summoned by
 #: another card fires under its summoner's id (a Rascal Girl's shot names Rascals).
 FIRER_TOWER = -1

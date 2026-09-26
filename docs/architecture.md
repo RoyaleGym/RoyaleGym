@@ -237,7 +237,7 @@ exactly.
 ## Tests
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 825 passed, 9 skipped, 1 xfailed at afd259d on build d872d792711934c2
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 825 passed, 9 skipped, 1 xfailed at ca15d5e on build d872d792711934c2
 ..\.venv\Scripts\python -m ruff check royalegym tests examples   # All checks passed!
 ```
 
@@ -247,7 +247,7 @@ times on 2026-09-22 alone, twice without any commit in this repo, because it cov
 calibration.json and arena.json rather than code. A test checks it, and only on that commit: anywhere else
 it says so rather than comparing two different trees.
 
-The split moves between a workspace and a fresh clone even when the total does not. At 5ceeb2c, on
+The split moves between a workspace and a fresh clone even when the total does not. At 9cdf153, on
 the earlier build f7628dd51148e4ce, this machine gave 793 passed and 8 skipped and a clone
 gave 797 and 4, both 805. Those two are kept as a matched pair taken on one build; do not
 compare either against the figure above, which is a different build.
