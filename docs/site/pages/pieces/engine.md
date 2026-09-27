@@ -151,10 +151,15 @@ Four reasons, and they are all "the battle itself is wrong or missing something"
 building sits in the wrong place. That is engine behaviour, so it is fixed here.
 
 **A mechanic is not modelled.** These are the ones the engine does not do yet, in plain words:
-dash and morph, jump attacks like the Mega Knight's, the Rage and Heal spells, air units doing
-anything cleverer than flying straight at their target, evolutions, champion abilities and tower
-troops. Only the 18 cards in `thin_slice` are checked against recordings. The rest of the card
-table is not. That is every other card the engine loads from the 15.535 table a clean install reads.
+morph, attacks that chain from one target to the next like the Electro Dragon's, the Golden
+Knight's dash, the push of the
+Mega Knight's landing, air units doing anything cleverer than flying straight at their target,
+evolutions, champion abilities and tower troops. Rage and Heal load, but parts of how they work
+are not measured yet. The 18 cards in `thin_slice` are the ones the engine has been checked on.
+For the other cards it loads from the 15.535 table, only some rules are measured against
+recordings, such as the Inferno damage ramp and the Mortar's minimum range.
+[RoyaleSim's mechanics page](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/mechanics.md)
+lists which.
 
 **You want a constant changed.** The engine's constants live in `data/calibration.json`. Each
 one has a status, from guess to measured, and nearly all of them say where they came from. You

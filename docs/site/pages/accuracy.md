@@ -3,8 +3,8 @@
 <p align="center">
   <img alt="Measured" src="https://img.shields.io/badge/accuracy-measured%2C%20not%20guessed-0b7285?style=flat-square">
   <img alt="Position within a quarter tile, towers left out" src="https://img.shields.io/badge/position%20match%2C%20no%20towers-56.5%25-orange?style=flat-square">
-  <img alt="Hitpoints exact, towers left out" src="https://img.shields.io/badge/hitpoints%20exact%2C%20no%20towers-81.4%25-2ea043?style=flat-square">
-  <img alt="Corpus" src="https://img.shields.io/badge/corpus-67%20recorded%20battles-555?style=flat-square">
+  <img alt="Hitpoints exact, towers left out" src="https://img.shields.io/badge/hitpoints%20exact%2C%20no%20towers-79.5%25-2ea043?style=flat-square">
+  <img alt="Corpus" src="https://img.shields.io/badge/corpus-73%20recorded%20battles%2C%2067%20played-555?style=flat-square">
   <img alt="Moving" src="https://img.shields.io/badge/expect%20it%20to-keep%20moving-8957e5?style=flat-square">
 </p>
 
@@ -20,9 +20,9 @@ Real matches are recorded. The same match is then replayed in the engine, and ev
 position and hitpoints are compared against the recording, on every tick. A tick is 50 ms of
 game time, so a three minute battle is 3,600 comparisons per unit.
 
-There are 67 recorded battles behind the numbers below, all from the run of 2026-09-21. 25 are
-scored from start to finish. The other 42 are scored up to the first card the engine cannot play
-yet.
+There are 73 recorded battles behind the numbers below, all from one run of the engine at build
+`d872d792711934c2`. 67 of them play. 27 are scored from start to finish, and the other 40 up to
+the first card that engine could not play yet. The last 6 do not play at all.
 
 !!! note "You cannot re-run this one yourself"
     The recordings of real matches are private, so the accuracy measurement is not something a
@@ -41,6 +41,10 @@ How often the engine agrees with the recording:
 
 Every figure in this table is from one run, at `d872d792711934c2`, over 73 recorded battles:
 270,972 unit-ticks without towers and 799,831 with them.
+
+The engine has changed since that run. On 2026-09-26 it switched nineteen rules to measured values,
+and seven more cards started to load (RoyaleSim `126992a`). No re-run on the new engine is published
+here yet, so read every number on this page as the number for build `d872d792711934c2`.
 
 The contrast between the rows is the useful part. When the spawner emission point was corrected on
 2026-09-22, position went from 49.4% to 56.5% and hitpoints went from 79.4% to 79.5% without
@@ -106,7 +110,7 @@ cause is measured on, and a row-by-row comparison of two runs measures nothing.
 
 19 of the 67 battles in the corpus never diverge at all, though most of those are short ones.
 
-These numbers are from 2026-09-21, not the target. The target is that a swarm fight does not diverge
+These numbers are from the run at build `d872d792711934c2`, not the target. The target is that a swarm fight does not diverge
 either. Expect the table to move.
 
 ## What this means for your bot
@@ -134,8 +138,8 @@ The practical version, three lines:
   treat what your bot learns about it as a guess.
 - Do not tune a reward function against a single exact interaction. Reward the outcome, not the
   choreography.
-- Check again in a month. Two of the five causes are being worked on, and the numbers on this
-  page are a snapshot.
+- Check again in a month. The causes above are open work, and the numbers on this page are a
+  snapshot of build `d872d792711934c2`.
 
 ## An honest summary
 
