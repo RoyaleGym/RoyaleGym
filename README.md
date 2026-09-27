@@ -93,12 +93,12 @@ winner 1  crowns [0, 1]  tick 3600
 ```
 
 That is a whole match, re-run 2026-09-27 on engine build `52aa2faa425c816d` with the **15.535 card
-table**, which is what the install above puts at `cards.json`. Red took Blue's left princess tower
+table**, which the Install steps below put at `cards.json`. Red took Blue's left princess tower
 at tick 1840, and that was the only crown when the three minutes ran out, so Red won 1-0 at tick
 3600.
 
 Measured on the project's desktop, not on a clean runner, building the engine from
-**RoyaleSim `244c893`**. The compiled engine is `engine_binary` `452cd0947329130e`.
+**RoyaleSim `244c893`**. The compiled engine is `engine_binary_sha256` `452cd0947329130e`.
 
 **This result has moved five times, and each move is traced to one engine rule.** All five were
 found the same way: switch that one rule back, run this exact program, and get the previous result
@@ -127,14 +127,16 @@ exactly.
 the calibration values and the arena compiled into the extension; it has no access to the Rust at
 all, so two engines with different code and identical calibration share one. That cuts both ways: a
 future engine could change behaviour, keep this digest, and be compared against this battle as
-though nothing had moved. The commit beside it is what closes that gap, and `engine_binary` is the
-stamp that identifies the compiled artefact if you need to tell two builds apart directly.
+though nothing had moved. The commit beside it is what closes that gap, and `engine_binary_sha256`
+is the stamp that identifies the compiled artefact if you need to tell two builds apart directly.
 
 **Two stamps, because two things move this output independently.** The build is one, as above.
 The card table is the other, and it is not a smaller effect: at an earlier build,
 `d6715210f21ca0c3`, this program chose a different winner on the 2018 table than on the 15.535 one.
 So if your result differs, the digest and the vintage together tell you which of the two moved,
-rather than leaving you to suspect your install. `RustEngine().config()` prints yours.
+rather than leaving you to suspect your install. `RustEngine().config()` returns yours as a
+dict; print it to read `build_digest` and `cards_vintage`. A different digest with the same
+printed line is fine.
 
 Both players are picking at random from the legal moves, and one of them still took a tower. That
 is the bar your bot starts from.
@@ -159,11 +161,13 @@ If you leave the deck out, each side is dealt eight random cards from whatever c
 machine built, and the same seed then gives you a different battle from the one above. Look
 cards up by name and your battle matches this one.
 
-There are seven runnable programs in [`examples/`](examples/), in the order they are
+There are seven numbered programs in [`examples/`](examples/), in the order they are
 worth reading: this battle, one seat with the env playing the other, batched self-play,
 writing your own reward, recording and proving a replay, resuming a run where it stopped,
-and comparing two bots. The test suite runs all seven and checks each one printed the
-thing it exists to show.
+and comparing two bots. An eighth, `measure_building_relocation.py`, is a measurement
+rather than a lesson: it counts how often a building does not land on the tile that was
+tapped. The test suite runs all eight and checks each one printed the thing it exists to
+show.
 
 If you would rather start from Gymnasium's single-agent API, that is one line, and the id
 says which engine you are getting:
@@ -188,13 +192,16 @@ right thing to learn the API on and the wrong thing to believe a trained bot aga
 You need this repo and [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim).
 
 Before you start you need three things, and the build fails late and unhelpfully without the
-third: **Python 3.12**, **git**, and a **Rust toolchain** from [rustup.rs](https://rustup.rs).
-On Windows, rustup will offer to install the Microsoft C++ build tools; say yes, because the
-engine cannot link without them. The Rust build tree grows to a few GB.
+third: **Python 3.12 or newer**, **git**, and a **Rust toolchain** from
+[rustup.rs](https://rustup.rs). On Windows, rustup will offer to install the Microsoft C++ build
+tools; say yes, because the engine cannot link without them. The Rust build folder was 100 MB
+after the build, and about 760 MB after also running the Rust tests and clippy (4-CPU Linux,
+2026-09-27).
 
 The commands below are for **Windows**, one per line. Paste them one at a time rather than as a
 block: Windows PowerShell cannot chain commands with `&&`, and a pasted comment is not a comment
-in `cmd`. On macOS and Linux the interpreter is `.venv/bin/python` with forward slashes, and the
+in `cmd`. On macOS and Linux the interpreter is `.venv/bin/python`, paths take forward slashes,
+`cp` replaces `Copy-Item`, and `export X=Y` goes where Windows sets a variable. The
 [install page](docs/site/pages/install.md) has those commands in full.
 
 ```
@@ -204,12 +211,23 @@ git clone https://github.com/RoyaleGym/RoyaleSim.git
 git clone https://github.com/RoyaleGym/RoyaleGym.git
 git clone https://github.com/RoyaleGym/RoyaleViser.git
 git clone https://github.com/RoyaleGym/RoyaleLearn.git
-python -m venv .venv
-.venv\Scripts\python -m pip install maturin pytest hypothesis ruff numpy
+py -3.12 -m venv .venv
+.venv\Scripts\python --version
+.venv\Scripts\python -m pip install maturin pytest hypothesis ruff numpy msgspec
 ```
 
-Now generate the card and arena data the engine reads. This writes `RoyaleSim/data/derived/`,
-which no clone carries, and the engine cannot start without it:
+The venv must be Python 3.12 or newer, so the `--version` line has to print 3.12 or newer before
+you build. On macOS and Linux, create it with `python3.12 -m venv .venv` and check it with
+`.venv/bin/python --version`. An older Python compiles the engine for several minutes and is only
+refused at the install step. If `python --version` already prints 3.12 or newer, `python -m venv
+.venv` works too.
+
+Optional: [RoyaleImitate](https://github.com/RoyaleGym/RoyaleImitate) adds imitation learning to
+RoyaleLearn. Its README has its own two install lines.
+
+Now generate the card and arena data the engine reads. A clone carries only `cards-15.535.json`
+in `RoyaleSim/data/derived/`; these lines generate the rest, and the engine cannot start without
+them:
 
 ```
 cd RoyaleSim
@@ -219,8 +237,9 @@ Copy-Item data\derived\cards-15.535.json data\derived\cards.json
 ..\.venv\Scripts\python tools\extract_globals.py
 ```
 
-Then build the engine, from that same folder. It takes a few minutes and a couple of GB of
-memory, and it prints very little while it works:
+Then build the engine, from that same folder. From a fresh clone it took 163 seconds and about
+1 GB of memory on a 4-CPU Linux machine on 2026-09-27. It can go quiet for a minute or more on
+the engine itself; let it finish:
 
 ```
 ..\.venv\Scripts\maturin develop --release
@@ -235,14 +254,26 @@ Then install the Python packages:
 .venv\Scripts\python -m pip install -e RoyaleLearn
 ```
 
-Only if you want to train, and it is a multi-GB download:
+Only if you want to train, and it is a multi-GB download. No NVIDIA GPU? Install CPU torch
+first. On a 4-CPU Linux machine with no GPU, on 2026-09-27, the default torch download pulled
+about 5 GB of CUDA wheels:
+
+```
+.venv\Scripts\python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
+Then the training extra:
 
 ```
 .venv\Scripts\python -m pip install -e "RoyaleLearn[torch]"
 ```
 
+On macOS and Linux both lines start `.venv/bin/python` instead.
+
 You can stop after the `pip install -e RoyaleGym` line. RoyaleViser is optional. It is the
-viewer, plus one test that sends a frame through it. RoyaleLearn is not needed at all.
+viewer. Four tests in this repo's suite need it, and they skip without it; pytest reports them
+as two skips, because three of them share one file. RoyaleLearn is the trainer. Nothing here
+needs it except the documentation site build (see Read next, below).
 
 Two card tables get written and only one of them is the one the engine loads.
 `cards-15.535.json` is committed to RoyaleSim, so the copy line puts the current game's table at
@@ -263,8 +294,9 @@ say so. The comparison still happens: RoyaleSim's cross-repo job runs exactly th
 2018 table written to `cards.json`, so both halves are on one vintage. One table for running the
 simulator, another for the one check that puts two engines side by side.
 
-The order of those two lines matters. The build copies the arena and the calibration constants
-into the engine, so the data has to exist first. The card table works differently. Every time
+The order of the data step and the build step matters. The build copies the arena and the
+calibration constants into the engine, so the data has to exist first. The card table works
+differently. Every time
 you create an engine, it reads `data/derived/cards.json` from the RoyaleSim folder it was
 **built in**. Re-running `extract_cards.py` in that folder changes the cards with no rebuild.
 Pointing `ROYALESIM_DATA_DIR` at other data does not change which card table the engine reads.
@@ -319,38 +351,44 @@ for the learner.
 ## Status
 
 <p align="center">
-  <img alt="pytest on a clean runner at ffb775c, 2026-09-23: 887 passed, 9 skipped, nothing failing" src="https://img.shields.io/badge/clean%20runner%20at%20267afc4-887%20passed%2C%209%20skipped-2ea043?style=flat-square">
-  <img alt="The published install recipe, run verbatim from a fresh clone in Windows PowerShell on 2026-09-22: all 18 lines" src="https://img.shields.io/badge/install%20from%20a%20clone-verified%202026--09--22-2ea043?style=flat-square">
-  <img alt="The runner and a developer machine now see the same nine skips, which they never did before" src="https://img.shields.io/badge/runner%20and%20laptop-same%209%20skips-2ea043?style=flat-square">
+  <img alt="pytest on a clean runner at ecbb80b, 2026-09-27: 1028 passed, 9 skipped, 1 expected failure, nothing failing" src="https://img.shields.io/badge/clean%20runner%20at%20ecbb80b-1028%20passed%2C%209%20skipped-2ea043?style=flat-square">
+  <img alt="The install recipe, run from fresh clones on a 4-CPU Linux machine on 2026-09-27: the release build took 163 seconds and about 1 GB of memory" src="https://img.shields.io/badge/install%20from%20fresh%20clones-run%202026--09--27-2ea043?style=flat-square">
   <img alt="ruff" src="https://img.shields.io/badge/ruff-clean-2ea043?style=flat-square">
   <img alt="Trainer" src="https://img.shields.io/badge/trainer-runs%3B%20no%20finished%20bot%20yet-d29922?style=flat-square">
 </p>
 
-**As of 2026-09-23.** Two things about what your clone gives you, and the second is the one to
+**As of 2026-09-27.** Two things about what your clone gives you, and the second is the one to
 read.
 
-The install itself works from nothing. The recipe above was run verbatim from a fresh clone in
-Windows PowerShell 5.1, with no virtual environment active and nothing repaired as it went: all 18
-lines, including `maturin develop --release`, which took 119 seconds.
+The install itself works from nothing. On 2026-09-27 the macOS and Linux form of the recipe, with
+a Python 3.12 venv, was run from fresh clones on a 4-CPU Linux machine. `maturin develop
+--release` took 163 seconds and about 1 GB of memory there. An earlier form of the recipe, from
+before the card-table copy line was added, was run verbatim in Windows PowerShell 5.1 on
+2026-09-22, and its release build took 119 seconds.
 
-**The pytest suite passes on a clean runner: 897 collected, 887 passed, 9 skipped, 1 expected
+**The pytest suite passes on a clean runner: 1038 collected, 1028 passed, 9 skipped, 1 expected
 failure, nothing failing.** This repo has one suite and it is pytest; there is no separate Rust
-suite here, and the engine's own tests live in RoyaleSim. Measured at commit `ffb775c` on a clean
-runner rather than on the machine that wrote this, on engine build `d6715210f21ca0c3` against the
-15.535.29 card table. A count belongs to the commit and the build it was taken at, so it names
-both.
+suite here, and the engine's own tests live in RoyaleSim. Measured at commit `ecbb80b` on a clean
+runner rather than on the machine that wrote this: RoyaleGym suite run 36347317029 on GitHub's
+Linux runner, on engine build `ec198b459cf311a4` built from RoyaleSim `1d661b0`, against the
+15.535.29 card table. It took 8 minutes 38 seconds there. A count belongs to the commit and the
+build it was taken at, so it names both.
 
-**The runner and a developer machine now see the same nine skips**, which they never did before,
-and that is the substantive change behind the numbers. Until today a clean runner ran a different
-population from every machine here, because the two built different card tables; the install now
-puts the same table in both places. A figure measured there is a figure about your clone.
+**Expect the same nine skips on your machine** once the whole Install recipe is done. They are
+worth reading rather than ignoring:
 
-The nine skips are worth reading rather than ignoring, and they are **not** the old nine with four
-removed. Twelve tests pinned to the current card table now run, where they used to skip for want of
-it. Six comparisons between the compiled engine and the pure-Python stand-in now skip, because the
-stand-in reads the 2018 tables while the engine reads the current one, and running them across two
-vintages would measure the card data rather than the engines. Those six still run in RoyaleSim's
-cross-repo job, with both halves on one table.
+- Six comparisons between the compiled engine and `MockEngine`, the pure-Python stand-in. The
+  stand-in reads the 2018 tables while the engine reads the current one, and running them across
+  two vintages would measure the card data rather than the engines. Those six still run in
+  RoyaleSim's cross-repo job, with both halves on one table.
+- One statement that the two engines model a building's footprint differently: a circle in
+  `MockEngine`, a box of whole tiles in the Rust engine.
+- Two checks of a test count written in the docs: the badge above, and the one in
+  `docs/architecture.md`. A count can only be checked at the commit it names, so anywhere else
+  these skip and say so.
+
+More tests skip if Node.js is not on your PATH, if RoyaleViser is not installed, if the other
+repos are not next to this one, or if something on your machine already holds port 9870.
 
 A skip that names what it wanted is information. Earlier in this repo's life some of these FAILED
 instead, which is a different thing: a failure tells you your install is broken when it is not.
@@ -362,7 +400,12 @@ Working:
 
 - The whole API on both engines. That is the Gymnasium, PettingZoo and self-play batched envs.
   The list of legal moves is worked out separately from the engine, and the tests check it
-  against the engine's own ruling for every card and every position.
+  against the engine's own ruling. They check every card the engine loads, including the Elixir
+  Collector, which the deal keeps out of the opening hand. They check both seats and every move,
+  on the whole-tile and the half-tile grid, on four boards: the opening, one with buildings
+  down, one with a princess tower down, and one with both. One card disagrees today: the list
+  offers Heal on your own princess towers and on buildings, where the engine refuses it. The
+  tests allow exactly that one split, and they fail once an engine build closes it.
 - One bot can play both seats. Everything it sees is drawn from the acting player's point of
   view, with its own king at the bottom, so a battle turned 180 degrees looks the same to the
   other seat. The mirror of that does drift apart: 80 of 144 multi-unit deploys diverged
@@ -384,8 +427,11 @@ Working:
   match could write down, including a COUNT of the opponent's elixir that is exact against the
   engine's own bar. Anything hidden is opened one field at a time with a `Reveal`. Turning one
   on changes the observation's WIDTH instead of filling in zeroed slots, and
-  `ClashParallelEnv.config()` records it, so a checkpoint always says whether the bot was
-  cheating ([`docs/observation-spec.md`](docs/observation-spec.md)).
+  `ClashParallelEnv.config()` records it, so a checkpoint says which `Reveal` fields were on
+  ([`docs/observation-spec.md`](docs/observation-spec.md)). One known gap: a unit invisible to
+  its enemy, such as a Royal Ghost, is still shown to the enemy seat where it stands, which a
+  player cannot see. This is not fixed yet, and `config()` cannot record it, because it is not a
+  `Reveal`.
 - The RLGym v2 names, so the vocabulary matches what you already know: `StateMutator`, and
   `TerminationCondition` / `TruncationCondition` so that a settled result and a time-out are
   different things. The earlier names still import as aliases.
@@ -395,9 +441,9 @@ alternating the two inside one process.** That ratio is the durable number here,
 whatever the machine is doing it does to both arms. An env step is one decision for each
 player, covering half a second of game time.
 
-The absolute rate is not durable and you should not plan against it. The same report on one
-laptop has printed 953, 957, 859 and 1812 env steps per second depending on the hour and
-what else was running.
+The absolute rate is not durable and you should not plan against it. By 2026-09-22 the same
+report on one laptop with 8 GB of memory had printed 953, 957, 859 and 1812 env steps per second,
+depending on the hour and what else was running.
 
 How that was measured, and the rest of the numbers:
 
@@ -416,8 +462,15 @@ How that was measured, and the rest of the numbers:
 - The same report on 2026-09-22, with five other jobs running on the machine, printed 957 env
   steps per second on the Rust engine.
 
-Open:
+Open, as of 2026-09-27:
 
+- The list of legal moves offers Heal on your own princess towers and on buildings, where the
+  engine refuses it. A refused move becomes a wait, and `info["deploy_status"]` says why. A fix
+  is planned for the next engine build.
+- A unit invisible to its enemy, such as a Royal Ghost, is still shown to the enemy seat where it
+  stands. A player cannot see it. This is not fixed yet.
+- Leave the deck out and each side draws from every card the engine loads. That includes
+  WarmSpell, an event card.
 - Default observations and rewards should be computed inside the engine, with the Python
   versions kept as the override for experiments. Until that is done, training time goes to
   building observations rather than to the battle.
@@ -442,21 +495,28 @@ cd RoyaleGym
 Without the engine built, the Rust-backed tests skip. An engine built from a different
 calibration or arena file than the one on disk fails them instead of skipping.
 
-With the whole Install recipe done, expect some skips. The Status section above counts nine on a
-clean runner, and six of them are the engine comparisons the Install section explains. A few tests
-also skip if Node.js is not on your PATH or RoyaleViser is not installed. Add `-rs` to the pytest line to read the reason for
-each skip. A skip is not a pass.
+The suite takes several minutes. On one desktop it takes about 10 to 12 minutes with nothing
+else running, and 20 minutes or more beside other jobs.
+
+With the whole Install recipe done, expect nine skips; the Status section above names them. A
+few more skip if Node.js is not on your PATH or RoyaleViser is not installed. The summary at the
+end of the run gives the reason for each skip. A skip is not a pass.
 [Troubleshooting](docs/site/pages/troubleshooting.md#6-tests-that-skip-instead-of-failing)
 says which skips are expected and why.
 
 Read next:
 
-- [`examples/`](examples/) for seven programs that run, starting with one battle and ending
-  with comparing two bots.
+- [`examples/`](examples/) for the seven numbered programs, starting with one battle and ending
+  with comparing two bots, and the one measurement beside them.
 - The documentation site, [royalegym.github.io/RoyaleGym](https://royalegym.github.io/RoyaleGym/),
   which is longer than anything here. The same pages are in this repo under
-  [`docs/site/pages/`](docs/site/pages/), and you can build the site yourself with
-  `pip install -e "RoyaleGym[docs]"` and `mkdocs serve` from `docs/site`.
+  [`docs/site/pages/`](docs/site/pages/), and you can build the site yourself. It needs
+  RoyaleViser and RoyaleLearn installed too, because its reference pages read their code. From
+  the `Royale` folder, run `.venv\Scripts\python -m pip install -e "RoyaleGym[docs]"`. Then
+  `cd RoyaleGym\docs\site` and run `..\..\..\.venv\Scripts\mkdocs serve`. On macOS and Linux
+  those are `.venv/bin/python` and `../../../.venv/bin/mkdocs`. It serves the site at
+  `http://127.0.0.1:8000/RoyaleGym/`. It first prints a boxed warning about MkDocs 2.0 from the
+  theme's authors. That is a notice, not an error, and the build carries on.
   [Your first bot](docs/site/pages/first-bot.md) walks a custom policy from
   nothing to beating the random opponent, and there are pages on
   [installing](docs/site/pages/install.md),
