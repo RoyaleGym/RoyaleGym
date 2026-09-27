@@ -153,7 +153,7 @@ print(f"steps {steps}  reward {total:.3f}  terminated {terminated}")
 
 ```
 legal moves on the first step: 1 of 2305
-steps 360  reward 1.345  terminated True
+steps 360  reward 1.347  terminated True
 ```
 
 Only the wait is legal on the first step, because a match refuses every deploy for its opening
@@ -168,8 +168,8 @@ Swap `me.act(...)` for your own policy and that loop is a training loop with the
 out. Run it twice and you get the same numbers, because the seed fixes everything.
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
-treat them as "this ran", not as constants. These were run on 2026-09-26 on engine build
-`ea9686b2a2af91fd` with the 15.535 card table.
+treat them as "this ran", not as constants. These were run on 2026-09-27 on engine build
+`ec198b459cf311a4` with the 15.535 card table.
 
 ## The legality mask, which is the part people like
 
