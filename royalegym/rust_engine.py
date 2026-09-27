@@ -1134,27 +1134,36 @@ def _rotation_probe_cached(args: tuple, kwargs: dict) -> list[str]:
 
 
 #: Ledger keys whose shipped arm is the client's own and deliberately not seat-symmetric,
-#: which the core offers no constructor keyword for, and the arm that IS symmetric.
-#: ``SymmetricRustEngine`` selects each through ``calibration_overrides``.
-SYMMETRIC_ARMS: dict[str, Any] = {
-    "targeting.FIRST_TOWER_PICK": "current_x",
+#: which the core offers no constructor keyword for, and the arms that ARE symmetric, most
+#: preferred first. ``SymmetricRustEngine`` selects the first one the ledger lists as a
+#: candidate, through ``calibration_overrides``.
+SYMMETRIC_ARMS: dict[str, tuple[str, ...]] = {
+    # The client's own lane rule read in the placer's own frame (a candidate since RoyaleSim
+    # 1d661b0), else the old rule by the unit's x, which is symmetric but not the client's.
+    "targeting.FIRST_TOWER_PICK": ("client_spawn_lane_own_frame", "current_x"),
     # The half-open king block is half-open in the ARENA's frame, so the two seats may tap
     # different own-frame points around their kings; the closed block is the same for both.
-    "placement.TROOP_TOWER_TAPS": "closed_block",
+    "placement.TROOP_TOWER_TAPS": ("closed_block",),
 }
 
 
 def symmetric_overrides(ledger: Mapping[str, Any]) -> dict[str, Any]:
-    """The ``SYMMETRIC_ARMS`` this compiled ledger ships some OTHER arm of.
+    """The symmetric arm of each ``SYMMETRIC_ARMS`` key this compiled ledger ships some OTHER
+    arm of: the most preferred one its ``candidates`` list (the first, if it lists none).
 
     A key the ledger lacks is left out, so an engine older than the key still constructs;
-    one already shipping the symmetric arm is left out, so nothing is overridden for nothing.
+    one already shipping the arm is left out, so nothing is overridden for nothing; one
+    listing none of the symmetric arms is left out, and the rotation probe reports it.
     """
     out: dict[str, Any] = {}
-    for key, arm in SYMMETRIC_ARMS.items():
+    for key, arms in SYMMETRIC_ARMS.items():
         section, name = key.split(".", 1)
         entry = ledger.get(section, {}).get(name) if isinstance(ledger.get(section), dict) else None
-        if isinstance(entry, dict) and "value" in entry and entry["value"] != arm:
+        if not (isinstance(entry, dict) and "value" in entry):
+            continue
+        listed = entry.get("candidates")
+        arm = next((a for a in arms if not isinstance(listed, list) or a in listed), None)
+        if arm is not None and entry["value"] != arm:
             out[key] = arm
     return out
 
@@ -1189,7 +1198,9 @@ class SymmetricRustEngine(RustEngine):
     a summon member's lane in the arena's frame, measured that way on both seats, so a
     Skeleton Army on the centre line splits one member differently for Blue and for Red.
     Three rotation gates went red on it at tick 140 while this class's one-tick probe read
-    clean: a lane pick shows only when the members start walking.
+    clean: a lane pick shows only when the members start walking. This class took the old
+    ``current_x`` arm until RoyaleSim 1d661b0 added ``client_spawn_lane_own_frame``, the
+    client's lane rule read in the placer's own frame, which it now prefers.
     """
 
     def __init__(self, *args, **kwargs) -> None:

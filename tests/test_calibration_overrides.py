@@ -3,8 +3,9 @@
 RoyaleSim 126992a shipped ``targeting.FIRST_TOWER_PICK = client_spawn_lane``, the client's
 own lane rule, measured in the arena's frame on both seats and deliberately not the seat
 rotation of itself. The core has no constructor keyword for it, so ``SymmetricRustEngine``
-selects ``current_x`` through the core's general ``calibration_overrides`` instead
-(``rust_engine.SYMMETRIC_ARMS``). An overridden engine plays other battles on the same
+selects a symmetric arm through the core's general ``calibration_overrides`` instead
+(``rust_engine.SYMMETRIC_ARMS``): ``client_spawn_lane_own_frame`` where the ledger lists
+it (RoyaleSim 1d661b0), else ``current_x``. An overridden engine plays other battles on the same
 binary, so ``config()`` and every trace it records carry the overrides.
 """
 
@@ -43,13 +44,29 @@ def ships_another_arm() -> bool:
 
 
 def test_only_a_key_the_ledger_ships_another_arm_of_is_overridden():
-    arm = SYMMETRIC_ARMS[KEY]
+    arms = SYMMETRIC_ARMS[KEY]
+    assert arms[0] == "client_spawn_lane_own_frame", arms
+
+    def ledger(value, candidates=None):
+        entry = {"value": value}
+        if candidates is not None:
+            entry["candidates"] = candidates
+        return {"targeting": {"FIRST_TOWER_PICK": entry}}
+
     assert symmetric_overrides({}) == {}, "a ledger older than the key overrides nothing"
-    assert symmetric_overrides({"targeting": {"FIRST_TOWER_PICK": {"value": arm}}}) == {}
-    assert symmetric_overrides(
-        {"targeting": {"FIRST_TOWER_PICK": {"value": "client_spawn_lane"}}}
-    ) == {KEY: arm}
     assert symmetric_overrides({"targeting": "not a section"}) == {}
+    # 1d661b0: the own-frame arm is a candidate, so it is taken.
+    now = ["current_x", "client_spawn_lane", "client_spawn_lane_own_frame"]
+    assert symmetric_overrides(ledger("client_spawn_lane", now)) == {KEY: arms[0]}
+    assert symmetric_overrides(ledger(arms[0], now)) == {}, "shipped already"
+    # 126992a: no own-frame candidate, so the old x rule.
+    before = ["current_x", "client_spawn_lane"]
+    assert symmetric_overrides(ledger("client_spawn_lane", before)) == {KEY: "current_x"}
+    assert symmetric_overrides(ledger("current_x", before)) == {}
+    # A ledger listing none of the symmetric arms: nothing to select.
+    assert symmetric_overrides(ledger("client_spawn_lane", ["client_spawn_lane"])) == {}
+    # No candidates list at all: the preferred arm.
+    assert symmetric_overrides(ledger("client_spawn_lane")) == {KEY: arms[0]}
 
 
 @needs_core
