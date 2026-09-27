@@ -218,13 +218,20 @@ def board_setup(engine: Engine, board: str, decks: list[list[int]]) -> MatchSetu
 def building_hands(engine: Engine) -> list[list[list[int]]]:
     """Deck pairs that between them put every building card in both seats' hands.
 
+    Every hand is three building cards and a Knight. The Knight is there on purpose: a
+    building tapped onto a placed building is moved, not refused, so only a troop's taps
+    show a mask that forgets the placed buildings. Until 2026-09-26 the Knight reached a
+    hand only because 11 building cards left a gap in the last group of four. The Goblin
+    Hut made it 12, the gap closed, and the blind-mask plant stopped landing.
+
     Red holds each group in reverse order, so a hand slot names a different card per seat.
     """
     buildings = [c.card_id for c in engine.cards() if c.placement == Placement.BUILDING]
-    pad = [card_ids(engine)["Knight"]] * DECK_SIZE
+    knight = card_ids(engine)["Knight"]
+    pad = [knight] * DECK_SIZE
     out = []
-    for i in range(0, len(buildings), HAND_SIZE):
-        group = buildings[i : i + HAND_SIZE]
+    for i in range(0, len(buildings), HAND_SIZE - 1):
+        group = [*buildings[i : i + HAND_SIZE - 1], knight]
         out.append([(group + pad)[:DECK_SIZE], (group[::-1] + pad)[:DECK_SIZE]])
     return out
 
