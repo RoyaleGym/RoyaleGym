@@ -1,18 +1,21 @@
 # Troubleshooting
 
 <p align="center">
-  <img alt="Errors covered" src="https://img.shields.io/badge/errors%20covered-7-0b7285?style=flat-square">
+  <img alt="Errors covered" src="https://img.shields.io/badge/errors%20covered-11-0b7285?style=flat-square">
   <img alt="Messages" src="https://img.shields.io/badge/messages-quoted%20from%20real%20runs-2ea043?style=flat-square">
   <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/badge/stuck%3F-ask%20in%20the%20Discord-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
 </p>
 
-Seven things go wrong, and they go wrong in roughly this order. Each one below gives the message
-you actually see, what it means, and what to type next.
+Eleven things go wrong. The first seven come in roughly the order a new install meets them.
+Problems 8 to 11 turned up when the install was followed on a 4-CPU Linux machine with no GPU and
+no display, on 2026-09-27. Each one below gives the message you actually see, what it means, and
+what to type next.
 
 Every message on this page was copied from a real run, except where a line says otherwise.
 
 The commands are written for Windows PowerShell, which is the default shell on Windows 10 and 11.
-On macOS and Linux use forward slashes and `.venv/bin/python` in place of `.venv\Scripts\python`.
+On macOS and Linux use `.venv/bin/python` in place of `.venv\Scripts\python`, forward slashes,
+`cp` for `Copy-Item`, and `export X=Y` where a line sets a variable.
 
 !!! tip "The two commands that answer most questions"
     Run these from your `RoyaleGym` folder. The first says whether the Rust engine is built and
@@ -58,9 +61,9 @@ built in, or build the engine in the checkout whose data you want.
 
 **What to do.** For the first error, build again. From your `RoyaleSim` folder:
 
-!!! warning "UNVERIFIED"
-    The release build has not been timed from a fresh clone yet, so there is no measured figure
-    for how long it takes or how much memory it needs there.
+!!! info "Measured from a fresh clone"
+    The release build has now been run from a fresh clone: 163 s and about 1 GB of memory on a
+    4-CPU Linux machine on 2026-09-27.
 
 ```
 ..\.venv\Scripts\maturin develop --release
@@ -72,7 +75,7 @@ took 2 minutes 38 seconds on 2026-09-22.
 Order matters here and it catches people out. Generate the data first, build second, because
 the build copies the arena file into the engine. The card table is different. Every time you
 create an engine, it reads `data/derived/cards.json` from the RoyaleSim folder it was **built
-in**. Re-running `extract_cards.py` there changes the cards with no rebuild. Pointing
+in**. Putting a different table at that path there changes the cards with no rebuild. Pointing
 `ROYALESIM_DATA_DIR` somewhere else does not change which card table the engine reads.
 
 ## 2. The data files were never generated
@@ -80,26 +83,28 @@ in**. Re-running `extract_cards.py` there changes the cards with no rebuild. Poi
 **What you see.** A `FileNotFoundError` naming `cards.json`. The message spells out the fix:
 
 ```
-FileNotFoundError: ...\data\derived\cards.json is absent. In the sibling RoyaleSim checkout run
-the commands from its README's Install section, which are:
+FileNotFoundError: ...\data\derived\cards.json is absent. It is generated, and the generated files are not in the repository. In the sibling RoyaleSim checkout run:
     python tools/extract_cards.py --vintage 2018
     python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json
---vintage 2018 is not optional on a public clone: without it the extractor wants a client asset
-pack that is not redistributed, and fails. (data dir: ROYALESIM_DATA_DIR or ...\RoyaleSim\data)
+The README's Install section has every step in order, and the data has to be extracted BEFORE the engine is built. (data dir: ROYALESIM_DATA_DIR or ...\RoyaleSim\data)
 ```
 
-The two `...` are the full folder path on your machine. Everything else is the real message.
+The two `...` are the full folder path on your machine. Everything else is the real message, from
+RoyaleGym `ecbb80b` on 2026-09-27. If `arena.json` is missing too, you see that first. With
+`MockEngine` it is the same message naming `arena.json`, with `python tools/extract_arena.py` as
+its command. With `RustEngine` it is a plain `No such file or directory` naming `arena.json`.
 
-**What it means.** `data/derived/` is not in the repo. A fresh clone has no `cards.json`, no
-`arena.json` and no `globals.json`. Generating them is a mandatory install step, not an optional
-one. This was checked on clean clones of all four repos.
+**What it means.** A clone carries only `cards-15.535.json` in `data/derived/`; the lines below
+generate the rest. A fresh clone has no `cards.json`, no `arena.json` and no `globals.json`.
+Generating them is a mandatory install step, not an optional one.
 
-**Note the third line.** The error message above is the engine's own, and it still tells you to
+**Note the third line.** The error message above is RoyaleGym's own, and it still tells you to
 extract the 2018 table over `cards.json`. That was the recipe before RoyaleSim committed its
 derived 15.535 table; the current install copies instead. Follow the block below rather than the
 quoted message.
 
-**What to do.** Run all four generator commands, from your `RoyaleSim` folder:
+**What to do.** Run all four generator commands, from your `RoyaleSim` folder. On macOS and Linux
+the copy line is `cp data/derived/cards-15.535.json data/derived/cards.json`.
 
 ```
 ..\.venv\Scripts\python tools\extract_arena.py
@@ -125,7 +130,7 @@ explains why.
 **What you see.** Running the extractor with no flag, on a clone:
 
 ```
-missing .../data/raw/cr-15.535.29/csv_logic: decode the 15.535.29 assets first
+missing .../data/raw/cr-15.535.29/csv_logic: decode the 15.535.29 assets first (tools/decode_sc_assets.py)
 ```
 
 The `...` is your folder path.
@@ -137,10 +142,12 @@ one needs a client asset pack that is not redistributed. A public clone does not
 
 **What to do.** Add `--vintage 2018`, as in problem 2.
 
-**What you give up.** A 2018 table runs the engine, the examples and the Python suite. Three
-checks want the newer table specifically and cannot run without it: `tests/levels.rs`,
-`tests/jump16402.rs`, and the live-level rows of `tools/check_data.py`. Those are engine checks.
-Nothing you need for writing a bot depends on them.
+**What you give up.** Nothing you need for writing a bot. The copy line in problem 2 puts the
+committed 15.535 table at `cards.json`, so the engine, the examples and both of RoyaleSim's suites
+run on it, `tests/levels.rs` and `tests/jump16402.rs` included. What needs the asset pack itself
+is rebuilding that table, and two RoyaleSim tools: `tools/check_data.py` with no `--vintage` (use
+`--vintage 2018` on a clone) and `tools/mechanic_register.py`. On a clone they stop at once and
+ask for the pack.
 
 ## 4. The viewer shows nothing
 
@@ -172,9 +179,18 @@ print("publisher:", env.viser is not None, "attached:", env.viser.attached)
 publisher: True attached: False
 ```
 
-For self-play, set `ROYALEVISER=host:port` and build `ClashSelfPlayVecEnv(8)`. It binds one
-publisher and gives it to game 0. That is deliberate. A viewer watches one battle and holds one
-port, so eight envs each grabbing that port is an address-already-in-use error.
+For self-play, set the `ROYALEVISER` variable in the shell the training run starts from, then
+build `ClashSelfPlayVecEnv(8)`. In PowerShell:
+
+```
+$env:ROYALEVISER = "127.0.0.1:9870"
+```
+
+In `cmd` it is `set ROYALEVISER=127.0.0.1:9870`. On macOS and Linux it is
+`export ROYALEVISER=127.0.0.1:9870`. A `set` line typed into PowerShell or bash sets nothing, and
+the viewer stays empty. `ClashSelfPlayVecEnv(8)` binds one publisher and gives it to game 0.
+That is deliberate. A viewer watches one battle and holds one port, so eight envs each grabbing
+that port is an address-already-in-use error.
 
 Then start the viewer in another terminal:
 
@@ -199,8 +215,10 @@ Two more reasons a viewer stays empty, in the order worth checking:
 **What you see.**
 
 ```
-ImportError: royalesim is not built (No module named 'royalesim'); run `maturin develop --release` in the sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active. The card data has to be extracted BEFORE that build; the "Install" section of the RoyaleGym README.md has both steps in order.
+ImportError: royalesim is not built (No module named 'royalesim'); run `maturin develop --release` in the sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active. The data has to be extracted BEFORE that build: arena.json is compiled in, and cards.json is read each time an engine is constructed; the "Install" section of the RoyaleGym README.md has both steps in order.
 ```
+
+That is the message at RoyaleGym `ecbb80b`, 2026-09-27.
 
 **What it means.** Exactly what it says, with one wrong turning in it. The Rust engine was never
 built into the venv you are running, or you are running a different Python from the one you built
@@ -241,9 +259,12 @@ page.
 ```
 sssss                                                                    [100%]
 =========================== short test summary info ===========================
-SKIPPED [5] tests\test_rust_engine.py:562: the two engines are reading different card tables, so this comparison would measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, the engine's cards.json has to be the 2018 table: it reads data/derived/cards.json in the RoyaleSim checkout it was built in (C:\...\RoyaleSim\data\derived\cards.json), each time one is constructed, and ROYALESIM_DATA_DIR does not move it. Regenerate that file with `python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json` in that checkout; no rebuild is needed. cards.json vintage '15.535.29 client (2026, LIVE build family)' vs MockEngine's 'retroroyale-2018'. Differences (rust/mock) -- count: Goblins 4/3
-5 skipped, 73 deselected in 2.13s
+SKIPPED [5] tests\test_rust_engine.py:704: the two engines are reading different card tables, so this comparison would measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, the engine's cards.json has to be the 2018 table: it reads data/derived/cards.json in the RoyaleSim checkout it was built in (C:\...\RoyaleSim\data\derived\cards.json), each time one is constructed, and ROYALESIM_DATA_DIR does not move it. Regenerate that file with `python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json` in that checkout; no rebuild is needed. cards.json vintage '15.535.29 client (2026, LIVE build family)' vs MockEngine's 'retroroyale-2018'. Differences (rust/mock) -- count: Goblins 4/3
+5 skipped, 96 deselected in 1.81s
 ```
+
+That run was RoyaleGym `ecbb80b` on 2026-09-27. The line number and the deselected count move as
+tests are added.
 
 **What it means.** A skip is not a pass. The check above compares the two engines against each
 other. It can only say something about the ENGINES when both are reading the same card table. On
@@ -320,6 +341,92 @@ the card count above, and this one, which tells two compiled engines apart:
 ```
 
 If any of them changed, something changed underneath you.
+
+## 8. The engine compiles, then the install refuses your Python
+
+**What you see.** `maturin develop --release` compiles the engine for several minutes, then stops
+at the install step with a line like this one, from a 4-CPU Linux machine on 2026-09-27:
+
+```
+Package 'royalesim' requires a different Python: 3.11.15 not in '>=3.12'
+```
+
+**What it means.** The venv was made with a Python older than 3.12. `python -m venv .venv` uses
+whichever Python `python` is, and on that machine it was 3.11. Every package in the stack needs
+3.12 or newer.
+
+**What to do.** Delete the `.venv` folder and make it again with Python 3.12, from the `Royale`
+folder. Check the version before you build:
+
+```
+py -3.12 -m venv .venv
+.venv\Scripts\python --version
+```
+
+On macOS and Linux the first line is `python3.12 -m venv .venv`. The second line must print 3.12
+or newer. Then run the install again from the step after the venv: the pip line, the build, and
+the packages.
+
+## 9. The torch install is gigabytes on a machine with no NVIDIA GPU
+
+**What you see.** On Linux, `pip install -e "RoyaleLearn[torch]"` downloads a CUDA build of
+torch and about 20 NVIDIA packages. On a 4-CPU Linux machine with no GPU on 2026-09-27 the venv
+grew to 5.5 GB, and `torch.cuda.is_available()` printed `False`.
+
+**What it means.** The default torch download on Linux is the CUDA build, whether or not the
+machine has a GPU.
+
+**What to do.** No NVIDIA GPU? Install CPU torch first, then `pip install -e "RoyaleLearn[torch]"`
+as before. From the `Royale` folder:
+
+```
+.venv\Scripts\python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
+On macOS and Linux that is
+`.venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu`. The
+default torch download pulls about 5 GB of CUDA wheels (measured on a 4-CPU Linux machine on
+2026-09-27).
+
+## 10. The viewer opens no window on a machine with no display
+
+**What you see.** `python -m royaleviser` runs and no window opens. Nothing says so. On Linux you
+may see a line about `XDG_RUNTIME_DIR` and several ALSA error lines. Without `--seconds` it keeps
+running until you stop it.
+
+**What it means.** There is no screen to show the window on, and the viewer gives no warning.
+
+**What to do.** Tell SDL, which draws the window, to use no display and no sound, and save a PNG
+with `--shot`. On Linux, from the `Royale` folder:
+
+```bash
+export SDL_VIDEODRIVER=dummy
+export SDL_AUDIODRIVER=dummy
+.venv/bin/python -m royaleviser RoyaleViser/tests/fixtures/frames-synthetic-A.jsonl.gz --seconds 8 --shot shot.png
+```
+
+It prints `royaleviser: saved shot.png` and a line of draw times. `SDL_AUDIODRIVER=dummy` is only
+there to silence the ALSA lines.
+
+## 11. Training stops with `DeployRefused`
+
+**What you see.** `train` or `bench` stops after its first collection. On a 4-CPU Linux machine on
+2026-09-27 the message was:
+
+```
+DeployRefused: the engine refused 2 command(s) the mask allowed (cycle 1, slot 141)
+```
+
+The count, the cycle and the slot can differ on your run.
+
+**What it means.** The action mask allowed a play, and the engine then refused it. The known
+cause on this engine is one card, Heal, where the mask and the engine disagree. The default
+setup deals random decks from the whole catalogue, so Heal can turn up. The next engine build
+fixes Heal.
+
+**What to do.** Until that build, train with a named deck that does not hold Heal. That avoids
+the Heal disagreement. If it still stops with no Heal in either deck, ask in the Discord and
+paste the whole message.
 
 ## Still stuck
 
