@@ -85,7 +85,7 @@ from typing import Any
 
 import msgspec
 
-from .mock_engine import RAW_CARD_PACK
+from .mock_engine import RAW_CARD_PACK, RAW_CARD_PACK_TABLE_VINTAGE
 from .protocol import (
     BLUE,
     CARD_KINDS,
@@ -428,9 +428,19 @@ CARD_DATA_FIELDS = ("name", "elixir", "placement", "count", "radius", "flying")
 
 
 def catalogue_vintage_split(
-    rust_cards: Sequence[CardInfo], mock_cards: Sequence[CardInfo]
+    rust_cards: Sequence[CardInfo],
+    mock_cards: Sequence[CardInfo],
+    engine_vintage: str | None = None,
 ) -> str | None:
     """Why the two engines are reading DIFFERENT card tables, or None.
+
+    DECIDED BY THE TABLE, NOT BY THE ROWS. The engine's cards.json names the table it is
+    (``provenance.vintage``, or ``engine_vintage`` when given). When that is the table
+    extracted from MockEngine's own pack (``RAW_CARD_PACK_TABLE_VINTAGE``), the two read
+    the same data, and any row difference is a defect in an engine or in this adapter,
+    which builds the rows: None is returned and the caller's comparison FAILS on it.
+    Until 2026-09-27 a row difference alone meant "different tables", so an adapter bug
+    in one of these fields (a radius scaled in Python) read as a table split and skipped.
 
     The compiled engine reads data/derived/cards.json from the RoyaleSim checkout it was
     built in, each time an engine is constructed; MockEngine reads the raw CSVs under
@@ -476,6 +486,10 @@ def catalogue_vintage_split(
             f"not a vintage check: MockEngine ships a thin slice and RustEngine's "
             f"default is every registered card in the table."
         )
+    engine_cards = engine_cards_json_path()[0] if _core is not None else None
+    vintage = engine_vintage if engine_vintage is not None else derived_cards_vintage(engine_cards)
+    if vintage == RAW_CARD_PACK_TABLE_VINTAGE:
+        return None
     differences: dict[str, list[str]] = {}
     for a, b in zip(rust_cards, mock_cards, strict=True):
         for field in CARD_DATA_FIELDS:
@@ -486,8 +500,6 @@ def catalogue_vintage_split(
     if not differences:
         return None
     detail = "; ".join(f"{f}: {', '.join(v[:4])}" for f, v in sorted(differences.items()))
-    engine_cards = engine_cards_json_path()[0] if _core is not None else None
-    vintage = derived_cards_vintage(engine_cards)
     return (
         "the two engines are reading different card tables, so this comparison would "
         "measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, the "

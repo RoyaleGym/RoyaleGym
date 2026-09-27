@@ -41,9 +41,11 @@ from royalegym.protocol import (
     BLUE,
     RED,
     DeployCommand,
+    DeployStatus,
     EntityKind,
     MatchSetup,
     ShuffleMode,
+    to_engine,
     to_own,
 )
 
@@ -245,3 +247,42 @@ def test_own_deploying_follows_the_deploy_timer(catalogue):
     assert during == engine_during
     assert after == engine_after
     assert during != after, "vacuous: the timer never ran out, so nothing was graded"
+
+
+# --- the enemy troop zone, graded against the engine ------------------------------
+
+
+@pytest.mark.parametrize(
+    "tower_hp",
+    [[[2400, 0, 1400], [2400, 1400, 1400]], [[2400, 1400, 1400], [2400, 1400, 0]]],
+    ids=["blue_left_down", "red_right_down"],
+)
+def test_the_enemy_troop_zone_is_where_the_engine_accepts_the_enemys_troop(catalogue, tower_hp):
+    """``enemy_troop_zone`` is 1 at exactly the viewer's own-frame tiles where the ENGINE
+    accepts the opponent's troop tap at the tile centre. Until 2026-09-27 this channel was
+    only compared with the other seat's copy of itself, so a builder reading the viewer's
+    own zone, on both seats alike, passed. One princess down on one side only, so the two
+    zones differ and a seat or frame mix-up cannot agree with the engine."""
+    cards, arena = catalogue
+    engine = fresh(catalogue, tower_hp=tower_hp)
+    t = arena.subtile
+    for viewer in (BLUE, RED):
+        enemy = 1 - viewer
+        hand = engine.state().players[enemy].hand
+        slot = hand.index(cards["Knight"].card_id)
+        obs, ch = observe(engine, viewer)
+        plane = obs["spatial"][ch["enemy_troop_zone"]]
+        want = np.zeros_like(plane)
+        for ty in range(arena.tiles_y):
+            for tx in range(arena.tiles_x):
+                x, y = to_engine(arena, viewer, tx * t + t // 2, ty * t + t // 2)
+                status = engine.check_deploy(DeployCommand(enemy, slot, x, y))
+                want[ty, tx] = status == DeployStatus.OK
+        assert np.array_equal(plane, want), (
+            f"viewer {viewer}: {int((plane != want).sum())} tiles differ; the plane has "
+            f"{int(plane.sum())} legal, the engine {int(want.sum())}"
+        )
+        assert 100 < want.sum() < want.size, "vacuous: the enemy zone is empty or everything"
+    # The two seats' zones differ on this board, or a seat mix-up could still agree.
+    zones = [observe(engine, v)[0]["spatial"][ch["enemy_troop_zone"]] for v in (BLUE, RED)]
+    assert not np.array_equal(zones[0], zones[1]), "the board is not lopsided"

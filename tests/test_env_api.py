@@ -55,7 +55,13 @@ from royalegym.done_condition import (
     TickLimitCondition,
     TruncationCondition,
 )
-from royalegym.env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv, make_gym_vec_env
+from royalegym.env import (
+    AGENTS,
+    ClashGymEnv,
+    ClashParallelEnv,
+    ClashSelfPlayVecEnv,
+    make_gym_vec_env,
+)
 from royalegym.mock_engine import MockEngine
 from royalegym.obs import vector_offsets
 from royalegym.protocol import DeployStatus, MatchSetup, ShuffleMode
@@ -455,6 +461,7 @@ def test_selfplay_vec_env_is_seeded_masked_and_autoresets_same_step():
         rng = np.random.default_rng(0)
         obs, _ = vec.reset(seed=5)
         seq = [obs]
+        played = []
         for t in range(12):
             masks = vec.action_masks()
             assert masks.dtype == np.bool_
@@ -462,6 +469,7 @@ def test_selfplay_vec_env_is_seeded_masked_and_autoresets_same_step():
             assert np.array_equal(masks, obs["action_mask"].astype(bool))
             assert vec.observation_space.contains(obs)
             acts = np.array([int(rng.choice(np.flatnonzero(m))) for m in masks])
+            played.append(acts)
             obs, _, term, trunc, info = vec.step(acts)
             seq.append(obs)
             ended = (t + 1) % 5 == 0
@@ -471,6 +479,23 @@ def test_selfplay_vec_env_is_seeded_masked_and_autoresets_same_step():
                 assert info["_final_obs"].all()
                 for final in info["final_obs"]:
                     assert vec.single_observation_space.contains(final)
+                    # The game that ENDED, not the next one's first frame, which also
+                    # fits the space: its clock has run.
+                    assert final["vector"][REGULATION_LEFT] < 1.0
+                if t == 4:
+                    # And exactly the frame it ended on: a plain env, seeded as the vec
+                    # env seeds game g (5 + g), fed the same actions, ends there.
+                    for g in range(vec.num_games):
+                        twin = env_fn()
+                        last, _ = twin.reset(seed=5 + g)
+                        for a in played:
+                            last, *_ = twin.step(
+                                {agent: int(a[2 * g + k]) for k, agent in enumerate(AGENTS)}
+                            )
+                        for k, agent in enumerate(AGENTS):
+                            final = info["final_obs"][2 * g + k]
+                            for key, want in last[agent].items():
+                                assert np.array_equal(final[key], want), (g, agent, key)
                 # SAME_STEP: the returned obs is already the next game's first one.
                 assert (obs["vector"][:, REGULATION_LEFT] == 1.0).all()
         runs.append(seq)

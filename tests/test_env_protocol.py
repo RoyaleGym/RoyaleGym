@@ -334,13 +334,14 @@ def test_catalogue_vintage_split_names_the_field_the_card_and_both_vintages():
 
     mock = [_card("Knight"), _card("Goblins", count=3)]
     rust = [_card("Knight"), _card("Goblins", count=4)]
-    why = catalogue_vintage_split(rust, mock)
+    newer = "15.535.29 client (2026, LIVE build family)"
+    why = catalogue_vintage_split(rust, mock, engine_vintage=newer)
     assert why is not None
     assert "Goblins 4/3" in why
     assert "count" in why
     assert "A SKIP IS NOT A PASS" in why
     assert mock_engine.RAW_CARD_PACK in why
-    assert protocol.derived_cards_vintage() in why
+    assert newer in why
     # Different LENGTHS are a different thing and must not be reported as field
     # differences: rows are compared position-wise, so two catalogues of different
     # scope give "name: X Y/X", which reads as data corruption and is not.
@@ -350,6 +351,29 @@ def test_catalogue_vintage_split_names_the_field_the_card_and_both_vintages():
     assert "2 and 1" in short
     assert "Goblins" not in short, "a length mismatch must not also report field noise"
     assert "card_names" in short, "say how to fix it"
+
+
+def test_on_the_shared_table_a_row_difference_is_a_defect_and_not_a_skip():
+    """The engine read the table made from MockEngine's own pack, so a field that differs
+    was changed by an engine or by the adapter, and the comparison has to run and fail.
+    The plant is the audit's (2026-09-27): the adapter scaling a radius, which used to
+    read as "different card tables" and skip."""
+    from royalegym.rust_engine import catalogue_vintage_split
+
+    mock = [_card("Knight"), _card("Goblins", count=3)]
+    scaled = [_card("Knight", radius=550), _card("Goblins", count=3)]
+    shared = mock_engine.RAW_CARD_PACK_TABLE_VINTAGE
+    assert catalogue_vintage_split(scaled, mock, engine_vintage=shared) is None
+    assert catalogue_vintage_split(scaled, mock, engine_vintage="another table") is not None
+
+
+def test_the_shared_table_vintage_is_the_one_the_extractor_writes():
+    """``RAW_CARD_PACK_TABLE_VINTAGE`` has to be what RoyaleSim's extractor writes for the
+    2018 pack, or every machine on the shared table would skip again, silently."""
+    p = protocol.data_dir() / "derived" / "cards-2018.json"
+    if not p.exists():
+        pytest.skip(f"SKIPPED, NOT PASSED: no {p} to read the 2018 table's vintage from")
+    assert protocol.derived_cards_vintage(p) == mock_engine.RAW_CARD_PACK_TABLE_VINTAGE
 
 
 def test_derived_cards_vintage_reads_the_provenance_the_extractor_wrote(tmp_path):

@@ -29,6 +29,7 @@ from royalegym.mock_engine import MockEngine
 from royalegym.obs import (
     BOARD_FIELDS,
     FAIR_FIELDS,
+    LEAK_SCALE,
     MatchClock,
     MatchMemory,
     SpatialObsBuilder,
@@ -105,7 +106,7 @@ def play_out(engine, seed: int, start_tick: int, ticks: int, late: int = 0) -> P
     dated: dict[int, tuple[list, list]] = {t: ([], []) for t in TEAMS}  # own, enemy
     seen: dict[str, Any] = {
         "spells": 0, "rates": set(), "overtime": set(), "max_tick": 0,
-        "leaked": False, "narrowed": False, "clock": [],
+        "leaked": False, "narrowed": False, "clock": [], "leak": {t: 0.0 for t in TEAMS},
     }
     mismatches: list[str] = []
     plays = {t: 0 for t in TEAMS}
@@ -144,6 +145,7 @@ def play_out(engine, seed: int, start_tick: int, ticks: int, late: int = 0) -> P
                             f"primitive {value.tolist()} env {want.tolist()}"
                         )
                 seen["leaked"] |= bool(got["own_elixir_leaked"][0] > 0)
+                seen["leak"][team] = max(seen["leak"][team], float(got["own_elixir_leaked"][0]))
                 seen["narrowed"] |= bool(0 < got["enemy_possible_hand"].sum() < DECK_SIZE)
         commands = []
         for team in TEAMS:
@@ -185,6 +187,9 @@ def test_the_primitive_gives_the_env_fields_through_an_opening(engine):
     clean(run)
     assert run.plays[1] > DECK_SIZE, f"Red played {run.plays[1]}: its queue never came round"
     assert run.seen["leaked"], "no seat ever leaked, so the leak field compared only zeros"
+    # Blue waits for a full bar and Red spends at 5, so Blue's OWN leak is the larger. Both
+    # sides above read one memory, so a leak taken from the wrong bar agrees with itself.
+    assert run.seen["leak"][0] > run.seen["leak"][1], run.seen["leak"]
     assert run.seen["narrowed"], "the enemy's possible hand never narrowed below the catalogue"
     if isinstance(engine, RustEngine):
         assert run.seen["spells"] > 0, "no state had a spell in flight"
@@ -307,7 +312,9 @@ def test_splitting_the_clock_changes_nothing_but_the_seen_tick(mock_cards):
             due = [p for p in pending if p[0] < tick]
             pending = [p for p in pending if p[0] >= tick]
             clock = MatchClock.at(tick)
-            m.advance(tick, clock.regular_ticks, clock.overtime, due, due)
+            # The enemy never plays, so its bar fills at 560 and leaks from then on, far
+            # more than the own bar: a leak read off the wrong bar cannot pass as this one.
+            m.advance(tick, clock.regular_ticks, clock.overtime, due, [])
             out[tick] = fair_fields(m, clock, deck[:4], deck[4], law.to_milli(m.own_fine),
                                     mock_cards, max_mana)
         return out
@@ -319,6 +326,9 @@ def test_splitting_the_clock_changes_nothing_but_the_seen_tick(mock_cards):
                 assert np.array_equal(a[tick][field], value), (tick, field, a[tick][field], value)
     assert fine.unaffordable == coarse.unaffordable == [0, 0]
     assert b[900]["own_elixir_leaked"][0] > 0, "the bar never filled"
+    # Exactly the own bar's leak: full at 168 + 560 = 728, the Archer at 745, so 17 ticks
+    # of 1x regeneration (one elixir per 56) and no more before 900 (full again at 913).
+    assert b[900]["own_elixir_leaked"][0] == pytest.approx((17 / 56) / LEAK_SCALE, abs=1e-4)
 
 
 def test_a_play_the_bar_cannot_pay_is_counted(mock_cards):

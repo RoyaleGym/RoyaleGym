@@ -1014,6 +1014,23 @@ def _counting_env(**kwargs):
     )
 
 
+def fair_slot_is_the_count(builder, eng, vector, team: int) -> None:
+    """The FAIR vector's enemy_elixir slot holds the viewer's COUNT, in a state where the
+    count is not the bar. Where the two agree (every normal deck), a slot read straight
+    off the true bar passes every other check; these fixtures are where it cannot."""
+    st = eng.state()
+    slot = vector_offsets(len(eng.cards()))["enemy_elixir"]
+    full = 1000 * builder.max_mana
+    count = builder.memory[team].enemy_elixir_milli()
+    bar = st.players[1 - team].elixir_milli
+    got = float(np.asarray(vector[slot]).reshape(-1)[0])
+    assert count != bar, "fixture: the count has to differ from the bar here"
+    assert np.isclose(got, count / full), (got, count, bar)
+    assert not np.isclose(got, bar / full), (
+        f"the fair slot holds the enemy's TRUE bar {bar}, not the count {count}"
+    )
+
+
 def test_the_counted_enemy_elixir_equals_the_bar_the_engine_keeps():
     """The whole reason the count is allowed in the fair set: it is EXACT.
 
@@ -1350,10 +1367,11 @@ def test_the_memory_says_when_its_count_can_no_longer_be_exact():
     assert eng.state().players[RED].hand[0] == before, (
         "fixture needs the repeated card to be drawn back into the same slot"
     )
-    b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))
+    v = b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))["vector"]
     blue = b.memory[BLUE]
     assert blue.foe_plays == 0, "the play really is invisible in the hand"
     assert blue.enemy_elixir_milli() != eng.state().players[RED].elixir_milli
+    fair_slot_is_the_count(b, eng, v, BLUE)
     assert not blue.exact, (
         "a deck that repeats a card hides plays, and the memory has to notice"
     )
@@ -1700,11 +1718,12 @@ def test_a_play_missed_because_two_came_from_one_slot_is_flagged():
         slot0 = [a for a in legal if (a - 1) // per == 0]
         assert slot0, "hand slot 0 must be playable"
         eng.step([parser.parse(int(slot0[0]), st, RED)], 5)
-    b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))
+    v = b.build(eng.state(), BLUE, parser.action_mask(eng.state(), BLUE))["vector"]
     mem = b.memory[BLUE]
     st = eng.state()
     assert mem.foe_plays == 1, "the fixture must actually hide a play"
     assert mem.enemy_elixir_milli() != st.players[RED].elixir_milli
+    fair_slot_is_the_count(b, eng, v, BLUE)
     assert not mem.exact, "a wrong count must never be a quiet one"
 
 

@@ -93,6 +93,9 @@ from .protocol import (
 # and nothing else, and the derived cards.json the compiled engine reads is
 # generated from it too (rust_engine.catalogue_vintage_split).
 RAW_CARD_PACK = "retroroyale-2018"
+#: ``provenance.vintage`` of the derived table RoyaleSim's extractor makes from THIS pack
+#: (tools/extract_cards.py --vintage 2018): the one card table both engines can share.
+RAW_CARD_PACK_TABLE_VINTAGE = "~2018 client data (PRE-2025)"
 
 OVERTIME_TIEBREAK_RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction", "none_draw")
 
