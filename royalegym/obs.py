@@ -660,14 +660,55 @@ def fair_fields(
     at None, the field is the memory's count, which is the fair one.
 
     Keys are ``FAIR_FIELDS`` in order, then ``enemy_last_card`` when asked for. Each
-    array is float32 and already clipped to [0, 1], as in the vector.
+    array is float32 and already clipped to [0, 1], as in the vector. They are views of
+    one buffer, laid out in that order.
+    """
+    off, width = _fair_slots(len(cards), enemy_last_card)
+    buf = np.zeros(width, dtype=np.float32)
+    _write_fair(
+        buf, off, memory, clock, hand, next_card, own_elixir_milli, cards, max_mana,
+        enemy_elixir_milli, enemy_last_card,
+    )
+    np.clip(buf, 0.0, 1.0, out=buf)
+    return {k: buf[s] for k, s in off.items()}
+
+
+def _write_fair(
+    out: np.ndarray,
+    off: dict[str, slice],
+    memory: MatchMemory,
+    clock: MatchClock,
+    hand: Sequence[int],
+    next_card: int,
+    own_elixir_milli: int,
+    cards: Sequence[CardInfo],
+    max_mana: int,
+    enemy_elixir_milli: int | None,
+    enemy_last_card: bool,
+) -> None:
+    """Write every fair field but the board's four into ``out`` at ``off``, NOT clipped.
+
+    The one set of formulas behind ``fair_fields`` and ``build_vector``. Every field is
+    computed as it was when each was an array of its own: the same Python arithmetic,
+    rounded to float32 as it is stored. The caller clips once, after. The old path also
+    clipped after rounding to float32, and rounding is monotone with 0 and 1 exact, so the
+    bytes are the same. tests/test_vector_writer.py holds that against a frozen copy of
+    the old path.
+
+    WHY IT WRITES INTO ONE BUFFER. Building the vector used to make about twenty small
+    arrays per seat per step, clip each, concatenate them and clip again. That was the
+    largest single item in a training worker's step: 391 us of a 1,255 us game decision,
+    measured by the train session on 2026-09-26.
     """
     num_cards = len(cards)
     onehot = num_cards + 1
     full = 1000 * max_mana
     foe_milli = memory.enemy_elixir_milli() if enemy_elixir_milli is None else enemy_elixir_milli
-    one, cost, afford = _hand_block(hand, cards, own_elixir_milli, num_cards, max_mana)
-    cycle = np.zeros((DECK_SIZE - HAND_SIZE - 1, onehot), dtype=np.float32)
+    _write_hand(
+        out[off["own_hand_cards"]], out[off["own_hand_cost"]], out[off["own_hand_affordable"]],
+        hand, cards, own_elixir_milli, num_cards, max_mana,
+    )
+    cycle = out[off["own_cycle_6_8"]].reshape(DECK_SIZE - HAND_SIZE - 1, onehot)
     for i, card in enumerate(memory.own_cycle[1:]):
         cycle[i, num_cards if card == EMPTY_CARD else card] = 1
     reg_left = max(0, clock.regular_ticks - clock.tick) / max(1, clock.regular_ticks)
@@ -675,42 +716,54 @@ def fair_fields(
     if clock.overtime:
         ot_end = clock.regular_ticks + clock.overtime_ticks
         ot_left = max(0, ot_end - clock.tick) / max(1, clock.overtime_ticks)
-    out = {
-        "own_elixir": np.array([own_elixir_milli / full], dtype=np.float32),
-        "enemy_elixir": np.array([foe_milli / full], dtype=np.float32),
-        "own_hand_cards": one,
-        "own_hand_cost": cost,
-        "own_hand_affordable": afford,
-        "own_next_card": _one_hot(next_card, onehot, num_cards),
-        "own_cycle_6_8": cycle.reshape(-1),
-        "own_deck": memory.own_deck.astype(np.float32),
-        "own_last_card": _one_hot(memory.own_last_card, onehot, num_cards),
-        "own_ticks_since_play": np.array(
-            [min(1.0, memory.ticks_since_own_play(clock.tick) / PLAY_GAP_TICKS)], dtype=np.float32
-        ),
-        "own_elixir_leaked": np.array(
-            [min(1.0, memory.leaked_elixir() / LEAK_SCALE)], dtype=np.float32
-        ),
-        "enemy_cards_seen": memory.foe_seen.astype(np.float32),
-        "enemy_possible_hand": memory.enemy_possible_hand().astype(np.float32),
-        "enemy_plays": np.array([min(1.0, memory.foe_plays / PLAYS_SCALE)], dtype=np.float32),
-        "clock": np.array([reg_left, float(clock.overtime), ot_left], dtype=np.float32),
-        "elixir_rate": np.array(
-            [float(clock.elixir_rate == 1), float(clock.elixir_rate == 2)], dtype=np.float32
-        ),
-    }
+    out[off["own_elixir"]] = own_elixir_milli / full
+    out[off["enemy_elixir"]] = foe_milli / full
+    _put_one(out[off["own_next_card"]], next_card, num_cards)
+    out[off["own_deck"]] = memory.own_deck
+    _put_one(out[off["own_last_card"]], memory.own_last_card, num_cards)
+    out[off["own_ticks_since_play"]] = min(
+        1.0, memory.ticks_since_own_play(clock.tick) / PLAY_GAP_TICKS
+    )
+    out[off["own_elixir_leaked"]] = min(1.0, memory.leaked_elixir() / LEAK_SCALE)
+    out[off["enemy_cards_seen"]] = memory.foe_seen
+    out[off["enemy_possible_hand"]] = memory.enemy_possible_hand()
+    out[off["enemy_plays"]] = min(1.0, memory.foe_plays / PLAYS_SCALE)
+    out[off["clock"]] = (reg_left, float(clock.overtime), ot_left)
+    out[off["elixir_rate"]] = (float(clock.elixir_rate == 1), float(clock.elixir_rate == 2))
     if enemy_last_card:
         # The newest entry of the cycle memory the vector already uses for
         # enemy_possible_hand, so it is derived from tested state, not kept twice.
         last = memory.foe_recent[-1] if memory.foe_recent else EMPTY_CARD
-        out["enemy_last_card"] = _one_hot(last, onehot, num_cards)
-    return {k: np.clip(v, 0.0, 1.0).astype(np.float32, copy=False) for k, v in out.items()}
+        _put_one(out[off["enemy_last_card"]], last, num_cards)
 
 
 @lru_cache(maxsize=64)
-def _vector_keys(reveal: Reveal, enemy_last_card: bool) -> tuple[str, ...]:
-    """The vector's field order, from ``vector_layout``, which is the one definition of it."""
-    return tuple(f.key for f in vector_layout(1, reveal, enemy_last_card))
+def _fair_slots(num_cards: int, enemy_last_card: bool) -> tuple[dict[str, slice], int]:
+    """Where ``fair_fields`` puts each field in its own buffer, and the buffer's width.
+
+    ``FAIR_FIELDS`` in order, then ``enemy_last_card``, packed, at the sizes
+    ``vector_layout`` gives them. Cached and read-only.
+    """
+    size = {f.key: f.size for f in vector_layout(num_cards, None, enemy_last_card)}
+    off: dict[str, slice] = {}
+    at = 0
+    for key in (*FAIR_FIELDS, *(("enemy_last_card",) if enemy_last_card else ())):
+        off[key] = slice(at, at + size[key])
+        at += size[key]
+    return off, at
+
+
+@lru_cache(maxsize=64)
+def _vector_slots(
+    num_cards: int, reveal: Reveal, enemy_last_card: bool
+) -> tuple[dict[str, slice], int]:
+    """``vector_offsets`` and the vector's width, cached and read-only.
+
+    The layout is a function of these three alone, and ``vector_layout`` is the one
+    definition of it.
+    """
+    off = vector_offsets(num_cards, reveal, enemy_last_card)
+    return off, sum(f.size for f in vector_layout(num_cards, reveal, enemy_last_card))
 
 
 def build_vector(
@@ -724,47 +777,41 @@ def build_vector(
 ) -> np.ndarray:
     """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``.
 
-    The fields a player's own view decides come from ``fair_fields``; this adds the four
-    the board decides and any reveal, and lays them out in ``vector_layout`` order.
+    The fields a player's own view decides are ``fair_fields``' (both write them through
+    ``_write_fair``); this adds the four the board decides and any reveal, each at its
+    ``vector_layout`` slot in one float32 buffer, and clips once.
     """
     me, foe = state.players[team], state.players[1 - team]
     num_cards = len(cards)
-    onehot = num_cards + 1
-    parts = fair_fields(
-        memory,
-        MatchClock.of(state),
-        me.hand,
-        me.next_card,
-        me.elixir_milli,
-        cards,
-        max_mana,
-        enemy_elixir_milli=foe.elixir_milli if reveal.enemy_elixir else None,
-        enemy_last_card=enemy_last_card,
+    off, width = _vector_slots(num_cards, reveal, enemy_last_card)
+    vec = np.zeros(width, dtype=np.float32)
+    _write_fair(
+        vec, off, memory, MatchClock.of(state), me.hand, me.next_card, me.elixir_milli,
+        cards, max_mana, foe.elixir_milli if reveal.enemy_elixir else None, enemy_last_card,
     )
-    own_hp, foe_hp = (
-        np.array([p.tower_hp[s] / max(1, p.tower_max_hp[s]) for s in TowerSlot], dtype=np.float32)
-        for p in (me, foe)
-    )
-    parts["own_tower_hp"] = own_hp
-    parts["enemy_tower_hp"] = foe_hp
-    parts["crowns"] = np.array([me.crowns / 3.0, foe.crowns / 3.0], dtype=np.float32)
-    parts["king_active"] = np.array(
-        [float(me.king_active), float(foe.king_active)], dtype=np.float32
-    )
+    vec[off["own_tower_hp"]] = [me.tower_hp[s] / max(1, me.tower_max_hp[s]) for s in TowerSlot]
+    vec[off["enemy_tower_hp"]] = [
+        foe.tower_hp[s] / max(1, foe.tower_max_hp[s]) for s in TowerSlot
+    ]
+    vec[off["crowns"]] = (me.crowns / 3.0, foe.crowns / 3.0)
+    vec[off["king_active"]] = (float(me.king_active), float(foe.king_active))
     if reveal.enemy_hand:
-        one, _cost, _afford = _hand_block(foe.hand, cards, foe.elixir_milli, num_cards, max_mana)
-        parts["enemy_hand_cards"] = one
+        # Cost and affordability are worked out and dropped, as they always were: the
+        # reveal carries the card one-hots only.
+        _write_hand(
+            vec[off["enemy_hand_cards"]], np.zeros(HAND_SIZE, dtype=np.float32),
+            np.zeros(HAND_SIZE, dtype=np.float32), foe.hand, cards, foe.elixir_milli,
+            num_cards, max_mana,
+        )
     if reveal.enemy_next_card:
-        parts["enemy_next_card"] = _one_hot(foe.next_card, onehot, num_cards)
+        _put_one(vec[off["enemy_next_card"]], foe.next_card, num_cards)
     if reveal.enemy_deck:
-        deck = np.zeros(num_cards, dtype=np.float32)
+        deck = vec[off["enemy_deck"]]
         for c in (*foe.hand, foe.next_card):
             if c != EMPTY_CARD:
                 deck[c] = 1
         deck[memory.foe_seen] = 1
-        parts["enemy_deck"] = deck
-    out = [parts[k] for k in _vector_keys(reveal, enemy_last_card)]
-    vec: np.ndarray = np.clip(np.concatenate(out), 0.0, 1.0).astype(np.float32)
+    np.clip(vec, 0.0, 1.0, out=vec)
     return vec
 
 
@@ -871,20 +918,23 @@ def measure_variability(
     )
 
 
-def _one_hot(card: int, onehot: int, empty_index: int) -> np.ndarray:
-    v = np.zeros(onehot, dtype=np.float32)
+def _put_one(v: np.ndarray, card: int, empty_index: int) -> None:
+    """One-hot ``card`` into the zeroed vector field ``v``; an empty slot sets ``empty_index``."""
     v[empty_index if card == EMPTY_CARD else card] = 1
-    return v
 
 
-def _hand_block(
-    hand: Sequence[int], cards: list[CardInfo], elixir_milli: int, num_cards: int, max_mana: int
-) -> list[np.ndarray]:
-    """[card one-hots, costs, affordable] for one hand."""
-    onehot = num_cards + 1
-    one = np.zeros((HAND_SIZE, onehot), dtype=np.float32)
-    cost = np.zeros(HAND_SIZE, dtype=np.float32)
-    afford = np.zeros(HAND_SIZE, dtype=np.float32)
+def _write_hand(
+    one_flat: np.ndarray,
+    cost: np.ndarray,
+    afford: np.ndarray,
+    hand: Sequence[int],
+    cards: Sequence[CardInfo],
+    elixir_milli: int,
+    num_cards: int,
+    max_mana: int,
+) -> None:
+    """Card one-hots, costs and affordable flags for one hand, into zeroed views."""
+    one = one_flat.reshape(HAND_SIZE, num_cards + 1)
     for i, c in enumerate(hand):
         if c == EMPTY_CARD:
             one[i, num_cards] = 1
@@ -892,7 +942,6 @@ def _hand_block(
         one[i, c] = 1
         cost[i] = cards[c].elixir / max_mana
         afford[i] = 1.0 if elixir_milli >= cards[c].elixir * 1000 else 0.0
-    return [one.reshape(-1), cost, afford]
 
 
 # ---------------------------------------------------------------------------
