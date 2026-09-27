@@ -88,6 +88,7 @@ import msgspec
 from .mock_engine import RAW_CARD_PACK
 from .protocol import (
     BLUE,
+    CARD_KINDS,
     DEFAULT_DATA_DIR,
     HAND_SIZE,
     RED,
@@ -152,6 +153,11 @@ _PLACEMENT_OF_KIND = {
     3: Placement.ROLLING,
     4: Placement.SPELL_NOT_ON_WATER,
 }
+#: The catalogue columns this adapter reads BY POSITION, which must be the engine's first
+#: ``CATALOGUE_FIELDS``. Later columns are found by name (``card_kind``).
+CATALOGUE_PREFIX = (
+    "name", "placement", "elixir", "count", "radius", "flying", "hitpoints", "footprint_tiles",
+)
 #: Ledger sections this package reads from the ledger OUTSIDE the engine (ElixirLaw, the
 #: clock), so a ``calibration_overrides`` key in one of them would split the observation
 #: from the engine: refused.
@@ -689,23 +695,37 @@ class RustEngine:
                 "protocol Placement for (py.rs kind_code)"
             )
         # A catalogue row is positional and may GROW: the core appends a column rather
-        # than rekeying the row, because this is decoded per battle. So the trailing
-        # columns are taken by position from ``rest`` and an unknown one is ignored,
-        # which is what lets an engine built with a newer column load here.
+        # than rekeying the row, because this is decoded per battle. The columns this
+        # adapter reads by position must still be the engine's first ones, by NAME, and a
+        # later column is found by its name; an unknown one is ignored, which is what lets
+        # an engine built with a newer column load here.
+        fields = list(getattr(_core, "CATALOGUE_FIELDS", ()))
+        if fields and fields[: len(CATALOGUE_PREFIX)] != list(CATALOGUE_PREFIX):
+            raise RuntimeError(
+                f"the Rust catalogue's columns begin {fields[: len(CATALOGUE_PREFIX)]}, and "
+                f"this adapter reads them by position as {list(CATALOGUE_PREFIX)}"
+            )
+        kind_at = fields.index("card_kind") if "card_kind" in fields else None
         self._cards = [
             CardInfo(
                 card_id=cid,
-                name=name,
-                elixir=elixir,
-                placement=int(_PLACEMENT_OF_KIND[kind]),
-                count=count,
-                radius=radius,
-                flying=flying,
-                hitpoints=hp,
-                footprint_tiles=rest[0] if rest else None,
+                name=row[0],
+                elixir=row[2],
+                placement=int(_PLACEMENT_OF_KIND[row[1]]),
+                count=row[3],
+                radius=row[4],
+                flying=row[5],
+                hitpoints=row[6],
+                footprint_tiles=row[7] if len(row) > 7 else None,
+                card_kind=row[kind_at] if kind_at is not None and len(row) > kind_at else None,
             )
-            for cid, (name, kind, elixir, count, radius, flying, hp, *rest) in enumerate(rows)
+            for cid, row in enumerate(rows)
         ]
+        bad_kinds = sorted({c.card_kind for c in self._cards} - {None, *CARD_KINDS})
+        if bad_kinds:
+            raise RuntimeError(
+                f"the Rust catalogue states card kinds {bad_kinds} this adapter lacks"
+            )
         # A REASON NAME WITH NO STATUS IS REFUSED HERE, NOT WHEN IT FIRES. Mapped to None,
         # it raises in ``_status`` on the first deploy the rule refuses, which can be hours
         # into a training run: a Mirror played before any other card is the first time an

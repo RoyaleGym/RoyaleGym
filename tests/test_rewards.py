@@ -61,6 +61,7 @@ from royalegym.protocol import (
     Placement,
     ShuffleMode,
     SpawnSpec,
+    card_is_spell,
     to_engine,
 )
 from royalegym.reward import ElixirTradeReward
@@ -261,9 +262,15 @@ def test_every_card_the_catalogue_calls_a_spell_is_charged_once_at_the_tap(kind,
     would cancel the two against each other and return zero for both seats.
     """
     catalogue = make_engine(kind)
-    spells = [c for c in catalogue.cards() if c.placement in SPELL_PLACEMENTS]
-    troops = [c.name for c in catalogue.cards() if c.placement == Placement.TROOP]
-    assert {Placement(c.placement) for c in spells} == set(SPELL_PLACEMENTS), (
+    # By KIND: a spell may carry a troop's placement code (Heal, from the next RoyaleSim
+    # build), so the spells are at least one of each spell placement class, not exactly.
+    spells = [c for c in catalogue.cards() if card_is_spell(c)]
+    troops = [
+        c.name
+        for c in catalogue.cards()
+        if c.placement == Placement.TROOP and not card_is_spell(c)
+    ]
+    assert {Placement(c.placement) for c in spells} >= set(SPELL_PLACEMENTS), (
         f"{kind} does not hold one of each placement class: {[c.name for c in spells]}"
     )
     broke = 1 - caster

@@ -107,6 +107,7 @@ from royalegym.protocol import (
     SpawnSpec,
     SpellMotion,
     TowerSlot,
+    card_is_spell,
     default_calibration,
     mirror_state,
     spawn_violation,
@@ -1522,7 +1523,7 @@ def rotation_divergence(
             assert cmd is not None
             card = cards[s.players[BLUE].hand[cmd.hand_slot]]
             stats["deploys"] += 1
-            if card.placement in SPELL_PLACEMENTS:
+            if card_is_spell(card):
                 # One shared policy, so Red cast its rotated twin in this same step.
                 stats["same_step_spell_casts"] += 1
                 stats[f"cast:{card.name}"] += 1

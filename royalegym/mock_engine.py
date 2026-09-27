@@ -659,6 +659,12 @@ class MockEngine:
             radius=u.radius if u else 0,
             flying=u.flying if u else False,
             hitpoints=u.hp if u else 0,
+            # This engine gives every card its own kind's placement, so the two agree.
+            card_kind=(
+                "TROOP" if placement == Placement.TROOP
+                else "BUILDING" if placement == Placement.BUILDING
+                else "SPELL"
+            ),
         )
         self._cards.append(_CardTpl(info=info, unit=unit, spell=spell))
 

@@ -62,6 +62,7 @@ from royalegym.protocol import (
     SpawnSpec,
     TowerSlot,
     Winner,
+    card_is_spell,
     derived_cards_vintage,
     to_engine,
     to_own,
@@ -310,7 +311,7 @@ def battle(kind: str, leader: int) -> Battle:
     out.spell_ids = {
         c.card_id
         for c in engine.cards()
-        if c.card_id in held and c.placement in SPELL_PLACEMENTS
+        if c.card_id in held and card_is_spell(c)
     }
     # The cap as the ENGINE applies it: the leader asked for far more than any bar holds.
     out.cap = engine.state().players[leader].elixir_milli

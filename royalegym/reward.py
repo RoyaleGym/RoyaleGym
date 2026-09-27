@@ -41,9 +41,9 @@ from .protocol import (
     Engine,
     EntityKind,
     EntityState,
-    Placement,
     TowerSlot,
     Winner,
+    card_is_spell,
     to_own,
 )
 
@@ -146,10 +146,9 @@ class TowerHPReward(RewardFunction):
         return own - foe
 
 
-# The placement classes of a card that puts nothing of its own on the board. Its
-# elixir is spent at the tap and there is never a unit of it to price later, so
-# ``ElixirTradeReward`` charges it there instead.
-CAST_AND_GONE = (Placement.SPELL, Placement.ROLLING, Placement.SPELL_NOT_ON_WATER)
+# A SPELL puts nothing of its own on the board: its elixir is spent at the tap and there
+# is never a unit of it to price later, so ``ElixirTradeReward`` charges it there instead.
+# By the card's KIND (``card_is_spell``), not its placement: a spell may carry a troop's.
 
 
 class ElixirTradeReward(RewardFunction):
@@ -223,7 +222,7 @@ class ElixirTradeReward(RewardFunction):
         cards: Sequence[CardInfo] = engine.cards()
         self.value = {c.card_id: Fraction(c.elixir, max(1, c.count)) for c in cards}
         self.own_unit = {c.card_id: (c.hitpoints, c.radius, c.flying) for c in cards}
-        self.cast = {c.card_id: Fraction(c.elixir) for c in cards if c.placement in CAST_AND_GONE}
+        self.cast = {c.card_id: Fraction(c.elixir) for c in cards if card_is_spell(c)}
 
     def unit_value(self, e: EntityState) -> Fraction:
         """The card's per-unit value, or zero for a unit the catalogue does not price."""

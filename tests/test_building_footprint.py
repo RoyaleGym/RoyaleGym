@@ -40,6 +40,7 @@ SKIPS
 
 from __future__ import annotations
 
+import collections
 import json
 from typing import Any
 
@@ -276,6 +277,123 @@ def building_gate(engine: Engine, board: str, parser: GridActionParser) -> list[
 def test_the_mask_equals_the_engine_for_every_building_card(rust, board, parser_cls):
     problems = building_gate(rust, board, parser_cls())
     assert not problems, f"{board}: {len(problems)} disagreements, first {problems[:8]}"
+
+
+#: Cards whose mask is KNOWN to differ from the engine, why, and the one shape allowed.
+#: Heal is a spell whose deploy rule is a troop's (refused on buildings and towers), and the
+#: engine up to RoyaleSim 1d661b0 gives it kind code 3, the Log's, which may land on them;
+#: the catalogue exports nothing that tells the two apart, so the mask offers Heal on the
+#: seat's own princess towers and on any building (10 of 240 own tiles per seat on the
+#: opening board). Sim maps that rule to kind code 0 in its next build. STRICT: the entry
+#: fails the gate once the card agrees, so it is removed then rather than kept.
+KNOWN_MASK_SPLITS = {"Heal": ("kind code 3 carries no footprint rule", 1, "OCCUPIED")}
+
+
+def every_card_hands(engine: Engine) -> list[list[list[int]]]:
+    """Deck pairs that between them deal every catalogue card to both seats, four at a
+    time; Red holds each group in reverse order, so a hand slot names another card."""
+    ids = [c.card_id for c in engine.cards()]
+    out = []
+    for i in range(0, len(ids), HAND_SIZE):
+        group = ids[i : i + HAND_SIZE]
+        pad = [x for x in ids if x not in group][: DECK_SIZE - len(group)]
+        out.append([[*group, *pad], [*group[::-1], *pad]])
+    return out
+
+
+def cycle_in(engine: Engine, board: str, card_id: int) -> BattleState:
+    """``board`` with ``card_id`` in both seats' hands, for a card the deal keeps out of the
+    starting hand (economy.OMIT_FROM_STARTING_HAND, the Elixir Collector since RoyaleSim
+    1d661b0). It is swapped to the front of the queue, so one play of slot 0 brings it in.
+    The filler is single-unit troops, whose unit does not block a deploy; the battle runs
+    on until the card is in hand and the bar can pay for it again."""
+    singles = [
+        c.card_id
+        for c in engine.cards()
+        if c.placement == Placement.TROOP and c.count == 1 and c.card_id != card_id
+    ][: DECK_SIZE - 1]
+    deck = [card_id, *singles]
+    engine.reset(1, board_setup(engine, board, [deck, deck]))
+    plays = [DeployCommand(team, 0, *own_tile_centre(engine, team, *PLAY_TILE)) for team in TEAMS]
+    assert [r.status for r in engine.step(plays, 1)] == [DeployStatus.OK] * 2, "filler refused"
+    cost = 1000 * engine.cards()[card_id].elixir
+    for _ in range(400):
+        engine.step([], 5)
+        state = engine.state()
+        if all(
+            card_id in p.hand and p.elixir_milli >= cost for p in state.players
+        ):
+            return state
+    raise AssertionError(f"{engine.cards()[card_id].name} never reached both hands, paid for")
+
+
+def every_card_gate(engine: Engine, board: str, parser: GridActionParser) -> tuple[list[str], dict]:
+    """Every (seat, card, point) where the mask and ``check_deploy`` disagree on ``board``,
+    for EVERY catalogue card, apart from the one shape ``KNOWN_MASK_SPLITS`` allows; plus
+    the count of those known ones per card. Refuses a card that was never compared, or
+    that the mask offers nowhere, on either seat."""
+    problems: list[str] = []
+    known: collections.Counter = collections.Counter()
+    compared: dict[int, set[int]] = {team: set() for team in TEAMS}
+
+    def compare(state: BattleState, subjects: set[int]) -> None:
+        """The engine must BE in ``state``: ``check_deploy`` reads the engine, not it. Every
+        card in hand is compared; ``subjects``, the cards the state was dealt for, must also
+        be offered somewhere (a filler the bar cannot pay for yet is offered nowhere)."""
+        parser.bind(engine)
+        for team in TEAMS:
+            hand = state.players[team].hand
+            planes = parser.action_mask(state, team)[1:].reshape(HAND_SIZE, -1)
+            for slot, card_id in enumerate(hand):
+                if card_id not in subjects:
+                    continue
+                compared[team].add(card_id)
+                if not planes[slot].any():
+                    name = engine.cards()[card_id].name
+                    problems.append(f"{SEAT[team]} {name}: the mask offers it nowhere")
+            for action, m, status in mask_disagreements(engine, parser, state, team):
+                slot, xi, yi = parser.decode(action)
+                name = engine.cards()[hand[slot]].name
+                why = KNOWN_MASK_SPLITS.get(name)
+                if why is not None and (m, DeployStatus(status).name) == why[1:]:
+                    known[name] += 1
+                    continue
+                problems.append(
+                    f"{SEAT[team]} {name} at own point ({xi}, {yi}): mask {m}, "
+                    f"engine {DeployStatus(status).name}"
+                )
+
+    for decks in every_card_hands(engine):
+        engine.reset(1, board_setup(engine, board, decks))
+        state = engine.state()
+        group = set(decks[0][:HAND_SIZE])
+        compare(state, group)
+        dealt = set(state.players[BLUE].hand) & set(state.players[RED].hand)
+        for cid in sorted(group - dealt):
+            compare(cycle_in(engine, board, cid), {cid})
+    for team in TEAMS:
+        missing = sorted(engine.cards()[c].name for c in {c.card_id for c in engine.cards()}
+                         - compared[team])
+        if missing:
+            problems.append(f"{SEAT[team]}: never compared {missing}")
+    return problems, known
+
+
+@needs_core
+@pytest.mark.parametrize("parser_cls", [TileActionParser, HalfTileActionParser])
+@pytest.mark.parametrize("board", BOARDS)
+def test_the_mask_equals_the_engine_for_every_card(rust, board, parser_cls):
+    """Every catalogue card, both seats, every action, four boards. Until 2026-09-27 the
+    mask was held to the engine for NAMED cards only, and Heal disagreed unseen."""
+    problems, known = every_card_gate(rust, board, parser_cls())
+    assert not problems, f"{board}: {len(problems)} disagreements, first {problems[:8]}"
+    names = {c.name for c in rust.cards()}
+    for name, (why, _, _) in KNOWN_MASK_SPLITS.items():
+        if name in names:
+            assert known[name] > 0, (
+                f"{name} now agrees with the engine ({why} no longer holds): remove it from "
+                "KNOWN_MASK_SPLITS"
+            )
 
 
 @needs_core

@@ -261,3 +261,38 @@ def test_plant_the_tower_tile_snapped_in_the_arenas_frame_is_caught(monkeypatch)
     monkeypatch.setattr(PlacementOracle, "own_tower_zone", arena_frame)
     problems, _ = gate(flipped_engine())
     assert any("corner seat 1" in p for p in problems), "PLANT DID NOT LAND: the frame of the snap"
+
+
+@needs_core
+def test_a_spell_with_a_troop_placement_keeps_the_closed_block():
+    """The core applies the half-open laws to a card of KIND troop only (state.rs
+    check_position), and gives a spell whose deploy rule is a troop's (Heal, from RoyaleSim's
+    next build) a troop's placement code. The mask must keep such a spell on the closed
+    block, and the ``point_grid`` memo must not hand it a troop's grid. Checked on a Knight
+    re-kinded as a spell: its grid is the Knight's under the closed block, not the open one,
+    in either call order. The engine's own verdict for Heal is gated by KNOWN_MASK_SPLITS in
+    tests/test_building_footprint.py until the relabel lands."""
+    import msgspec
+
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    engine = flipped_engine()
+    engine.reset(1, setup(engine, "troops", "all_up"))
+    state = engine.state()
+    knight = next(c for c in engine.cards() if c.name == "Knight")
+    spell = msgspec.structs.replace(knight, card_kind="SPELL")
+    closed_rules = msgspec.structs.replace(engine.rules(), troop_tower_taps="closed_block")
+    closed = PlacementOracle(engine.arena(), closed_rules, engine.cards())
+    for first, second in ((spell, knight), (knight, spell)):
+        oracle = PlacementOracle(engine.arena(), engine.rules(), engine.cards())
+        for team in (BLUE, RED):
+            for pitch in (1, 2):
+                got = {c.card_kind: oracle.point_grid(state, team, c, pitch)
+                       for c in (first, second)}
+                want = closed.point_grid(state, team, knight, pitch)
+                assert np.array_equal(got["SPELL"], want), (team, pitch, "not the closed block")
+                assert not np.array_equal(got["SPELL"], got["TROOP"]), (team, pitch, "shared")
+                px, py = oracle.points(pitch)
+                assert np.array_equal(
+                    got["SPELL"], oracle.legal_points(state, team, spell, px, py)
+                ), (team, pitch, "point_grid != legal_points")

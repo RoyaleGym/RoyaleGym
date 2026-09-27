@@ -238,6 +238,14 @@ class PlacementOracle:
             zone |= (lo_x < x1) & (x0 < hi_x) & (lo_y < y1) & (y0 < hi_y)
         return zone
 
+    @staticmethod
+    def _troop_laws(card: CardInfo) -> bool:
+        """Whether placement.TROOP_TOWER_TAPS's laws can judge this card: a TROOP placement
+        of a card whose KIND is troop. The core applies them to CardKind::Troop only
+        (state.rs check_position), and gives a spell with a troop's deploy rule (Heal) a
+        troop's placement code, so the placement alone would give that spell the laws."""
+        return card.placement == Placement.TROOP and card.card_kind in (None, "TROOP")
+
     def _bodies_block(self, placement: int) -> bool:
         """Whether the bodies already on the board are a rule for this placement.
 
@@ -251,7 +259,9 @@ class PlacementOracle:
 
     # -- static + tower-dependent part, at half-cell resolution --------------
 
-    def cell_grid(self, state: BattleState, team: int, placement: int) -> np.ndarray:
+    def cell_grid(
+        self, state: BattleState, team: int, placement: int, troop_laws: bool = True
+    ) -> np.ndarray:
         """The CELL rules. Troop territory here is only 'not the river band'; the
         enemy tower rects are a point rule, applied in ``legal_points``.
 
@@ -269,7 +279,8 @@ class PlacementOracle:
             not_water: np.ndarray = ~self.water
             return not_water
         terr = self.own_half[team] if placement == Placement.BUILDING else ~self.river_band
-        nodeploy = self.troop_nodeploy if placement == Placement.TROOP else self.nodeploy
+        troop = placement == Placement.TROOP and troop_laws
+        nodeploy = self.troop_nodeploy if troop else self.nodeploy
         legal: np.ndarray = terr & ~self.water & ~nodeploy
         return legal
 
@@ -293,7 +304,7 @@ class PlacementOracle:
         px = np.asarray(px, dtype=np.int64)
         py = np.asarray(py, dtype=np.int64)
         inside = (px > 0) & (px < a.width) & (py > 0) & (py < a.height)
-        cells = self.cell_grid(state, team, card.placement)
+        cells = self.cell_grid(state, team, card.placement, self._troop_laws(card))
         ix1 = np.clip(px // h, 0, a.hx - 1)
         iy1 = np.clip(py // h, 0, a.hy - 1)
         ix0 = np.clip(np.where(px % h == 0, px // h - 1, px // h), 0, a.hx - 1)
@@ -304,7 +315,7 @@ class PlacementOracle:
         if card.placement in (Placement.TROOP, Placement.ROLLING):
             for x0, y0, x1, y1 in self.enemy_rects(state, team):
                 ok &= ~((px >= x0) & (px <= x1) & (py >= y0) & (py <= y1))
-        if card.placement == Placement.TROOP and self.king_half_open:
+        if self.king_half_open and self._troop_laws(card):
             for x0, y0, x1, y1 in self.arena.king_blocks:
                 ok &= ~((px >= x0) & (px < x1) & (py >= y0) & (py < y1))
         if self._bodies_block(card.placement):
@@ -315,7 +326,7 @@ class PlacementOracle:
                     continue
                 r = e.radius + extra
                 clear &= (px - e.x) ** 2 + (py - e.y) ** 2 > r * r
-            if card.placement == Placement.TROOP and self.troop_taps_relocate:
+            if self.troop_taps_relocate and self._troop_laws(card):
                 clear |= self.own_tower_zone(state, team, px, py)
             ok &= clear
         return ok
@@ -373,7 +384,7 @@ class PlacementOracle:
             blockers = self._blockers(state)
         else:
             extra, blockers = 0, ()
-        return (int(placement), team, pitch_div, extra, rects, blockers)
+        return (int(placement), self._troop_laws(card), team, pitch_div, extra, rects, blockers)
 
     def point_grid(
         self, state: BattleState, team: int, card: CardInfo, pitch_div: int
@@ -408,7 +419,7 @@ class PlacementOracle:
                 return cached
             self.grid_misses += 1
         a = self.arena
-        cells = self.cell_grid(state, team, card.placement)
+        cells = self.cell_grid(state, team, card.placement, self._troop_laws(card))
         if pitch_div == 1:
             ok: np.ndarray = cells.reshape(a.tiles_y, a.half, a.tiles_x, a.half).all(axis=(1, 3))
         elif pitch_div == 2:
@@ -425,7 +436,7 @@ class PlacementOracle:
                 inx = (xs >= x0) & (xs <= x1)
                 if iny.any() and inx.any():
                     ok &= ~(iny[:, None] & inx[None, :])
-        if card.placement == Placement.TROOP and self.king_half_open:
+        if self.king_half_open and self._troop_laws(card):
             for x0, y0, x1, y1 in self.arena.king_blocks:
                 iny = (ys >= y0) & (ys < y1)
                 inx = (xs >= x0) & (xs < x1)
@@ -439,7 +450,7 @@ class PlacementOracle:
                     continue
                 r = e.radius + extra
                 clear &= ((ys - e.y) ** 2)[:, None] + ((xs - e.x) ** 2)[None, :] > r * r
-            if card.placement == Placement.TROOP and self.troop_taps_relocate:
+            if self.troop_taps_relocate and self._troop_laws(card):
                 clear |= self.own_tower_zone(state, team, xs[None, :], ys[:, None])
             ok &= clear
         if key is not None:

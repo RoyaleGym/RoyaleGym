@@ -317,6 +317,24 @@ class CardInfo(msgspec.Struct, frozen=True):
     # a building and for an engine that states no footprint (MockEngine). Trailing and
     # defaulted, so a catalogue row without the column still builds a CardInfo.
     footprint_tiles: int | None = None
+    # WHAT the card is, a name in CARD_KINDS ("TROOP", "BUILDING", "SPELL"), read from the
+    # engine's ``card_kind`` column by name. ``placement`` says where a card may be played
+    # and not what it is: the core gives a spell whose deploy rule is a troop's (Heal) a
+    # troop's placement code. None from an engine without the column; ``card_is_spell``
+    # then falls back to the placement.
+    card_kind: str | None = None
+
+
+#: The engine's card kinds, by name (py.rs CARD_KINDS).
+CARD_KINDS = ("TROOP", "BUILDING", "SPELL")
+
+
+def card_is_spell(card: CardInfo) -> bool:
+    """Is the card a SPELL (cast and gone, never a MatchSetup spawn)? By its kind where the
+    engine states one, else by its placement, as every engine before the column did."""
+    if card.card_kind is not None:
+        return card.card_kind == "SPELL"
+    return card.placement not in (Placement.TROOP, Placement.BUILDING)
 
 
 class DeployCommand(msgspec.Struct, frozen=True):
@@ -1084,7 +1102,7 @@ def spawn_violation(arena: Arena, cards: Sequence[CardInfo], spec: SpawnSpec) ->
     if not 0 <= spec.card_id < len(cards):
         return f"unknown card id {spec.card_id}"
     card = cards[spec.card_id]
-    if card.placement not in (Placement.TROOP, Placement.BUILDING):
+    if card_is_spell(card):
         return f"spawns must be unit or building cards, {card.name} is not"
     if not (0 <= spec.x <= arena.width and 0 <= spec.y <= arena.height):
         return f"spawn {card.name} at ({spec.x}, {spec.y}): out of arena"
