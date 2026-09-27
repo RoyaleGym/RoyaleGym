@@ -38,6 +38,7 @@ Without that, a term that never fires, or a swap of the two seats, would pass.
 
 from __future__ import annotations
 
+import json
 import types
 from dataclasses import dataclass, field
 from fractions import Fraction
@@ -47,7 +48,7 @@ import numpy as np
 import pytest
 from _pytest.outcomes import Skipped
 
-from royalegym import ClashParallelEnv
+from royalegym import ClashParallelEnv, rust_engine
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
     BLUE,
@@ -111,8 +112,24 @@ LEADER_SCRIPT = (9, (12,))
 TRAILER_SCRIPT = (3, (5, 16, 27))
 
 
+#: The scenario's arm of placement.TROOP_TOWER_TAPS, BY NAME. Its scripted plays are drawn
+#: from the mask's legal pool, so a flip of that key redraws every play and the battle
+#: below is another battle. Measured 2026-09-27 on 126992a: on the half-open arm the Red
+#: leader wins 1-0, a different random battle and no answer to the open seat asymmetry
+#: (RED_LEADS_REASON). The scenario was tuned on the closed block and keeps it.
+SCENARIO_TOWER_TAPS = "closed_block"
+
+
 def make_engine(kind: str):
-    return RustEngine() if kind == "rust" else MockEngine()
+    if kind != "rust":
+        return MockEngine()
+    ledger = json.loads(rust_engine._core.EMBEDDED_CALIBRATION_JSON)
+    entry = ledger["placement"].get("TROOP_TOWER_TAPS")
+    if entry is None or entry["value"] == SCENARIO_TOWER_TAPS:
+        return RustEngine()
+    return RustEngine(
+        calibration_overrides={"placement.TROOP_TOWER_TAPS": SCENARIO_TOWER_TAPS}
+    )
 
 
 #: The tower slots in the order ``MatchSetup.tower_hp`` wants them.

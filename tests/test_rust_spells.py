@@ -316,7 +316,11 @@ def test_plant_mask_refusing_a_log_over_buildings_is_caught(spell_engines, monke
     """Plant: the mask applies the TROOP footprint rule to ROLLING (Log ships
     CanPlaceOnBuildings=TRUE; both engines let it land on a building)."""
     rust, mock, _ = spell_engines
-    planted = PlacementOracle(rust.arena(), rust.rules(), rust.cards())
+    # The TROOP rule under the closed block. This gate reads MockEngine's state, which
+    # reports no tower boxes, and the half-open arm's troop rule needs them (it refuses a
+    # state without them); the plant is the footprint rule, which both arms share.
+    closed = msgspec.structs.replace(rust.rules(), troop_tower_taps="closed_block")
+    planted = PlacementOracle(rust.arena(), closed, rust.cards())
     orig_lp, orig_pg = PlacementOracle.legal_points, PlacementOracle.point_grid
 
     def as_troop(card):

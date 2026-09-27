@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import functools
 import json
+import re
 
 import msgspec
 import pytest
 
-from royalegym.protocol import MatchSetup, ShuffleMode
+from royalegym.protocol import TROOP_TOWER_TAPS, MatchSetup, ShuffleMode
 from royalegym.replay import ReplayRecorder, TraceHeader, _another_engine
 from royalegym.rust_engine import (
     CORE_IMPORT_ERROR,
@@ -81,9 +82,54 @@ def test_an_override_reaches_the_core_and_is_in_the_config_and_the_trace():
 
 
 @needs_core
-def test_an_override_of_a_key_the_mask_reads_is_refused():
-    with pytest.raises(ValueError, match=r"placement\.ILLEGAL_TAP"):
-        RustEngine(calibration_overrides={"placement.ILLEGAL_TAP": "refuse"})
+def test_an_override_of_a_key_read_outside_the_engine_is_refused():
+    """The elixir law and the clock read the ledger, not the engine: the core would run one
+    value and the observation another."""
+    for key, value in (("match.DEPLOY_LOCKOUT_TICKS", 0), ("time.TICK_MS", 50)):
+        with pytest.raises(ValueError, match=re.escape(key)):
+            RustEngine(calibration_overrides={key: value})
+
+
+@needs_core
+def test_an_override_of_a_key_the_mask_reads_and_does_not_follow_is_refused():
+    """The mask implements these arms for MockEngine's model or not at all. At e817414 every
+    placement key was refused and a collision or spells key constructed, with rules stating
+    the shipped arm while the core ran another. Opening placement to follow TROOP_TOWER_TAPS
+    let ILLEGAL_TAP = refuse through, which is a box fit in the core and a collision-circle
+    test in the mask: 20,870 lattice points disagreed (review, 2026-09-27)."""
+    ledger = compiled_ledger()
+    cases = (
+        ("placement.ILLEGAL_TAP", "refuse"),
+        ("collision.BUILDING_FOOTPRINT_MODEL", "tile_size_override_box"),
+        ("spells.ILLEGAL_SPELL_TAP", "client16402_clamp_to_legal_edge"),
+    )
+    ran = 0
+    for key, value in cases:
+        section, name = key.split(".", 1)
+        if name not in ledger.get(section, {}):
+            continue
+        with pytest.raises(ValueError, match=re.escape(key)):
+            RustEngine(calibration_overrides={key: value})
+        ran += 1
+    assert ran >= 2, f"only {ran} of the refusals had a key in this ledger"
+
+
+@needs_core
+def test_an_override_of_a_key_the_mask_follows_reaches_its_rules():
+    """TROOP_TOWER_TAPS is followed; a key the mask never reads goes to the core alone."""
+    if "TROOP_TOWER_TAPS" not in compiled_ledger().get("placement", {}):
+        pytest.skip("SKIPPED, NOT PASSED: this engine's ledger has no placement.TROOP_TOWER_TAPS")
+    plain = RustEngine()
+    shipped = plain.rules().troop_tower_taps
+    other = next(arm for arm in TROOP_TOWER_TAPS if arm != shipped)
+    over = RustEngine(calibration_overrides={"placement.TROOP_TOWER_TAPS": other})
+    assert over.rules().troop_tower_taps == other
+    assert over.calibration.value("placement.TROOP_TOWER_TAPS") == other
+    assert plain.rules().troop_tower_taps == shipped, "the override leaked into the ledger"
+    if "FIRST_TOWER_PICK" in compiled_ledger().get("targeting", {}):
+        lane = RustEngine(calibration_overrides={KEY: "current_x"})
+        assert lane.calibration.value(KEY) == plain.calibration.value(KEY), "followed"
+        assert lane._battle.calibration_overrides() == {KEY: '"current_x"'}
 
 
 @needs_core

@@ -142,9 +142,13 @@ def runs(tmp_path_factory):
 @pytest.mark.parametrize("kind", ["mock", pytest.param("rust", marks=needs_rust)])
 def test_a_rebuilt_env_in_another_process_plays_the_same_battle(runs, kind):
     here, there = runs[kind]
-    # Both seats played and the board filled, so the digest covers a battle and not towers.
+    # Both seats played and the board filled, so the digest covers a battle and not towers:
+    # at some step the six towers had at least three units beside them. Measured 2026-09-27
+    # at 150 steps: mock 15 entities at most; rust 11 on placement.TROOP_TOWER_TAPS =
+    # closed_block and 10 on the half-open arm, whose mask moves the random policy's plays.
+    # The floor was "> 10", one entity under the shipped arm and failing on the other.
     assert min(here["deployed"].values()) >= 3, here["deployed"]
-    assert here["most_entities"] > 10
+    assert here["most_entities"] >= 6 + 3, here["most_entities"]
     assert here["nonzero_rewards"] > 0
 
     assert there["pid"] != here["pid"]

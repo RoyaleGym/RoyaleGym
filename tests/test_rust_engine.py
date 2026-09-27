@@ -57,6 +57,7 @@ SKIPS
 from __future__ import annotations
 
 import collections
+import json
 import re
 import time
 from collections.abc import Sequence
@@ -85,8 +86,10 @@ from royalegym.protocol import (
     BIT_WATER,
     BLUE,
     DECK_SIZE,
+    HALF_OPEN_RELOCATE,
     HAND_SIZE,
     RED,
+    TROOP_TOWER_TAPS,
     Arena,
     BattleState,
     CardInfo,
@@ -827,6 +830,111 @@ def allowed_building_split(placement: int, mock_status: str, rust_status: str) -
     )
 
 
+TOWER_TAPS_KEY = "placement.TROOP_TOWER_TAPS"
+
+
+def shipped_tower_taps() -> str | None:
+    """The placement.TROOP_TOWER_TAPS arm the compiled ledger ships; None if it has no key."""
+    entry = json.loads(rust_engine_module._core.EMBEDDED_CALIBRATION_JSON)["placement"].get(
+        "TROOP_TOWER_TAPS"
+    )
+    return entry["value"] if entry else None
+
+
+def rust_on_arm(arm: str) -> RustEngine:
+    """RustEngine(card_names=SHARED) running ``arm`` of placement.TROOP_TOWER_TAPS, BY NAME:
+    the key is overridden only when the ledger ships another arm."""
+    shipped = shipped_tower_taps()
+    if shipped is None and arm != "closed_block":
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {TOWER_TAPS_KEY}")
+    over = {} if shipped in (arm, None) else {"calibration_overrides": {TOWER_TAPS_KEY: arm}}
+    engine = RustEngine(card_names=SHARED, **over)
+    assert engine.rules().troop_tower_taps == arm, "the rules did not follow the arm"
+    return engine
+
+
+@pytest.fixture(scope="module", params=TROOP_TOWER_TAPS)
+def rust_arm(request) -> RustEngine:
+    """Each arm the mask implements, so the gates below compare both with MockEngine before
+    AND after the ledger ships the half-open one."""
+    return rust_on_arm(request.param)
+
+
+def tower_taps_arms_differ(rust, mock) -> bool:
+    """Whether the compiled engine runs the half-open arm where MockEngine keeps the closed
+    block (``mock_engine.TROOP_TOWER_TAPS_ARM``: it has no tile boxes to judge or move by)."""
+    return rust.rules().troop_tower_taps != mock.rules().troop_tower_taps
+
+
+def on_own_tower_tile(arena: Arena, state: BattleState, team: int, x: int, y: int) -> bool:
+    """The tap's one-tile box, snapped in the PLACER's frame, shares positive area with an
+    alive own crown tower's placement box, read from the compiled engine's state."""
+    t, w, h = arena.subtile, arena.width, arena.height
+    fx, fy = (x, y) if team == BLUE else (w - x, h - y)
+    cx, cy = (fx // t) * t + t // 2, (fy // t) * t + t // 2
+    if team != BLUE:
+        cx, cy = w - cx, h - cy
+    for e in state.entities:
+        if e.team != team or e.hp <= 0:
+            continue
+        if e.kind not in (EntityKind.KING_TOWER, EntityKind.PRINCESS_TOWER):
+            continue
+        assert e.footprint is not None, "the compiled engine reported no tower box"
+        x0, y0, x1, y1 = e.footprint
+        if cx - t // 2 < x1 and x0 < cx + t // 2 and cy - t // 2 < y1 and y0 < cy + t // 2:
+            return True
+    return False
+
+
+#: The stated differences between the two arms, by name (``tower_taps_split``).
+TOWER_TAPS_SPLITS = ("OWN KING BLOCK EDGE", "ENEMY KING BLOCK EDGE", "OWN CROWN TOWER TILE")
+#: Vacuity floors for each, per tower state. Measured 2026-09-27 on 126992a with the arm
+#: selected by override, in every state: the king edges 150 and 150 on the grid below and
+#: 52 and 52 on the half-cell one; the tower tiles 684 on the grid with every tower up, down
+#: to 171 with three princesses down, and 200 on the half-cell grid, down to 100.
+TOWER_TAPS_GRID_FLOORS = {
+    "OWN KING BLOCK EDGE": 100, "ENEMY KING BLOCK EDGE": 100, "OWN CROWN TOWER TILE": 150,
+}
+TOWER_TAPS_TERRITORY_FLOORS = {
+    "OWN KING BLOCK EDGE": 40, "ENEMY KING BLOCK EDGE": 40, "OWN CROWN TOWER TILE": 80,
+}
+
+
+def tower_taps_split(
+    arena: Arena, rust_state: BattleState, team: int, placement: int, ms: str, rs: str,
+    x: int, y: int,
+) -> str | None:
+    """Which stated difference a TROOP's two verdicts show when the compiled engine runs
+    placement.TROOP_TOWER_TAPS = client16402_half_open_relocate and MockEngine the closed
+    block, or None. Each point is placed from the arena's king blocks and the compiled
+    engine's own tower boxes, never from the mask, and the reasons on both sides are fixed:
+
+    - OWN KING BLOCK EDGE (law 1): on the own king block's MAX edge, inside the closed block
+      and outside the half-open one. Mock NO_DEPLOY, rust OK.
+    - ENEMY KING BLOCK EDGE (law 1 again: the core judges BOTH blocks half-open, arena.rs
+      deploy_zone_king_half_open). The enemy king's NoDeploySize rect still refuses the
+      point. Mock NO_DEPLOY, rust OUT_OF_TERRITORY.
+    - OWN CROWN TOWER TILE (law 2): the tap's tile overlaps an alive own crown tower's box,
+      so the core moves the troop off it (state.rs relocate_off_own_crown_tower). Mock
+      OCCUPIED, rust OK.
+
+    The verdict on the half-open side is then held exactly by a mask built from the compiled
+    engine's own rules (``territory_disagreements``).
+    """
+    if placement != Placement.TROOP:
+        return None
+    for owner, (x0, y0, x1, y1) in enumerate(arena.king_blocks):
+        on_max_edge = x0 <= x <= x1 and y0 <= y <= y1 and (x == x1 or y == y1)
+        if on_max_edge and ms == "NO_DEPLOY":
+            if owner == team and rs == "OK":
+                return TOWER_TAPS_SPLITS[0]
+            if owner != team and rs == "OUT_OF_TERRITORY":
+                return TOWER_TAPS_SPLITS[1]
+    if ms == "OCCUPIED" and rs == "OK" and on_own_tower_tile(arena, rust_state, team, x, y):
+        return TOWER_TAPS_SPLITS[2]
+    return None
+
+
 def legality_disagreements(rust, mock, tower_hp) -> tuple[collections.Counter, collections.Counter]:
     a = mock.arena()
     s = a.subtile
@@ -849,6 +957,8 @@ def legality_disagreements(rust, mock, tower_hp) -> tuple[collections.Counter, c
     st = mock.state()
     assert st.players[BLUE].hand == [KNIGHT, MINIONS, CANNON, GIANT]
     split = building_tap_arms_differ(rust, mock)
+    taps_split = tower_taps_arms_differ(rust, mock)
+    rust_state = rust.state()
     dis: collections.Counter = collections.Counter()
     seen: collections.Counter = collections.Counter()
     for team in (BLUE, RED):
@@ -859,24 +969,32 @@ def legality_disagreements(rust, mock, tower_hp) -> tuple[collections.Counter, c
                 seen[DeployStatus(ms).name] += 1
                 if rs != ms:
                     placement = mock.cards()[st.players[team].hand[slot]].placement
-                    if split is not None and allowed_building_split(
-                        placement, DeployStatus(ms).name, DeployStatus(rs).name
-                    ):
+                    msn, rsn = DeployStatus(ms).name, DeployStatus(rs).name
+                    if split is not None and allowed_building_split(placement, msn, rsn):
                         seen["BUILDING RELOCATED RATHER THAN REFUSED"] += 1
                         continue
-                    dis[(team, slot, DeployStatus(ms).name, DeployStatus(rs).name, x, y)] += 1
+                    stated = taps_split and tower_taps_split(
+                        a, rust_state, team, placement, msn, rsn, x, y
+                    )
+                    if stated:
+                        seen[stated] += 1
+                        continue
+                    dis[(team, slot, msn, rsn, x, y)] += 1
     return dis, seen
 
 
 @pytest.mark.parametrize("towers", sorted(TOWER_STATES))
-def test_deploy_verdict_and_reason_agree_over_the_grid(rust, mock, towers):
-    dis, seen = legality_disagreements(rust, mock, TOWER_STATES[towers])
+def test_deploy_verdict_and_reason_agree_over_the_grid(rust_arm, mock, towers):
+    dis, seen = legality_disagreements(rust_arm, mock, TOWER_STATES[towers])
     assert not dis, (
         f"{sum(dis.values())} disagreements (team, slot, mock, rust, x, y): {list(dis)[:8]}"
     )
     # Vacuity: every position reason was exercised.
     for reason in ("OK", "OUT_OF_ARENA", "WATER", "NO_DEPLOY", "OUT_OF_TERRITORY", "OCCUPIED"):
         assert seen[reason] >= 20, (reason, dict(seen))
+    # And under the half-open arm, every stated difference, or it states nothing.
+    for name in TOWER_TAPS_SPLITS if tower_taps_arms_differ(rust_arm, mock) else ():
+        assert seen[name] >= TOWER_TAPS_GRID_FLOORS[name], (name, dict(seen))
 
 
 def test_every_exported_reason_but_engine_error_is_a_deploy_status():
@@ -985,6 +1103,11 @@ def territory_disagreements(rust, mock, oracle, tower_hp) -> tuple[collections.C
     assert st.players[BLUE].hand == [KNIGHT, MINIONS, CANNON, GIANT]
     a = mock.arena()
     split = building_tap_arms_differ(rust, mock)
+    # Under the half-open arm the compiled engine's troop verdicts are ALSO held exactly, by
+    # a mask built from its own rules on its own state (the mock reports no tower boxes).
+    taps_split = tower_taps_arms_differ(rust, mock)
+    rust_state = rust.state()
+    rust_oracle = PlacementOracle(rust.arena(), rust.rules(), rust.cards()) if taps_split else None
     xs, ys = every_half_cell_point(a)
     dis: collections.Counter = collections.Counter()
     pocket: dict[int, set[tuple[int, int]]] = {}
@@ -999,18 +1122,48 @@ def territory_disagreements(rust, mock, oracle, tower_hp) -> tuple[collections.C
                 if not np.array_equal(hot, general):
                     dis[(team, card.name, "point_grid != legal_points", pitch)] += 1
             mask = oracle.legal_points(st, team, card, xs, ys)
-            for x, y, m in zip(xs.tolist(), ys.tolist(), mask.tolist(), strict=True):
+            rust_mask = None
+            if rust_oracle is not None:
+                rcard = rust.cards()[rust_state.players[team].hand[slot]]
+                assert rcard.name == card.name, (rcard.name, card.name)
+                for pitch in (1, 2):
+                    px, py = rust_oracle.points(pitch)
+                    if not np.array_equal(
+                        rust_oracle.point_grid(rust_state, team, rcard, pitch),
+                        rust_oracle.legal_points(rust_state, team, rcard, px, py),
+                    ):
+                        dis[(team, card.name, "rust arm: point_grid != legal_points", pitch)] += 1
+                rust_mask = rust_oracle.legal_points(rust_state, team, rcard, xs, ys).tolist()
+            points = zip(xs.tolist(), ys.tolist(), mask.tolist(), strict=True)
+            for i, (x, y, m) in enumerate(points):
                 c = DeployCommand(team, slot, x, y)
                 ms, rs = mock.check_deploy(c), rust.check_deploy(c)
                 SEEN_TERRITORY_STATUSES[DeployStatus(ms).name] += 1
+                if rust_mask is not None and bool(rust_mask[i]) != (rs == DeployStatus.OK):
+                    dis[
+                        (team, card.name, "rust arm mask", int(rust_mask[i]),
+                         DeployStatus(rs).name, x, y)
+                    ] += 1
                 # The mask is built from MockEngine's rules, so it must track MockEngine
-                # exactly. The compiled engine is allowed exactly the one stated
-                # difference: it relocates a building whose ground is taken.
+                # exactly. The compiled engine is allowed exactly the stated differences:
+                # it relocates a building whose ground is taken, and under the half-open
+                # arm the three of ``tower_taps_split``.
                 split_here = split is not None and allowed_building_split(
                     card.placement, DeployStatus(ms).name, DeployStatus(rs).name
                 )
                 if split_here:
                     SEEN_TERRITORY_STATUSES["BUILDING RELOCATED RATHER THAN REFUSED"] += 1
+                stated = (
+                    taps_split
+                    and bool(m) == (ms == DeployStatus.OK)
+                    and tower_taps_split(
+                        a, rust_state, team, card.placement, DeployStatus(ms).name,
+                        DeployStatus(rs).name, x, y,
+                    )
+                )
+                if stated:
+                    SEEN_TERRITORY_STATUSES[stated] += 1
+                    split_here = True
                 if not split_here and (
                     not (bool(m) == (ms == DeployStatus.OK) == (rs == DeployStatus.OK)) or ms != rs
                 ):
@@ -1037,7 +1190,9 @@ def oracle(mock) -> PlacementOracle:
 
 
 @pytest.mark.parametrize("towers", list(TERRITORY_STATES))
-def test_troop_territory_mask_mock_and_rust_agree_on_every_half_cell(rust, mock, oracle, towers):
+def test_troop_territory_mask_mock_and_rust_agree_on_every_half_cell(
+    rust_arm, mock, oracle, towers
+):
     """The shipped NoDeploySize mechanic, identically in all three implementations.
 
     Not two numbers compared with each other: the RULE, at 4 709 points per card
@@ -1049,7 +1204,7 @@ def test_troop_territory_mask_mock_and_rust_agree_on_every_half_cell(rust, mock,
     the enemy's own-LEFT princess stands on MY right (own half-cols 18..35).
     """
     SEEN_TERRITORY_STATUSES.clear()
-    dis, pocket = territory_disagreements(rust, mock, oracle, TERRITORY_STATES[towers])
+    dis, pocket = territory_disagreements(rust_arm, mock, oracle, TERRITORY_STATES[towers])
     assert not dis, f"{sum(dis.values())} disagreements, first: {list(dis)[:6]}"
     # Vacuity: every point checked, and every position reason reached (measured on
     # red_left_down 2026-09-13: OK 11549, OUT_OF_TERRITORY 11298, NO_DEPLOY 2268,
@@ -1057,11 +1212,15 @@ def test_troop_territory_mask_mock_and_rust_agree_on_every_half_cell(rust, mock,
     counted = sum(
         n
         for k, n in SEEN_TERRITORY_STATUSES.items()
-        if k != "BUILDING RELOCATED RATHER THAN REFUSED"
+        if k not in ("BUILDING RELOCATED RATHER THAN REFUSED", *TOWER_TAPS_SPLITS)
     )
     assert counted == 2 * 3 * every_half_cell_point(mock.arena())[0].size
     for reason in ("OK", "OUT_OF_TERRITORY", "NO_DEPLOY", "WATER", "OUT_OF_ARENA", "OCCUPIED"):
         assert SEEN_TERRITORY_STATUSES[reason] >= 100, dict(SEEN_TERRITORY_STATUSES)
+    for name in TOWER_TAPS_SPLITS if tower_taps_arms_differ(rust_arm, mock) else ():
+        assert SEEN_TERRITORY_STATUSES[name] >= TOWER_TAPS_TERRITORY_FLOORS[name], (
+            name, dict(SEEN_TERRITORY_STATUSES)
+        )
     hp = TERRITORY_STATES[towers]
     for team in (BLUE, RED):
         down = {s for s in (TowerSlot.LEFT, TowerSlot.RIGHT) if hp[1 - team][s] == 0}
@@ -1096,6 +1255,20 @@ def test_plant_mask_rect_shrunk_by_a_half_tile_is_caught(rust, mock, monkeypatch
     assert {(k[0], k[2], k[3], k[4]) for k in dis} == {
         (BLUE, 1, "OUT_OF_TERRITORY", "OUT_OF_TERRITORY")
     }
+
+
+def test_plant_the_half_open_mask_without_law_2_is_caught(mock, oracle, monkeypatch):
+    """The exact check the half-open arm adds: a mask that forgets the core moves a troop
+    off an own crown tower must fail it, or the three stated differences are a hole."""
+    rust = rust_on_arm(HALF_OPEN_RELOCATE)
+    monkeypatch.setattr(
+        PlacementOracle,
+        "own_tower_zone",
+        lambda self, state, team, px, py: np.zeros(np.broadcast(px, py).shape, dtype=bool),
+    )
+    dis, _ = territory_disagreements(rust, mock, oracle, TERRITORY_STATES["all_up"])
+    assert dis, "PLANT DID NOT LAND: a half-open mask without law 2 passed"
+    assert {k[2] for k in dis} == {"rust arm mask"}, list(dis)[:4]
 
 
 def test_plant_mask_hot_path_without_rects_is_caught(rust, mock, oracle, monkeypatch):
@@ -1549,9 +1722,14 @@ def test_rotation_mirror_holds_for_multi_unit_cards_and_the_centre_line(engine_c
         assert stats[k] >= floor, f"vacuous: {k} = {stats[k]} < {floor} ({dict(stats)})"
 
 
-class _RedSiblingNudged(RustEngine):
+class _RedSiblingNudged(SymmetricRustEngine):
     """PLANT (adapter): after every accepted multi-unit Red deploy, move one of the
-    new Red siblings by one subtile -- a Red formation off by the smallest amount."""
+    new Red siblings by one subtile -- a Red formation off by the smallest amount.
+
+    On the gate's own vehicle. On plain RustEngine a shipped arm that is deliberately not
+    seat-symmetric splits the seats first: under placement.TROOP_TOWER_TAPS's half-open
+    block the two seats' masks differ at step 0, before any Red formation exists, and the
+    plant never lands (seen 2026-09-27 with that arm emulated as shipped)."""
 
     nudges = 0
 

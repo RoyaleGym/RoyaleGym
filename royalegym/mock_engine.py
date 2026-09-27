@@ -112,6 +112,11 @@ OVERTIME_TIEBREAK_RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction
 # tests/test_building_footprint.py skips the comparison LOUDLY, naming both.
 FOOTPRINT_MODEL = "collision_radius_circle"
 ILLEGAL_BUILDING_TAP = "refuse"
+# The same for a TROOP tapped around the crown towers (placement.TROOP_TOWER_TAPS). Under
+# the half-open arm the compiled engine opens its own king block's max edges and moves a
+# troop tapped on an own crown tower off it. This engine has no tile boxes to judge or move
+# by, so it keeps the closed block and refuses the tap, and ``rules()`` says so.
+TROOP_TOWER_TAPS_ARM = "closed_block"
 
 # EntityState fields this engine never reports: every entity carries their "not
 # reported" defaults. It has no windup to phase, no heading, no shields, no status
@@ -386,6 +391,7 @@ class MockEngine:
             DeployRules.load(cal),
             illegal_building_tap=ILLEGAL_BUILDING_TAP,
             deploy_lockout_ticks=0,
+            troop_tower_taps=TROOP_TOWER_TAPS_ARM,
         )
         g = load_globals_csv()
 

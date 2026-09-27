@@ -80,6 +80,7 @@ from .protocol import (
     BIT_WATER,
     BLUE,
     EMPTY_CARD,
+    HALF_OPEN_RELOCATE,
     HAND_SIZE,
     RED,
     Arena,
@@ -132,6 +133,34 @@ class PlacementOracle:
             self.own_half.append(np.array(np.broadcast_to(oy < lo, grid.shape)))
         # [owner team][TowerSlot] closed NoDeploySize rects at the arena's tower centres.
         self.tower_rects = [rules.tower_rects(arena, owner) for owner in (BLUE, RED)]
+        # placement.TROOP_TOWER_TAPS (DeployRules.troop_tower_taps). Under the half-open arm
+        # the core judges a TROOP (not a rolling spell) in two parts:
+        #   the zone, at the tap: a point touching a no-deploy cell is refused only if it lies
+        #     in a king block HALF-OPEN, [x0, x1) x [y0, y1), in the arena's frame, or touches
+        #     a no-deploy cell whose centre is outside both king blocks (arena.rs
+        #     deploy_zone_king_half_open). So the king-block cells stop refusing at the cell
+        #     level and the half-open rect refuses at the point level instead;
+        #   the bodies, where the troop will stand: a tap whose tile overlaps an alive OWN
+        #     crown tower's placement box is moved off it (state.rs
+        #     relocate_off_own_crown_tower), unless placement.ILLEGAL_TAP is "refuse", so no
+        #     body blocks it.
+        self.king_half_open = rules.troop_tower_taps == HALF_OPEN_RELOCATE
+        self.troop_taps_relocate = self.king_half_open and rules.illegal_building_tap != "refuse"
+        if self.king_half_open and len(arena.king_blocks) != 2:
+            raise ValueError(
+                "placement.TROOP_TOWER_TAPS is half-open but the arena states no king blocks"
+            )
+        king_cells = np.zeros_like(self.nodeploy)
+        if self.king_half_open:
+            h = arena.half_size
+            cx = np.arange(arena.hx) * h + h // 2
+            cy = np.arange(arena.hy) * h + h // 2
+            for x0, y0, x1, y1 in arena.king_blocks:
+                rows, cols = (cy >= y0) & (cy <= y1), (cx >= x0) & (cx <= x1)
+                king_cells |= rows[:, None] & cols[None, :]
+        # The no-deploy cells a troop's CELL rule still refuses: all of them, or under the
+        # half-open arm all but the king blocks' own (the point rule takes those).
+        self.troop_nodeploy = self.nodeploy & ~king_cells
         self._points: dict[int, tuple[np.ndarray, np.ndarray]] = {}
         # ``point_grid`` memo. See ``grid_key`` for why it is safe and
         # ``GRID_CACHE_SIZE`` for why it is small.
@@ -157,11 +186,57 @@ class PlacementOracle:
         """
         seen, key = self._blocker_memo
         if seen is not state:
+            # Owner, kind, life and box too: under the half-open arm an ALIVE OWN crown
+            # tower's box is a rule of its own (``own_tower_zone``), not only a body.
             key = tuple(
-                sorted((e.x, e.y, e.radius) for e in state.entities if e.kind != EntityKind.TROOP)
+                sorted(
+                    (e.x, e.y, e.radius, int(e.kind), e.team, e.hp > 0, e.footprint or ())
+                    for e in state.entities
+                    if e.kind != EntityKind.TROOP
+                )
             )
             self._blocker_memo = (state, key)
         return key
+
+    def own_tower_boxes(self, state: BattleState, team: int) -> list[tuple[int, int, int, int]]:
+        """The placement box (engine frame, closed) of every ALIVE crown tower ``team`` owns."""
+        out = []
+        for e in state.entities:
+            if e.team != team or e.hp <= 0:
+                continue
+            if e.kind not in (EntityKind.KING_TOWER, EntityKind.PRINCESS_TOWER):
+                continue
+            if e.footprint is None:
+                raise ValueError(
+                    "placement.TROOP_TOWER_TAPS is half-open, which needs each crown tower's "
+                    "placement box, and this engine reports none"
+                )
+            out.append(e.footprint)
+        return out
+
+    def own_tower_zone(
+        self, state: BattleState, team: int, px: np.ndarray, py: np.ndarray
+    ) -> np.ndarray:
+        """Where a ``team`` troop tap is moved off an own crown tower, so no body blocks it.
+
+        The core snaps the tap to a one-tile box in the PLACER's frame
+        (placement.SNAP_EVEN_CORNER = placer_frame: floor in the own frame, then back) and
+        moves the troop when that box shares positive area with an alive own crown tower's
+        placement box (state.rs relocate_off_own_crown_tower). Broadcasts over px, py.
+        """
+        a = self.arena
+        t = a.subtile
+        fx = px if team == BLUE else a.width - px
+        fy = py if team == BLUE else a.height - py
+        cx = (fx // t) * t + t // 2
+        cy = (fy // t) * t + t // 2
+        if team != BLUE:
+            cx, cy = a.width - cx, a.height - cy
+        lo_x, hi_x, lo_y, hi_y = cx - t // 2, cx + t // 2, cy - t // 2, cy + t // 2
+        zone: np.ndarray = np.zeros(np.broadcast(px, py).shape, dtype=bool)
+        for x0, y0, x1, y1 in self.own_tower_boxes(state, team):
+            zone |= (lo_x < x1) & (x0 < hi_x) & (lo_y < y1) & (y0 < hi_y)
+        return zone
 
     def _bodies_block(self, placement: int) -> bool:
         """Whether the bodies already on the board are a rule for this placement.
@@ -194,7 +269,8 @@ class PlacementOracle:
             not_water: np.ndarray = ~self.water
             return not_water
         terr = self.own_half[team] if placement == Placement.BUILDING else ~self.river_band
-        legal: np.ndarray = terr & ~self.water & ~self.nodeploy
+        nodeploy = self.troop_nodeploy if placement == Placement.TROOP else self.nodeploy
+        legal: np.ndarray = terr & ~self.water & ~nodeploy
         return legal
 
     def enemy_rects(self, state: BattleState, team: int) -> list[tuple[int, int, int, int]]:
@@ -228,13 +304,20 @@ class PlacementOracle:
         if card.placement in (Placement.TROOP, Placement.ROLLING):
             for x0, y0, x1, y1 in self.enemy_rects(state, team):
                 ok &= ~((px >= x0) & (px <= x1) & (py >= y0) & (py <= y1))
+        if card.placement == Placement.TROOP and self.king_half_open:
+            for x0, y0, x1, y1 in self.arena.king_blocks:
+                ok &= ~((px >= x0) & (px < x1) & (py >= y0) & (py < y1))
         if self._bodies_block(card.placement):
             extra = card.radius if card.placement == Placement.BUILDING else 0
+            clear = np.ones(ok.shape, dtype=bool)
             for e in state.entities:
                 if e.kind == EntityKind.TROOP:
                     continue
                 r = e.radius + extra
-                ok &= (px - e.x) ** 2 + (py - e.y) ** 2 > r * r
+                clear &= (px - e.x) ** 2 + (py - e.y) ** 2 > r * r
+            if card.placement == Placement.TROOP and self.troop_taps_relocate:
+                clear |= self.own_tower_zone(state, team, px, py)
+            ok &= clear
         return ok
 
     def points(self, pitch_div: int) -> tuple[np.ndarray, np.ndarray]:
@@ -342,13 +425,23 @@ class PlacementOracle:
                 inx = (xs >= x0) & (xs <= x1)
                 if iny.any() and inx.any():
                     ok &= ~(iny[:, None] & inx[None, :])
+        if card.placement == Placement.TROOP and self.king_half_open:
+            for x0, y0, x1, y1 in self.arena.king_blocks:
+                iny = (ys >= y0) & (ys < y1)
+                inx = (xs >= x0) & (xs < x1)
+                if iny.any() and inx.any():
+                    ok &= ~(iny[:, None] & inx[None, :])
         if self._bodies_block(card.placement):
             extra = card.radius if card.placement == Placement.BUILDING else 0
+            clear = np.ones(ok.shape, dtype=bool)
             for e in state.entities:
                 if e.kind == EntityKind.TROOP:
                     continue
                 r = e.radius + extra
-                ok &= ((ys - e.y) ** 2)[:, None] + ((xs - e.x) ** 2)[None, :] > r * r
+                clear &= ((ys - e.y) ** 2)[:, None] + ((xs - e.x) ** 2)[None, :] > r * r
+            if card.placement == Placement.TROOP and self.troop_taps_relocate:
+                clear |= self.own_tower_zone(state, team, xs[None, :], ys[:, None])
+            ok &= clear
         if key is not None:
             ok.flags.writeable = False
             if len(self._grids) >= GRID_CACHE_SIZE:

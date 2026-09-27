@@ -604,6 +604,12 @@ class Arena(msgspec.Struct, frozen=True):
     king_centers: list[tuple[int, int]]  # [team] engine-frame subtiles
     princess_centers: list[list[tuple[int, int]]]  # [team][slot-1] engine frame
     princess_center_status: str
+    # [team] each king block's NO_DEPLOY rect, engine frame (x0, y0, x1, y1), from
+    # arena.json's half-cells exactly as the core builds it. Closed under the shipped
+    # troop rule; HALF-OPEN, [x0, x1) x [y0, y1), under placement.TROOP_TOWER_TAPS =
+    # client16402_half_open_relocate. Trailing and defaulted, so an Arena built by
+    # hand without it still constructs.
+    king_blocks: list[tuple[int, int, int, int]] = []
 
     @property
     def width(self) -> int:
@@ -695,6 +701,15 @@ class Arena(msgspec.Struct, frozen=True):
             king_centers=king_centers,
             princess_centers=[blue, red],
             princess_center_status=princess_status,
+            king_blocks=[
+                (
+                    k["half_cols"][0] * hs,
+                    k["half_rows"][0] * hs,
+                    (k["half_cols"][1] + 1) * hs,
+                    (k["half_rows"][1] + 1) * hs,
+                )
+                for k in kings
+            ],
         )
 
 
@@ -758,6 +773,12 @@ def princess_centres_from_arena(
 TERRITORY_MODELS = ("enemy_tower_no_deploy_rects",)
 #: What an engine does with a building tap whose point is legal but whose box does not fit.
 ILLEGAL_BUILDING_TAP = ("refuse", "relocate_first_fitting_ring")
+#: placement.TROOP_TOWER_TAPS arms the mask implements. The second, measured on client
+#: 16.402: a troop may touch its own king block from the block's open (max) edges, the block
+#: being half-open in the ARENA's frame, and a troop tap whose tile overlaps an alive OWN
+#: crown tower's placement box is moved off it by the engine, so the tap is legal.
+HALF_OPEN_RELOCATE = "client16402_half_open_relocate"
+TROOP_TOWER_TAPS = ("closed_block", HALF_OPEN_RELOCATE)
 KING_TOWER_NAME = "KingTower"
 PRINCESS_TOWER_NAME = "PrincessTower"
 
@@ -897,6 +918,15 @@ class DeployRules(msgspec.Struct, frozen=True):
     # real arm -- calibration keeps 0 runnable as the behaviour this engine used to have,
     # so the value is read rather than assumed and 0 disables the rule honestly.
     deploy_lockout_ticks: int = 0
+    # placement.TROOP_TOWER_TAPS: where a TROOP may be tapped around the crown towers
+    # (``TROOP_TOWER_TAPS``). The mask reads it because the two arms give a troop card
+    # different legal points on the same board: the half-open arm opens the own king
+    # block's max edges and every tap whose tile overlaps an alive own crown tower, which
+    # the engine then moves. Trailing and defaulted to the arm an engine without the key ran.
+    troop_tower_taps: str = "closed_block"
+    # spells.ILLEGAL_SPELL_TAP: what the engine does with a spell tapped outside its
+    # territory. The mask implements "refuse" only; the clamp arm accepts taps it refuses.
+    illegal_spell_tap: str = "refuse"
 
     @classmethod
     def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
@@ -917,6 +947,48 @@ class DeployRules(msgspec.Struct, frozen=True):
         if illegal_tap not in ILLEGAL_BUILDING_TAP:
             raise NotImplementedError(
                 f"ILLEGAL_TAP={illegal_tap!r}: only {sorted(ILLEGAL_BUILDING_TAP)} are implemented"
+            )
+        try:
+            tower_taps = str(calibration.value("placement.TROOP_TOWER_TAPS"))
+        except KeyError:
+            tower_taps = "closed_block"
+        if tower_taps not in TROOP_TOWER_TAPS:
+            raise NotImplementedError(
+                f"placement.TROOP_TOWER_TAPS={tower_taps!r}: only {list(TROOP_TOWER_TAPS)} are "
+                "implemented in the action mask"
+            )
+        if tower_taps == HALF_OPEN_RELOCATE:
+            # The own-tower zone snaps a tap to its tile in the PLACER's frame; that is the
+            # one snap the mask implements (PlacementOracle.own_tower_zone). And under this
+            # arm the core judges a troop's body where the tap RESOLVES (state.rs
+            # resolve_point), so placement.TAP_SNAP, which changes no verdict under the
+            # closed block, moves the point the bodies are judged at: only "none" is
+            # implemented.
+            try:
+                snap = str(calibration.value("placement.SNAP_EVEN_CORNER"))
+            except KeyError:
+                snap = "placer_frame"
+            if snap != "placer_frame":
+                raise NotImplementedError(
+                    f"placement.SNAP_EVEN_CORNER={snap!r} with TROOP_TOWER_TAPS={tower_taps!r}: "
+                    "the mask implements the placer_frame snap only"
+                )
+            try:
+                tap_snap = str(calibration.value("placement.TAP_SNAP"))
+            except KeyError:
+                tap_snap = "none"
+            if tap_snap != "none":
+                raise NotImplementedError(
+                    f"placement.TAP_SNAP={tap_snap!r} with TROOP_TOWER_TAPS={tower_taps!r}: the "
+                    "mask judges a troop's body at the unsnapped tap only"
+                )
+        try:
+            spell_tap = str(calibration.value("spells.ILLEGAL_SPELL_TAP"))
+        except KeyError:
+            spell_tap = "refuse"
+        if spell_tap != "refuse":
+            raise NotImplementedError(
+                f"spells.ILLEGAL_SPELL_TAP={spell_tap!r}: the mask implements 'refuse' only"
             )
         try:
             lockout = int(calibration.value("match.DEPLOY_LOCKOUT_TICKS"))
@@ -944,6 +1016,8 @@ class DeployRules(msgspec.Struct, frozen=True):
             footprint_model=model,
             illegal_building_tap=illegal_tap,
             deploy_lockout_ticks=lockout,
+            troop_tower_taps=tower_taps,
+            illegal_spell_tap=spell_tap,
         )
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:

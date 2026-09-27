@@ -152,9 +152,31 @@ _PLACEMENT_OF_KIND = {
     3: Placement.ROLLING,
     4: Placement.SPELL_NOT_ON_WATER,
 }
-#: Ledger sections this package reads for itself (DeployRules, ElixirLaw, the clock), so a
-#: ``calibration_overrides`` key in one of them would split the mask from the engine.
-OVERRIDE_READ_HERE = frozenset({"match", "placement", "time"})
+#: Ledger sections this package reads from the ledger OUTSIDE the engine (ElixirLaw, the
+#: clock), so a ``calibration_overrides`` key in one of them would split the observation
+#: from the engine: refused.
+OVERRIDE_READ_HERE = frozenset({"match", "time"})
+#: Keys the action mask FOLLOWS: an override of one is applied to the engine's own
+#: calibration too, so ``rules()`` state the arm the core runs, and the mask implements
+#: every arm ``DeployRules`` accepts for it (tests/test_troop_tower_taps.py). Any OTHER key
+#: the mask's rules read (recorded as ``Arena`` and ``DeployRules`` load) is refused as an
+#: override: its arms are implemented for MockEngine's model or not at all, so the mask
+#: would judge one rule and the core run another (placement.ILLEGAL_TAP = refuse is a box
+#: fit in the core and a collision-circle test in the mask). Keys the mask never reads go
+#: to the core alone.
+OVERRIDE_FOLLOWED = frozenset({"placement.TROOP_TOWER_TAPS"})
+
+
+class _ReadRecorder(Calibration):
+    """A calibration that records every key read from it."""
+
+    def __init__(self, raw: dict[str, Any]) -> None:
+        super().__init__(raw)
+        self.read: set[str] = set()
+
+    def entry(self, key: str) -> dict[str, Any]:
+        self.read.add(key)
+        return super().entry(key)
 
 # Deploy reason names the engine exports that are NOT a DeployStatus, on purpose.
 # ENGINE_ERROR marks a failure a slot command cannot produce (py.rs DEPLOY_REASONS), and
@@ -575,9 +597,12 @@ class RustEngine:
         it (``{"targeting.FIRST_TOWER_PICK": "current_x"}``). The core runs the battle with
         those arms instead of the shipped ones and refuses a key or arm it does not have.
         ``config()`` and every trace recorded from this engine carry them, because an
-        overridden engine plays other battles from the same build. Keys this package reads
-        itself (the ``match``, ``placement`` and ``time`` sections: the mask, the elixir law,
-        the clock) are refused, since the core would run one arm and the mask another."""
+        overridden engine plays other battles from the same build. A key the mask follows
+        (``OVERRIDE_FOLLOWED``: ``placement.TROOP_TOWER_TAPS``) is applied to this engine's
+        own calibration too, so ``rules()`` -- what the mask reads -- state the arm the core
+        runs. Any other key the mask's rules read is refused, and so are the ``match`` and
+        ``time`` sections, which this package reads elsewhere (the elixir law, the clock):
+        the core would run one value and the mask or the observation another."""
         if _core is None:
             raise ImportError(CORE_IMPORT_ERROR)
         self.calibration_overrides: dict[str, Any] = dict(calibration_overrides or {})
@@ -587,8 +612,8 @@ class RustEngine:
         if read_here:
             raise ValueError(
                 f"calibration_overrides {read_here}: this package reads those keys from the "
-                "ledger itself (the action mask, the elixir law, the clock), so the engine "
-                "would run one arm and the mask another"
+                "ledger itself (the elixir law, the clock), so the engine would run one value "
+                "and the observation another"
             )
         cal = calibration or default_calibration()
         diffs = stale_build_differences(cal, arena_path)
@@ -597,9 +622,27 @@ class RustEngine:
                 "royalesim was built against different data; rebuild with "
                 "`maturin develop --release`:\n  " + "\n  ".join(diffs)
             )
+        # After the stale-build check, which compares the LEDGER with the build. A key the
+        # ledger lacks is left to the core, whose refusal names it.
+        for key, value in self.calibration_overrides.items():
+            section, _, name = key.partition(".")
+            if key in OVERRIDE_FOLLOWED and name in cal.raw.get(section, {}):
+                cal = cal.with_override(key, value)
         self.calibration = cal
-        self._arena = Arena.load(cal, arena_path)
-        self._rules = DeployRules.load(cal)
+        recorded = _ReadRecorder(cal.raw)
+        self._arena = Arena.load(recorded, arena_path)
+        self._rules = DeployRules.load(recorded)
+        unfollowed = sorted(
+            k
+            for k in self.calibration_overrides
+            if k in recorded.read and k not in OVERRIDE_FOLLOWED
+        )
+        if unfollowed:
+            raise ValueError(
+                f"calibration_overrides {unfollowed}: the action mask's rules read those keys "
+                f"and follow only {sorted(OVERRIDE_FOLLOWED)}, so the core would run one arm "
+                "and the mask judge another"
+            )
         self.slot_of_k = _derive_slot_of_k(self._arena)
         self.path_search = path_search
         self.ground_y_clamp = ground_y_clamp
@@ -1093,7 +1136,12 @@ def _rotation_probe_cached(args: tuple, kwargs: dict) -> list[str]:
 #: Ledger keys whose shipped arm is the client's own and deliberately not seat-symmetric,
 #: which the core offers no constructor keyword for, and the arm that IS symmetric.
 #: ``SymmetricRustEngine`` selects each through ``calibration_overrides``.
-SYMMETRIC_ARMS: dict[str, Any] = {"targeting.FIRST_TOWER_PICK": "current_x"}
+SYMMETRIC_ARMS: dict[str, Any] = {
+    "targeting.FIRST_TOWER_PICK": "current_x",
+    # The half-open king block is half-open in the ARENA's frame, so the two seats may tap
+    # different own-frame points around their kings; the closed block is the same for both.
+    "placement.TROOP_TOWER_TAPS": "closed_block",
+}
 
 
 def symmetric_overrides(ledger: Mapping[str, Any]) -> dict[str, Any]:
