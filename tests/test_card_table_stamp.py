@@ -51,7 +51,7 @@ import pytest
 from royalegym import mock_engine as mock_engine_module
 from royalegym import protocol, rust_engine
 from royalegym.mock_engine import RAW_CARD_PACK, MockEngine
-from royalegym.protocol import DATA_DIR_ENV, MatchSetup, Placement, fnv1a64
+from royalegym.protocol import DATA_DIR_ENV, MatchSetup, card_is_spell, fnv1a64
 from royalegym.replay import (
     CARD_TABLE_FIELDS,
     ENGINE_IDENTITY_FIELDS,
@@ -135,7 +135,8 @@ def test_the_stamped_file_holds_the_catalogue_the_engine_reports(rust):
     assert missing == [], f"the engine holds cards the stamped file does not: {missing[:5]}"
     elixir = [(c.name, c.elixir, by_name[c.name]["elixir"]) for c in engine_cards]
     assert [e for e in elixir if e[1] != e[2]] == []
-    units = [c for c in engine_cards if c.placement in (Placement.TROOP, Placement.BUILDING)]
+    # By KIND: a spell may carry a troop's placement (Heal), and a spell's row counts 0.
+    units = [c for c in engine_cards if not card_is_spell(c)]
     counts = [(c.name, c.count, by_name[c.name].get("count", 1)) for c in units]
     assert [c for c in counts if c[1] != c[2]] == []
 

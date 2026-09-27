@@ -134,6 +134,7 @@ from .protocol import (
     Placement,
     SpellMotion,
     TowerSlot,
+    card_is_spell,
     default_calibration,
     default_elixir_law,
     to_own,
@@ -999,7 +1000,11 @@ class ObsBuilder(ABC):
             self.oracle = PlacementOracle(self.arena, rules, self.cards)
         self.mask_space = spaces.Box(0, 1, shape=(int(action_parser.space.n),), dtype=np.int8)
         self.mask_plane_shape = action_parser.mask_plane_shape()
-        self._troop_probe = next((c for c in self.cards if c.placement == Placement.TROOP), None)
+        # A troop by KIND: a spell may carry a troop's placement (Heal) without its laws.
+        self._troop_probe = next(
+            (c for c in self.cards if c.placement == Placement.TROOP and not card_is_spell(c)),
+            None,
+        )
         self.max_mana = self.calibration.int("match.MAX_MANA")
         self.law = ElixirLaw.load(self.calibration)
         self.memory = {t: MatchMemory(self.num_cards, self.law) for t in TEAMS}
