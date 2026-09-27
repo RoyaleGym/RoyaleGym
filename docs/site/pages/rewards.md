@@ -36,7 +36,7 @@ below it is the output that came back.
 
     ---
 
-    The same goal, measured more often. It paid out on 54 steps out of 373.
+    The same goal, measured more often. It paid out on 50 steps out of 373.
 
 - __4. Both together__
 
@@ -198,7 +198,7 @@ play(TowerDamageReward())
 TowerDamageReward: blue total +0.276  over 373 steps, 50 of them non-zero
 ```
 
-Same battle, same bots, and now 54 steps carry a number instead of 1. That is what
+Same battle, same bots, and now 50 steps carry a number instead of 1. That is what
 people mean when they call a reward *dense*. The bot gets told it is getting warmer
 long before anything falls over.
 
@@ -291,7 +291,7 @@ CombinedReward: blue total +1.236  over 373 steps, 115 of them non-zero
       "class": "ElixirTradeReward
 ```
 
-110 non-zero steps out of 373, because `ElixirTradeReward` pays out whenever a unit dies and
+115 non-zero steps out of 373, because `ElixirTradeReward` pays out whenever a unit dies and
 whenever a spell is cast. The JSON is cut off at 400 characters by the `[:400]` in the program, which is why
 the last line stops mid word. It is the whole recipe, and it is how the reward ends up
 written into a checkpoint. `ClashParallelEnv.config()` carries the same thing under
