@@ -11,7 +11,10 @@ FAIR INFORMATION, AND THE ``Reveal``
     match could write down: the board, their own hand and cycle, the clock, and a
     COUNT of the opponent's elixir kept from the plays they saw and the
     regeneration rate everyone knows (``MatchMemory``). Nothing default-built is
-    read out of the half of the state a player cannot see.
+    read out of the half of the state a player cannot see, with one known exception:
+    the builders read no status flags, so a unit invisible to its enemy (a Ghost,
+    ``STATUS_INVISIBLE``) is still shown to the enemy seat where it stands. Hiding it
+    or marking it waits on a measurement of what the live client's opponent sees.
 
     ``Reveal`` opens that half, one field at a time, for curriculum, distillation
     and debugging. An enabled field ADDS its channels and vector slots; it is
@@ -74,8 +77,9 @@ SPELLS AND STATUS EFFECTS
     (``Reveal.enemy_spell_aim``); ``own_spell_aim`` is unconditional. The spatial
     builder rasterises spells in the ``own_spells``..``enemy_stunned`` channels; the
     entity-list builder adds status features to each entity row and a separate
-    ``spells`` array. Not exposed, because the engine does not export it: a spell's
-    hit radius or damage (use the card one-hot), buffs, a unit's current target.
+    ``spells`` array. Not exposed: a spell's hit radius or damage, which the engine
+    does not export (use the card one-hot); and a unit's buffs and current target,
+    which it does (``EntityState.buffs``, ``target_uid``) and no builder reads yet.
     MockEngine resolves spells within a tick and has no status effects, so on it
     those channels and the ``spells`` array are always zero (mock_engine.py WHAT IT
     IS NOT); tests/test_rust_engine.py checks they carry information on RustEngine
@@ -152,7 +156,8 @@ PLAYS_SCALE = 40.0  # enemy plays at which ``enemy_plays`` saturates
 class Reveal:
     """Which halves of the hidden state a builder is allowed to read.
 
-    All-False (the default) is the fair observation. Every True field ADDS
+    All-False (the default) is the fair observation, apart from the invisible units
+    the module doc names. Every True field ADDS
     channels or vector slots (see the module doc), except ``enemy_elixir``, which
     swaps the source of the slot that already holds the counted value.
     """
