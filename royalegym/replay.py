@@ -24,6 +24,7 @@ MockEngine trace has no spell objects: its spells resolve inside a tick.
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -137,6 +138,11 @@ class TraceHeader(msgspec.Struct):
     # "" = not stated: MockEngine, and every trace from before 2026-09-25.
     build_digest: str = ""
     engine_binary_sha256: str = ""
+    # The ledger arms the recording engine ran instead of the shipped ones (RustEngine's
+    # ``calibration_overrides``, as JSON text per key). The build says nothing about them:
+    # an overridden engine plays other battles on the same binary. {} = none, which is also
+    # what a trace from before 2026-09-26 decodes with.
+    calibration_overrides: dict[str, str] = {}
 
 
 class TraceResult(msgspec.Struct):
@@ -190,10 +196,19 @@ def _engine_identity_fields(engine: Engine) -> dict[str, str]:
     return {k: str(v) for k, v in identity().items() if k in ENGINE_IDENTITY_FIELDS}
 
 
+def _override_fields(engine: Engine) -> dict[str, dict[str, str]]:
+    """The header's ``calibration_overrides``, from an engine that has any ({} otherwise)."""
+    overrides = getattr(engine, "calibration_overrides", None) or {}
+    if not overrides:
+        return {}
+    return {"calibration_overrides": {k: json.dumps(v) for k, v in overrides.items()}}
+
+
 def _another_engine(header: TraceHeader, engine: Engine) -> str | None:
     """One line naming how the verifying engine differs from the recording one, or None.
 
-    Only fields BOTH state are compared, so an old trace or a MockEngine says nothing.
+    Identity fields are compared only where BOTH state them, so an old trace or a MockEngine
+    says nothing. Overrides are compared always: none recorded means none were run.
     """
     have = _engine_identity_fields(engine)
     moved = [
@@ -201,6 +216,9 @@ def _another_engine(header: TraceHeader, engine: Engine) -> str | None:
         for k in ENGINE_IDENTITY_FIELDS
         if getattr(header, k) and have.get(k) and getattr(header, k) != have[k]
     ]
+    here = _override_fields(engine).get("calibration_overrides", {})
+    if header.calibration_overrides != here:
+        moved.append(f"calibration_overrides {header.calibration_overrides} there and {here} here")
     if not moved:
         return None
     return (
@@ -267,6 +285,7 @@ class ReplayRecorder:
             projectile_fields=list(ProjectileState.__struct_fields__),
             **_card_table_fields(engine),
             **_engine_identity_fields(engine),
+            **_override_fields(engine),
         )
         self.trace = Trace(header=header, steps=[], frames=[_frame(engine)])
         self._open = True

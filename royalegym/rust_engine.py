@@ -79,7 +79,7 @@ import importlib.machinery
 import json
 import re
 import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -152,6 +152,10 @@ _PLACEMENT_OF_KIND = {
     3: Placement.ROLLING,
     4: Placement.SPELL_NOT_ON_WATER,
 }
+#: Ledger sections this package reads for itself (DeployRules, ElixirLaw, the clock), so a
+#: ``calibration_overrides`` key in one of them would split the mask from the engine.
+OVERRIDE_READ_HERE = frozenset({"match", "placement", "time"})
+
 # Deploy reason names the engine exports that are NOT a DeployStatus, on purpose.
 # ENGINE_ERROR marks a failure a slot command cannot produce (py.rs DEPLOY_REASONS), and
 # ``_status`` raises if it ever arrives. Every other exported name must be a DeployStatus
@@ -538,6 +542,7 @@ class RustEngine:
         path_search: str | None = None,
         ground_y_clamp: str | None = None,
         ground_deploy_point: str | None = None,
+        calibration_overrides: Mapping[str, Any] | None = None,
     ) -> None:
         """``path_search``: None = the ledger's ``pathfinding.PATH_SEARCH`` (the game's own
         search, measured on client 16.402, which is NOT seat-symmetric:
@@ -564,9 +569,27 @@ class RustEngine:
         A FLYING summon's ring is laid on the tap itself. Two offsets keyed two
         different ways, so the shipped arm is neither seat-symmetric nor frame-symmetric.
         ``none`` lays every ring on the tap. Like the clamp it is independent of
-        ``path_search`` and has to be asked for by name."""
+        ``path_search`` and has to be asked for by name.
+
+        ``calibration_overrides``: ledger key -> value, as ``data/calibration.json`` writes
+        it (``{"targeting.FIRST_TOWER_PICK": "current_x"}``). The core runs the battle with
+        those arms instead of the shipped ones and refuses a key or arm it does not have.
+        ``config()`` and every trace recorded from this engine carry them, because an
+        overridden engine plays other battles from the same build. Keys this package reads
+        itself (the ``match``, ``placement`` and ``time`` sections: the mask, the elixir law,
+        the clock) are refused, since the core would run one arm and the mask another."""
         if _core is None:
             raise ImportError(CORE_IMPORT_ERROR)
+        self.calibration_overrides: dict[str, Any] = dict(calibration_overrides or {})
+        read_here = sorted(
+            k for k in self.calibration_overrides if k.split(".", 1)[0] in OVERRIDE_READ_HERE
+        )
+        if read_here:
+            raise ValueError(
+                f"calibration_overrides {read_here}: this package reads those keys from the "
+                "ledger itself (the action mask, the elixir law, the clock), so the engine "
+                "would run one arm and the mask another"
+            )
         cal = calibration or default_calibration()
         diffs = stale_build_differences(cal, arena_path)
         if diffs:
@@ -586,12 +609,22 @@ class RustEngine:
         self.cards_json_path, self.cards_json_found_by = engine_cards_json_path()
         from_engine = any(hasattr(_core.Battle, n) for n in ENGINE_CARD_HASH_NAMES)
         before = None if from_engine else self._disk_stamp()
+        # By keyword and only when there are any: a build older than the core's keyword
+        # still constructs a battle that overrides nothing.
+        overrides = (
+            {"calibration_overrides": {
+                k: json.dumps(v) for k, v in self.calibration_overrides.items()
+            }}
+            if self.calibration_overrides
+            else {}
+        )
         self._battle = _core.Battle(
             list(card_names) if card_names is not None else None,
             self.slot_of_k,
             path_search,
             ground_y_clamp,
             ground_deploy_point,
+            **overrides,
         )
         self._card_table = self._stamp_card_table(before)
         terr = territory_differences(self._battle, self._rules, self._arena, self.slot_of_k)
@@ -841,6 +874,12 @@ class RustEngine:
             "path_search": self.path_search,
             "ground_y_clamp": self.ground_y_clamp,
             "ground_deploy_point": self.ground_deploy_point,
+            # Only when there are any, so a plain engine's config reads as it always did.
+            **(
+                {"calibration_overrides": dict(self.calibration_overrides)}
+                if self.calibration_overrides
+                else {}
+            ),
             "calibration_digest": calibration_digest(self.calibration),
             # The three things an engine is: the data compiled in, the card table read
             # at construction, and the binary itself. The third was missing, so a
@@ -1051,6 +1090,27 @@ def _rotation_probe_cached(args: tuple, kwargs: dict) -> list[str]:
     return _PROBE_CACHE[cache_key]
 
 
+#: Ledger keys whose shipped arm is the client's own and deliberately not seat-symmetric,
+#: which the core offers no constructor keyword for, and the arm that IS symmetric.
+#: ``SymmetricRustEngine`` selects each through ``calibration_overrides``.
+SYMMETRIC_ARMS: dict[str, Any] = {"targeting.FIRST_TOWER_PICK": "current_x"}
+
+
+def symmetric_overrides(ledger: Mapping[str, Any]) -> dict[str, Any]:
+    """The ``SYMMETRIC_ARMS`` this compiled ledger ships some OTHER arm of.
+
+    A key the ledger lacks is left out, so an engine older than the key still constructs;
+    one already shipping the symmetric arm is left out, so nothing is overridden for nothing.
+    """
+    out: dict[str, Any] = {}
+    for key, arm in SYMMETRIC_ARMS.items():
+        section, name = key.split(".", 1)
+        entry = ledger.get(section, {}).get(name) if isinstance(ledger.get(section), dict) else None
+        if isinstance(entry, dict) and "value" in entry and entry["value"] != arm:
+            out[key] = arm
+    return out
+
+
 class SymmetricRustEngine(RustEngine):
     """``RustEngine`` under the frame-planned pathfinder (``path_search="trace_fitted_astar"``),
     which also selects the fixed-distance knockback, AND the own-frame deploy clamp
@@ -1075,12 +1135,23 @@ class SymmetricRustEngine(RustEngine):
     and 0 times under the own-frame one. Until the core exposed the key this class set
     only ``path_search``, so the rotation gates ran against the asymmetric clamp and
     correctly reported an asymmetry that is real and intended.
+
+    A KEY WITH NO KEYWORD IS SELECTED THROUGH ``calibration_overrides``: ``SYMMETRIC_ARMS``.
+    The first was ``targeting.FIRST_TOWER_PICK`` (RoyaleSim 126992a). Its shipped arm reads
+    a summon member's lane in the arena's frame, measured that way on both seats, so a
+    Skeleton Army on the centre line splits one member differently for Blue and for Red.
+    Three rotation gates went red on it at tick 140 while this class's one-tick probe read
+    clean: a lane pick shows only when the members start walking.
     """
 
     def __init__(self, *args, **kwargs) -> None:
         kwargs.setdefault("path_search", "trace_fitted_astar")
         kwargs.setdefault("ground_y_clamp", "deploy_column_range_own_frame")
         kwargs.setdefault("ground_deploy_point", "none")
+        ledger = json.loads(getattr(_core, "EMBEDDED_CALIBRATION_JSON", "{}") or "{}")
+        overrides = {**symmetric_overrides(ledger), **(kwargs.get("calibration_overrides") or {})}
+        if overrides:
+            kwargs["calibration_overrides"] = overrides
         self._probe_args = (args, dict(kwargs))
         super().__init__(*args, **kwargs)
 
@@ -1112,10 +1183,11 @@ class SymmetricRustEngine(RustEngine):
             "that is keyed per side or per arena half, and this class exists to select the "
             f"symmetric arm of every such key. It asks for {asked}, and that is no longer "
             "all of them.\n\n"
-            "The arm is chosen at construction, so the missing key has to be a keyword "
-            "RustEngine accepts and passes to the core. Compare the formation section of "
-            "`royalesim.EMBEDDED_CALIBRATION_JSON` against RustEngine.__init__: a key whose "
-            "candidates include a 'none' or '*_own_frame' arm is one this class has to be "
-            "able to ask for. Until it can, a rotation gate run on this vehicle measures a "
-            "property the real game has and reports it as a defect."
+            "The arm is chosen at construction. Find the key in "
+            "`royalesim.EMBEDDED_CALIBRATION_JSON`, any section: its doc says it is not the "
+            "rotation of itself, and one of its candidates is the symmetric arm (often "
+            "'none', 'not_read', '*_own_frame' or the pre-measurement arm). Add that key and "
+            "arm to rust_engine.SYMMETRIC_ARMS, which selects it through "
+            "calibration_overrides. Until then, a rotation gate run on this vehicle measures "
+            "a property the real game has and reports it as a defect."
         )
