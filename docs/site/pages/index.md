@@ -23,11 +23,15 @@ for over a network. You need Python and a compiler.
 
 ## Read this before you start
 
-!!! warning "What works today, and what does not (22 September 2026)"
+!!! warning "What works today, and what does not (27 September 2026)"
 
     **Working now.** The engine plays whole matches. The environments hand your bot what it sees,
     the exact list of moves it is allowed to make, and a reward. The viewer draws any of it.
     You can run all of that tonight.
+
+    **One known gap in what your bot sees.** By default an enemy unit that is invisible, such as
+    a Royal Ghost, still shows in the observation, which a player could not see. This is not
+    fixed yet.
 
     **New on 2026-09-22, and no finished bot yet.** The training harness closed its loop that
     day. Its laptop settings have since completed training iterations on the real engine. An

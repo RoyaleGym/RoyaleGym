@@ -1,10 +1,13 @@
-"""Record a battle, prove the recording, and turn it into a page you can double-click.
+r"""Record a battle, prove the recording, and turn it into a page you can double-click.
 
 A recording holds the seed, the setup, every command and a hash of the board for every
 tick. Re-running it on a fresh engine has to reproduce all of them, which is what makes
 it evidence rather than a video.
 
-    python examples/05_record_and_replay.py [output-dir]
+From the RoyaleGym folder, with the virtual environment's Python:
+
+    ..\.venv\Scripts\python examples/05_record_and_replay.py [output-dir]   (Windows)
+    ../.venv/bin/python examples/05_record_and_replay.py [output-dir]       (macOS and Linux)
 """
 
 import sys

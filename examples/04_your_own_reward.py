@@ -1,4 +1,4 @@
-"""Write a reward function, and see which term the bot is actually chasing.
+r"""Write a reward function, and see which term the bot is actually chasing.
 
 The reward is the one piece you are expected to write. Everything else ships with a
 default; what your bot should WANT is the question the library cannot answer for you.
@@ -6,7 +6,10 @@ default; what your bot should WANT is the question the library cannot answer for
 This shows both halves: writing a term, and reading the per-term breakdown, which is
 the number that says whether a policy won the match or just farmed a shaping term.
 
-    python examples/04_your_own_reward.py
+From the RoyaleGym folder, with the virtual environment's Python:
+
+    ..\.venv\Scripts\python examples/04_your_own_reward.py   (Windows)
+    ../.venv/bin/python examples/04_your_own_reward.py       (macOS and Linux)
 """
 
 import numpy as np

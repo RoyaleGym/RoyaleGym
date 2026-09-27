@@ -3,7 +3,7 @@
 <p align="center">
   <img alt="Works today" src="https://img.shields.io/badge/part_1-works_today-2ea043?style=flat-square">
   <img alt="New, barely tested" src="https://img.shields.io/badge/part_2-new,_barely_tested-d29922?style=flat-square">
-  <img alt="No GPU" src="https://img.shields.io/badge/GPU-not_needed_to_start-2ea043?style=flat-square">
+  <img alt="GPU: Part 1 needs none" src="https://img.shields.io/badge/GPU-part_1_needs_none-2ea043?style=flat-square">
   <img alt="No cloud" src="https://img.shields.io/badge/cloud-not_needed-2ea043?style=flat-square">
   <img alt="Python" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
   <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/badge/stuck%3F-ask_in_discord-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
@@ -19,7 +19,8 @@
     any good. You would be the first to find out.
 
     **Training needs torch, and it is an extra rather than part of the plain install.** Run
-    `pip install -e "RoyaleLearn[torch]"` before you try to train. Skip it and `train`, `doctor`
+    `.venv\Scripts\python -m pip install -e "RoyaleLearn[torch]"` from the `Royale` folder
+    (`.venv/bin/python` on macOS and Linux) before you try to train. Skip it and `train`, `doctor`
     and `bench` all stop with `ModuleNotFoundError: No module named 'torch'`. That is the one
     first-run failure worth recognising on sight. Being able to install the rest without torch
     is deliberate: the settings, the run identity and the workers are all tested to work without
@@ -41,8 +42,10 @@ The [Install](install.md) page. You need the folder called `Royale` with `Royale
 viewer section below also wants `RoyaleViser` installed, which is one more `pip install -e` line.
 Part 2 wants `RoyaleLearn` with its torch extra, as the box at the top says.
 
-Every command on this page is run from inside a repo folder, and the Python is
-`..\.venv\Scripts\python`. On macOS and Linux it is `../.venv/bin/python`.
+Every command on this page is run from inside a repo folder: Part 1 from the `RoyaleGym` folder,
+and Part 2 from the `RoyaleLearn` folder, because the file names in its commands are relative to
+that folder. The Python is `..\.venv\Scripts\python`. On macOS and Linux it is
+`../.venv/bin/python`, and paths use forward slashes.
 
 ---
 
@@ -260,6 +263,11 @@ other key.
     ../.venv/bin/python -m royaleviser battle.msgpack
     ```
 
+On a machine with no display, such as a Linux server over SSH, no window opens and the viewer
+does not say so. It keeps running until you stop it with Ctrl+C. There you can save a picture of
+the window instead:
+`SDL_VIDEODRIVER=dummy ../.venv/bin/python -m royaleviser battle.msgpack --seconds 8 --shot battle.png`.
+
 Add `--start-tick 900` to open partway in. Add `--seconds 8` and the viewer closes itself after
 eight seconds and prints how long each picture took to draw. That is what was run to check this
 page, on a machine with the display switched off:
@@ -320,7 +328,7 @@ smaller count.
 Attach the viewer later and you get fewer frames. Nothing is sent while nobody is listening.
 
 !!! warning "One env does not read the `ROYALEVISER` variable. This trips people up."
-    You may have seen `set ROYALEVISER=127.0.0.1:9870` written as the way to switch the viewer on.
+    You may have seen the `ROYALEVISER` variable given as the way to switch the viewer on.
     That works, but only for the batched self-play environment, not for a single
     `ClashParallelEnv`. A single env is handed a publisher explicitly, as in the program above.
 
@@ -329,22 +337,53 @@ Attach the viewer later and you get fewer frames. Nothing is sent while nobody i
     `ClashSelfPlayVecEnv` is the thing that reads the variable. It binds the publisher once and
     hands it to game 0 only.
 
-    ```
-    set ROYALEVISER=127.0.0.1:9870      # before your program starts
-    ```
+    Set the variable in the terminal that will run your program, before it starts. Each shell
+    writes it differently:
+
+    === "PowerShell"
+
+        ```
+        $env:ROYALEVISER = "127.0.0.1:9870"
+        ```
+
+    === "cmd"
+
+        ```
+        set ROYALEVISER=127.0.0.1:9870
+        ```
+
+    === "macOS and Linux"
+
+        ```
+        export ROYALEVISER=127.0.0.1:9870
+        ```
+
+    Then build the batch on the real engine and step it. Built with no `env_fn`, each game gets
+    `MockEngine`, the pure-Python stand-in, and says so in a warning. Nothing is sent until the
+    batch steps.
 
     ```python
-    from royalegym import ClashSelfPlayVecEnv
-    env = ClashSelfPlayVecEnv(8)        # binds one publisher, watches game 0
+    import time
+    from royalegym import ClashParallelEnv, ClashSelfPlayVecEnv, RustEngine
+
+    env = ClashSelfPlayVecEnv(8, env_fn=lambda: ClashParallelEnv(RustEngine()))  # watches game 0
+    obs, info = env.reset(seed=0)
+    for _ in range(400):                      # 400 decisions: 200 seconds of game time
+        actions = [env.single_action_space.sample(mask=m) for m in obs["action_mask"]]
+        obs, *_ = env.step(actions)
+        if env.viser is not None:
+            time.sleep(0.05)                  # slow it down so a human can watch
     ```
 
-    Both of these were run to check this page and both fed the viewer.
+    This was run to check this page on 2026-09-27, with a viewer attached. Game 0 played in the
+    viewer, and the publisher reported 3824 frames sent and 0 dropped. That run used port 9880,
+    because another program on the machine held 9870.
 
     `9870` is a default, not the address. One run holds that port while it streams, so a second
-    run on the same machine needs its own: set `ROYALEVISER=127.0.0.1:9872` and point that run's
-    viewer at the same number. Starting a second run on a port that is taken fails when it binds,
-    and the message names the port rather than anything about training, so it reads as a broken
-    example when it usually means something else on the machine is already streaming.
+    run on the same machine needs its own: set `ROYALEVISER` to `127.0.0.1:9872` and point that
+    run's viewer at the same number. Starting a second run on a port that is taken fails when it
+    binds, and the message names the port rather than anything about training, so it reads as a
+    broken example when it usually means something else on the machine is already streaming.
 
 ---
 
@@ -352,26 +391,43 @@ Attach the viewer later and you get fewer frames. Nothing is sent while nobody i
 
 This is the question you ask after every change, and it is the one a hand-written loop gets
 wrong. A loop plays your bot in one seat, prints a bare percentage, and counts a battle the
-step limit cut short as a draw. `evaluate` plays both seats and gives you an interval.
+step limit cut short as a draw. `evaluate` plays both seats and gives you an interval. Run it
+from the `RoyaleGym` folder:
+
+=== "Windows"
+
+    ```
+    ..\.venv\Scripts\python examples\07_is_this_bot_better.py
+    ```
+
+=== "macOS and Linux"
+
+    ```
+    ../.venv/bin/python examples/07_is_this_bot_better.py
+    ```
 
 ```
-python examples/07_is_this_bot_better.py
-```
-
-```
-greedy vs noop: 20-0-0 over 20 games. win rate 100.0% (83.9% to 100.0% at 95%) -- greedy is better. seat gap +0.0%, mean 2405 ticks.
+greedy vs noop: 20-0-0 over 20 games. win rate 100.0% (83.9% to 100.0% at 95%) -- greedy is better. seat gap +0.0%, mean 2594 ticks.
     as blue 10-0-0
     as red  10-0-0
-greedy vs random: 8-12-0 over 20 games. win rate 40.0% (21.9% to 61.3% at 95%) -- too close to call. seat gap -20.0%, mean 3310 ticks.
-    as blue 3-7-0
-    as red  5-5-0
+greedy vs random: 9-11-0 over 20 games. win rate 45.0% (25.8% to 65.8% at 95%) -- too close to call. seat gap +10.0%, mean 3650 ticks.
+    as blue 5-5-0
+    as red  4-6-0
+
+Two things to read off the summary.
+  'too close to call' means the interval covers 50%. It is not a tie; it is
+  not enough games. Raise games= and ask again.
+  A large seat gap means part of what you measured was the colour, not skill.
 ```
+
+That was run on 2026-09-27 on engine build `ec198b459cf311a4` with the 15.535 card table. A
+different engine or card table plays different battles, so your record can differ.
 
 Two things to read off that, and the second is the one people get wrong. Both numbers below come
 from the run printed above, which is 20 games on your machine and nobody else's.
 
 **"Too close to call" is not a tie.** It means the interval still covers 50%, so the games you
-played cannot separate the two bots. Play more and ask again. A bare "40%" would have told you
+played cannot separate the two bots. Play more and ask again. A bare "45%" would have told you
 the opposite of the truth here.
 
 **A large seat gap means you measured the colour, not the skill.** Blue and Red are not the same
@@ -425,7 +481,7 @@ closed, a training run spends more time describing the battle than playing it.
     `train` was run for this page and it completed:
 
     ```
-    royalelearn train --config examples\configs\smoke.json
+    ..\.venv\Scripts\python -m royalelearn train --config examples/configs/smoke.json
     ...
     run 85b4ce0a1d6e8f1d stopped at iteration 3
     ```
@@ -490,18 +546,32 @@ All four of these work. `config` runs without torch; the other three need the to
 `config` writes a config file you can edit. `doctor` runs the first-run checks, before you commit
 hours. `bench` measures YOUR machine rather than someone else's. `train` is the run itself.
 
-```
-python -m royalelearn config --profile laptop -o run.json
-python -m royalelearn doctor --config run.json
-python -m royalelearn bench
-python -m royalelearn train --config run.json
-```
+=== "Windows"
+
+    ```
+    ..\.venv\Scripts\python -m royalelearn config --profile laptop -o run.json
+    ..\.venv\Scripts\python -m royalelearn doctor --config run.json
+    ..\.venv\Scripts\python -m royalelearn bench
+    ..\.venv\Scripts\python -m royalelearn train --config run.json
+    ```
+
+=== "macOS and Linux"
+
+    ```
+    ../.venv/bin/python -m royalelearn config --profile laptop -o run.json
+    ../.venv/bin/python -m royalelearn doctor --config run.json
+    ../.venv/bin/python -m royalelearn bench
+    ../.venv/bin/python -m royalelearn train --config run.json
+    ```
 
 Start with the middle two, not the last one.
 
 - `config` writes out a config file with sensible settings so you have something to edit rather
   than a blank page. The profiles are `laptop`, `workstation` and `many_core`. Every training run
-  so far, as of 2026-09-22, used `laptop`. No run has used the other two yet.
+  so far, as of 2026-09-22, used `laptop`. No run has used the other two yet. All three ask for a
+  graphics card. No GPU? `train` falls back to the CPU and says so, and `--device cpu` forces it.
+  The update step is many times slower there: one update took 302 s on a 4-CPU Linux machine
+  with no GPU on 2026-09-27.
 - `doctor` builds one environment and runs the start-up gates on it. These are the same gates
   `train` runs before it begins, so this is what they look like, copied from a real run:
 
@@ -515,17 +585,21 @@ Start with the middle two, not the last one.
         geometry      3 workers x 32 battles = 96 battles, 192 slots, 144 of them learner rows
         iteration     228 cycles for 32768 timesteps; credit horizon 38.6 s
 
-  It checks every legal move against the engine exhaustively rather than sampling, prints the
-  three build digests so you can tell whether your engine matches your data, and projects the
-  memory a run will need. It refuses a run that is over the memory budget in your config, and
-  it warns, as above, when a run needs more than is free right now. Run it first; it is quick,
+  It checks every action against the engine at one state, the one its sampled play reaches,
+  for both seats. It sees only the cards in hand then, so it can pass while the mask is wrong
+  for another card, as it does for Heal today. It prints the three build digests so you can
+  tell whether your engine matches your data, and projects the memory a run will need. It
+  refuses a run that is over the memory budget in your config, and it warns, as above, when a
+  run needs more than is free right now. Run it first; it is quick,
   and it is where a mismatched build shows up.
 - `bench` measures how fast your own machine is, so you can plan a run against your number
-  instead of the table above. Budget time for it. It starts a set of worker processes, runs at
-  least one whole training iteration whatever `--seconds` says, and prints nothing while it
-  works. On a 4-core laptop with other jobs running it had produced no output after fifteen
-  minutes, at which point it was stopped rather than left to finish, so what it finally prints
-  is not recorded here. Run it when you can leave the machine alone.
+  instead of the table above. Budget time for it. It starts a set of worker processes and runs
+  at least one whole training iteration whatever `--seconds` says. First it prints the same
+  start-up checks `doctor` prints. Then it prints a `collected` line and a few `updating` lines
+  for each iteration, and it can go quiet between them for as long as an iteration takes. It
+  ends with the iteration's metrics and a table of timings for your machine. It leaves its run
+  in a folder of its own under `runs`, named `bench-` and the time it started, so it never takes
+  the folder your real run will use. Run it when you can leave the machine alone.
 - `train` is the run.
 
 There is also a script, `examples/train_1v1.py`, for people who would rather edit Python than a

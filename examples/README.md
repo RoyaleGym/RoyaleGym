@@ -1,11 +1,20 @@
 # Examples
 
-Seven programs, in the order they are worth reading. Each one runs on its own and prints
-something you can check. They need the engine built, which the repository README covers
-under "Install".
+Seven numbered programs, in the order they are worth reading, and one measurement,
+`measure_building_relocation.py`. Each one runs on its own and prints something you can
+check. They need the engine built, which the repository README covers under "Install".
+Run them from the `RoyaleGym` folder with the virtual environment's Python.
+
+Windows (PowerShell or cmd):
+
+```
+..\.venv\Scripts\python examples\01_one_battle.py
+```
+
+macOS and Linux:
 
 ```bash
-python examples/01_one_battle.py
+../.venv/bin/python examples/01_one_battle.py
 ```
 
 | | What it shows |
@@ -17,6 +26,7 @@ python examples/01_one_battle.py
 | [`05_record_and_replay.py`](05_record_and_replay.py) | Record a battle, re-run it on a fresh engine to prove it, and turn it into a page you can double-click. |
 | [`06_resume_a_run.py`](06_resume_a_run.py) | Stopping a run and starting it again so it continues the same battles rather than replaying old ones. |
 | [`07_is_this_bot_better.py`](07_is_this_bot_better.py) | Comparing two bots on both seats, with an error bar, so "better" is a claim the sample supports. |
+| [`measure_building_relocation.py`](measure_building_relocation.py) | Not a lesson: a measurement of how often a building tap does not land where it was asked. It backs the figures in a comment in `royalegym/action.py`. |
 
 Every one of them is run by the test suite, and each is checked for the line that proves
 it did the thing it exists to show rather than merely reaching the end of the file

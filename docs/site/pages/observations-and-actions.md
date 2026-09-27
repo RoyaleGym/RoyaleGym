@@ -261,8 +261,11 @@ property of the game.
 Two details worth trusting the project for:
 
 - The mask is worked out by a separate piece of Python, not asked of the engine. The
-  test suite then compares the two rulings exhaustively, for every card and every
-  position. A wrong mask fails a test instead of quietly ruining a week of training.
+  test suite then compares the two rulings for every card in the default catalogue, for
+  both seats and every move, on four boards: the opening, one with buildings down, one
+  with a princess tower gone, and one with both. Heal is the one known disagreement, until
+  the next engine build. A wrong mask for any other card on those boards fails a test
+  instead of quietly ruining a week of training.
 - `action_masks()` returns it in the form sb3-contrib's MaskablePPO expects, so a
   standard masked policy works with no glue.
 
@@ -272,7 +275,9 @@ the reason appears in `info["deploy_status"]`.
 ## Hidden information
 
 By default your bot sees what a person watching the match could write down. Nothing
-more.
+more, with one known gap: a unit invisible to its enemy, such as a Royal Ghost, is still
+shown to the enemy seat. Hiding or marking it waits on a measurement of what a player
+sees in the real game. It is not fixed.
 
 - The opponent's hand is not in the observation.
 - Neither is their deck, beyond the cards you have watched them play.

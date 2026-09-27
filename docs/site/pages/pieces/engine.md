@@ -1,7 +1,7 @@
 # The engine
 
 [![repo](https://img.shields.io/badge/repo-RoyaleSim-DEA584?style=flat-square&logo=rust&logoColor=white)](https://github.com/RoyaleGym/RoyaleSim)
-![cards](https://img.shields.io/badge/cards-144%2C%20same%20in%20a%20clone-555?style=flat-square)
+![cards](https://img.shields.io/badge/cards-124%20of%20144%20load%2C%20same%20in%20a%20clone-555?style=flat-square)
 ![tick](https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square)
 ![speed](https://img.shields.io/badge/one%20worker-16%2C100%20battles%2Fhour-2ea043?style=flat-square)
 ![same seed](https://img.shields.io/badge/same%20seed-same%20battle-2ea043?style=flat-square)
@@ -117,10 +117,24 @@ hitting it. Nobody steered it. It picked its own route.
     table, which is the one a clean install reads. On the `--vintage 2018` table the two
     right-hand columns move. If your route matches and your hitpoints do not, nothing is wrong.
 
-To watch a battle instead of reading numbers, run `python tools\watch_battle.py --open` from the
-RoyaleSim folder. It plays a random three-minute match, runs five checks on it, and opens a
-self-contained HTML page you can scrub tick by tick. The whole thing took 2.07 seconds here, and
-all five checks came back green:
+To watch a battle instead of reading numbers, run this from the RoyaleSim folder:
+
+=== "Windows"
+
+    ```
+    ..\.venv\Scripts\python tools\watch_battle.py --open
+    ```
+
+=== "macOS and Linux"
+
+    ```
+    ../.venv/bin/python tools/watch_battle.py --open
+    ```
+
+It plays a random three-minute match, runs five checks on it, and opens a self-contained HTML
+page you can scrub tick by tick. On macOS and Linux, if `--open` stops with
+`no attribute 'startfile'`, open the `battle.html` it names in your browser. The whole thing took
+2.07 seconds here, and all five checks came back green:
 
 ```
 winner: RED
@@ -202,6 +216,12 @@ about rewards, so you can change a reward without recompiling anything.
 
 ## The numbers, and where they come from
 
+**Cards.** The 15.535 card table, which comes with a clone, has 144 cards. The engine loads 124
+of them and refuses the other 20, each with a reason. The default catalogue, which is what you
+get when you name no cards, holds 121. It leaves out the Mirror, the Miner and the Goblin Drill,
+which load but which the environments cannot place yet. Counted on RoyaleSim `1d661b0` on
+2026-09-27.
+
 **Speed.** On a 4-core laptop with 8 GB of RAM, with other programs running, the engine did
 18,000 ticks in 0.35 to 0.42 seconds on one core. That is 43,000 to 51,000 ticks a second.
 
@@ -241,8 +261,9 @@ Check [How accurate is the engine](../accuracy.md) before you rely on a specific
 check it again in a month, because these numbers are moving.
 
 **Tests.** The engine's Python suite was 112 passed in 192 seconds on the maintainer's laptop on
-the morning of 2026-09-22. Nobody has run it from a fresh clone yet, and tests are still being
-added, so your count may differ.
+the morning of 2026-09-22. From a fresh clone at RoyaleSim `1d661b0` it gave 859 passed, 34
+skipped and 7 xfailed in 143 seconds, on a 4-CPU Linux machine on 2026-09-27. Tests are still
+being added, so your count may differ.
 
 ## Where the detail is
 

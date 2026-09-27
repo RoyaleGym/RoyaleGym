@@ -197,15 +197,21 @@ Three practical notes.
 - If you send a move the engine refuses anyway, it becomes a wait and is reported in
   `info["deploy_status"]`. Nothing explodes.
 
-The mask is worked out from the board on the Python side, completely separately from the engine,
-and then compared against the engine's own ruling for every position in the test suite. So a
-wrong mask fails a test instead of quietly poisoning a training run.
+The mask is worked out from the board on the Python side, completely separately from the engine.
+The test suite then compares it against the engine's own ruling for every card in the default
+catalogue, for both seats and every move, on four boards: the opening, one with buildings down,
+one with a princess tower gone, and one with both. Heal is the one known disagreement, until the
+next engine build. So a wrong mask for any other card on those boards fails a test instead of
+quietly poisoning a training run.
 
 ## What your bot can and cannot see
 
-By default your bot sees what a person watching the match could write down. It does **not** see
-the opponent's hand. It does get the opponent's elixir, as a count kept from the plays it
-watched, the way a player counts it in their head.
+By default your bot sees what a person watching the match could write down, with one known gap:
+a unit invisible to its enemy, such as a Royal Ghost, is still shown to the enemy seat. Hiding or
+marking it waits on a measurement of what a player sees in the real game. It is not fixed.
+
+Your bot does **not** see the opponent's hand. It does get the opponent's elixir, as a count kept
+from the plays it watched, the way a player counts it in their head.
 
 You can turn a hidden thing on with a `Reveal`, for a curriculum or for debugging. Doing so makes
 the observation **wider** rather than filling in blanks, and `ClashParallelEnv.config()` records

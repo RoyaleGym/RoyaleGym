@@ -22,8 +22,10 @@ A builder takes a `Reveal`, a frozen dataclass whose five fields all default to
 `False`:
 
 ```python
+from royalegym import Reveal, SpatialObsBuilder
+
 SpatialObsBuilder()                                   # fair
-SpatialObsBuilder(reveal=Reveal(enemy_elixir=True))   # cheating, and says so
+SpatialObsBuilder(reveal=Reveal(enemy_hand=True))     # cheating, and says so: 4(n+1) more slots
 ```
 
 **An enabled field adds channels or slots; it is never present-but-zero.** A fair
@@ -73,6 +75,12 @@ containing their centre in the own frame. Every plane is clipped to `[0, 64]`
 | 18 | `own_stunned` | 0..64 | own entities with `stun_ticks > 0` | fair |
 | 19 | `enemy_stunned` | 0..64 | as 18 | fair |
 | 20 | `enemy_spell_aim` | 0..64 | the opponent's live spells by aim point | **reveal** |
+
+One known gap in the "fair" column: a unit invisible to its enemy, such as a Royal Ghost, is
+still shown to the enemy seat. It is counted in `enemy_ground_troops` (5) and `enemy_hp` (9)
+where it stands, and the entity-list builder writes it a full row. No builder reads a unit's
+status flags. Hiding or marking such a unit waits on a measurement of what a player sees in the
+real game. It is not fixed.
 
 Channels 0–11 are integer sums converted to float32 exactly once, so no plane can
 depend on the engine's entity list order (see `obs.py`, NO FLOAT MAY DEPEND ON ENTITY

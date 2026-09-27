@@ -1,6 +1,9 @@
-"""How often a building tap does not give the agent the tile it asked for.
+r"""How often a building tap does not give the agent the tile it asked for.
 
-    python examples/measure_building_relocation.py
+From the RoyaleGym folder, with the virtual environment's Python:
+
+    ..\.venv\Scripts\python examples/measure_building_relocation.py   (Windows)
+    ../.venv/bin/python examples/measure_building_relocation.py       (macOS and Linux)
 
 This is a MEASUREMENT, not a lesson, which is why it has no number: the numbered files
 are a sequence to read in order and this one exists to re-derive a table that would

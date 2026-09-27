@@ -1,9 +1,12 @@
-"""One whole battle, both seats, random legal moves.
+r"""One whole battle, both seats, random legal moves.
 
 The shortest thing that is a real battle. Run it and you have watched two players
 play a match to the end in under a second.
 
-    python examples/01_one_battle.py
+From the RoyaleGym folder, with the virtual environment's Python:
+
+    ..\.venv\Scripts\python examples/01_one_battle.py   (Windows)
+    ../.venv/bin/python examples/01_one_battle.py       (macOS and Linux)
 """
 
 import numpy as np

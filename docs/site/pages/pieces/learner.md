@@ -10,12 +10,25 @@ yet.** Both halves matter, so here they are in order.
 
 The command runs end to end: rollouts, gradient steps, a checkpoint with its manifest, a
 snapshot in the opponent pool, and a `resume` that reloads it in a fresh process. It needs
-torch, which the plain install does not pull in.
+torch, which the plain install does not pull in. From the `Royale` folder:
 
-```
-pip install -e "RoyaleLearn[torch]"
-python -m royalelearn train --config examples/configs/smoke.json
-```
+=== "Windows"
+
+    ```
+    .venv\Scripts\python -m pip install -e "RoyaleLearn[torch]"
+    cd RoyaleLearn
+    ..\.venv\Scripts\python -m royalelearn train --config examples/configs/smoke.json
+    ```
+
+=== "macOS and Linux"
+
+    ```
+    .venv/bin/python -m pip install -e "RoyaleLearn[torch]"
+    cd RoyaleLearn
+    ../.venv/bin/python -m royalelearn train --config examples/configs/smoke.json
+    ```
+
+The commands on this page run from the `RoyaleLearn` folder, like the last line here.
 
 Every run so far has been a short test. An iteration is one round of playing battles and then
 learning from them. As of 2026-09-22 the longest run on the real engine had ten iterations,
@@ -77,9 +90,17 @@ The package imports without torch. That matters more than it sounds: the setting
 identity are useful on a machine where you have not installed a gigabyte of deep-learning
 libraries, and torch is only pulled in when you ask for a name that actually needs it.
 
-```
-python -c "import royalelearn, sys; print(royalelearn.RunConfig, 'torch' in sys.modules)"
-```
+=== "Windows"
+
+    ```
+    ..\.venv\Scripts\python -c "import royalelearn, sys; print(royalelearn.RunConfig, 'torch' in sys.modules)"
+    ```
+
+=== "macOS and Linux"
+
+    ```
+    ../.venv/bin/python -c "import royalelearn, sys; print(royalelearn.RunConfig, 'torch' in sys.modules)"
+    ```
 
 ```
 <class 'royalelearn.config.RunConfig'> False
@@ -97,19 +118,33 @@ All four run today. `config` works without torch; the other three need the torch
     from four fresh clones to a training run in one sitting, so the install path around them is
     the untested part, not the commands.
 
-The first line trains. `config` writes a config you can edit, `doctor` runs the first-run checks,
-and `bench` measures this machine's throughput.
+`config` writes a config you can edit, `doctor` runs the first-run checks, and `bench` measures
+this machine's throughput. Run those three first. The last line is the real training run: the
+laptop profile on the Rust engine, with a limit of 100,000,000 timesteps.
 
-```
-python -m royalelearn train --config examples/configs/laptop.json
-python -m royalelearn config --profile laptop -o run.json
-python -m royalelearn doctor --config run.json
-python -m royalelearn bench
-```
+=== "Windows"
+
+    ```
+    ..\.venv\Scripts\python -m royalelearn config --profile laptop -o run.json
+    ..\.venv\Scripts\python -m royalelearn doctor --config run.json
+    ..\.venv\Scripts\python -m royalelearn bench
+    ..\.venv\Scripts\python -m royalelearn train --config examples/configs/laptop.json
+    ```
+
+=== "macOS and Linux"
+
+    ```
+    ../.venv/bin/python -m royalelearn config --profile laptop -o run.json
+    ../.venv/bin/python -m royalelearn doctor --config run.json
+    ../.venv/bin/python -m royalelearn bench
+    ../.venv/bin/python -m royalelearn train --config examples/configs/laptop.json
+    ```
 
 `doctor` is the one worth knowing about in advance. It builds one environment, prints the engine
-build fingerprint and the observation shapes, checks the legal-move mask against the engine
-exhaustively, and works out how much memory the run will need. It refuses a run that is over the
+build fingerprint and the observation shapes, and checks every action against the engine at one
+state, the one its sampled play reaches. It sees only the cards in hand then, so it can pass
+while the mask is wrong for another card, as it does for Heal today. It also works out how much
+memory the run will need. It refuses a run that is over the
 memory budget in your config, and warns when a run needs more than is free right now. `bench`
 measures your own machine instead of quoting somebody else's.
 

@@ -89,15 +89,28 @@ same command with a file that ships with the repo.
 The three lines open the three kinds of source: a recording, like the two that ship in
 `tests/fixtures`; a trace saved from the engine; and an environment running right now.
 
-```
-python -m royaleviser frames-my-match.jsonl.gz
-python -m royaleviser battle.msgpack --start-tick 900
-python -m royaleviser --stream 127.0.0.1:9870
-```
+=== "Windows"
 
-For the stream, set `ROYALEVISER=127.0.0.1:9870` before your training run starts and change no
-code. Nothing is sent until a viewer says hello, and sending stops three seconds after the last
-viewer goes away, so you can leave it switched on in a run nobody is watching.
+    ```
+    ..\.venv\Scripts\python -m royaleviser frames-my-match.jsonl.gz
+    ..\.venv\Scripts\python -m royaleviser battle.msgpack --start-tick 900
+    ..\.venv\Scripts\python -m royaleviser --stream 127.0.0.1:9870
+    ```
+
+=== "macOS and Linux"
+
+    ```
+    ../.venv/bin/python -m royaleviser frames-my-match.jsonl.gz
+    ../.venv/bin/python -m royaleviser battle.msgpack --start-tick 900
+    ../.venv/bin/python -m royaleviser --stream 127.0.0.1:9870
+    ```
+
+For the stream, set the `ROYALEVISER` variable in the terminal your training run starts from,
+before it starts, and change no code. In PowerShell that is `$env:ROYALEVISER = "127.0.0.1:9870"`,
+in cmd `set ROYALEVISER=127.0.0.1:9870`, and on macOS and Linux
+`export ROYALEVISER=127.0.0.1:9870`. Nothing is sent until a viewer says hello, and sending
+stops three seconds after the last viewer goes away, so you can leave it switched on in a run
+nobody is watching.
 
 A viewer shows one battle at a time, so when you run eight games at once the vectorised
 environment picks game 0 and hands the sender to it. Eight games all reaching for one port is an

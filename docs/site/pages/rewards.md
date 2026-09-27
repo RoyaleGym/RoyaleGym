@@ -395,16 +395,44 @@ and train on it until a bot comes out, you will be among the first to learn whet
 this works, and the project would very much like to hear what happened.
 
 A custom reward is named in the run's config rather than pasted into the trainer, so the
-checkpoint records it:
+checkpoint records it. Say your reward is a function `my_reward()` in a file `my_rewards.py`
+that returns your `RewardFunction`. Copy RoyaleLearn's `examples/configs/laptop.json` to
+`my-run.json` and change two settings in it. `reward_fn`, inside the `env` block, names your
+function. `extra_component_modules`, at the top level, names the file's module, because a run
+refuses to import code the config has not listed:
 
-!!! warning "UNVERIFIED"
-    This particular snippet has not been run here. The command line and the training loop both
-    exist and work; `examples/custom_reward.py` in RoyaleLearn is the maintained version of
-    this, and is the one to copy.
+```json
+"reward_fn": {"cls": "my_rewards.my_reward", "kwargs": {}},
+```
 
+```json
+"extra_component_modules": ["my_rewards"],
 ```
-python -m royalelearn train --config examples/configs/laptop.json
-```
+
+Put both files in the `Royale` folder, outside every repo, and run from there. Inside a repo
+they would be uncommitted files, and `train` refuses to start on uncommitted files in a repo.
+
+=== "Windows"
+
+    ```
+    .venv\Scripts\python -m royalelearn doctor --config my-run.json
+    .venv\Scripts\python -m royalelearn train --config my-run.json
+    ```
+
+=== "macOS and Linux"
+
+    ```
+    .venv/bin/python -m royalelearn doctor --config my-run.json
+    .venv/bin/python -m royalelearn train --config my-run.json
+    ```
+
+!!! warning "Checked with doctor, not trained"
+    On 2026-09-27 `doctor` accepted a copy of `laptop.json` with those two settings, run from a
+    folder outside every repo, and `train`'s check for uncommitted files found nothing to refuse
+    there. Without the `extra_component_modules` line `doctor` refused, and named that setting.
+    `train` itself was not run on it here. The command line and the training loop both
+    exist and work; `examples/custom_reward.py` in RoyaleLearn does the same thing from Python,
+    and is the maintained version to copy.
 
 Before you spend hours training, judge a reward function the way this page does. Play a
 battle with it. Count how many steps it actually said something on. Check it adds to zero

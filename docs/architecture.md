@@ -126,6 +126,10 @@ zeroed ones, so a fair observation and a cheating one are not even the same widt
 it. Every channel and every slot, with its range and whether it is fair, is in
 [observation-spec.md](observation-spec.md).
 
+One known gap: a unit invisible to its enemy, such as a Royal Ghost, is still shown to the enemy
+seat, because no builder reads a unit's status flags. Hiding or marking it waits on a measurement
+of what a player sees in the real game. It is not fixed.
+
 The design rationale for each family lives with the code:
 
 - `action.py`: why the action space is a joint `Discrete(2305)` over (hand slot, tile)
@@ -155,9 +159,15 @@ resolution trade can be measured instead of argued.
 
 `PlacementOracle` computes the mask from the state snapshot, the arena and `DeployRules`,
 independently of the engine. The engine enforces the same rules on its own code path
-(`Engine.check_deploy`). The test suite compares the two exhaustively: every half-cell
-centre and corner, both teams, seven tower states. So a silently wrong mask fails a test
-instead of a training run. The mask covers elixir, territory, water, the river band,
+(`Engine.check_deploy`). The test suite compares the two for every card in the default
+catalogue, both teams, both `TileActionParser` and `HalfTileActionParser`, and every action,
+on four boards: the opening board, one with buildings placed, one with a princess tower down,
+and one with both (`test_the_mask_equals_the_engine_for_every_card` in
+`tests/test_building_footprint.py`). A card the deal keeps out of the starting hand, the Elixir
+Collector, is cycled into both hands first. Heal is the one known disagreement the test allows,
+until the next engine build gives Heal a troop's placement code. A wrong mask for any other card
+on those boards fails a test instead of a training run.
+The mask covers elixir, territory, water, the river band,
 building footprints and the no-deploy rectangle around each living enemy crown tower.
 
 Measured 2026-09-25 on engine build 8218abee7e4f0497, at `reset(seed=0)` with both decks set
@@ -237,9 +247,21 @@ exactly.
 ## Tests
 
 ```
-cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 825 passed, 9 skipped, 1 xfailed at ca15d5e on build d872d792711934c2
+cd RoyaleGym && ..\.venv\Scripts\python -m pytest -q   # 1028 passed, 9 skipped, 1 xfailed at ecbb80b on build ec198b459cf311a4
 ..\.venv\Scripts\python -m ruff check royalegym tests examples   # All checks passed!
 ```
+
+That count is from GitHub Actions run 36347317029, the suite workflow on main: a fresh clone on
+Ubuntu 24.04, with RoyaleSim `1d661b0` and the 15.535 card table. pytest took 518.77 s there.
+Its nine skips are the ones to expect on that card table:
+
+- two pinned counts, this page's and the README badge's, each checkable only on the commit it
+  names;
+- the building-footprint model statement in `tests/test_building_footprint.py`, because
+  MockEngine and RustEngine model a building's footprint differently;
+- six two-engine comparisons, five in `tests/test_rust_engine.py` and one in
+  `tests/test_rust_spells.py`, which need the engine to read the 2018 card table that
+  MockEngine reads.
 
 That count names the commit it was measured at AND the engine build, because it is only a
 fact about one tree compiled against one ledger. Both move: the build digest changed three
@@ -254,8 +276,10 @@ compare either against the figure above, which is a different build.
 More tests RUN on the clone, which is the opposite of what you would expect. The reason is
 the card table: six of the skips here are two-engine comparisons that refuse to run while
 this machine's compiled engine carries a newer table than MockEngine reads, and on a clone
-both sides read the 2018 table, so the comparison measures the engines rather than the
-data. Four of the eight is the measured flip; which four has not been pinned down.
+made with that day's recipe both sides read the 2018 table, so the comparison measures the
+engines rather than the data. Four of the eight is the measured flip; which four has not been
+pinned down. Today's recipe copies the 15.535 table into place, so a clone skips those
+comparisons too, as the CI run above shows.
 
 Without `royalesim` built the Rust-backed tests skip, not pass. A `royalesim` build older
 than `calibration.json` or `derived/arena.json` on disk is a failure, not a skip: `RustEngine()`

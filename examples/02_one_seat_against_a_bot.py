@@ -1,11 +1,14 @@
-"""One seat as the learner, the other a scripted opponent, through Gymnasium.
+r"""One seat as the learner, the other a scripted opponent, through Gymnasium.
 
 This is the shape a single-agent trainer expects: one observation, one action, one
 reward. The other seat is played by an ``Opponent``, which is any object with an
 ``act(obs, mask, rng)`` method -- so a scripted bot, a saved policy, or a previous
 version of the one you are training.
 
-    python examples/02_one_seat_against_a_bot.py
+From the RoyaleGym folder, with the virtual environment's Python:
+
+    ..\.venv\Scripts\python examples/02_one_seat_against_a_bot.py   (Windows)
+    ../.venv/bin/python examples/02_one_seat_against_a_bot.py       (macOS and Linux)
 """
 
 import gymnasium as gym

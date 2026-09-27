@@ -1,10 +1,13 @@
-"""Compare two bots and get an answer with an error bar, or an honest "cannot tell".
+r"""Compare two bots and get an answer with an error bar, or an honest "cannot tell".
 
 The question you ask after every change. It is also the question a hand-written loop
 answers wrongly: it plays your bot in one seat, prints a bare percentage, and counts a
 battle the step limit cut short as a draw.
 
-    python examples/07_is_this_bot_better.py
+From the RoyaleGym folder, with the virtual environment's Python:
+
+    ..\.venv\Scripts\python examples/07_is_this_bot_better.py   (Windows)
+    ../.venv/bin/python examples/07_is_this_bot_better.py       (macOS and Linux)
 """
 
 import numpy as np

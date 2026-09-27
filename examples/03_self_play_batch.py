@@ -1,10 +1,13 @@
-"""Four battles as eight agent slots, so one policy learns from both sides of each.
+r"""Four battles as eight agent slots, so one policy learns from both sides of each.
 
 This is the shape you train in. N games become 2N slots, and every slot sees the board
 from its OWN side -- its king at the bottom -- so a single set of weights can play
 either seat without learning which colour it is.
 
-    python examples/03_self_play_batch.py
+From the RoyaleGym folder, with the virtual environment's Python:
+
+    ..\.venv\Scripts\python examples/03_self_play_batch.py   (Windows)
+    ../.venv/bin/python examples/03_self_play_batch.py       (macOS and Linux)
 """
 
 import numpy as np

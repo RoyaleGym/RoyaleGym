@@ -1,4 +1,4 @@
-"""Stop a run and start it again, and get the same battles you would have had.
+r"""Stop a run and start it again, and get the same battles you would have had.
 
 The problem this solves is not obvious until it bites. An autoreset with no seed leaves
 the generator running, so episode 400 of a game is only reachable by playing the 399
@@ -8,7 +8,10 @@ is continuing, and every difference is in the environment rather than the learne
 ``autoreset_seed_fn`` names episodes instead of counting them, and ``episode_ordinals``
 is the counter a checkpoint carries.
 
-    python examples/06_resume_a_run.py
+From the RoyaleGym folder, with the virtual environment's Python:
+
+    ..\.venv\Scripts\python examples/06_resume_a_run.py   (Windows)
+    ../.venv/bin/python examples/06_resume_a_run.py       (macOS and Linux)
 """
 
 import numpy as np
