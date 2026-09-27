@@ -274,8 +274,8 @@ def test_plant_mask_lets_troops_into_the_river(monkeypatch):
     # needs territory to reach into the band as well.
     orig = PlacementOracle.cell_grid
 
-    def into_river(self, state, team, placement):
-        g = orig(self, state, team, placement)
+    def into_river(self, state, team, placement, *rest):
+        g = orig(self, state, team, placement, *rest)
         if placement != Placement.SPELL:
             a = self.arena
             lo = a.water_half_rows[0]
@@ -368,10 +368,10 @@ def test_plant_mask_offers_the_river_to_a_goblin_barrel(monkeypatch):
     assert _all_disagreements(TileActionParser)[0] == [], "baseline must be green"
     orig = PlacementOracle.cell_grid
 
-    def anywhere(self, state, team, placement):
+    def anywhere(self, state, team, placement, *rest):
         if placement == Placement.SPELL_NOT_ON_WATER:
             placement = Placement.SPELL
-        return orig(self, state, team, placement)
+        return orig(self, state, team, placement, *rest)
 
     monkeypatch.setattr(PlacementOracle, "cell_grid", anywhere)
     assert PlacementOracle.cell_grid is anywhere, "plant did not land"

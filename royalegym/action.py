@@ -384,7 +384,7 @@ class PlacementOracle:
             blockers = self._blockers(state)
         else:
             extra, blockers = 0, ()
-        return (int(placement), self._troop_laws(card), team, pitch_div, extra, rects, blockers)
+        return (int(placement), team, pitch_div, extra, rects, blockers, self._troop_laws(card))
 
     def point_grid(
         self, state: BattleState, team: int, card: CardInfo, pitch_div: int
