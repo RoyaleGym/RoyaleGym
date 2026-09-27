@@ -49,6 +49,7 @@ import numpy as np
 import pytest
 
 from royalegym import mock_engine as mock_engine_module
+from royalegym import rust_engine
 from royalegym.action import (
     GridActionParser,
     HalfTileActionParser,
@@ -280,13 +281,11 @@ def test_the_mask_equals_the_engine_for_every_building_card(rust, board, parser_
 
 
 #: Cards whose mask is KNOWN to differ from the engine, why, and the one shape allowed.
-#: Heal is a spell whose deploy rule is a troop's (refused on buildings and towers), and the
-#: engine up to RoyaleSim 1d661b0 gives it kind code 3, the Log's, which may land on them;
-#: the catalogue exports nothing that tells the two apart, so the mask offers Heal on the
-#: seat's own princess towers and on any building (10 of 240 own tiles per seat on the
-#: opening board). Sim maps that rule to kind code 0 in its next build. STRICT: the entry
-#: fails the gate once the card agrees, so it is removed then rather than kept.
-KNOWN_MASK_SPLITS = {"Heal": ("kind code 3 carries no footprint rule", 1, "OCCUPIED")}
+#: STRICT: an entry fails the gate once its card agrees, so it is removed then rather than
+#: kept. Empty since 2026-09-27: Heal was here (kind code 3, the Log's, for a spell the core
+#: refuses on buildings) until the adapter asked the core which kind-3 spells take a troop's
+#: rule (rust_engine.troop_ruled_spells), the same day a training run stopped on it.
+KNOWN_MASK_SPLITS: dict[str, tuple[str, int, str]] = {}
 
 
 def every_card_hands(engine: Engine) -> list[list[list[int]]]:
@@ -394,6 +393,36 @@ def test_the_mask_equals_the_engine_for_every_card(rust, board, parser_cls):
                 f"{name} now agrees with the engine ({why} no longer holds): remove it from "
                 "KNOWN_MASK_SPLITS"
             )
+
+
+@needs_core
+def test_a_spell_the_core_judges_by_a_troops_rule_gets_a_troops_placement(rust):
+    """Heal takes a troop's territory and is refused on buildings; the Log takes the same
+    territory and lands on them. Up to RoyaleSim 1d661b0 both are kind code 3, so the
+    adapter asks the core which is which (``troop_ruled_spells``). From the next build the
+    core gives Heal kind code 0 itself, and this holds with nothing to ask."""
+    names = {c.name for c in rust.cards()}
+    troop_spells = {
+        c.name for c in rust.cards() if c.placement == Placement.TROOP and c.card_kind == "SPELL"
+    }
+    rolling = {c.name for c in rust.cards() if c.placement == Placement.ROLLING}
+    if "Heal" not in names:
+        pytest.skip(f"{NOT_A_PASS}: this catalogue has no Heal")
+    assert "Heal" in troop_spells, troop_spells
+    assert "Log" in rolling, rolling
+    assert not troop_spells & {"Log", "BarbLog", "RoyalDelivery"}, troop_spells
+
+
+@needs_core
+def test_plant_without_the_probe_heal_disagrees_again(monkeypatch):
+    """The every-card gate is what holds this: with the probe gone, Heal's own-tower taps
+    are offered and refused again, as they were when a training run stopped on them."""
+    monkeypatch.setattr(rust_engine, "troop_ruled_spells", lambda *a, **k: frozenset())
+    engine = RustEngine()
+    if "Heal" not in {c.name for c in engine.cards()}:
+        pytest.skip(f"{NOT_A_PASS}: this catalogue has no Heal")
+    problems, _ = every_card_gate(engine, "opening", TileActionParser())
+    assert any(" Heal at own point" in p and "OCCUPIED" in p for p in problems), problems[:4]
 
 
 @needs_core

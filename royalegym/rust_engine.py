@@ -109,6 +109,7 @@ from .protocol import (
     TowerSlot,
     calibration_digest,
     calibration_values,
+    card_is_spell,
     data_dir,
     default_calibration,
     derived_cards_vintage,
@@ -679,14 +680,14 @@ class RustEngine:
             if self.calibration_overrides
             else {}
         )
-        self._battle = _core.Battle(
+        battle_args = (
             list(card_names) if card_names is not None else None,
             self.slot_of_k,
             path_search,
             ground_y_clamp,
             ground_deploy_point,
-            **overrides,
         )
+        self._battle = _core.Battle(*battle_args, **overrides)
         self._card_table = self._stamp_card_table(before)
         terr = territory_differences(self._battle, self._rules, self._arena, self.slot_of_k)
         if terr:
@@ -770,6 +771,19 @@ class RustEngine:
         #: A consumer that treats DeployResult.x,y as a place should read this and
         #: refuse rather than be handed a tap that looks like a landing.
         self.reports_resolved_position: bool | None = None
+        # A SPELL WITH A TROOP'S DEPLOY RULE. Kind code 3 is every spell that takes a troop's
+        # territory, and the core refuses some of those on a building (Heal) and not others
+        # (the Log); the catalogue does not say which, so the mask offered Heal on the
+        # seat's own crown towers and a training run stopped on the refusal. Asked of the
+        # core, once per catalogue (``troop_ruled_spells``): each such spell gets a troop's
+        # placement, which is the code RoyaleSim's next build gives it, where this finds
+        # nothing to change. Its card_kind stays SPELL, so the troop-only laws skip it.
+        ruled = troop_ruled_spells(self, battle_args, overrides)
+        if ruled:
+            self._cards = [
+                msgspec.structs.replace(c, placement=int(Placement.TROOP)) if c.name in ruled else c
+                for c in self._cards
+            ]
 
     # ------------------------------------------------------------ protocol
 
@@ -1163,6 +1177,57 @@ def _rotation_probe_cached(args: tuple, kwargs: dict) -> list[str]:
     if cache_key not in _PROBE_CACHE:
         _PROBE_CACHE[cache_key] = rotation_probe(RustEngine(*args, **kwargs))
     return _PROBE_CACHE[cache_key]
+
+
+_TROOP_RULED_CACHE: dict[tuple, frozenset[str]] = {}
+
+
+def troop_ruled_spells(engine: RustEngine, battle_args: tuple, overrides: dict) -> frozenset[str]:
+    """The names of the catalogue's kind-3 spells (placement ROLLING) that the core judges
+    by a TROOP's rule: accepted on free ground in the caster's own half, refused OCCUPIED on
+    its own princess tower. Measured on a probe battle built exactly as ``engine``'s, both
+    seats, and cached per build, card table, catalogue and constructor arguments. Both seats
+    must agree, or the spell is left as it is and the every-card mask gate names it.
+    """
+    probes = [c for c in engine._cards if c.placement == Placement.ROLLING and card_is_spell(c)]
+    if not probes:
+        return frozenset()
+    key = (
+        build_digest(),
+        repr(sorted(engine._card_table.items())) if isinstance(engine._card_table, dict)
+        else repr(engine._card_table),
+        tuple(c.name for c in engine._cards),
+        repr(battle_args[2:]),
+        repr(sorted(overrides.items())),
+    )
+    if key in _TROOP_RULED_CACHE:
+        return _TROOP_RULED_CACHE[key]
+    battle = _core.Battle(*battle_args, **overrides)
+    a, t = engine._arena, engine._arena.subtile
+    full = 1000 * engine.calibration.int("match.MAX_MANA")
+    others = [c.card_id for c in engine._cards if c not in probes]
+    verdicts: dict[str, set[tuple[int, int]]] = {c.name: set() for c in probes}
+    for i in range(0, len(probes), HAND_SIZE):
+        group = [c.card_id for c in probes[i : i + HAND_SIZE]]
+        deck = (group + others + group * 8)[:8]
+        battle.reset(1, [deck, deck], 0, engine._rules.deploy_lockout_ticks, [full, full], None, [])
+        state = engine._decode_state.decode(battle.state_json())
+        for team in TEAMS:
+            tower = a.princess_centers[team][0]
+            free = to_engine(a, team, 9 * t + t // 2, 10 * t + t // 2)
+            for slot, cid in enumerate(state.players[team].hand):
+                if cid not in group:
+                    continue
+                taps = [engine._wire(DeployCommand(team, slot, x, y)) for x, y in (tower, free)]
+                on, off = (engine._status(battle.check_deploy(*tap)) for tap in taps)
+                verdicts[engine._cards[cid].name].add((on, off))
+    ruled = frozenset(
+        name
+        for name, seen in verdicts.items()
+        if len(seen) == 1 and seen == {(int(DeployStatus.OCCUPIED), int(DeployStatus.OK))}
+    )
+    _TROOP_RULED_CACHE[key] = ruled
+    return ruled
 
 
 #: Ledger keys whose shipped arm is the client's own and deliberately not seat-symmetric,

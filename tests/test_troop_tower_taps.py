@@ -270,8 +270,8 @@ def test_a_spell_with_a_troop_placement_keeps_the_closed_block():
     next build) a troop's placement code. The mask must keep such a spell on the closed
     block, and the ``point_grid`` memo must not hand it a troop's grid. Checked on a Knight
     re-kinded as a spell: its grid is the Knight's under the closed block, not the open one,
-    in either call order. The engine's own verdict for Heal is gated by KNOWN_MASK_SPLITS in
-    tests/test_building_footprint.py until the relabel lands."""
+    in either call order. The engine's own verdict for Heal is held by the every-card gate
+    in tests/test_building_footprint.py."""
     import msgspec
 
     if not ledger_has_key():
