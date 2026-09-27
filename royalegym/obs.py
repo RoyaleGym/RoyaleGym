@@ -977,7 +977,21 @@ class ObsBuilder(ABC):
         self.arena = engine.arena()
         self.cards = list(engine.cards())
         self.num_cards = len(self.cards)
-        self.oracle = PlacementOracle(self.arena, engine.rules(), self.cards)
+        rules = engine.rules()
+        # The parser's oracle when it was built from the same arena, rules and cards. Its
+        # grids are memoised on everything they read (``PlacementOracle.grid_key``), so one
+        # oracle serves both: Blue's ``enemy_troop_zone`` is the very grid Red's troop
+        # mask needs, and with two oracles it was worked out twice per step.
+        shared = getattr(action_parser, "oracle", None)
+        if (
+            isinstance(shared, PlacementOracle)
+            and shared.arena == self.arena
+            and shared.rules == rules
+            and shared.cards == self.cards
+        ):
+            self.oracle = shared
+        else:
+            self.oracle = PlacementOracle(self.arena, rules, self.cards)
         self.mask_space = spaces.Box(0, 1, shape=(int(action_parser.space.n),), dtype=np.int8)
         self.mask_plane_shape = action_parser.mask_plane_shape()
         self._troop_probe = next((c for c in self.cards if c.placement == Placement.TROOP), None)

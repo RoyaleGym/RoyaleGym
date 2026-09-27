@@ -138,6 +138,30 @@ class PlacementOracle:
         self._grids: dict[tuple[Any, ...], np.ndarray] = {}
         self.grid_hits = 0
         self.grid_misses = 0
+        # The blockers part of ``grid_key`` for the last state seen: the state OBJECT and
+        # its sorted blocker tuple. See ``_blockers``.
+        self._blocker_memo: tuple[BattleState | None, tuple[tuple[int, int, int], ...]] = (
+            None,
+            (),
+        )
+
+    def _blockers(self, state: BattleState) -> tuple[tuple[int, int, int], ...]:
+        """Every non-troop entity's (x, y, radius), sorted: what ``grid_key`` keys bodies on.
+
+        Worked out once per state object instead of once per call. Masks and observations
+        ask for it up to five times per seat per step, all for one state. Keyed on the
+        OBJECT, which is safe because ``BattleState`` is frozen and every engine's
+        ``state()`` builds a new one. It holds that object, so its id cannot be reused. A
+        caller that edits a state's entity LIST in place and asks again would get the old
+        answer. Nothing here does that; build a new state with ``msgspec.structs.replace``.
+        """
+        seen, key = self._blocker_memo
+        if seen is not state:
+            key = tuple(
+                sorted((e.x, e.y, e.radius) for e in state.entities if e.kind != EntityKind.TROOP)
+            )
+            self._blocker_memo = (state, key)
+        return key
 
     def _bodies_block(self, placement: int) -> bool:
         """Whether the bodies already on the board are a rule for this placement.
@@ -263,9 +287,7 @@ class PlacementOracle:
         )
         if self._bodies_block(placement):
             extra = card.radius if placement == Placement.BUILDING else 0
-            blockers = tuple(
-                sorted((e.x, e.y, e.radius) for e in state.entities if e.kind != EntityKind.TROOP)
-            )
+            blockers = self._blockers(state)
         else:
             extra, blockers = 0, ()
         return (int(placement), team, pitch_div, extra, rects, blockers)
