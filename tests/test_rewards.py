@@ -44,6 +44,7 @@ from __future__ import annotations
 
 from fractions import Fraction
 
+import msgspec
 import pytest
 
 from _lockout import lockout_ticks
@@ -53,6 +54,7 @@ from royalegym.protocol import (
     RED,
     BattleState,
     DeployCommand,
+    DeployStatus,
     EntityKind,
     EntityState,
     MatchSetup,
@@ -381,6 +383,40 @@ def test_a_unit_a_card_produced_is_not_billed_at_that_cards_price(owner):
     assert t.get_reward(caster, prev, cur, results) == pytest.approx(-ARROWS / SCALE)
 
 
+def cycle_in(
+    engine, tbl: Table, setup: MatchSetup, seat: int, card_id: int, singles
+) -> BattleState:
+    """The state once ``card_id`` is in ``seat``'s hand, for a card the deal keeps OUT of the
+    starting hand (economy.OMIT_FROM_STARTING_HAND, the Elixir Collector since RoyaleSim
+    1d661b0). The deal swaps it with the first eligible card in the queue, so it is the next
+    card drawn: one play of slot 0 brings it in. The deck is refilled with single-unit troops
+    so that play puts down one unit and nothing more, and the battle runs on until that unit
+    has landed, so nothing it leaves can be counted as the probed card's, and until the
+    elixir the play spent is back (the seeded 10**7 is capped, so the tap could not pay)."""
+    others = [i for i in singles if i != card_id][:7]
+    assert len(others) == 7, f"only {len(others)} single-unit troops to cycle with"
+    deck = [card_id, *others]
+    engine.reset(1, msgspec.structs.replace(setup, decks=[deck, deck]))
+    state = engine.state()
+    assert card_id not in state.players[seat].hand, "the deal no longer omits it"
+    x, y = tbl.at(seat, 4, 10)
+    played = engine.step([DeployCommand(team=seat, hand_slot=0, x=x, y=y)], 1)[0]
+    assert played.status == 0, f"the filler play was refused: {played}"
+    for _ in range(100):
+        engine.step([], 1)
+        state = engine.state()
+        if card_id in state.players[seat].hand:
+            engine.step([], 40)  # the filler's unit lands before the probe's snapshot
+            cost = 1000 * engine.cards()[card_id].elixir
+            for _ in range(100):
+                state = engine.state()
+                if state.players[seat].elixir_milli >= cost:
+                    return state
+                engine.step([], 10)
+            raise AssertionError(f"seat {seat} never afforded card {card_id} again")
+    raise AssertionError(f"card {card_id} never reached seat {seat}'s hand")
+
+
 def tap_everything(engine, tbl: Table):
     """Tap every card the engine will accept, each seat, and yield (card, units it put down).
 
@@ -389,25 +425,35 @@ def tap_everything(engine, tbl: Table):
     that is what has to be measured.
     """
     ids = [c.card_id for c in engine.cards()]
+    # Single-unit troops: a filler that puts down one unit and nothing after it.
+    singles = [
+        c.card_id for c in engine.cards() if c.placement == Placement.TROOP and c.count == 1
+    ]
+    refused: list[tuple[str, int, str]] = []
     for card in engine.cards():
         deck = [card.card_id, *[i for i in ids if i != card.card_id][:7]]
         for seat in (BLUE, RED):
-            engine.reset(
-                1,
-                MatchSetup(
-                    decks=[deck, deck], shuffle=ShuffleMode.NONE,
-                    elixir_milli=[10**7] * 2, start_tick=LOCKOUT,
-                ),
+            setup = MatchSetup(
+                decks=[deck, deck], shuffle=ShuffleMode.NONE,
+                elixir_milli=[10**7] * 2, start_tick=LOCKOUT,
             )
+            engine.reset(1, setup)
             prev = engine.state()
+            if card.card_id not in prev.players[seat].hand:
+                prev = cycle_in(engine, tbl, setup, seat, card.card_id, singles)
             before = {e.uid for e in prev.entities}
             x, y = tbl.at(seat, 9, 6)
             slot = slot_of(prev, seat, card.card_id)
-            if engine.step([DeployCommand(team=seat, hand_slot=slot, x=x, y=y)], 2)[0].status != 0:
+            result = engine.step([DeployCommand(team=seat, hand_slot=slot, x=x, y=y)], 2)[0]
+            if result.status != 0:
+                # Once a silent skip: the Elixir Collector, never dealt and then unaffordable
+                # (2026-09-27), dropped out of both tests without a word.
+                refused.append((card.name, seat, DeployStatus(result.status).name))
                 continue
             yield card, seat, [
                 e for e in engine.state().entities if e.uid not in before and e.kind not in TOWERS
             ]
+    assert not refused, f"taps the engine refused, so these cards went unmeasured: {refused}"
 
 
 @pytest.mark.parametrize("kind", ENGINES)
