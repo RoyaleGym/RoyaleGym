@@ -174,7 +174,9 @@ OVERRIDE_READ_HERE = frozenset({"match", "time"})
 #: would judge one rule and the core run another (placement.ILLEGAL_TAP = refuse is a box
 #: fit in the core and a collision-circle test in the mask). Keys the mask never reads go
 #: to the core alone.
-OVERRIDE_FOLLOWED = frozenset({"placement.TROOP_TOWER_TAPS"})
+OVERRIDE_FOLLOWED = frozenset(
+    {"placement.TROOP_TOWER_TAPS", "placement.SNAP_EVEN_CORNER", "placement.TAP_SNAP"}
+)
 
 
 class _ReadRecorder(Calibration):
@@ -587,6 +589,7 @@ class RustEngine:
         ground_y_clamp: str | None = None,
         ground_deploy_point: str | None = None,
         calibration_overrides: Mapping[str, Any] | None = None,
+        tap_snap: str | None = None,
     ) -> None:
         """``path_search``: None = the ledger's ``pathfinding.PATH_SEARCH`` (the game's own
         search, measured on client 16.402, which is NOT seat-symmetric:
@@ -614,6 +617,11 @@ class RustEngine:
         different ways, so the shipped arm is neither seat-symmetric nor frame-symmetric.
         ``none`` lays every ring on the tap. Like the clamp it is independent of
         ``path_search`` and has to be asked for by name.
+
+        ``tap_snap``: None = the ledger's ``placement.TAP_SNAP``. ``"none"`` judges a troop's
+        body at its tap, the seat-symmetric arm (``SymmetricRustEngine`` asks for it). Passed to
+        the core's own keyword, which an engine before RoyaleSim's round 9 lacks: then it is
+        refused here. The mask follows it, as it follows ``OVERRIDE_FOLLOWED``.
 
         ``calibration_overrides``: ledger key -> value, as ``data/calibration.json`` writes
         it (``{"targeting.FIRST_TOWER_PICK": "current_x"}``). The core runs the battle with
@@ -650,6 +658,14 @@ class RustEngine:
             section, _, name = key.partition(".")
             if key in OVERRIDE_FOLLOWED and name in cal.raw.get(section, {}):
                 cal = cal.with_override(key, value)
+        if tap_snap is not None:
+            if not battle_takes("tap_snap"):
+                raise ValueError(
+                    f"tap_snap={tap_snap!r}: this engine's Battle has no tap_snap keyword "
+                    "(RoyaleSim's round 9 adds it)"
+                )
+            if "TAP_SNAP" in cal.raw.get("placement", {}):
+                cal = cal.with_override("placement.TAP_SNAP", tap_snap)
         self.calibration = cal
         recorded = _ReadRecorder(cal.raw)
         self._arena = Arena.load(recorded, arena_path)
@@ -676,13 +692,16 @@ class RustEngine:
         before = None if from_engine else self._disk_stamp()
         # By keyword and only when there are any: a build older than the core's keyword
         # still constructs a battle that overrides nothing.
-        overrides = (
+        overrides: dict[str, Any] = (
             {"calibration_overrides": {
                 k: json.dumps(v) for k, v in self.calibration_overrides.items()
             }}
             if self.calibration_overrides
             else {}
         )
+        self.tap_snap = tap_snap
+        if tap_snap is not None:
+            overrides["tap_snap"] = tap_snap
         battle_args = (
             list(card_names) if card_names is not None else None,
             self.slot_of_k,
@@ -987,6 +1006,8 @@ class RustEngine:
             "path_search": self.path_search,
             "ground_y_clamp": self.ground_y_clamp,
             "ground_deploy_point": self.ground_deploy_point,
+            # Only when set, so an engine that selects nothing reads as it always did.
+            **({"tap_snap": self.tap_snap} if self.tap_snap is not None else {}),
             # Only when there are any, so a plain engine's config reads as it always did.
             **(
                 {"calibration_overrides": dict(self.calibration_overrides)}
@@ -1257,6 +1278,13 @@ def troop_ruled_spells(engine: RustEngine, battle_args: tuple, overrides: dict) 
 _TUNNEL_CACHE: dict[tuple[Any, ...], frozenset[str]] = {}
 
 
+def battle_takes(keyword: str) -> bool:
+    """Whether the core's ``Battle`` constructor takes ``keyword``, from its text signature
+    (pyo3 ``#[pyo3(signature = ...)]``). False without a core or a signature."""
+    sig = getattr(getattr(_core, "Battle", None), "__text_signature__", None) or ""
+    return re.search(rf"\b{re.escape(keyword)}\s*=", sig) is not None
+
+
 def tunnelling_cards(engine: RustEngine, battle_args: tuple, overrides: dict) -> frozenset[str]:
     """The names of the catalogue's troop and building cards (codes 0 and 1) that the core
     accepts in the ENEMY half, on free land well inside the enemy's tower rects, where it
@@ -1390,6 +1418,10 @@ class SymmetricRustEngine(RustEngine):
         kwargs.setdefault("path_search", "trace_fitted_astar")
         kwargs.setdefault("ground_y_clamp", "deploy_column_range_own_frame")
         kwargs.setdefault("ground_deploy_point", "none")
+        # placement.TAP_SNAP's tile-centre arm snaps in the arena's frame; its seat-symmetric
+        # arm is "none". By the core's keyword, and only where the core has it.
+        if battle_takes("tap_snap"):
+            kwargs.setdefault("tap_snap", "none")
         ledger = json.loads(getattr(_core, "EMBEDDED_CALIBRATION_JSON", "{}") or "{}")
         overrides = {**symmetric_overrides(ledger), **(kwargs.get("calibration_overrides") or {})}
         if overrides:

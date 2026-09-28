@@ -858,6 +858,15 @@ ILLEGAL_BUILDING_TAP = ("refuse", "relocate_first_fitting_ring")
 #: crown tower's placement box is moved off it by the engine, so the tap is legal.
 HALF_OPEN_RELOCATE = "client16402_half_open_relocate"
 TROOP_TOWER_TAPS = ("closed_block", HALF_OPEN_RELOCATE)
+#: placement.SNAP_EVEN_CORNER: the frame a tap is floored in to its one-tile box before the
+#: half-open arm moves it off an own crown tower. At every point the mask asks about (tile
+#: and half-tile centres, never on a tile edge) the two pick the same tile.
+SNAP_EVEN_CORNER = ("placer_frame", "absolute")
+#: placement.TAP_SNAP: where the core judges a troop's body under the half-open arm. At the
+#: tap, or at the centre of the tile the tap is in (arena frame). The one-unit offset a
+#: single ground troop then stands at (formation.GROUND_DEPLOY_POINT) comes after the verdict.
+TILE_CENTRE_SNAP = "client16402_tile_centre"
+TAP_SNAP = ("none", TILE_CENTRE_SNAP)
 KING_TOWER_NAME = "KingTower"
 PRINCESS_TOWER_NAME = "PrincessTower"
 
@@ -1006,6 +1015,10 @@ class DeployRules(msgspec.Struct, frozen=True):
     # spells.ILLEGAL_SPELL_TAP: what the engine does with a spell tapped outside its
     # territory. The mask implements "refuse" only; the clamp arm accepts taps it refuses.
     illegal_spell_tap: str = "refuse"
+    # placement.SNAP_EVEN_CORNER and placement.TAP_SNAP (``SNAP_EVEN_CORNER``, ``TAP_SNAP``),
+    # read under the half-open arm only: under the closed block neither moves a verdict.
+    snap_even_corner: str = "placer_frame"
+    tap_snap: str = "none"
 
     @classmethod
     def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
@@ -1036,30 +1049,30 @@ class DeployRules(msgspec.Struct, frozen=True):
                 f"placement.TROOP_TOWER_TAPS={tower_taps!r}: only {list(TROOP_TOWER_TAPS)} are "
                 "implemented in the action mask"
             )
+        snap, tap_snap = "placer_frame", "none"
         if tower_taps == HALF_OPEN_RELOCATE:
-            # The own-tower zone snaps a tap to its tile in the PLACER's frame; that is the
-            # one snap the mask implements (PlacementOracle.own_tower_zone). And under this
-            # arm the core judges a troop's body where the tap RESOLVES (state.rs
-            # resolve_point), so placement.TAP_SNAP, which changes no verdict under the
-            # closed block, moves the point the bodies are judged at: only "none" is
-            # implemented.
+            # The own-tower zone snaps a tap to its one-tile box, in the frame
+            # placement.SNAP_EVEN_CORNER names (PlacementOracle.own_tower_zone). And under
+            # this arm the core judges a troop's body where the tap RESOLVES (state.rs
+            # check_position, resolve_point), so placement.TAP_SNAP, which changes no verdict
+            # under the closed block, moves the point the bodies are judged at.
             try:
                 snap = str(calibration.value("placement.SNAP_EVEN_CORNER"))
             except KeyError:
                 snap = "placer_frame"
-            if snap != "placer_frame":
+            if snap not in SNAP_EVEN_CORNER:
                 raise NotImplementedError(
                     f"placement.SNAP_EVEN_CORNER={snap!r} with TROOP_TOWER_TAPS={tower_taps!r}: "
-                    "the mask implements the placer_frame snap only"
+                    f"the mask implements {list(SNAP_EVEN_CORNER)}"
                 )
             try:
                 tap_snap = str(calibration.value("placement.TAP_SNAP"))
             except KeyError:
                 tap_snap = "none"
-            if tap_snap != "none":
+            if tap_snap not in TAP_SNAP:
                 raise NotImplementedError(
                     f"placement.TAP_SNAP={tap_snap!r} with TROOP_TOWER_TAPS={tower_taps!r}: the "
-                    "mask judges a troop's body at the unsnapped tap only"
+                    f"mask implements {list(TAP_SNAP)}"
                 )
         try:
             spell_tap = str(calibration.value("spells.ILLEGAL_SPELL_TAP"))
@@ -1097,6 +1110,8 @@ class DeployRules(msgspec.Struct, frozen=True):
             deploy_lockout_ticks=lockout,
             troop_tower_taps=tower_taps,
             illegal_spell_tap=spell_tap,
+            snap_even_corner=snap,
+            tap_snap=tap_snap,
         )
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:

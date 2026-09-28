@@ -16,6 +16,7 @@ from __future__ import annotations
 import collections
 import json
 
+import msgspec
 import numpy as np
 import pytest
 
@@ -29,6 +30,9 @@ from royalegym.protocol import (
     BLUE,
     HALF_OPEN_RELOCATE,
     RED,
+    SNAP_EVEN_CORNER,
+    TAP_SNAP,
+    TILE_CENTRE_SNAP,
     DeployCommand,
     DeployRules,
     DeployStatus,
@@ -39,7 +43,10 @@ from royalegym.protocol import (
 )
 from royalegym.rust_engine import (
     CORE_IMPORT_ERROR,
+    OVERRIDE_FOLLOWED,
     RustEngine,
+    SymmetricRustEngine,
+    battle_takes,
     core_available,
     symmetric_overrides,
 )
@@ -187,16 +194,23 @@ def test_rules_read_the_arm_and_refuse_one_the_mask_lacks():
     )
     with pytest.raises(NotImplementedError, match="TROOP_TOWER_TAPS"):
         DeployRules.load(cal.with_override(KEY, "some_future_arm"))
-    # Two keys the half-open arm makes the mask depend on, each refused at any arm but the
-    # one implemented.
-    for other, arm in (("SNAP_EVEN_CORNER", "absolute"), ("TAP_SNAP", "client16402_tile_centre")):
+    # Two keys the half-open arm makes the mask depend on: every arm the mask implements is
+    # read into the rules, and an arm it does not know is refused.
+    for other, field, arms in (
+        ("SNAP_EVEN_CORNER", "snap_even_corner", SNAP_EVEN_CORNER),
+        ("TAP_SNAP", "tap_snap", TAP_SNAP),
+    ):
         if other not in cal.raw["placement"]:
             continue
+        half_open = cal.with_override(KEY, HALF_OPEN_RELOCATE)
+        for arm in arms:
+            rules = DeployRules.load(half_open.with_override(f"placement.{other}", arm))
+            assert getattr(rules, field) == arm, (other, arm)
         with pytest.raises(NotImplementedError, match=other):
-            DeployRules.load(
-                cal.with_override(KEY, HALF_OPEN_RELOCATE).with_override(f"placement.{other}", arm)
-            )
-        closed = cal.with_override(KEY, "closed_block").with_override(f"placement.{other}", arm)
+            DeployRules.load(half_open.with_override(f"placement.{other}", "some_future_arm"))
+        closed = cal.with_override(KEY, "closed_block").with_override(
+            f"placement.{other}", arms[-1]
+        )
         assert DeployRules.load(closed).troop_tower_taps == "closed_block", (
             f"{other} changes no troop verdict under the closed block and must not be refused there"
         )
@@ -261,6 +275,94 @@ def test_plant_the_tower_tile_snapped_in_the_arenas_frame_is_caught(monkeypatch)
     monkeypatch.setattr(PlacementOracle, "own_tower_zone", arena_frame)
     problems, _ = gate(flipped_engine())
     assert any("corner seat 1" in p for p in problems), "PLANT DID NOT LAND: the frame of the snap"
+
+
+#: The arms of the two snap keys sim's round 9 flips (SNAP_EVEN_CORNER = absolute, TAP_SNAP =
+#: client16402_tile_centre), alone and together, run under the half-open arm.
+SNAP_ARMS = {
+    "absolute": {"placement.SNAP_EVEN_CORNER": "absolute"},
+    "tile_centre": {"placement.TAP_SNAP": TILE_CENTRE_SNAP},
+    "both": {"placement.SNAP_EVEN_CORNER": "absolute", "placement.TAP_SNAP": TILE_CENTRE_SNAP},
+}
+
+
+def snap_engine(arms: dict[str, str]) -> RustEngine:
+    ledger = default_calibration().raw["placement"]
+    missing = [k for k in arms if k.split(".", 1)[1] not in ledger]
+    if missing:
+        pytest.skip(f"SKIPPED, NOT PASSED: this ledger has no {missing}")
+    engine = engine_on_arm(HALF_OPEN_RELOCATE, calibration_overrides=dict(arms))
+    rules = engine.rules()
+    assert rules.snap_even_corner == arms.get("placement.SNAP_EVEN_CORNER", rules.snap_even_corner)
+    assert rules.tap_snap == arms.get("placement.TAP_SNAP", rules.tap_snap), "not followed"
+    return engine
+
+
+def test_the_snap_keys_are_followed():
+    assert {"placement.SNAP_EVEN_CORNER", "placement.TAP_SNAP"} <= OVERRIDE_FOLLOWED
+
+
+@needs_core
+@pytest.mark.parametrize("arms", sorted(SNAP_ARMS))
+def test_the_mask_equals_the_engine_under_each_snap_arm(arms):
+    """Both parsers, both seats, every board, and the half-cell corners, where the frame a
+    tap is floored in picks the tile. Parity's king-box tie taps (side 1 at (7500, 30500) and
+    (10500, 30500), side 0 at (10500, 1500)) are tile centres, so the tile parser asks them."""
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    problems, _ = gate(snap_engine(SNAP_ARMS[arms]))
+    assert not problems, f"{arms}: {len(problems)} disagreements; first {problems[:6]}"
+
+
+@needs_core
+def test_plant_bodies_judged_at_the_raw_tap_under_the_tile_centre_snap_is_caught(monkeypatch):
+    """Under client16402_tile_centre the core judges a troop's body at its tap's tile centre;
+    a mask that judges it at the tap disagrees where a half-tile tap and its tile centre fall
+    on different sides of a body's edge, or of an own tower's box at a corner."""
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    monkeypatch.setattr(PlacementOracle, "_bodies_at_tile_centre", lambda self, card: False)
+    problems, _ = gate(snap_engine(SNAP_ARMS["tile_centre"]))
+    assert problems, "PLANT DID NOT LAND: bodies at the raw tap"
+
+
+@needs_core
+def test_plant_the_placer_frame_snap_under_the_absolute_arm_is_caught(monkeypatch):
+    """The absolute arm floors Red's tap in the arena's frame; a mask still flooring it in
+    Red's own frame disagrees at the half-cell corners (the mirror of the plant above)."""
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    real = PlacementOracle.own_tower_zone
+
+    def placer_frame(self, state, team, px, py):
+        self.rules = msgspec.structs.replace(self.rules, snap_even_corner="placer_frame")
+        try:
+            return real(self, state, team, px, py)
+        finally:
+            self.rules = msgspec.structs.replace(self.rules, snap_even_corner="absolute")
+
+    monkeypatch.setattr(PlacementOracle, "own_tower_zone", placer_frame)
+    problems, _ = gate(snap_engine(SNAP_ARMS["absolute"]))
+    assert any("corner seat 1" in p for p in problems), "PLANT DID NOT LAND: the frame of the snap"
+
+
+@needs_core
+def test_the_symmetric_engine_asks_for_no_tap_snap_where_the_core_takes_the_keyword():
+    """Sim's round 9 adds Battle(tap_snap=); the tile-centre arm snaps in the arena's frame,
+    so the rotation gates run under "none". An engine without the keyword refuses the
+    argument, and the symmetric engine then passes nothing."""
+    engine = SymmetricRustEngine()
+    if battle_takes("tap_snap"):
+        assert engine.tap_snap == "none"
+        assert engine.rules().tap_snap == "none" or engine.rules().troop_tower_taps != (
+            HALF_OPEN_RELOCATE
+        )
+        assert engine.config()["tap_snap"] == "none"
+    else:
+        assert engine.tap_snap is None
+        assert "tap_snap" not in engine.config()
+        with pytest.raises(ValueError, match="tap_snap"):
+            RustEngine(tap_snap="none")
 
 
 @needs_core

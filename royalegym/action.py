@@ -85,6 +85,7 @@ from .protocol import (
     HALF_OPEN_RELOCATE,
     HAND_SIZE,
     RED,
+    TILE_CENTRE_SNAP,
     Arena,
     BattleState,
     CardInfo,
@@ -161,6 +162,10 @@ class PlacementOracle:
         #     body blocks it.
         self.king_half_open = rules.troop_tower_taps == HALF_OPEN_RELOCATE
         self.troop_taps_relocate = self.king_half_open and rules.illegal_building_tap != "refuse"
+        # placement.TAP_SNAP = client16402_tile_centre under the half-open arm: a troop's body
+        # is judged at the centre of the tile its tap is in, in the ARENA's frame (state.rs
+        # resolve_point); its zone is still judged at the tap itself.
+        self.bodies_at_tile_centre = self.king_half_open and rules.tap_snap == TILE_CENTRE_SNAP
         if self.king_half_open and len(arena.king_blocks) != 2:
             raise ValueError(
                 "placement.TROOP_TOWER_TAPS is half-open but the arena states no king blocks"
@@ -234,18 +239,21 @@ class PlacementOracle:
     ) -> np.ndarray:
         """Where a ``team`` troop tap is moved off an own crown tower, so no body blocks it.
 
-        The core snaps the tap to a one-tile box in the PLACER's frame
-        (placement.SNAP_EVEN_CORNER = placer_frame: floor in the own frame, then back) and
-        moves the troop when that box shares positive area with an alive own crown tower's
-        placement box (state.rs relocate_off_own_crown_tower). Broadcasts over px, py.
+        The core snaps the tap to a one-tile box, floored in the PLACER's frame
+        (placement.SNAP_EVEN_CORNER = placer_frame: in the own frame, then back) or in the
+        arena's (absolute), and moves the troop when that box shares positive area with an
+        alive own crown tower's placement box (state.rs relocate_off_own_crown_tower). The
+        two frames pick different tiles only for a point on a tile edge, which no point the
+        mask asks about is. Broadcasts over px, py.
         """
         a = self.arena
         t = a.subtile
-        fx = px if team == BLUE else a.width - px
-        fy = py if team == BLUE else a.height - py
+        own = self.rules.snap_even_corner == "placer_frame" and team != BLUE
+        fx = a.width - px if own else px
+        fy = a.height - py if own else py
         cx = (fx // t) * t + t // 2
         cy = (fy // t) * t + t // 2
-        if team != BLUE:
+        if own:
             cx, cy = a.width - cx, a.height - cy
         lo_x, hi_x, lo_y, hi_y = cx - t // 2, cx + t // 2, cy - t // 2, cy + t // 2
         zone: np.ndarray = np.zeros(np.broadcast(px, py).shape, dtype=bool)
@@ -275,6 +283,15 @@ class PlacementOracle:
         blocks it: every card whose kind is troop under the half-open arm (state.rs
         resolve_point), a TUNNEL troop (the Miner) as much as a TROOP one."""
         if not self.troop_taps_relocate:
+            return False
+        tunnel_troop = card.placement == Placement.TUNNEL and card.card_kind == "TROOP"
+        return self._troop_laws(card) or tunnel_troop
+
+    def _bodies_at_tile_centre(self, card: CardInfo) -> bool:
+        """Whether ``card``'s body is judged at its tap's tile centre rather than the tap:
+        placement.TAP_SNAP = client16402_tile_centre under the half-open arm, for a card whose
+        KIND is troop (state.rs check_position resolves the point for CardKind::Troop only)."""
+        if not self.bodies_at_tile_centre:
             return False
         tunnel_troop = card.placement == Placement.TUNNEL and card.card_kind == "TROOP"
         return self._troop_laws(card) or tunnel_troop
@@ -367,14 +384,19 @@ class PlacementOracle:
                 ok &= ~((px >= x0) & (px < x1) & (py >= y0) & (py < y1))
         if self._card_bodies_block(card):
             extra = card.radius if self._building_like(card) else 0
+            bx, by = px, py
+            if self._bodies_at_tile_centre(card):
+                t = a.subtile
+                bx, by = (px // t) * t + t // 2, (py // t) * t + t // 2
             clear = np.ones(ok.shape, dtype=bool)
             for e in state.entities:
                 if e.kind == EntityKind.TROOP:
                     continue
                 r = e.radius + extra
-                clear &= (px - e.x) ** 2 + (py - e.y) ** 2 > r * r
+                clear &= (bx - e.x) ** 2 + (by - e.y) ** 2 > r * r
             if self._moved_off_own_tower(card):
-                clear |= self.own_tower_zone(state, team, px, py)
+                # From the snapped point: the core moves the tap it has already snapped.
+                clear |= self.own_tower_zone(state, team, bx, by)
             ok &= clear
         return ok
 
@@ -491,14 +513,19 @@ class PlacementOracle:
                     ok &= ~(iny[:, None] & inx[None, :])
         if self._card_bodies_block(card):
             extra = card.radius if self._building_like(card) else 0
+            bxs, bys = xs, ys
+            if self._bodies_at_tile_centre(card):
+                t = a.subtile
+                bxs, bys = (xs // t) * t + t // 2, (ys // t) * t + t // 2
             clear = np.ones(ok.shape, dtype=bool)
             for e in state.entities:
                 if e.kind == EntityKind.TROOP:
                     continue
                 r = e.radius + extra
-                clear &= ((ys - e.y) ** 2)[:, None] + ((xs - e.x) ** 2)[None, :] > r * r
+                clear &= ((bys - e.y) ** 2)[:, None] + ((bxs - e.x) ** 2)[None, :] > r * r
             if self._moved_off_own_tower(card):
-                clear |= self.own_tower_zone(state, team, xs[None, :], ys[:, None])
+                # From the snapped point: the core moves the tap it has already snapped.
+                clear |= self.own_tower_zone(state, team, bxs[None, :], bys[:, None])
             ok &= clear
         if key is not None:
             ok.flags.writeable = False
