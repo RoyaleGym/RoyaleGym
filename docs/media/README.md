@@ -36,6 +36,7 @@ GitHub plays a gif inside an `<img>` tag and will not play an mp4 there.
 | Shot | Repo | What it shows |
 |---|---|---|
 | `whole-battle` | RoyaleGym | One whole battle end to end in the viewer, both players choosing at random among their legal moves. |
+| `battle-in-viewer` | RoyaleGym | The same battle at its busiest tick in the whole viewer window: both hands, the status block and the inspector. |
 | `two-apis` | RoyaleGym | One battle through PettingZoo, which drives both seats, and through Gymnasium, which drives one. The two runs are compared after every step, and a run with the seats swapped shows the comparison can fail. |
 | `legality-mask` | RoyaleGym | Where each card in hand may go on the opening step, one board per card. Every move is checked against the engine's `check_deploy`, and again with the mask shifted one row to show the check can fail. |
 | `self-play-batch` | RoyaleGym | A self-play batch: N battles become 2N rows, and the two rows of a battle hold the same towers with own and enemy swapped. |
