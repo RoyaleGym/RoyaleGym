@@ -93,15 +93,15 @@ for _ in range(6):
 
 ```
 play: OK
-t=170  giant at (4.34, 12.56)  hp=3968  red left tower hp=3052
-t=250  giant at (3.86, 16.15)  hp=3968  red left tower hp=3052
-t=330  giant at (3.77, 19.82)  hp=3532  red left tower hp=3052
-t=410  giant at (3.77, 22.57)  hp=2987  red left tower hp=2799
-t=490  giant at (3.77, 22.57)  hp=2442  red left tower hp=2293
-t=570  giant at (3.77, 22.57)  hp=1897  red left tower hp=1534
+t=170  giant at (4.40, 12.83)  hp=3968  red left tower hp=3052
+t=250  giant at (3.85, 16.41)  hp=3968  red left tower hp=3052
+t=330  giant at (3.77, 20.08)  hp=3532  red left tower hp=3052
+t=410  giant at (3.77, 22.58)  hp=2987  red left tower hp=2799
+t=490  giant at (3.77, 22.58)  hp=2442  red left tower hp=2040
+t=570  giant at (3.77, 22.58)  hp=1897  red left tower hp=1534
 ```
 
-Run on engine build `cb784bb583586789`, RoyaleSim `2e5895c`, with the 15.535 card table. The
+Run on engine build `bb6797d83bdf3031`, RoyaleSim `dbc26e5`, with the 15.535 card table. The
 `play: OK` line is there on purpose. `step` does not raise when a play is refused, it returns the
 reason. An earlier version of this program played at tick 0, was refused as `TOO_EARLY`, and then
 failed looking for a Giant that was never placed.

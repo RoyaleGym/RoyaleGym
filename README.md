@@ -89,18 +89,19 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 1  crowns [0, 1]  tick 3600
+winner 1  crowns [1, 1]  tick 6000
 ```
 
-That is a whole match, re-run 2026-09-27 on engine build `52aa2faa425c816d` with the **15.535 card
-table**, which the Install steps below put at `cards.json`. Red took Blue's left princess tower
-at tick 1840, and that was the only crown when the three minutes ran out, so Red won 1-0 at tick
-3600.
+That is a whole match, re-run 2026-09-28 on engine build `bb6797d83bdf3031` with the **15.535 card
+table**, which the Install steps below put at `cards.json`. It was one crown each when the three
+minutes ran out: Red took Blue's left princess tower at tick 1800 and Blue took Red's left one at
+tick 3580. Nobody scored in overtime, so at tick 6000 a tiebreak decided it, and Red won: Blue's
+weakest standing tower had less health left.
 
 Measured on the project's desktop, not on a clean runner, building the engine from
-**RoyaleSim `244c893`**. The compiled engine is `engine_binary_sha256` `452cd0947329130e`.
+**RoyaleSim `dbc26e5`**. The compiled engine is `engine_binary_sha256` `fa84270f391f0539`.
 
-**This result has moved five times, and each move is traced to one engine rule.** All five were
+**This result has moved six times, and each move is traced to one engine rule.** All six were
 found the same way: switch that one rule back, run this exact program, and get the previous result
 exactly.
 
@@ -117,11 +118,16 @@ exactly.
   crown tower started being moved off it and the king's no-deploy block started opening on its far
   edges, both as measured on the client (`placement.TROOP_TOWER_TAPS`). With that rule switched
   back, that build printed `winner 0  crowns [1, 0]  tick 3728` exactly.
-- Later on 2026-09-27 it moved to the result above, when a unit that has just killed its target
-  stopped carrying its swing over to a new target out of its reach, as measured on the client
-  (`combat.CORPSE_SWITCH_REACH`). With that rule switched back, this build prints `winner 0  crowns
-  [1, 1]  tick 6000` exactly; switching back any one of the other nine rules that changed with it
-  does not.
+- Later on 2026-09-27 it moved to `winner 1  crowns [0, 1]  tick 3600`, when a unit that has just
+  killed its target stopped carrying its swing over to a new target out of its reach, as measured
+  on the client (`combat.CORPSE_SWITCH_REACH`). With that rule switched back, that build printed
+  `winner 0  crowns [1, 1]  tick 6000` exactly; switching back any one of the other nine rules that
+  changed with it did not.
+- On 2026-09-28 it moved to the result above, when a troop tapped on one of its own buildings
+  started being moved off it as off a crown tower, as measured on the client
+  (`placement.TROOP_BUILDING_TAPS`). With that rule switched back, this build prints `winner 1
+  crowns [0, 1]  tick 3600` exactly; switching back any one of the other four placement rules
+  that changed with it does not.
 
 **The RoyaleSim commit is written here because the digest cannot supply it.** `build_digest` hashes
 the calibration values and the arena compiled into the extension; it has no access to the Rust at
@@ -138,7 +144,7 @@ rather than leaving you to suspect your install. `RustEngine().config()` returns
 dict; print it to read `build_digest` and `cards_vintage`. A different digest with the same
 printed line is fine.
 
-Both players are picking at random from the legal moves, and one of them still took a tower. That
+Both players are picking at random from the legal moves, and each of them still took a tower. That
 is the bar your bot starts from.
 
 These eight cards are here so the battle comes out the same on your machine as it did on ours.
@@ -147,8 +153,8 @@ against recordings, which `cards.json` lists under `thin_slice`, so the example 
 best-measured part of the engine. Any eight will do. Leave the deck out and each team is dealt a
 random eight, which is the default.
 
-One env step is half a second of game time, which is 10 ticks. The battle ended at tick 3600,
-the end of normal time, so each player made 360 decisions. The whole battle takes under a second of real time, and how far under depends
+One env step is half a second of game time, which is 10 ticks. The battle ended at tick 6000,
+the full five minutes, so each player made 600 decisions. The whole battle takes under a second of real time, and how far under depends
 entirely on what else your machine is doing: four runs on 2026-09-22, on a laptop with 8 GB of
 memory and several other jobs going, gave 0.57 to 0.74 s. Treat any timing on this page the same way.
 
