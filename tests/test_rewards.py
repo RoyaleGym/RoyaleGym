@@ -62,6 +62,7 @@ from royalegym.protocol import (
     ShuffleMode,
     SpawnSpec,
     card_is_spell,
+    slot_cost,
     to_engine,
 )
 from royalegym.reward import ElixirTradeReward
@@ -264,7 +265,11 @@ def test_every_card_the_catalogue_calls_a_spell_is_charged_once_at_the_tap(kind,
     catalogue = make_engine(kind)
     # By KIND: a spell may carry a troop's placement code (Heal, from the next RoyaleSim
     # build), so the spells are at least one of each spell placement class, not exactly.
-    spells = [c for c in catalogue.cards() if card_is_spell(c)]
+    # The Mirror is a spell by kind, but it copies its side's last play and costs that play
+    # plus its own one: on this bare board there is nothing to copy. It has its own test.
+    spells = [
+        c for c in catalogue.cards() if card_is_spell(c) and c.placement != Placement.MIRROR
+    ]
     troops = [
         c.name
         for c in catalogue.cards()
@@ -414,10 +419,13 @@ def cycle_in(
         state = engine.state()
         if card_id in state.players[seat].hand:
             engine.step([], 40)  # the filler's unit lands before the probe's snapshot
-            cost = 1000 * engine.cards()[card_id].elixir
+            card = engine.cards()[card_id]
             for _ in range(100):
                 state = engine.state()
-                if state.players[seat].elixir_milli >= cost:
+                p = state.players[seat]
+                # The slot's price, not the card's elixir: a Mirror costs its copy plus one.
+                cost = slot_cost(p, p.hand.index(card_id), card)
+                if cost >= 0 and p.elixir_milli >= 1000 * cost:
                     return state
                 engine.step([], 10)
             raise AssertionError(f"seat {seat} never afforded card {card_id} again")
@@ -425,7 +433,8 @@ def cycle_in(
 
 
 def tap_everything(engine, tbl: Table):
-    """Tap every card the engine will accept, each seat, and yield (card, units it put down).
+    """Tap every card the engine will accept, each seat, and yield (card, seat, the state the
+    tap was made from, its result, the units it put down).
 
     A TAP and not a seeded spawn, because they do not put the same thing down: a seeded
     Goblin Gang is one goblin, a tapped one is six. The term scores what a tap left, so
@@ -457,7 +466,7 @@ def tap_everything(engine, tbl: Table):
                 # (2026-09-27), dropped out of both tests without a word.
                 refused.append((card.name, seat, DeployStatus(result.status).name))
                 continue
-            yield card, seat, [
+            yield card, seat, prev, result, [
                 e for e in engine.state().entities if e.uid not in before and e.kind not in TOWERS
             ]
     assert not refused, f"taps the engine refused, so these cards went unmeasured: {refused}"
@@ -485,15 +494,21 @@ def test_one_tap_of_any_card_is_priced_at_exactly_that_cards_elixir(kind):
     tbl = Table(engine)
     t = term(engine)
     taps, off = 0, []
-    for card, seat, put_down in tap_everything(engine, tbl):
+    for card, seat, prev, result, put_down in tap_everything(engine, tbl):
         taps += 1
-        at_the_tap = t.cast.get(card.card_id, Fraction(0))
+        # What the play cost: the slot's stated price. That is the card's own elixir for
+        # every card but a Mirror, which costs the card it copies plus its own one.
+        price = Fraction(slot_cost(prev.players[seat], result.hand_slot, card))
+        if card.placement != Placement.MIRROR and price != card.elixir:
+            off.append((card.name, seat, "stated", str(price), "listed", card.elixir))
+        listed = t.cast.get(card.card_id)
+        at_the_tap = Fraction(0) if listed is None else t._paid(prev, result, listed)
         on_the_board = sum((t.unit_value(e) for e in put_down), Fraction(0))
-        if at_the_tap + on_the_board != Fraction(card.elixir):
+        if at_the_tap + on_the_board != price:
             off.append(
-                (card.name, seat, len(put_down), str(at_the_tap), str(on_the_board), card.elixir)
+                (card.name, seat, len(put_down), str(at_the_tap), str(on_the_board), str(price))
             )
-    assert off == [], f"plays priced at something other than the card's elixir: {off}"
+    assert off == [], f"plays priced at something other than what they cost: {off}"
     assert taps >= 20, f"only {taps} taps landed; the check would be vacuous"
 
 
@@ -509,7 +524,7 @@ def test_a_card_can_put_down_a_unit_its_own_row_does_not_describe():
     engine = make_engine("rust")
     tbl = Table(engine)
     mixed = []
-    for card, seat, put_down in tap_everything(engine, tbl):
+    for card, seat, _prev, _result, put_down in tap_everything(engine, tbl):
         if len({(e.max_hp, e.radius, e.flying) for e in put_down}) < 2:
             continue
         own = [e for e in put_down if is_own_unit(card, e)]
@@ -522,6 +537,56 @@ def test_a_card_can_put_down_a_unit_its_own_row_does_not_describe():
         )
         assert len(own) < len(put_down), f"{card.name} is not mixed after all"
     assert mixed, "no card put down a second kind of unit; the total check adds nothing"
+
+
+MIRROR_DECK = (
+    "Mirror", "Knight", "Musketeer", "Valkyrie", "MiniPekka", "Giant", "Prince", "Wizard",
+)
+
+
+@needs_rust
+@pytest.mark.parametrize("caster", [BLUE, RED])
+def test_a_mirror_is_charged_at_the_tap_what_the_engine_took(caster):
+    """A Mirror costs the card it copies plus its own one (match.MIRROR_COST_RULE), and puts
+    a copy down one level up, which matches no row and scores nothing. So the play is worth
+    its whole price at the tap. Charged its own one elixir, as it was until 2026-09-28, a
+    Mirror of a Knight cost the term 1 where the engine took 4."""
+    engine = make_engine("rust", MIRROR_DECK)
+    tbl = Table(engine)
+    mirror, knight = tbl.by_name["Mirror"], tbl.by_name["Knight"]
+    deck = tbl.deck(MIRROR_DECK)
+    engine.reset(
+        1,
+        MatchSetup(
+            decks=[deck, deck], shuffle=ShuffleMode.NONE,
+            elixir_milli=[10**7] * 2, start_tick=LOCKOUT,
+        ),
+    )
+    # The deal keeps the Mirror out of the opening hand; the Knight's play brings it in.
+    prev = engine.state()
+    assert mirror.card_id not in prev.players[caster].hand
+    played = engine.step([cast(tbl, prev, caster, "Knight", tbl.at(caster, 9, 6))], 1)
+    assert [r.status for r in played] == [0]
+    prev = engine.state()
+    p = prev.players[caster]
+    slot = slot_of(prev, caster, mirror.card_id)
+    assert p.mirror_target == knight.card_id
+    price = p.hand_costs[slot]
+    assert price == knight.elixir + mirror.elixir, p.hand_costs
+    assert p.elixir_milli >= 1000 * price
+
+    results = engine.step([cast(tbl, prev, caster, "Mirror", tbl.at(caster, 5, 6))], 2)
+    cur = engine.state()
+    assert [r.status for r in results] == [0]
+    took = prev.players[caster].elixir_milli - cur.players[caster].elixir_milli
+    assert 1000 * price - 100 <= took <= 1000 * price, f"the engine took {took}, not {price}"
+    copies = born(prev, cur)
+    assert [tbl.by_id[e.card_id].name for e in copies] == ["Knight"], copies
+    assert not is_own_unit(knight, copies[0]), "the copy was meant to be one level up"
+
+    t = term(engine)
+    assert t.get_reward(caster, prev, cur, results) == pytest.approx(-price / SCALE)
+    assert t.get_reward(1 - caster, prev, cur, results) == pytest.approx(price / SCALE)
 
 
 @needs_rust

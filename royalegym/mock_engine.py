@@ -835,6 +835,11 @@ class MockEngine:
                     tower_hp=hp,
                     tower_max_hp=max_hp,
                     king_active=s.king_active[team],
+                    # What each slot costs, -1 for an empty one, as the engine states it.
+                    # mirror_target stays -1: this engine models no Mirror.
+                    hand_costs=[
+                        self._cards[c].elixir if c != EMPTY_CARD else -1 for c in s.hands[team]
+                    ],
                 )
             )
         ents = []

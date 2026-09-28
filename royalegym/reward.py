@@ -35,6 +35,7 @@ from collections.abc import Sequence
 from fractions import Fraction
 
 from .protocol import (
+    HAND_SIZE,
     BattleState,
     CardInfo,
     DeployResult,
@@ -173,6 +174,13 @@ class ElixirTradeReward(RewardFunction):
     Without this the term paid for a spell's kills and charged nothing for the spell,
     which teaches that spells are free.
 
+    IT IS CHARGED WHAT THE PLAY COST, not the card's own elixir: the price the engine
+    stated for that hand slot just before the tap (``PlayerState.hand_costs``), where it
+    states one. For most cards the two are the same number. A Mirror's are not: it costs
+    the card it copies plus its own one, and puts down a copy one level up, which matches
+    no row and so scores nothing, like a Goblin Barrel's goblins. Charged its own one
+    elixir, a Mirror of a Knight cost the term 1 where the engine took 4.
+
     WHAT THE CATALOGUE DOES NOT PRICE. A card can put units on the board that are not
     the unit the card itself summons -- a hut and a Witch keep producing them, a
     Tombstone leaves more behind when it dies, a barrel releases them where it lands.
@@ -224,6 +232,15 @@ class ElixirTradeReward(RewardFunction):
         self.own_unit = {c.card_id: (c.hitpoints, c.radius, c.flying) for c in cards}
         self.cast = {c.card_id: Fraction(c.elixir) for c in cards if card_is_spell(c)}
 
+    @staticmethod
+    def _paid(prev: BattleState, r: DeployResult, listed: Fraction) -> Fraction:
+        """What an accepted tap of a cast card cost: the price its slot stated in ``prev``,
+        the state the tap was made from, or the card's listed elixir where none is stated."""
+        costs = prev.players[r.team].hand_costs
+        if len(costs) == HAND_SIZE and 0 <= r.hand_slot < HAND_SIZE and costs[r.hand_slot] >= 0:
+            return Fraction(costs[r.hand_slot])
+        return listed
+
     def unit_value(self, e: EntityState) -> Fraction:
         """The card's per-unit value, or zero for a unit the catalogue does not price."""
         row = self.own_unit.get(e.card_id)
@@ -251,6 +268,7 @@ class ElixirTradeReward(RewardFunction):
             v = self.cast.get(r.card_id)
             if v is None:
                 continue
+            v = self._paid(prev, r, v)
             total += v if r.team != team else -v
         return float(total) / self.scale
 
