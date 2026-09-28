@@ -99,7 +99,7 @@ tick 3580. Nobody scored in overtime, so at tick 6000 a tiebreak decided it, and
 weakest standing tower had less health left.
 
 Measured on the project's desktop, not on a clean runner, building the engine from
-**RoyaleSim `dbc26e5`**. The compiled engine is `engine_binary_sha256` `fa84270f391f0539`.
+**RoyaleSim `0d0ccd6`**. The compiled engine is `engine_binary_sha256` `2c3c052ed85c1f5e`.
 
 **This result has moved six times, and each move is traced to one engine rule.** All six were
 found the same way: switch that one rule back, run this exact program, and get the previous result
