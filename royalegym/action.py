@@ -78,14 +78,17 @@ from gymnasium import spaces
 
 from .protocol import (
     ABILITY_BUTTONS,
+    AS_TOWER_TAP,
     BIT_NO_DEPLOY,
     BIT_WATER,
     BLUE,
+    BOTTLE_RELOCATE,
     EMPTY_CARD,
     HALF_OPEN_RELOCATE,
     HAND_SIZE,
     RED,
     TILE_CENTRE_SNAP,
+    TROOP_RELOCATION,
     Arena,
     BattleState,
     CardInfo,
@@ -161,11 +164,27 @@ class PlacementOracle:
         #     relocate_off_own_crown_tower), unless placement.ILLEGAL_TAP is "refuse", so no
         #     body blocks it.
         self.king_half_open = rules.troop_tower_taps == HALF_OPEN_RELOCATE
-        self.troop_taps_relocate = self.king_half_open and rules.illegal_building_tap != "refuse"
-        # placement.TAP_SNAP = client16402_tile_centre under the half-open arm: a troop's body
-        # is judged at the centre of the tile its tap is in, in the ARENA's frame (state.rs
-        # resolve_point); its zone is still judged at the tap itself.
-        self.bodies_at_tile_centre = self.king_half_open and rules.tap_snap == TILE_CENTRE_SNAP
+        # THE RELOCATIONS (state.rs resolve_point), for a card placed as a troop
+        # (``_places_as_troop``). A tap whose snapped one-tile box shares area with an alive
+        # OWN crown tower's box (the half-open arm) or an alive OWN building's box
+        # (placement.TROOP_BUILDING_TAPS = as_tower_tap) is moved off it, unless
+        # placement.ILLEGAL_TAP is "refuse", so no body there blocks it.
+        self.buildings_move_taps = rules.troop_building_taps == AS_TOWER_TAP
+        self.troop_taps_relocate = rules.illegal_building_tap != "refuse" and (
+            self.king_half_open or self.buildings_move_taps
+        )
+        # With ANY relocation on, the live bottle's included (placement.LIVE_BOTTLE_TAPS), the
+        # core judges the body where the tap resolves: under placement.TAP_SNAP =
+        # client16402_tile_centre at the centre of the tile the tap is in, in the ARENA's frame.
+        # The zone is still judged at the tap itself. The live bottle's own move (off the tile
+        # of an own Rage bottle standing out its fuse) is not modelled: a bottle is no body,
+        # and the move lands only where no building's box is.
+        any_relocation = (
+            self.king_half_open
+            or self.buildings_move_taps
+            or rules.live_bottle_taps == BOTTLE_RELOCATE
+        )
+        self.bodies_at_tile_centre = any_relocation and rules.tap_snap == TILE_CENTRE_SNAP
         if self.king_half_open and len(arena.king_blocks) != 2:
             raise ValueError(
                 "placement.TROOP_TOWER_TAPS is half-open but the arena states no king blocks"
@@ -234,17 +253,32 @@ class PlacementOracle:
             out.append(e.footprint)
         return out
 
+    def own_building_boxes(self, state: BattleState, team: int) -> list[tuple[int, int, int, int]]:
+        """The placement box (engine frame, closed) of every ALIVE building ``team`` owns."""
+        out = []
+        for e in state.entities:
+            if e.team != team or e.hp <= 0 or e.kind != EntityKind.BUILDING:
+                continue
+            if e.footprint is None:
+                raise ValueError(
+                    "placement.TROOP_BUILDING_TAPS is as_tower_tap, which needs each building's "
+                    "placement box, and this engine reports none"
+                )
+            out.append(e.footprint)
+        return out
+
     def own_tower_zone(
         self, state: BattleState, team: int, px: np.ndarray, py: np.ndarray
     ) -> np.ndarray:
-        """Where a ``team`` troop tap is moved off an own crown tower, so no body blocks it.
+        """Where a ``team`` troop tap is moved off an own crown tower (the half-open arm) or an
+        own building (placement.TROOP_BUILDING_TAPS = as_tower_tap), so no body blocks it.
 
         The core snaps the tap to a one-tile box, floored in the PLACER's frame
         (placement.SNAP_EVEN_CORNER = placer_frame: in the own frame, then back) or in the
-        arena's (absolute), and moves the troop when that box shares positive area with an
-        alive own crown tower's placement box (state.rs relocate_off_own_crown_tower). The
-        two frames pick different tiles only for a point on a tile edge, which no point the
-        mask asks about is. Broadcasts over px, py.
+        arena's (absolute), and moves the troop when that box shares positive area with the
+        placement box of an alive own crown tower or building (state.rs
+        relocate_off_own_crown_tower). The two frames pick different tiles only for a point on
+        a tile edge, which no point the mask asks about is. Broadcasts over px, py.
         """
         a = self.arena
         t = a.subtile
@@ -257,7 +291,10 @@ class PlacementOracle:
             cx, cy = a.width - cx, a.height - cy
         lo_x, hi_x, lo_y, hi_y = cx - t // 2, cx + t // 2, cy - t // 2, cy + t // 2
         zone: np.ndarray = np.zeros(np.broadcast(px, py).shape, dtype=bool)
-        for x0, y0, x1, y1 in self.own_tower_boxes(state, team):
+        boxes = self.own_tower_boxes(state, team) if self.king_half_open else []
+        if self.buildings_move_taps:
+            boxes += self.own_building_boxes(state, team)
+        for x0, y0, x1, y1 in boxes:
             zone |= (lo_x < x1) & (x0 < hi_x) & (lo_y < y1) & (y0 < hi_y)
         return zone
 
@@ -278,23 +315,32 @@ class PlacementOracle:
             card.placement == Placement.TUNNEL and card.card_kind == "BUILDING"
         )
 
+    def _places_as_troop(self, card: CardInfo) -> bool:
+        """Whether a tap of ``card`` takes the relocations a troop tap takes (state.rs
+        places_as_troop): a card whose KIND is troop, the Miner as much as a Knight, and under
+        placement.SPELL_AS_DEPLOY_TAPS = troop_relocation a spell placed as a troop that may
+        not stand on a building (a SPELL kind with a troop's placement: the Heal)."""
+        troop = card.card_kind in (None, "TROOP") and card.placement in (
+            Placement.TROOP,
+            Placement.TUNNEL,
+        )
+        spell = (
+            self.rules.spell_as_deploy_taps == TROOP_RELOCATION
+            and card.card_kind == "SPELL"
+            and card.placement == Placement.TROOP
+        )
+        return troop or spell
+
     def _moved_off_own_tower(self, card: CardInfo) -> bool:
-        """Whether a tap of ``card`` on an own crown tower is MOVED off it, so no body there
-        blocks it: every card whose kind is troop under the half-open arm (state.rs
-        resolve_point), a TUNNEL troop (the Miner) as much as a TROOP one."""
-        if not self.troop_taps_relocate:
-            return False
-        tunnel_troop = card.placement == Placement.TUNNEL and card.card_kind == "TROOP"
-        return self._troop_laws(card) or tunnel_troop
+        """Whether a tap of ``card`` on an own crown tower or building is MOVED off it, so no
+        body there blocks it (``own_tower_zone``)."""
+        return self.troop_taps_relocate and self._places_as_troop(card)
 
     def _bodies_at_tile_centre(self, card: CardInfo) -> bool:
         """Whether ``card``'s body is judged at its tap's tile centre rather than the tap:
-        placement.TAP_SNAP = client16402_tile_centre under the half-open arm, for a card whose
-        KIND is troop (state.rs check_position resolves the point for CardKind::Troop only)."""
-        if not self.bodies_at_tile_centre:
-            return False
-        tunnel_troop = card.placement == Placement.TUNNEL and card.card_kind == "TROOP"
-        return self._troop_laws(card) or tunnel_troop
+        placement.TAP_SNAP = client16402_tile_centre with any relocation on, for a card placed
+        as a troop (state.rs check_position resolves the point only for those)."""
+        return self.bodies_at_tile_centre and self._places_as_troop(card)
 
     def _card_bodies_block(self, card: CardInfo) -> bool:
         """``_bodies_block`` for a card: a TUNNEL card takes its kind's answer."""

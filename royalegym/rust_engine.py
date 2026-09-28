@@ -175,7 +175,14 @@ OVERRIDE_READ_HERE = frozenset({"match", "time"})
 #: fit in the core and a collision-circle test in the mask). Keys the mask never reads go
 #: to the core alone.
 OVERRIDE_FOLLOWED = frozenset(
-    {"placement.TROOP_TOWER_TAPS", "placement.SNAP_EVEN_CORNER", "placement.TAP_SNAP"}
+    {
+        "placement.TROOP_TOWER_TAPS",
+        "placement.SNAP_EVEN_CORNER",
+        "placement.TAP_SNAP",
+        "placement.TROOP_BUILDING_TAPS",
+        "placement.SPELL_AS_DEPLOY_TAPS",
+        "placement.LIVE_BOTTLE_TAPS",
+    }
 )
 
 

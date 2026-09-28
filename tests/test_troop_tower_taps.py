@@ -29,10 +29,13 @@ from royalegym.action import (
 from royalegym.protocol import (
     BLUE,
     HALF_OPEN_RELOCATE,
+    LIVE_BOTTLE_TAPS,
     RED,
     SNAP_EVEN_CORNER,
+    SPELL_AS_DEPLOY_TAPS,
     TAP_SNAP,
     TILE_CENTRE_SNAP,
+    TROOP_BUILDING_TAPS,
     DeployCommand,
     DeployRules,
     DeployStatus,
@@ -58,7 +61,16 @@ FULL = [2400, 1400, 1400]
 DECKS = {
     "troops": ["Knight", "Minions", "Archer", "Log", "Cannon", "Fireball", "Giant", "Musketeer"],
     "building": ["Cannon", "Giant", "Knight", "Zap", "Minions", "Archer", "Log", "Fireball"],
+    # The Heal: a spell placed as a troop that may not stand on a building, the one card
+    # placement.SPELL_AS_DEPLOY_TAPS moves. Dealt only where the table makes it one (the
+    # 15.535 table; on the 2018 table it is a plain area spell): ``heal_places_as_troop``.
+    "heal": ["Heal", "Knight", "Minions", "Archer", "Cannon", "Fireball", "Giant", "Musketeer"],
 }
+
+
+def heal_places_as_troop(engine: RustEngine) -> bool:
+    heal = next((c for c in engine.cards() if c.name == "Heal"), None)
+    return heal is not None and heal.card_kind == "SPELL" and heal.placement == 0
 BOARDS = {
     "all_up": ([FULL, FULL], False),
     "own_princesses_down": ([[2400, 0, 1400], [2400, 1400, 0]], False),
@@ -130,6 +142,8 @@ def gate(engine: RustEngine, oracle_patch=None) -> tuple[list[str], dict]:
     closed = engine_on_arm("closed_block")
     for board in BOARDS:
         for deck in DECKS:
+            if deck == "heal" and not heal_places_as_troop(engine):
+                continue
             engine.reset(1, setup(engine, deck, board))
             closed.reset(1, setup(closed, deck, board))
             state = engine.state()
@@ -199,15 +213,21 @@ def test_rules_read_the_arm_and_refuse_one_the_mask_lacks():
     for other, field, arms in (
         ("SNAP_EVEN_CORNER", "snap_even_corner", SNAP_EVEN_CORNER),
         ("TAP_SNAP", "tap_snap", TAP_SNAP),
+        ("TROOP_BUILDING_TAPS", "troop_building_taps", TROOP_BUILDING_TAPS),
+        ("SPELL_AS_DEPLOY_TAPS", "spell_as_deploy_taps", SPELL_AS_DEPLOY_TAPS),
+        ("LIVE_BOTTLE_TAPS", "live_bottle_taps", LIVE_BOTTLE_TAPS),
     ):
         if other not in cal.raw["placement"]:
             continue
-        half_open = cal.with_override(KEY, HALF_OPEN_RELOCATE)
-        for arm in arms:
-            rules = DeployRules.load(half_open.with_override(f"placement.{other}", arm))
-            assert getattr(rules, field) == arm, (other, arm)
-        with pytest.raises(NotImplementedError, match=other):
-            DeployRules.load(half_open.with_override(f"placement.{other}", "some_future_arm"))
+        # Read under EITHER tower arm: the body is judged where the tap resolves whenever
+        # any relocation is on, the live bottle's included.
+        for tower in ("closed_block", HALF_OPEN_RELOCATE):
+            base = cal.with_override(KEY, tower)
+            for arm in arms:
+                rules = DeployRules.load(base.with_override(f"placement.{other}", arm))
+                assert getattr(rules, field) == arm, (other, tower, arm)
+            with pytest.raises(NotImplementedError, match=other):
+                DeployRules.load(base.with_override(f"placement.{other}", "some_future_arm"))
         closed = cal.with_override(KEY, "closed_block").with_override(
             f"placement.{other}", arms[-1]
         )
@@ -279,10 +299,32 @@ def test_plant_the_tower_tile_snapped_in_the_arenas_frame_is_caught(monkeypatch)
 
 #: The arms of the two snap keys sim's round 9 flips (SNAP_EVEN_CORNER = absolute, TAP_SNAP =
 #: client16402_tile_centre), alone and together, run under the half-open arm.
+BUILDING_TAPS = {
+    "placement.TROOP_BUILDING_TAPS": "as_tower_tap",
+    "placement.SPELL_AS_DEPLOY_TAPS": "troop_relocation",
+}
 SNAP_ARMS = {
     "absolute": {"placement.SNAP_EVEN_CORNER": "absolute"},
     "tile_centre": {"placement.TAP_SNAP": TILE_CENTRE_SNAP},
     "both": {"placement.SNAP_EVEN_CORNER": "absolute", "placement.TAP_SNAP": TILE_CENTRE_SNAP},
+    # The closed tower arm still resolves (and snaps) a troop's point: the live bottle's
+    # relocation is on (placement.LIVE_BOTTLE_TAPS ships it).
+    "closed_tile_centre": {KEY: "closed_block", "placement.TAP_SNAP": TILE_CENTRE_SNAP},
+    # The pair parity ruled: taps on an own building moved as off a tower, the Heal with them.
+    "building": dict(BUILDING_TAPS),
+    "closed_building": {KEY: "closed_block", **BUILDING_TAPS},
+    "all": {
+        "placement.SNAP_EVEN_CORNER": "absolute",
+        "placement.TAP_SNAP": TILE_CENTRE_SNAP,
+        **BUILDING_TAPS,
+    },
+}
+FIELD_OF = {
+    "placement.SNAP_EVEN_CORNER": "snap_even_corner",
+    "placement.TAP_SNAP": "tap_snap",
+    "placement.TROOP_BUILDING_TAPS": "troop_building_taps",
+    "placement.SPELL_AS_DEPLOY_TAPS": "spell_as_deploy_taps",
+    KEY: "troop_tower_taps",
 }
 
 
@@ -291,15 +333,15 @@ def snap_engine(arms: dict[str, str]) -> RustEngine:
     missing = [k for k in arms if k.split(".", 1)[1] not in ledger]
     if missing:
         pytest.skip(f"SKIPPED, NOT PASSED: this ledger has no {missing}")
-    engine = engine_on_arm(HALF_OPEN_RELOCATE, calibration_overrides=dict(arms))
-    rules = engine.rules()
-    assert rules.snap_even_corner == arms.get("placement.SNAP_EVEN_CORNER", rules.snap_even_corner)
-    assert rules.tap_snap == arms.get("placement.TAP_SNAP", rules.tap_snap), "not followed"
+    rest = {k: v for k, v in arms.items() if k != KEY}
+    engine = engine_on_arm(arms.get(KEY, HALF_OPEN_RELOCATE), calibration_overrides=rest)
+    for key, value in arms.items():
+        assert getattr(engine.rules(), FIELD_OF[key]) == value, f"{key} not followed"
     return engine
 
 
-def test_the_snap_keys_are_followed():
-    assert {"placement.SNAP_EVEN_CORNER", "placement.TAP_SNAP"} <= OVERRIDE_FOLLOWED
+def test_the_relocation_keys_are_followed():
+    assert set(FIELD_OF) | {"placement.LIVE_BOTTLE_TAPS"} <= OVERRIDE_FOLLOWED
 
 
 @needs_core
@@ -344,6 +386,54 @@ def test_plant_the_placer_frame_snap_under_the_absolute_arm_is_caught(monkeypatc
     monkeypatch.setattr(PlacementOracle, "own_tower_zone", placer_frame)
     problems, _ = gate(snap_engine(SNAP_ARMS["absolute"]))
     assert any("corner seat 1" in p for p in problems), "PLANT DID NOT LAND: the frame of the snap"
+
+
+@needs_core
+def test_plant_the_snap_under_the_half_open_arm_only_is_caught():
+    """RoyaleGym a19f4de snapped a troop's body only under the half-open tower arm. The core
+    snaps it whenever any relocation is on, and the live bottle's is on under either arm."""
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+
+    def half_open_only(o):
+        o.bodies_at_tile_centre = o.bodies_at_tile_centre and o.king_half_open
+
+    problems, _ = gate(snap_engine(SNAP_ARMS["closed_tile_centre"]), oracle_patch=half_open_only)
+    assert problems, "PLANT DID NOT LAND: the snap on the closed tower arm"
+
+
+@needs_core
+def test_plant_taps_on_an_own_building_not_moved_is_caught():
+    """Under as_tower_tap a tap on an own Cannon's box is moved off it and ACCEPTED; a mask
+    that keeps refusing it on the Cannon's body disagrees."""
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    problems, _ = gate(
+        snap_engine(SNAP_ARMS["closed_building"]),
+        oracle_patch=lambda o: setattr(o, "buildings_move_taps", False),
+    )
+    assert any("mask 0, engine OK" in p for p in problems), f"PLANT DID NOT LAND: {problems[:4]}"
+
+
+@needs_core
+def test_plant_the_heal_not_moved_is_caught(monkeypatch):
+    """Under troop_relocation the Heal takes the relocations a troop takes; a mask that
+    moves troops only refuses it on the own Cannon where the core moves and accepts it."""
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    engine = snap_engine(SNAP_ARMS["closed_building"])
+    if not heal_places_as_troop(engine):
+        pytest.skip("SKIPPED, NOT PASSED: this table has no Heal placed as a troop")
+    real = PlacementOracle._places_as_troop
+
+    def troops_only(self, card):
+        return card.card_kind != "SPELL" and real(self, card)
+
+    monkeypatch.setattr(PlacementOracle, "_places_as_troop", troops_only)
+    problems, _ = gate(engine)
+    assert any(" heal " in p and "mask 0, engine OK" in p for p in problems), (
+        f"PLANT DID NOT LAND: {problems[:4]}"
+    )
 
 
 @needs_core

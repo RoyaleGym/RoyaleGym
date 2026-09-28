@@ -397,6 +397,12 @@ class MockEngine:
             illegal_building_tap=ILLEGAL_BUILDING_TAP,
             deploy_lockout_ticks=0,
             troop_tower_taps=TROOP_TOWER_TAPS_ARM,
+            # Nor does it move a tap off anything else, or snap one: the arms that do nothing.
+            snap_even_corner="placer_frame",
+            tap_snap="none",
+            troop_building_taps="not_relocated",
+            spell_as_deploy_taps="spell_point",
+            live_bottle_taps="not_blocked",
         )
         g = load_globals_csv()
 

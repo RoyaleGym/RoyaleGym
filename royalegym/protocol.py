@@ -867,6 +867,18 @@ SNAP_EVEN_CORNER = ("placer_frame", "absolute")
 #: single ground troop then stands at (formation.GROUND_DEPLOY_POINT) comes after the verdict.
 TILE_CENTRE_SNAP = "client16402_tile_centre"
 TAP_SNAP = ("none", TILE_CENTRE_SNAP)
+#: placement.TROOP_BUILDING_TAPS: a troop tap on an alive OWN building's box is laid where
+#: tapped (and refused on the building's body), or moved off it as off an own crown tower.
+AS_TOWER_TAP = "as_tower_tap"
+TROOP_BUILDING_TAPS = ("not_relocated", AS_TOWER_TAP)
+#: placement.SPELL_AS_DEPLOY_TAPS: a spell placed as a troop that may not stand on a building
+#: (the Heal) keeps its point, or takes every relocation a troop tap takes.
+TROOP_RELOCATION = "troop_relocation"
+SPELL_AS_DEPLOY_TAPS = ("spell_point", TROOP_RELOCATION)
+#: placement.LIVE_BOTTLE_TAPS: a troop tap on the tile of an own live bottle (a Rage cast
+#: standing out its fuse) is laid where tapped, or moved off it.
+BOTTLE_RELOCATE = "client16402_relocate"
+LIVE_BOTTLE_TAPS = ("not_blocked", BOTTLE_RELOCATE)
 KING_TOWER_NAME = "KingTower"
 PRINCESS_TOWER_NAME = "PrincessTower"
 
@@ -1015,10 +1027,14 @@ class DeployRules(msgspec.Struct, frozen=True):
     # spells.ILLEGAL_SPELL_TAP: what the engine does with a spell tapped outside its
     # territory. The mask implements "refuse" only; the clamp arm accepts taps it refuses.
     illegal_spell_tap: str = "refuse"
-    # placement.SNAP_EVEN_CORNER and placement.TAP_SNAP (``SNAP_EVEN_CORNER``, ``TAP_SNAP``),
-    # read under the half-open arm only: under the closed block neither moves a verdict.
+    # The rest of the core's relocation rule (state.rs resolve_point, relocates_taps), each
+    # with the arm an engine without the key ran: placement.SNAP_EVEN_CORNER, TAP_SNAP,
+    # TROOP_BUILDING_TAPS, SPELL_AS_DEPLOY_TAPS and LIVE_BOTTLE_TAPS (the tuples of that name).
     snap_even_corner: str = "placer_frame"
     tap_snap: str = "none"
+    troop_building_taps: str = "not_relocated"
+    spell_as_deploy_taps: str = "spell_point"
+    live_bottle_taps: str = "not_blocked"
 
     @classmethod
     def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
@@ -1049,31 +1065,27 @@ class DeployRules(msgspec.Struct, frozen=True):
                 f"placement.TROOP_TOWER_TAPS={tower_taps!r}: only {list(TROOP_TOWER_TAPS)} are "
                 "implemented in the action mask"
             )
-        snap, tap_snap = "placer_frame", "none"
-        if tower_taps == HALF_OPEN_RELOCATE:
-            # The own-tower zone snaps a tap to its one-tile box, in the frame
-            # placement.SNAP_EVEN_CORNER names (PlacementOracle.own_tower_zone). And under
-            # this arm the core judges a troop's body where the tap RESOLVES (state.rs
-            # check_position, resolve_point), so placement.TAP_SNAP, which changes no verdict
-            # under the closed block, moves the point the bodies are judged at.
+        # THE REST OF THE RELOCATION RULE, read whatever the tower arm: the core judges the
+        # body of a card placed as a troop where its tap RESOLVES whenever ANY relocation is on
+        # (state.rs check_position, relocates_taps), the live bottle's included, and that is
+        # where placement.TAP_SNAP snaps it. Each key is read with the arm an engine without
+        # it ran, and an arm the mask does not implement is refused.
+        def arm(key: str, arms: tuple[str, ...], old: str) -> str:
             try:
-                snap = str(calibration.value("placement.SNAP_EVEN_CORNER"))
+                value = str(calibration.value(f"placement.{key}"))
             except KeyError:
-                snap = "placer_frame"
-            if snap not in SNAP_EVEN_CORNER:
+                return old
+            if value not in arms:
                 raise NotImplementedError(
-                    f"placement.SNAP_EVEN_CORNER={snap!r} with TROOP_TOWER_TAPS={tower_taps!r}: "
-                    f"the mask implements {list(SNAP_EVEN_CORNER)}"
+                    f"placement.{key}={value!r}: the mask implements {list(arms)}"
                 )
-            try:
-                tap_snap = str(calibration.value("placement.TAP_SNAP"))
-            except KeyError:
-                tap_snap = "none"
-            if tap_snap not in TAP_SNAP:
-                raise NotImplementedError(
-                    f"placement.TAP_SNAP={tap_snap!r} with TROOP_TOWER_TAPS={tower_taps!r}: the "
-                    f"mask implements {list(TAP_SNAP)}"
-                )
+            return value
+
+        snap = arm("SNAP_EVEN_CORNER", SNAP_EVEN_CORNER, "placer_frame")
+        tap_snap = arm("TAP_SNAP", TAP_SNAP, "none")
+        building_taps = arm("TROOP_BUILDING_TAPS", TROOP_BUILDING_TAPS, "not_relocated")
+        spell_taps = arm("SPELL_AS_DEPLOY_TAPS", SPELL_AS_DEPLOY_TAPS, "spell_point")
+        bottle_taps = arm("LIVE_BOTTLE_TAPS", LIVE_BOTTLE_TAPS, "not_blocked")
         try:
             spell_tap = str(calibration.value("spells.ILLEGAL_SPELL_TAP"))
         except KeyError:
@@ -1112,6 +1124,9 @@ class DeployRules(msgspec.Struct, frozen=True):
             illegal_spell_tap=spell_tap,
             snap_even_corner=snap,
             tap_snap=tap_snap,
+            troop_building_taps=building_taps,
+            spell_as_deploy_taps=spell_taps,
+            live_bottle_taps=bottle_taps,
         )
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:
