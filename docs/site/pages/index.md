@@ -34,7 +34,10 @@ for over a network. You need Python and a compiler.
     fixed yet.
 
     **New on 2026-09-22, and no finished bot yet.** The training harness closed its loop that
-    day. Its laptop settings have since completed training iterations on the real engine. An
+    day. Its laptop settings have since completed training iterations on the real engine. On
+    2026-09-27 a fresh install found that a run with those settings stopped at its first
+    collection, because the mask offered Heal on tiles the engine refused. RoyaleGym `b0948de`
+    fixed that, and nobody has timed a full iteration from a fresh install since. An
     iteration is one round of playing battles and then learning from them. One iteration took
     about nine minutes on an otherwise idle laptop, measured on 2026-09-22 at a minibatch of
     512 that no longer ships, and several times that on a busy one. Nobody has timed the

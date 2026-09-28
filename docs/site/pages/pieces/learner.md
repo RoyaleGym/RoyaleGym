@@ -111,12 +111,14 @@ to end, the opponent-pool bookkeeping, and the viewer stream.
 
 ## The commands
 
-All four run today. `config` works without torch; the other three need the torch extra.
+`config` works without torch; the other three need the torch extra.
 
-!!! note "Run here, not from a clean install"
-    These commands were run on a machine that already had everything built. Nobody has yet gone
-    from four fresh clones to a training run in one sitting, so the install path around them is
-    the untested part, not the commands.
+!!! note "From a fresh install, 2026-09-27"
+    A fresh install on a 4-CPU Linux machine with no GPU ran these from four fresh clones.
+    `config` and `doctor` worked, and the smoke config trained to its checkpoint. `train` and
+    `bench` with the laptop profile stopped at their first collection, because the mask offered
+    Heal on tiles the engine refused. RoyaleGym `b0948de` fixed that. Those two have not been
+    re-run from a fresh install since.
 
 `config` writes a config you can edit, `doctor` runs the first-run checks, and `bench` measures
 this machine's throughput. Run those three first. The last line is the real training run: the

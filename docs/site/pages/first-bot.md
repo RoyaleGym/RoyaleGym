@@ -541,27 +541,32 @@ Source for this section: RoyaleLearn's own README and its owner, on 2026-09-22.
 
 ### The four commands
 
-All four of these work. `config` runs without torch; the other three need the torch extra.
+`config` runs without torch; the other three need the torch extra. On a fresh install on
+2026-09-27, `config` and `doctor` worked. `bench` and `train` stopped at their first collection,
+because the mask offered Heal on tiles the engine refused. RoyaleGym `b0948de` fixed that, and
+those two have not been re-run from a fresh install since.
 
-`config` writes a config file you can edit. `doctor` runs the first-run checks, before you commit
+`config` writes a config file you can edit. It goes in the folder above RoyaleLearn, as
+`..\run.json`: a new file inside the checkout makes it dirty, and `train` refuses a dirty
+checkout. `doctor` runs the first-run checks, before you commit
 hours. `bench` measures YOUR machine rather than someone else's. `train` is the run itself.
 
 === "Windows"
 
     ```
-    ..\.venv\Scripts\python -m royalelearn config --profile laptop -o run.json
-    ..\.venv\Scripts\python -m royalelearn doctor --config run.json
+    ..\.venv\Scripts\python -m royalelearn config --profile laptop -o ..\run.json
+    ..\.venv\Scripts\python -m royalelearn doctor --config ..\run.json
     ..\.venv\Scripts\python -m royalelearn bench
-    ..\.venv\Scripts\python -m royalelearn train --config run.json
+    ..\.venv\Scripts\python -m royalelearn train --config ..\run.json
     ```
 
 === "macOS and Linux"
 
     ```
-    ../.venv/bin/python -m royalelearn config --profile laptop -o run.json
-    ../.venv/bin/python -m royalelearn doctor --config run.json
+    ../.venv/bin/python -m royalelearn config --profile laptop -o ../run.json
+    ../.venv/bin/python -m royalelearn doctor --config ../run.json
     ../.venv/bin/python -m royalelearn bench
-    ../.venv/bin/python -m royalelearn train --config run.json
+    ../.venv/bin/python -m royalelearn train --config ../run.json
     ```
 
 Start with the middle two, not the last one.
@@ -704,7 +709,8 @@ exactly zero by construction and calls it an alert rather than a plot. There is 
 
 What to do: this is not a training problem. It means the list of legal moves is not reaching your
 policy, or the policy is ignoring it. Check that you are reading `obs["action_mask"]` and applying
-it before you sample. A bot that can pick illegal moves spends its whole run learning to want
+it before you sample. If you are, the list itself can be wrong for a card on a board the tests do
+not cover. That happened with Heal until 2026-09-27. Report it with the card and the board. A bot that can pick illegal moves spends its whole run learning to want
 things it cannot have.
 
 !!! note "Which of this is measured and which is judgement"

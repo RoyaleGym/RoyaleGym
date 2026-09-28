@@ -33,9 +33,10 @@ From the RoyaleViser folder, after the venv and `pip install -e RoyaleViser`:
 
 === "macOS and Linux"
 
-    !!! warning "UNVERIFIED"
-        Nobody has run this from a clean install yet. Only the Windows form of the command was
-        run for this page; this is the same command with the other platform's paths.
+    !!! info "Run on Linux from a fresh install, 2026-09-27"
+        It worked on a 4-CPU Linux machine. With no display, no window opens and nothing says
+        so. Add `SDL_VIDEODRIVER=dummy` before the command and `--shot shot.png` after it to save
+        a picture instead. `SDL_AUDIODRIVER=dummy` silences the sound-device warnings.
 
     ```
     ../.venv/bin/python -m royaleviser tests/fixtures/frames-synthetic-A.jsonl.gz --compare tests/fixtures/frames-synthetic-B.jsonl.gz --speed 4 --seconds 8
@@ -81,7 +82,7 @@ Same command, three kinds of source.
 |---|---|---|
 | A **recording** | one line of JSON per frame, 20 frames a second, of a real match | this package only |
 | A **trace** | a battle saved from the engine, one frame per tick if you ask for it | this package plus RoyaleGym, and RoyaleSim's data folder |
-| A **stream** | a program running right now, one frame per environment step | this package only, plus the running program |
+| A **stream** | a program running right now, one frame per engine tick while a viewer is attached | this package only, plus the running program |
 
 The filenames below are examples. Put your own in their place. The command you ran above is the
 same command with a file that ships with the repo.
@@ -202,8 +203,6 @@ capture(source, out, *, ticks=None, scale=24, view=None, crop="full", fps=20,
 Every gap here is the source not carrying the information. None of them is the window refusing
 to draw something.
 
-- A stream carries one frame per environment step, which is 10 ticks by default, not one frame
-  per tick. Want every tick? Record a trace with `frame_every_tick=True` and open that.
 - A recording gives no unit a radius and no flying flag, so every unit is drawn at one size and
   air units look like ground units.
 - A trace or a stream gives no unit a path, so the path overlay draws nothing. What each unit is
