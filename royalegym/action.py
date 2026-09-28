@@ -884,8 +884,8 @@ class GridActionParser(ActionParser):
                 if not stays:
                     out[yi, xi] = True
                     continue
-                ox, oy = to_own(self.arena, team, landed[0], landed[1])
-                out[yi, xi] = (ox // self.arena.subtile, oy // self.arena.subtile) == (xi, yi)
+                snap = self.oracle.rules.snap_even_corner
+                out[yi, xi] = landing_tile(self.arena, snap, team, *landed[:2]) == (xi, yi)
         if len(self._buildable) >= GRID_CACHE_SIZE:
             self._buildable.clear()
         out.flags.writeable = False
@@ -918,6 +918,30 @@ class HalfTileActionParser(GridActionParser):
     """Discrete(9217), half-cell centres. For measuring whether resolution matters."""
 
     pitch_div = 2
+
+
+def landing_tile(
+    arena: Arena, snap_even_corner: str, team: int, x: int, y: int
+) -> tuple[int, int]:
+    """The own-frame TILE a building whose centre the engine put at engine-frame (x, y)
+    stands on, for ``team``.
+
+    An odd box's centre (a 3x3 Cannon's) is a tile centre, the same tile in any frame. An
+    even box's (a 2x2 Tesla's) is a tile CORNER, and of the four tiles meeting there it
+    stands on the one its snap floored the tap to: in the placer's own frame under
+    placement.SNAP_EVEN_CORNER = placer_frame, in the arena's under absolute. Flooring the
+    corner in the own frame under absolute put every Red Tesla one tile up and right of the
+    tile it was tapped on, and the ``taps_where_the_building_stays`` arm offered Red 50 taps
+    to Blue's 142 (measured on the placement batch's build, 2026-09-28).
+    """
+    t = arena.subtile
+    if snap_even_corner == "absolute":
+        ax, ay = x // t, y // t
+        if team == BLUE:
+            return int(ax), int(ay)
+        return int(arena.tiles_x - 1 - ax), int(arena.tiles_y - 1 - ay)
+    ox, oy = to_own(arena, team, x, y)
+    return int(ox // t), int(oy // t)
 
 
 def mask_disagreements(

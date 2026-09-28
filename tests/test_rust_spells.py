@@ -319,7 +319,18 @@ def test_plant_mask_refusing_a_log_over_buildings_is_caught(spell_engines, monke
     # The TROOP rule under the closed block. This gate reads MockEngine's state, which
     # reports no tower boxes, and the half-open arm's troop rule needs them (it refuses a
     # state without them); the plant is the footprint rule, which both arms share.
-    closed = msgspec.structs.replace(rust.rules(), troop_tower_taps="closed_block")
+    # And MockEngine's arms of the other relocation keys: its state reports no building boxes
+    # either, which placement.TROOP_BUILDING_TAPS = as_tower_tap needs.
+    m = mock.rules()
+    closed = msgspec.structs.replace(
+        rust.rules(),
+        troop_tower_taps="closed_block",
+        snap_even_corner=m.snap_even_corner,
+        tap_snap=m.tap_snap,
+        troop_building_taps=m.troop_building_taps,
+        spell_as_deploy_taps=m.spell_as_deploy_taps,
+        live_bottle_taps=m.live_bottle_taps,
+    )
     planted = PlacementOracle(rust.arena(), closed, rust.cards())
     orig_lp, orig_pg = PlacementOracle.legal_points, PlacementOracle.point_grid
 

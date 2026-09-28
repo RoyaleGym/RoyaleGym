@@ -48,6 +48,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _arms import OLD_ARMS, pinned
 from royalegym import mock_engine as mock_engine_module
 from royalegym import rust_engine
 from royalegym.action import (
@@ -461,9 +462,17 @@ def test_plant_without_the_probe_heal_disagrees_again(monkeypatch):
 
 
 @needs_core
-def test_plant_mask_blind_to_placed_buildings_is_caught(rust, monkeypatch):
+def test_plant_mask_blind_to_placed_buildings_is_caught(monkeypatch):
     """The buildings board has to reach the gate for BOTH seats: a mask that forgets the
-    placed buildings must disagree with the engine on each side."""
+    placed buildings must disagree with the engine on each side.
+
+    On the arms before RoyaleSim's placement batch (tests/_arms.py). Under
+    placement.TROOP_BUILDING_TAPS = as_tower_tap a troop tapped on an own building is moved
+    off it and accepted, so a mask blind to own buildings agrees with the engine there, and
+    this board's buildings are each on their own side. That arm's own gate is in
+    tests/test_troop_tower_taps.py."""
+    over = pinned(OLD_ARMS)
+    rust = RustEngine(**({"calibration_overrides": over} if over else {}))
     real = PlacementOracle.point_grid
 
     def blind(self, state, team, card, pitch_div):

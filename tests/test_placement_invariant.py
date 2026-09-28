@@ -58,6 +58,7 @@ from __future__ import annotations
 
 import pytest
 
+from royalegym.action import landing_tile
 from royalegym.protocol import (
     BLUE,
     RED,
@@ -65,7 +66,6 @@ from royalegym.protocol import (
     Placement,
     SpawnSpec,
     to_engine,
-    to_own,
 )
 from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 
@@ -117,8 +117,7 @@ def test_a_tile_a_building_can_land_on_is_a_tile_that_can_be_tapped_for(
                 landed = engine.building_placement(team, card, x, y)
                 if landed is None:
                     continue
-                ox, oy = to_own(a, team, landed[0], landed[1])
-                lt = (ox // t, oy // t)
+                lt = landing_tile(a, engine.rules().snap_even_corner, team, *landed[:2])
                 lx, ly = to_engine(a, team, lt[0] * t + t // 2, lt[1] * t + t // 2)
                 again = engine.building_placement(team, card, lx, ly)
                 if again is None:

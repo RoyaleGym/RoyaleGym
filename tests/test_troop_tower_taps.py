@@ -20,6 +20,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _arms import OLD_ARMS, pinned
 from royalegym.action import (
     HalfTileActionParser,
     PlacementOracle,
@@ -105,7 +106,10 @@ def engine_on_arm(arm: str, **kwargs) -> RustEngine:
 
 
 def flipped_engine() -> RustEngine:
-    return engine_on_arm(HALF_OPEN_RELOCATE)
+    """The half-open tower arm, and every other placement key at its arm before RoyaleSim's
+    placement batch (tests/_arms.py): the tests on this engine claim the TOWER laws, and
+    inherit nothing the batch flipped. The batch's arms have their own gates below."""
+    return engine_on_arm(HALF_OPEN_RELOCATE, calibration_overrides=pinned(OLD_ARMS))
 
 
 def setup(engine: RustEngine, deck: str, board: str) -> MatchSetup:
@@ -139,7 +143,7 @@ def gate(engine: RustEngine, oracle_patch=None) -> tuple[list[str], dict]:
     opened: dict[int, collections.Counter] = {team: collections.Counter() for team in (BLUE, RED)}
     # The closed block BY NAME: once the ledger ships the half-open arm, RustEngine() runs
     # it too, and the vacuity count below would compare the arm with itself.
-    closed = engine_on_arm("closed_block")
+    closed = engine_on_arm("closed_block", calibration_overrides=pinned(OLD_ARMS))
     for board in BOARDS:
         for deck in DECKS:
             if deck == "heal" and not heal_places_as_troop(engine):
@@ -333,7 +337,8 @@ def snap_engine(arms: dict[str, str]) -> RustEngine:
     missing = [k for k in arms if k.split(".", 1)[1] not in ledger]
     if missing:
         pytest.skip(f"SKIPPED, NOT PASSED: this ledger has no {missing}")
-    rest = {k: v for k, v in arms.items() if k != KEY}
+    # From the arms before the batch, so each set flips exactly what it names.
+    rest = pinned({**OLD_ARMS, **{k: v for k, v in arms.items() if k != KEY}})
     engine = engine_on_arm(arms.get(KEY, HALF_OPEN_RELOCATE), calibration_overrides=rest)
     for key, value in arms.items():
         assert getattr(engine.rules(), FIELD_OF[key]) == value, f"{key} not followed"
@@ -342,6 +347,15 @@ def snap_engine(arms: dict[str, str]) -> RustEngine:
 
 def test_the_relocation_keys_are_followed():
     assert set(FIELD_OF) | {"placement.LIVE_BOTTLE_TAPS"} <= OVERRIDE_FOLLOWED
+
+
+@needs_core
+def test_the_mask_equals_the_engine_on_the_arms_it_ships():
+    """The plain engine, every placement key at the arm its ledger ships."""
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    problems, _ = gate(RustEngine())
+    assert not problems, f"{len(problems)} disagreements; first {problems[:6]}"
 
 
 @needs_core

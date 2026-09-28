@@ -67,6 +67,7 @@ import numpy as np
 import pytest
 from gymnasium import spaces
 
+from _arms import mock_arms, pinned
 from _lockout import lockout_ticks
 from royalegym import mock_engine as mock_engine_module
 from royalegym import rust_engine as rust_engine_module
@@ -429,7 +430,9 @@ def _resume_divergence(rust, nudge: bool) -> tuple[list[int], list[int]]:
     after = scripted_hashes(rust, 32, 80, 10, start_blob=blob)
     rust.load_state(blob)
     if nudge:
-        troop = next(e for e in rust.state().entities if e.kind == 0)
+        # The troop with the most hitpoints: the first one listed was once a Minion on 12 hp
+        # that died before the next hash, and took the nudge with it.
+        troop = max((e for e in rust.state().entities if e.kind == 0), key=lambda e: e.hp)
         # one NATIVE unit (18 subtiles): the client's movement law (measured on client
         # 16.402, RoyaleLive traces) keeps every position a whole number of native
         # units and re-quantises on the first update, so a one-subtile nudge would be
@@ -844,12 +847,19 @@ def shipped_tower_taps() -> str | None:
 
 def rust_on_arm(arm: str) -> RustEngine:
     """RustEngine(card_names=SHARED) running ``arm`` of placement.TROOP_TOWER_TAPS, BY NAME:
-    the key is overridden only when the ledger ships another arm."""
+    the key is overridden only when the ledger ships another arm.
+
+    And MockEngine's arm of every other relocation key (tests/_arms.py): the gates on this
+    engine compare the rule set the Mock implements, and vary the tower arm only. Before
+    RoyaleSim's placement batch these were the shipped arms; once it flipped the snap and
+    the building taps, a closed-block engine judged bodies at tile centres and moved taps
+    off own buildings, which the Mock does not model, and 714 cells disagreed."""
     shipped = shipped_tower_taps()
     if shipped is None and arm != "closed_block":
         pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {TOWER_TAPS_KEY}")
-    over = {} if shipped in (arm, None) else {"calibration_overrides": {TOWER_TAPS_KEY: arm}}
-    engine = RustEngine(card_names=SHARED, **over)
+    over = {} if shipped in (arm, None) else {TOWER_TAPS_KEY: arm}
+    over.update(pinned(mock_arms()))
+    engine = RustEngine(card_names=SHARED, **({"calibration_overrides": over} if over else {}))
     assert engine.rules().troop_tower_taps == arm, "the rules did not follow the arm"
     return engine
 
@@ -1035,7 +1045,8 @@ def test_nothing_to_mirror_maps_by_name_where_the_engine_puts_it(monkeypatch):
 
 
 def test_plant_dropped_reason_mapping_is_caught(rust, mock):
-    eng = RustEngine(card_names=SHARED)
+    # On MockEngine's rule set, as the grid it is graded by (``rust_on_arm``).
+    eng = rust_on_arm(mock.rules().troop_tower_taps)
     occupied = eng._status_of_reason.index(int(DeployStatus.OCCUPIED))
     eng._status_of_reason[occupied] = int(DeployStatus.NO_DEPLOY)
     assert int(DeployStatus.OCCUPIED) not in eng._status_of_reason, "plant did not land"

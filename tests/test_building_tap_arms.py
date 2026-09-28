@@ -38,6 +38,7 @@ import numpy as np
 import pytest
 
 from royalegym.action import BUILDING_TAP_ARMS, TileActionParser
+from royalegym.action import landing_tile as tile_landed_on
 from royalegym.protocol import (
     BLUE,
     HAND_SIZE,
@@ -46,9 +47,13 @@ from royalegym.protocol import (
     Placement,
     SpawnSpec,
     to_engine,
-    to_own,
 )
-from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
+from royalegym.rust_engine import (
+    CORE_IMPORT_ERROR,
+    RustEngine,
+    SymmetricRustEngine,
+    core_available,
+)
 
 pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -96,8 +101,9 @@ def landing_tile(engine: RustEngine, team: int, card: str, tx: int, ty: int):
     got = engine.building_placement(team, card, x, y)
     if got is None:
         return None
-    ox, oy = to_own(a, team, got[0], got[1])
-    return ox // a.subtile, oy // a.subtile
+    # Floored in the frame the snap used (action.landing_tile): an even box's centre is a
+    # corner, and in the own frame under the absolute arm it floors to the wrong tile.
+    return tile_landed_on(a, engine.rules().snap_even_corner, team, got[0], got[1])
 
 
 def offered(parser: TileActionParser, state, team: int, slot: int = 0) -> set[tuple[int, int]]:
@@ -247,13 +253,19 @@ def test_the_arm_leaves_troops_and_spells_alone(engine) -> None:
 
 
 @pytest.mark.parametrize("card", BUILDINGS)
-def test_the_two_seats_are_offered_the_same_taps_on_a_mirrored_board(engine, card) -> None:
+def test_the_two_seats_are_offered_the_same_taps_on_a_mirrored_board(card) -> None:
     """Own-frame, so a rule that held for one colour and not the other would show here.
 
     The board has to be a mirror of itself for this to mean anything: each team gets the
     same buildings on the same OWN-frame tiles. On a board whose occupancy differs by
     seat the two masks differ for a good reason and the comparison says nothing.
+
+    On the seat-symmetric engine. Under placement.SNAP_EVEN_CORNER = absolute (RoyaleSim's
+    placement batch) the client floors an even box's tap in the arena's frame, so a 2x2
+    building is not the rotation of its twin, and the two seats are offered different taps
+    for that reason, measured: 142 each, on different tiles.
     """
+    engine = SymmetricRustEngine()
     tiles = ((4, 7), (9, 4), (12, 9))
     spawns = [at(engine, t, card, tx, ty) for tx, ty in tiles for t in (BLUE, RED)]
     engine.reset(5, board(engine, card, spawns))
