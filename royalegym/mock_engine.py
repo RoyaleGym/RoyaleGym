@@ -838,7 +838,8 @@ class MockEngine:
                     # What each slot costs, -1 for an empty one, as the engine states it.
                     # mirror_target stays -1: this engine models no Mirror.
                     hand_costs=[
-                        self._cards[c].elixir if c != EMPTY_CARD else -1 for c in s.hands[team]
+                        self._cards[c].info.elixir if c != EMPTY_CARD else -1
+                        for c in s.hands[team]
                     ],
                 )
             )
