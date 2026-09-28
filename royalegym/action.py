@@ -10,8 +10,9 @@ WHY THIS AND NOT THE ALTERNATIVES
       "Giant is legal here but Fireball is not" exactly. Legality is a property of
       the PAIR: elixir is per card, territory depends on placement type (spells go
       anywhere, a Goblin Barrel anywhere but water, a Log only where a troop may go
-      but over buildings, buildings never into the pocket), footprints depend on
-      card radius.
+      but over buildings, buildings never into the pocket, a Miner anywhere on land
+      but not on a building, a Mirror wherever the card it copies may go), footprints
+      depend on card radius.
       sb3-contrib MaskablePPO applies a MultiDiscrete mask per dimension
       independently, so a MultiDiscrete([5, 18, 32]) head could only mask the
       marginals and would happily sample "Knight on the enemy king". An
@@ -93,6 +94,7 @@ from .protocol import (
     EntityKind,
     Placement,
     TowerSlot,
+    slot_cost,
     to_engine,
     to_own,
 )
@@ -116,6 +118,18 @@ class PlacementOracle:
         self.arena = arena
         self.rules = rules
         self.cards = list(cards)
+        # A TUNNEL card is judged by its KIND's footprint rule, a troop's or a building's,
+        # so a catalogue that does not say which cannot be masked.
+        unkinded = [
+            c.name
+            for c in self.cards
+            if c.placement == Placement.TUNNEL and c.card_kind not in ("TROOP", "BUILDING")
+        ]
+        if unkinded:
+            raise ValueError(
+                f"TUNNEL cards {unkinded} state no troop or building card_kind, and the mask "
+                "judges a tunnelling card by its kind's footprint rule"
+            )
         # True when the engine relocates a building whose box does not fit rather than
         # refusing it. Then nothing on the board can make a building tap illegal, so the
         # bodies already standing are not a rule for buildings at all.
@@ -247,6 +261,31 @@ class PlacementOracle:
         troop's placement code, so the placement alone would give that spell the laws."""
         return card.placement == Placement.TROOP and card.card_kind in (None, "TROOP")
 
+    @staticmethod
+    def _building_like(card: CardInfo) -> bool:
+        """Whether ``card`` is judged by a building's footprint: a BUILDING, or a TUNNEL
+        card whose kind is building (the Goblin Drill, placed on its building's box by
+        ``building_placement``, state.rs check_position)."""
+        return card.placement == Placement.BUILDING or (
+            card.placement == Placement.TUNNEL and card.card_kind == "BUILDING"
+        )
+
+    def _moved_off_own_tower(self, card: CardInfo) -> bool:
+        """Whether a tap of ``card`` on an own crown tower is MOVED off it, so no body there
+        blocks it: every card whose kind is troop under the half-open arm (state.rs
+        resolve_point), a TUNNEL troop (the Miner) as much as a TROOP one."""
+        if not self.troop_taps_relocate:
+            return False
+        tunnel_troop = card.placement == Placement.TUNNEL and card.card_kind == "TROOP"
+        return self._troop_laws(card) or tunnel_troop
+
+    def _card_bodies_block(self, card: CardInfo) -> bool:
+        """``_bodies_block`` for a card: a TUNNEL card takes its kind's answer."""
+        if card.placement == Placement.TUNNEL:
+            like = Placement.BUILDING if self._building_like(card) else Placement.TROOP
+            return self._bodies_block(like)
+        return self._bodies_block(card.placement)
+
     def _bodies_block(self, placement: int) -> bool:
         """Whether the bodies already on the board are a rule for this placement.
 
@@ -270,13 +309,20 @@ class PlacementOracle:
         deploy_rule``): SPELL no cell rule; SPELL_NOT_ON_WATER water only (no
         no-deploy, no territory: the king block is a legal Goblin Barrel target);
         TROOP and ROLLING water, no-deploy and the river band; BUILDING water,
-        no-deploy and own half.
+        no-deploy and own half; TUNNEL water only, as SPELL_NOT_ON_WATER (the
+        no-deploy strips and the enemy half are its ground). A MIRROR has no grid of its
+        own: it is placed as the card it copies, which is what to ask with.
         """
         a = self.arena
         del state  # nothing tower-dependent is a cell rule any more
+        if placement == Placement.MIRROR:
+            raise ValueError(
+                "a Mirror is placed as the card it copies (match.MIRROR_PLACEMENT): ask "
+                "with the player's mirror_target card"
+            )
         if placement == Placement.SPELL:
             return np.ones((a.hy, a.hx), dtype=bool)
-        if placement == Placement.SPELL_NOT_ON_WATER:
+        if placement in (Placement.SPELL_NOT_ON_WATER, Placement.TUNNEL):
             not_water: np.ndarray = ~self.water
             return not_water
         terr = self.own_half[team] if placement == Placement.BUILDING else ~self.river_band
@@ -319,15 +365,15 @@ class PlacementOracle:
         if self.king_half_open and self._troop_laws(card):
             for x0, y0, x1, y1 in self.arena.king_blocks:
                 ok &= ~((px >= x0) & (px < x1) & (py >= y0) & (py < y1))
-        if self._bodies_block(card.placement):
-            extra = card.radius if card.placement == Placement.BUILDING else 0
+        if self._card_bodies_block(card):
+            extra = card.radius if self._building_like(card) else 0
             clear = np.ones(ok.shape, dtype=bool)
             for e in state.entities:
                 if e.kind == EntityKind.TROOP:
                     continue
                 r = e.radius + extra
                 clear &= (px - e.x) ** 2 + (py - e.y) ** 2 > r * r
-            if self.troop_taps_relocate and self._troop_laws(card):
+            if self._moved_off_own_tower(card):
                 clear |= self.own_tower_zone(state, team, px, py)
             ok &= clear
         return ok
@@ -443,15 +489,15 @@ class PlacementOracle:
                 inx = (xs >= x0) & (xs < x1)
                 if iny.any() and inx.any():
                     ok &= ~(iny[:, None] & inx[None, :])
-        if self._bodies_block(card.placement):
-            extra = card.radius if card.placement == Placement.BUILDING else 0
+        if self._card_bodies_block(card):
+            extra = card.radius if self._building_like(card) else 0
             clear = np.ones(ok.shape, dtype=bool)
             for e in state.entities:
                 if e.kind == EntityKind.TROOP:
                     continue
                 r = e.radius + extra
                 clear &= ((ys - e.y) ** 2)[:, None] + ((xs - e.x) ** 2)[None, :] > r * r
-            if self.troop_taps_relocate and self._troop_laws(card):
+            if self._moved_off_own_tower(card):
                 clear |= self.own_tower_zone(state, team, xs[None, :], ys[:, None])
             ok &= clear
         if key is not None:
@@ -673,12 +719,21 @@ class GridActionParser(ActionParser):
             if card_id == EMPTY_CARD:
                 continue
             card = self.cards[card_id]
-            if player.elixir_milli < card.elixir * 1000:
+            # The engine's price for the slot where it states one (a Mirror costs the card
+            # it copies plus its own), -1 when no play of it resolves.
+            cost = slot_cost(player, slot, card)
+            if cost < 0 or player.elixir_milli < cost * 1000:
                 continue
+            if card.placement == Placement.MIRROR:
+                # Placed exactly as the card it copies (match.MIRROR_PLACEMENT); with
+                # nothing to copy the engine refuses it everywhere (NOTHING_TO_MIRROR).
+                if player.mirror_target < 0:
+                    continue
+                card = self.cards[player.mirror_target]
             grid = self.oracle.point_grid(state, team, card, self.pitch_div)
             if team == RED:
                 grid = grid[::-1, ::-1]  # engine frame -> Red's own frame
-            if self._engine is not None and card.placement == Placement.BUILDING:
+            if self._engine is not None and self.oracle._building_like(card):
                 grid = self.buildable(state, team, card, grid)
             mask[1 + slot * per : 1 + (slot + 1) * per] = grid.reshape(-1)
         return mask

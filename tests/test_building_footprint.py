@@ -76,10 +76,12 @@ from royalegym.protocol import (
     EntityState,
     MatchSetup,
     Placement,
+    PlayerState,
     ShuffleMode,
     SpawnSpec,
     TowerSlot,
     mirror_state,
+    slot_cost,
     to_engine,
     to_own,
 )
@@ -316,13 +318,20 @@ def cycle_in(engine: Engine, board: str, card_id: int) -> BattleState:
     engine.reset(1, board_setup(engine, board, [deck, deck]))
     plays = [DeployCommand(team, 0, *own_tile_centre(engine, team, *PLAY_TILE)) for team in TEAMS]
     assert [r.status for r in engine.step(plays, 1)] == [DeployStatus.OK] * 2, "filler refused"
-    cost = 1000 * engine.cards()[card_id].elixir
+    card = engine.cards()[card_id]
+
+    def paid(p: PlayerState) -> bool:
+        # The engine's price for the slot, not the card's elixir: a Mirror costs what it
+        # copies plus its own.
+        if card_id not in p.hand:
+            return False
+        cost = slot_cost(p, p.hand.index(card_id), card)
+        return cost >= 0 and p.elixir_milli >= 1000 * cost
+
     for _ in range(400):
         engine.step([], 5)
         state = engine.state()
-        if all(
-            card_id in p.hand and p.elixir_milli >= cost for p in state.players
-        ):
+        if all(paid(p) for p in state.players):
             return state
     raise AssertionError(f"{engine.cards()[card_id].name} never reached both hands, paid for")
 

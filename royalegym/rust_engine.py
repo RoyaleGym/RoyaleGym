@@ -40,8 +40,8 @@ CONVENTIONS, AND HOW EACH IS KNOWN RATHER THAN BELIEVED
       tests/test_parity_hardening.py hold the two together by bypassing this check.
     * Spells: the catalogue kind code IS the deploy rule, mapped to
       ``Placement`` by ``_PLACEMENT_OF_KIND`` (0 TROOP, 1 BUILDING, 2 SPELL, 3
-      ROLLING, 4 SPELL_NOT_ON_WATER). A unit a spell releases (the Goblin Barrel's
-      Goblins) is not a card; the core reports it under the releasing spell's
+      ROLLING, 4 SPELL_NOT_ON_WATER, 5 TUNNEL, 6 MIRROR). A unit a spell releases
+      (the Goblin Barrel's Goblins) is not a card; the core reports it under the releasing spell's
       catalogue id. ``state()`` decodes the core's live spell objects into
       ``BattleState.spells`` and the stun / knockback timers into ``EntityState``.
 
@@ -154,6 +154,8 @@ _PLACEMENT_OF_KIND = {
     2: Placement.SPELL,
     3: Placement.ROLLING,
     4: Placement.SPELL_NOT_ON_WATER,
+    5: Placement.TUNNEL,
+    6: Placement.MIRROR,
 }
 #: The catalogue columns this adapter reads BY POSITION, which must be the engine's first
 #: ``CATALOGUE_FIELDS``. Later columns are found by name (``card_kind``).
@@ -791,6 +793,19 @@ class RustEngine:
                 msgspec.structs.replace(c, placement=int(Placement.TROOP)) if c.name in ruled else c
                 for c in self._cards
             ]
+        # A CARD THAT TRAVELS UNDER GROUND (the Miner, the Goblin Drill) goes down anywhere
+        # on land, and RoyaleSim up to 244c893 reports it under its kind's code, 0 or 1,
+        # which would mask it into a troop's or a building's territory. Asked of the core,
+        # once per catalogue (``tunnelling_cards``): each gets code 5, TUNNEL, which is
+        # the code RoyaleSim gives it once this package maps 5, where this finds nothing.
+        tunnels = tunnelling_cards(self, battle_args, overrides)
+        if tunnels:
+            self._cards = [
+                msgspec.structs.replace(c, placement=int(Placement.TUNNEL))
+                if c.name in tunnels
+                else c
+                for c in self._cards
+            ]
 
     # ------------------------------------------------------------ protocol
 
@@ -1237,6 +1252,65 @@ def troop_ruled_spells(engine: RustEngine, battle_args: tuple, overrides: dict) 
     )
     _TROOP_RULED_CACHE[key] = ruled
     return ruled
+
+
+_TUNNEL_CACHE: dict[tuple[Any, ...], frozenset[str]] = {}
+
+
+def tunnelling_cards(engine: RustEngine, battle_args: tuple, overrides: dict) -> frozenset[str]:
+    """The names of the catalogue's troop and building cards (codes 0 and 1) that the core
+    accepts in the ENEMY half, on free land well inside the enemy's tower rects, where it
+    refuses every other troop and building OUT_OF_TERRITORY: the cards that travel under
+    ground (placement.SPAWN_PATHFIND_TERRITORY). Measured on a probe battle built exactly
+    as ``engine``'s, both seats, and cached per build, card table, catalogue and
+    constructor arguments. Both seats must agree, and the same card must be accepted on
+    free land in its own half, or it is left as it is and the every-card gate names it.
+    A card the opening deal never puts in hand is not asked, and keeps its code.
+    """
+    probes = [
+        c
+        for c in engine._cards
+        if c.placement in (Placement.TROOP, Placement.BUILDING)
+        and c.card_kind in ("TROOP", "BUILDING")
+    ]
+    if not probes:
+        return frozenset()
+    key = (
+        build_digest(),
+        repr(sorted(engine._card_table.items())) if isinstance(engine._card_table, dict)
+        else repr(engine._card_table),
+        tuple(c.name for c in engine._cards),
+        repr(battle_args[2:]),
+        repr(sorted(overrides.items())),
+    )
+    if key in _TUNNEL_CACHE:
+        return _TUNNEL_CACHE[key]
+    battle = _core.Battle(*battle_args, **overrides)
+    t = engine._arena.subtile
+    full = 1000 * engine.calibration.int("match.MAX_MANA")
+    verdicts: dict[str, set[tuple[int, int]]] = {c.name: set() for c in probes}
+    ids = [c.card_id for c in probes]
+    for i in range(0, len(ids), HAND_SIZE):
+        group = ids[i : i + HAND_SIZE]
+        deck = (group + [x for x in ids if x not in group] + group * 8)[:8]
+        battle.reset(1, [deck, deck], 0, engine._rules.deploy_lockout_ticks, [full, full], None, [])
+        state = engine._decode_state.decode(battle.state_json())
+        for team in TEAMS:
+            # Own-frame tile (9, 21): the enemy half, mid-lane, clear of every enemy tower's
+            # body and inside the rects that close the enemy half to a troop while its
+            # towers stand. Own-frame tile (9, 10): free land in the caster's own half.
+            enemy = to_engine(engine._arena, team, 9 * t + t // 2, 21 * t + t // 2)
+            own = to_engine(engine._arena, team, 9 * t + t // 2, 10 * t + t // 2)
+            for slot, cid in enumerate(state.players[team].hand):
+                if cid not in group:
+                    continue
+                taps = [engine._wire(DeployCommand(team, slot, x, y)) for x, y in (enemy, own)]
+                far, near = (engine._status(battle.check_deploy(*tap)) for tap in taps)
+                verdicts[engine._cards[cid].name].add((far, near))
+    ok = int(DeployStatus.OK)
+    tunnels = frozenset(name for name, seen in verdicts.items() if seen == {(ok, ok)})
+    _TUNNEL_CACHE[key] = tunnels
+    return tunnels
 
 
 #: Ledger keys whose shipped arm is the client's own and deliberately not seat-symmetric,

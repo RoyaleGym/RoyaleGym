@@ -222,6 +222,20 @@ class Placement(enum.IntEnum):
                                           calibration spells.SPAWNING_SPELL_WATER_RULE =
                                           refuse_touching_water; under "anywhere" such a
                                           card is a plain SPELL.
+    TUNNEL    a card whose unit travels   anywhere strictly inside the arena that does not
+              under ground to the tap     touch WATER, either side, the no-deploy strips and
+              (the Miner, the Goblin      the bridges included; no enemy tower rects
+              Drill)                      (placement.SPAWN_PATHFIND_TERRITORY =
+                                          anywhere_but_water). Then the card's KIND's
+                                          footprint rule: a troop (the Miner) is refused on
+                                          a building or a tower, and is moved off its own
+                                          crown tower as a TROOP is; a building (the Goblin
+                                          Drill) is judged by its building's footprint
+                                          (``building_placement``). Needs ``card_kind``.
+    MIRROR    the Mirror                  the tap is judged by the placement of the card it
+                                          copies (match.MIRROR_PLACEMENT), which is the
+                                          player's ``mirror_target``; nothing when that is
+                                          -1. It costs what ``hand_costs`` says.
     The numbers are the Rust core's catalogue kind codes (py.rs ``kind_code``, from
     state.rs ``deploy_rule``, the engine's one definition of a card's deploy rule).
     """
@@ -231,6 +245,8 @@ class Placement(enum.IntEnum):
     SPELL = 2
     ROLLING = 3
     SPELL_NOT_ON_WATER = 4
+    TUNNEL = 5
+    MIRROR = 6
 
 
 class SpellMotion(enum.IntEnum):
@@ -344,7 +360,16 @@ def card_is_spell(card: CardInfo) -> bool:
     engine states one, else by its placement, as every engine before the column did."""
     if card.card_kind is not None:
         return card.card_kind == "SPELL"
-    return card.placement not in (Placement.TROOP, Placement.BUILDING)
+    return card.placement not in (Placement.TROOP, Placement.BUILDING, Placement.TUNNEL)
+
+
+def slot_cost(player: PlayerState, slot: int, card: CardInfo) -> int:
+    """What playing hand ``slot`` costs ``player`` right now, in elixir, or -1 when no
+    play of it resolves: the engine's ``hand_costs`` where it states them, else the
+    card's own elixir."""
+    if len(player.hand_costs) == HAND_SIZE:
+        return int(player.hand_costs[slot])
+    return card.elixir
 
 
 class DeployCommand(msgspec.Struct, frozen=True):
@@ -537,6 +562,13 @@ class PlayerState(msgspec.Struct, frozen=True):
     # [card_id, plays since its last evolved play, 1 when its next play is evolved] per
     # evolved deck card, in deck order. Empty from an engine without evolutions.
     evo: list[list[int]] = []
+    # What playing each hand slot costs right now, in elixir, -1 where no play resolves
+    # (a Mirror with nothing to copy). A Mirror costs the card it copies plus its own.
+    # Empty from an engine that does not say; the card's own elixir is then its price.
+    hand_costs: list[int] = []
+    # The catalogue id of the card a Mirror played now would copy (the side's last
+    # accepted play that was not a Mirror), -1 when there is none.
+    mirror_target: int = -1
 
 
 class BattleState(msgspec.Struct, frozen=True):
