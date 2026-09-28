@@ -419,13 +419,14 @@ DeployRefused: the engine refused 2 command(s) the mask allowed (cycle 1, slot 1
 
 The count, the cycle and the slot can differ on your run.
 
-**What it means.** The action mask allowed a play, and the engine then refused it. The known
-cause on this engine is one card, Heal, where the mask and the engine disagree. The default
-setup deals random decks from the whole catalogue, so Heal can turn up. The next engine build
-fixes Heal.
+**What it means.** The action mask allowed a play, and the engine then refused it. On
+2026-09-27 the cause was one card, Heal: the mask offered it on the seat's own princess towers
+and on buildings. The default setup deals random decks from the whole catalogue, so Heal turned
+up. RoyaleGym `b0948de` fixed it, and the test suite now compares the mask with the engine for
+every card.
 
-**What to do.** Until that build, train with a named deck that does not hold Heal. That avoids
-the Heal disagreement. If it still stops with no Heal in either deck, ask in the Discord and
+**What to do.** Update RoyaleGym and RoyaleSim, then rebuild the engine. If it still stops, the
+mask and the engine disagree about something the tests do not cover. Ask in the Discord and
 paste the whole message.
 
 ## Still stuck

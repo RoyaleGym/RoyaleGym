@@ -1,7 +1,7 @@
 # The engine
 
 [![repo](https://img.shields.io/badge/repo-RoyaleSim-DEA584?style=flat-square&logo=rust&logoColor=white)](https://github.com/RoyaleGym/RoyaleSim)
-![cards](https://img.shields.io/badge/cards-124%20of%20144%20load%2C%20same%20in%20a%20clone-555?style=flat-square)
+![cards](https://img.shields.io/badge/cards-132%20of%20144%20load%2C%20same%20in%20a%20clone-555?style=flat-square)
 ![tick](https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square)
 ![speed](https://img.shields.io/badge/one%20worker-16%2C100%20battles%2Fhour-2ea043?style=flat-square)
 ![same seed](https://img.shields.io/badge/same%20seed-same%20battle-2ea043?style=flat-square)
@@ -132,8 +132,7 @@ To watch a battle instead of reading numbers, run this from the RoyaleSim folder
     ```
 
 It plays a random three-minute match, runs five checks on it, and opens a self-contained HTML
-page you can scrub tick by tick. On macOS and Linux, if `--open` stops with
-`no attribute 'startfile'`, open the `battle.html` it names in your browser. The whole thing took
+page you can scrub tick by tick. The whole thing took
 2.07 seconds here, and all five checks came back green:
 
 ```
@@ -216,10 +215,10 @@ about rewards, so you can change a reward without recompiling anything.
 
 ## The numbers, and where they come from
 
-**Cards.** The 15.535 card table, which comes with a clone, has 144 cards. The engine loads 124
-of them and refuses the other 20, each with a reason. The default catalogue, which is what you
-get when you name no cards, holds 121. It leaves out the Mirror, the Miner and the Goblin Drill,
-which load but which the environments cannot place yet. Counted on RoyaleSim `1d661b0` on
+**Cards.** The 15.535 card table, which comes with a clone, has 144 cards. The engine loads 132
+of them and refuses the other 12, each with a reason. The default catalogue, which is what you
+get when you name no cards, holds 129. It leaves out the Mirror, the Miner and the Goblin Drill,
+which load but which the environments cannot place yet. Counted on RoyaleSim `244c893` (engine build `52aa2faa425c816d`) on
 2026-09-27.
 
 **Speed.** On a 4-core laptop with 8 GB of RAM, with other programs running, the engine did

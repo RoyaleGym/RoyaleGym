@@ -403,10 +403,9 @@ Working:
   against the engine's own ruling. They check every card the engine loads, including the Elixir
   Collector, which the deal keeps out of the opening hand. They check both seats and every move,
   on the whole-tile and the half-tile grid, on four boards: the opening, one with buildings
-  down, one with a princess tower down, and one with both. On the 15.535 card table, the one the
-  install sets up, one card disagrees today: the list offers Heal on your own princess towers and
-  on buildings, where the engine refuses it. The tests allow exactly that one split, and they fail
-  once an engine build closes it. On the 2018 table Heal already agrees.
+  down, one with a princess tower down, and one with both. Every card agrees on both card tables,
+  and the tests allow no exception. Until 2026-09-27 one card did not: the list offered Heal on
+  your own princess towers and on buildings, where the engine refused it.
 - One bot can play both seats. Everything it sees is drawn from the acting player's point of
   view, with its own king at the bottom, so a battle turned 180 degrees looks the same to the
   other seat. The mirror of that does drift apart: 80 of 144 multi-unit deploys diverged
@@ -465,9 +464,6 @@ How that was measured, and the rest of the numbers:
 
 Open, as of 2026-09-27:
 
-- On the 15.535 card table, the list of legal moves offers Heal on your own princess towers and
-  on buildings, where the engine refuses it. A refused move becomes a wait, and `info["deploy_status"]` says why. A fix
-  is planned for the next engine build.
 - A unit invisible to its enemy, such as a Royal Ghost, is still shown to the enemy seat where it
   stands. A player cannot see it. This is not fixed yet.
 - Leave the deck out and each side draws from every card the engine loads. That includes

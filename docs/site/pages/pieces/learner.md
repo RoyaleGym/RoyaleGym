@@ -143,7 +143,7 @@ laptop profile on the Rust engine, with a limit of 100,000,000 timesteps.
 `doctor` is the one worth knowing about in advance. It builds one environment, prints the engine
 build fingerprint and the observation shapes, and checks every action against the engine at one
 state, the one its sampled play reaches. It sees only the cards in hand then, so it can pass
-while the mask is wrong for another card, as it does for Heal today. It also works out how much
+while the mask is wrong for another card, as it did for Heal until 2026-09-27. It also works out how much
 memory the run will need. It refuses a run that is over the
 memory budget in your config, and warns when a run needs more than is free right now. `bench`
 measures your own machine instead of quoting somebody else's.

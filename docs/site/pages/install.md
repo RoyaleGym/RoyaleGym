@@ -437,8 +437,7 @@ arena the battle was played on matches the arena file, ground units stayed out o
 the HTML page it wrote holds every frame and needs nothing else to open.
 
 Add `--open` to open that page in your browser when every gate is green. You can scrub through it
-tick by tick. On macOS and Linux, if `--open` stops with `no attribute 'startfile'`, open the
-`battle.html` it names in your browser.
+tick by tick.
 
 ### The engine's own Python tests
 

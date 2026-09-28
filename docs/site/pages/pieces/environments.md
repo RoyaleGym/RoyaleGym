@@ -200,9 +200,8 @@ Three practical notes.
 The mask is worked out from the board on the Python side, completely separately from the engine.
 The test suite then compares it against the engine's own ruling for every card in the default
 catalogue, for both seats and every move, on four boards: the opening, one with buildings down,
-one with a princess tower gone, and one with both. Heal is the one known disagreement, until the
-next engine build. So a wrong mask for any other card on those boards fails a test instead of
-quietly poisoning a training run.
+one with a princess tower gone, and one with both. So a wrong mask for any card on those boards
+fails a test instead of quietly poisoning a training run.
 
 ## What your bot can and cannot see
 

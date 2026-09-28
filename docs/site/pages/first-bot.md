@@ -407,12 +407,12 @@ from the `RoyaleGym` folder:
     ```
 
 ```
-greedy vs noop: 20-0-0 over 20 games. win rate 100.0% (83.9% to 100.0% at 95%) -- greedy is better. seat gap +0.0%, mean 2594 ticks.
+greedy vs noop: 20-0-0 over 20 games. win rate 100.0% (83.9% to 100.0% at 95%) -- greedy is better. seat gap +0.0%, mean 2166 ticks.
     as blue 10-0-0
     as red  10-0-0
-greedy vs random: 9-11-0 over 20 games. win rate 45.0% (25.8% to 65.8% at 95%) -- too close to call. seat gap +10.0%, mean 3650 ticks.
-    as blue 5-5-0
-    as red  4-6-0
+greedy vs random: 8-12-0 over 20 games. win rate 40.0% (21.9% to 61.3% at 95%) -- too close to call. seat gap -40.0%, mean 3362 ticks.
+    as blue 2-8-0
+    as red  6-4-0
 
 Two things to read off the summary.
   'too close to call' means the interval covers 50%. It is not a tie; it is
@@ -420,14 +420,14 @@ Two things to read off the summary.
   A large seat gap means part of what you measured was the colour, not skill.
 ```
 
-That was run on 2026-09-27 on engine build `ec198b459cf311a4` with the 15.535 card table. A
+That was run on 2026-09-27 on engine build `52aa2faa425c816d` with the 15.535 card table. A
 different engine or card table plays different battles, so your record can differ.
 
 Two things to read off that, and the second is the one people get wrong. Both numbers below come
 from the run printed above, which is 20 games on your machine and nobody else's.
 
 **"Too close to call" is not a tie.** It means the interval still covers 50%, so the games you
-played cannot separate the two bots. Play more and ask again. A bare "45%" would have told you
+played cannot separate the two bots. Play more and ask again. A bare "40%" would have told you
 the opposite of the truth here.
 
 **A large seat gap means you measured the colour, not the skill.** Blue and Red are not the same
@@ -587,7 +587,7 @@ Start with the middle two, not the last one.
 
   It checks every action against the engine at one state, the one its sampled play reaches,
   for both seats. It sees only the cards in hand then, so it can pass while the mask is wrong
-  for another card, as it does for Heal today. It prints the three build digests so you can
+  for another card, as it did for Heal until 2026-09-27. It prints the three build digests so you can
   tell whether your engine matches your data, and projects the memory a run will need. It
   refuses a run that is over the memory budget in your config, and it warns, as above, when a
   run needs more than is free right now. Run it first; it is quick,

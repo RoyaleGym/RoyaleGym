@@ -164,9 +164,8 @@ catalogue, both teams, both `TileActionParser` and `HalfTileActionParser`, and e
 on four boards: the opening board, one with buildings placed, one with a princess tower down,
 and one with both (`test_the_mask_equals_the_engine_for_every_card` in
 `tests/test_building_footprint.py`). A card the deal keeps out of the starting hand, the Elixir
-Collector, is cycled into both hands first. Heal is the one known disagreement the test allows,
-until the next engine build gives Heal a troop's placement code. A wrong mask for any other card
-on those boards fails a test instead of a training run.
+Collector, is cycled into both hands first. The test allows no disagreement, on either card
+table, so a wrong mask for any card on those boards fails a test instead of a training run.
 The mask covers elixir, territory, water, the river band,
 building footprints and the no-deploy rectangle around each living enemy crown tower.
 
