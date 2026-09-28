@@ -172,12 +172,24 @@ def spell_dict(s: SpellState, name_of: Callable[[int], str]) -> dict[str, Any]:
 
 
 def player_dict(
-    p: PlayerState, name_of: Callable[[int], str], deck: Sequence[int] | None
+    p: PlayerState,
+    name_of: Callable[[int], str],
+    deck: Sequence[int] | None,
+    forms: Sequence[int] | None = None,
 ) -> dict[str, Any]:
     """royaleviser.model.Player: the engine knows everything but the cycle beyond next_card.
 
     An empty hand slot (EMPTY_CARD) is the empty string: known to be empty, not unknown.
+
+    The special forms, by NAME: ``evo`` is the engine's rows with the card's name for its
+    id; ``abilities`` is the engine's [available, spent, cost] rows with the name of the
+    k-th hero entry of the deck in front, "" where the deck's forms are unknown.
     """
+    heroes = (
+        [name_of(c) for c, f in zip(deck, forms, strict=False) if f == 2]
+        if deck is not None and forms is not None
+        else []
+    )
     return {
         "team": p.team,
         "elixir_milli": p.elixir_milli,
@@ -192,6 +204,10 @@ def player_dict(
         "tower_hp": list(p.tower_hp),
         "tower_max_hp": list(p.tower_max_hp),
         "king_active": p.king_active,
+        "evo": [[name_of(c), plays, nxt] for c, plays, nxt in p.evo],
+        "abilities": [
+            [heroes[k] if k < len(heroes) else "", *row] for k, row in enumerate(p.abilities)
+        ],
     }
 
 
@@ -202,6 +218,7 @@ def frame_dict(
     decks: Sequence[Sequence[int]] | None = None,
     events: Sequence[str] = (),
     meta: dict[str, Any] | None = None,
+    forms: Sequence[Sequence[int]] | None = None,
 ) -> dict[str, Any]:
     """The viewer's Frame for one BattleState (see WIRE FORM)."""
     return {
@@ -209,7 +226,12 @@ def frame_dict(
         "tick_ms": state.tick_ms,
         "units_per_tile": units_per_tile,
         "players": [
-            player_dict(p, name_of, decks[p.team] if decks is not None else None)
+            player_dict(
+                p,
+                name_of,
+                decks[p.team] if decks is not None else None,
+                forms[p.team] if forms is not None else None,
+            )
             for p in state.players
         ],
         "units": [unit_dict(e, name_of) for e in state.entities],
@@ -333,6 +355,7 @@ class ViserPublisher:
         decks: Sequence[Sequence[int]] | None = None,
         events: Sequence[str] = (),
         meta: dict[str, Any] | None = None,
+        forms: Sequence[Sequence[int]] | None = None,
     ) -> bool:
         """One datagram for ``state`` if a viewer is attached. Returns whether one was sent."""
         if not self.attached:
@@ -346,7 +369,7 @@ class ViserPublisher:
         if self.run:
             m["run"] = self.run
         m.update(meta or {})
-        d = frame_dict(state, name_of, arena.subtile, decks, self._events, m)
+        d = frame_dict(state, name_of, arena.subtile, decks, self._events, m, forms)
         return self.publish_dict(d)
 
     def _note_units(

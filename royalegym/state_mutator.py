@@ -75,13 +75,20 @@ class DefaultStateMutator(StateMutator):
         decks: Sequence[Sequence[int]] | None = None,
         shuffle: ShuffleMode = ShuffleMode.INDEPENDENT,
         mirror: bool = False,
+        forms: Sequence[Sequence[int]] | None = None,
     ) -> None:
         self.decks = [list(d) for d in decks] if decks is not None else None
         self.shuffle = shuffle
         self.mirror = mirror
+        self.forms = [list(f) for f in forms] if forms is not None else None
 
     def config(self) -> dict[str, object]:
-        return {"decks": self.decks, "shuffle": int(self.shuffle), "mirror": self.mirror}
+        out: dict[str, object] = {
+            "decks": self.decks, "shuffle": int(self.shuffle), "mirror": self.mirror
+        }
+        if self.forms is not None:
+            out["forms"] = self.forms
+        return out
 
     def _decks(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[list[int]]:
         if self.decks is not None:
@@ -94,7 +101,7 @@ class DefaultStateMutator(StateMutator):
 
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup:
         shuffle = ShuffleMode.MIRRORED if self.mirror else self.shuffle
-        return MatchSetup(decks=self._decks(rng, cards), shuffle=int(shuffle))
+        return MatchSetup(decks=self._decks(rng, cards), shuffle=int(shuffle), forms=self.forms)
 
 
 class MidGameStateMutator(DefaultStateMutator):

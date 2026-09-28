@@ -193,6 +193,10 @@ BLUE = 0
 RED = 1
 TEAMS = (BLUE, RED)
 HAND_SIZE = 4
+#: A hero's ability BUTTONS per side (RoyaleSim's ``ABILITY_BUTTONS``): command slot
+#: HAND_SIZE + k presses button k, the hero of that side's k-th deck entry of form 2
+#: (``MatchSetup.forms``); x and y are not read.
+ABILITY_BUTTONS = 2
 DECK_SIZE = 8
 EMPTY_CARD = -1
 
@@ -446,6 +450,9 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
 #: ``EntityState.status_flags`` bits. Read them through ``status_of``.
 STATUS_UNDERGROUND = 1
 STATUS_INVISIBLE = 2
+#: An evolved form's unit, and a hero form's unit (RoyaleSim 244c893 on).
+STATUS_EVOLVED = 8
+STATUS_HERO = 16
 STATUS_HIDDEN = 4
 
 
@@ -523,6 +530,13 @@ class PlayerState(msgspec.Struct, frozen=True):
     tower_hp: list[int]  # indexed by TowerSlot; 0 = destroyed
     tower_max_hp: list[int]
     king_active: bool
+    # [available, spent, cost] per ability button, in deck order of the side's form-2
+    # entries: available 1 when its newest living hero has deployed and not used its
+    # charge. Empty from an engine without heroes.
+    abilities: list[list[int]] = []
+    # [card_id, plays since its last evolved play, 1 when its next play is evolved] per
+    # evolved deck card, in deck order. Empty from an engine without evolutions.
+    evo: list[list[int]] = []
 
 
 class BattleState(msgspec.Struct, frozen=True):
@@ -601,6 +615,9 @@ class MatchSetup(msgspec.Struct, frozen=True):
     tower_hp: list[list[int]] | None = None  # [team][TowerSlot]; 0 = start destroyed
     spawns: list[SpawnSpec] = []
     crowns_from_destroyed_towers: bool = True
+    # Each deck entry's FORM, [blue 8, red 8] parallel to ``decks``: 0 the card itself,
+    # 1 its evolution, 2 its hero (an ability button). None plays every card as itself.
+    forms: list[list[int]] | None = None
 
 
 # --------------------------------------------------------------------------

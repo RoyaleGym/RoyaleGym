@@ -278,6 +278,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         # publisher -- see the module doc, THE VIEWER.
         self.viser = viser
         self._decks: list[list[int]] | None = None
+        self._forms: list[list[int]] | None = None
         # The builder's calibration when it has one (every shipped ObsBuilder does),
         # so an env and its observation cannot read two different ledgers.
         self.calibration = getattr(self.obs_builder, "calibration", None) or default_calibration()
@@ -345,6 +346,13 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         if isinstance(init, Snapshot):
             self.engine.load_state(init.blob)
         else:
+            heroes = init.forms and any(f == 2 for row in init.forms for f in row)
+            if heroes and not getattr(self.action_parser, "ability_buttons", False):
+                raise ValueError(
+                    "this setup deals a hero (MatchSetup.forms 2), and the action parser "
+                    "has no ability buttons, so no policy on it could ever press one; "
+                    "build the parser with ability_buttons=True"
+                )
             self.engine.reset(engine_seed, init)
         state = self.engine.state()
         self._state = state
@@ -364,7 +372,8 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             self.recorder.begin(self.engine, engine_seed, init)
         if self.viser is not None:
             self._decks = None if isinstance(init, Snapshot) else [list(d) for d in init.decks]
-            self.viser.publish(state, cards, self.engine.arena(), self._decks)
+            self._forms = None if isinstance(init, Snapshot) else init.forms
+            self.viser.publish(state, cards, self.engine.arena(), self._decks, forms=self._forms)
         self._refresh(state)
         infos = {a: self._info(a, state, NO_COMMAND, terminal=False) for a in self.agents}
         return dict(self._obs), infos
@@ -440,7 +449,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             for cmd, res in zip(commands, results, strict=True)
             if res.status == DeployStatus.OK
         ]
-        self.viser.publish(state, cards, self.engine.arena(), self._decks, events)
+        self.viser.publish(
+            state, cards, self.engine.arena(), self._decks, events, forms=self._forms
+        )
 
     def _advance(self, commands: list[DeployCommand]) -> list[DeployResult]:
         """Run one decision's worth of ticks, and feed the recorder and the viewer.

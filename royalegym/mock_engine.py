@@ -54,6 +54,7 @@ from pathlib import Path
 import msgspec
 
 from .protocol import (
+    ABILITY_BUTTONS,
     BIT_NO_DEPLOY,
     BIT_WATER,
     BLUE,
@@ -692,6 +693,10 @@ class MockEngine:
         only then refusing a destroyed king mid-construction leaves a refused reset
         with tick 0, the new elixir and hands and zeroed Red towers in place.
         """
+        if setup.forms and any(f for row in setup.forms for f in row):
+            raise NotImplementedError(
+                "MockEngine models no evolved or hero forms; MatchSetup.forms must be all 0"
+            )
         validate_setup(self._arena, self.cards(), setup)
         self._s = self._new_battle(seed, setup)
 
@@ -975,6 +980,8 @@ class MockEngine:
             return DeployStatus.GAME_OVER
         if cmd.team not in TEAMS:
             return DeployStatus.BAD_TEAM
+        if HAND_SIZE <= cmd.hand_slot < HAND_SIZE + ABILITY_BUTTONS:
+            return DeployStatus.NO_HERO  # this engine models no hero (reset refuses forms)
         if not 0 <= cmd.hand_slot < HAND_SIZE:
             return DeployStatus.BAD_SLOT
         card_id = s.hands[cmd.team][cmd.hand_slot]

@@ -76,6 +76,7 @@ import numpy as np
 from gymnasium import spaces
 
 from .protocol import (
+    ABILITY_BUTTONS,
     BIT_NO_DEPLOY,
     BIT_WATER,
     BLUE,
@@ -570,10 +571,13 @@ class GridActionParser(ActionParser):
 
     pitch_div = 1
 
-    def __init__(self, buildings: str = "any_tap") -> None:
+    def __init__(self, buildings: str = "any_tap", ability_buttons: bool = False) -> None:
         if buildings not in BUILDING_TAP_ARMS:
             raise ValueError(f"buildings must be one of {BUILDING_TAP_ARMS}, not {buildings!r}")
         self.buildings = buildings
+        # OPT-IN: ABILITY_BUTTONS more actions after the tile ones, action n_tile + k
+        # pressing button k. Off, the space is what every policy so far was trained on.
+        self.ability_buttons = bool(ability_buttons)
         self._engine: Engine | None = None
 
     def bind(self, engine: Engine) -> None:
@@ -595,7 +599,8 @@ class GridActionParser(ActionParser):
         self.nx = self.arena.tiles_x * self.pitch_div
         self.ny = self.arena.tiles_y * self.pitch_div
         self.pitch = self.arena.subtile // self.pitch_div
-        self.n_actions = 1 + HAND_SIZE * self.nx * self.ny
+        self.n_tile_actions = 1 + HAND_SIZE * self.nx * self.ny
+        self.n_actions = self.n_tile_actions + (ABILITY_BUTTONS if self.ability_buttons else 0)
         self._space: spaces.Discrete = spaces.Discrete(self.n_actions)
         # ``buildable`` memo. Keyed on everything relocation reads; see that method.
         self._buildable: dict[tuple[Any, ...], np.ndarray] = {}
@@ -620,7 +625,14 @@ class GridActionParser(ActionParser):
             "pitch_div": self.pitch_div,
             "n_actions": self.n_actions,
             "buildings": self.buildings,
+            # Only when on, so a parser without buttons reports what it always did.
+            **({"ability_buttons": True} if self.ability_buttons else {}),
         }
+
+    def button_of(self, action: int) -> int | None:
+        """The ability button ``action`` presses, or None for the no-op or a tile action."""
+        k = int(action) - self.n_tile_actions
+        return k if self.ability_buttons and 0 <= k < ABILITY_BUTTONS else None
 
     def encode(self, slot: int, x_idx: int, y_idx: int) -> int:
         return 1 + slot * self.nx * self.ny + y_idx * self.nx + x_idx
@@ -651,6 +663,12 @@ class GridActionParser(ActionParser):
             return mask
         player = state.players[team]
         per = self.nx * self.ny
+        if self.ability_buttons:
+            # A button is pressable when its hero is up and unspent and the bar can pay:
+            # the engine's own check (state.rs check_ability_button), read off the state.
+            for k, (available, spent, cost) in enumerate(player.abilities[:ABILITY_BUTTONS]):
+                usable = available and not spent and player.elixir_milli >= cost * 1000
+                mask[self.n_tile_actions + k] = int(usable)
         for slot, card_id in enumerate(player.hand):
             if card_id == EMPTY_CARD:
                 continue
@@ -752,6 +770,9 @@ class GridActionParser(ActionParser):
             return None
         if not 0 < action < self.n_actions:
             raise ValueError(f"action {action} outside {self._space}")
+        button = self.button_of(action)
+        if button is not None:
+            return DeployCommand(team=team, hand_slot=HAND_SIZE + button, x=0, y=0)
         slot, xi, yi = self.decode(action)
         x_own = xi * self.pitch + self.pitch // 2
         y_own = yi * self.pitch + self.pitch // 2

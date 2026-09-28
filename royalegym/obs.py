@@ -118,6 +118,7 @@ from gymnasium import spaces
 
 from .action import ActionParser, PlacementOracle
 from .protocol import (
+    ABILITY_BUTTONS,
     DECK_SIZE,
     EMPTY_CARD,
     HAND_SIZE,
@@ -1000,6 +1001,10 @@ class ObsBuilder(ABC):
             self.oracle = PlacementOracle(self.arena, rules, self.cards)
         self.mask_space = spaces.Box(0, 1, shape=(int(action_parser.space.n),), dtype=np.int8)
         self.mask_plane_shape = action_parser.mask_plane_shape()
+        # A parser with ability buttons puts them last in the mask; they also go out on
+        # their own as ``ability_ready``, the minimal observation of a hero's ability.
+        with_buttons = getattr(action_parser, "ability_buttons", False)
+        self.ability_buttons = ABILITY_BUTTONS if with_buttons else 0
         # A troop by KIND: a spell may carry a troop's placement (Heal) without its laws.
         self._troop_probe = next(
             (c for c in self.cards if c.placement == Placement.TROOP and not card_is_spell(c)),
@@ -1059,6 +1064,8 @@ class ObsBuilder(ABC):
         out: dict[str, spaces.Space[Any]] = {"action_mask": self.mask_space}
         if self.mask_plane_shape is not None:
             out["mask_planes"] = spaces.Box(0, 1, shape=self.mask_plane_shape, dtype=np.int8)
+        if self.ability_buttons:
+            out["ability_ready"] = spaces.Box(0, 1, shape=(self.ability_buttons,), dtype=np.int8)
         return out
 
     def _mask_entries(self, action_mask: np.ndarray) -> dict[str, np.ndarray]:
@@ -1074,7 +1081,10 @@ class ObsBuilder(ABC):
         flat = action_mask.astype(np.int8, copy=False)
         out = {"action_mask": flat}
         if self.mask_plane_shape is not None:
-            out["mask_planes"] = flat[1:].reshape(self.mask_plane_shape)
+            n = int(np.prod(self.mask_plane_shape))
+            out["mask_planes"] = flat[1 : 1 + n].reshape(self.mask_plane_shape)
+        if self.ability_buttons:
+            out["ability_ready"] = flat[len(flat) - self.ability_buttons :]
         return out
 
     def _vector(self, state: BattleState, team: int) -> np.ndarray:

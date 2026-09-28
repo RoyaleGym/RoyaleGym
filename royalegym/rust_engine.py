@@ -87,6 +87,7 @@ import msgspec
 
 from .mock_engine import RAW_CARD_PACK, RAW_CARD_PACK_TABLE_VINTAGE
 from .protocol import (
+    ABILITY_BUTTONS,
     BLUE,
     CARD_KINDS,
     DEFAULT_DATA_DIR,
@@ -771,6 +772,12 @@ class RustEngine:
         #: A consumer that treats DeployResult.x,y as a place should read this and
         #: refuse rather than be handed a tap that looks like a landing.
         self.reports_resolved_position: bool | None = None
+        buttons = getattr(_core, "ABILITY_BUTTONS", ABILITY_BUTTONS)
+        if buttons != ABILITY_BUTTONS:
+            raise RuntimeError(
+                f"the engine has {buttons} ability buttons per side and protocol.py "
+                f"{ABILITY_BUTTONS}: the action space would press the wrong hero"
+            )
         # A SPELL WITH A TROOP'S DEPLOY RULE. Kind code 3 is every spell that takes a troop's
         # territory, and the core refuses some of those on a building (Heal) and not others
         # (the Log); the catalogue does not say which, so the mask offered Heal on the
@@ -821,6 +828,8 @@ class RustEngine:
             list(map(int, setup.elixir_milli)) if setup.elixir_milli is not None else None,
             tower_hp,
             [(sp.team, sp.card_id, sp.x, sp.y, sp.hp) for sp in setup.spawns],
+            # By keyword and only when set: an engine older than the forms refuses it.
+            **({"forms": [list(map(int, f)) for f in setup.forms]} if setup.forms else {}),
         )
         self._reset_called = True
 
@@ -911,7 +920,7 @@ class RustEngine:
         # Clamp only what cannot cross into i32/i64 fields; every clamped value is
         # still outside its valid range, so the verdict is unchanged.
         team = c.team if c.team in (BLUE, RED) else 2
-        slot = min(max(c.hand_slot, -1), HAND_SIZE)
+        slot = min(max(c.hand_slot, -1), HAND_SIZE + ABILITY_BUTTONS)
         lim_x = min(self._arena.width + 1, _I32_MAX)
         lim_y = min(self._arena.height + 1, _I32_MAX)
         return team, slot, min(max(x, -1), lim_x), min(max(y, -1), lim_y)
