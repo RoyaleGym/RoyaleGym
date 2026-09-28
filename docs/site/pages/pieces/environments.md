@@ -152,23 +152,23 @@ print(f"steps {steps}  reward {total:.3f}  terminated {terminated}")
 
 ```
 legal moves on the first step: 1 of 2305
-steps 600  reward 1.023  terminated True
+steps 600  reward -1.012  terminated True
 ```
 
 Only the wait is legal on the first step, because a match refuses every deploy for its opening
 seconds. Play opens at step 9, and from then on this hand has 1318 legal moves.
 
-Blue won. 600 steps is 6,000 ticks, the three minutes of normal time and the two of overtime:
-each side took one princess tower in normal time, nobody scored in overtime, and Blue won the
-tiebreak. `terminated True` says the match ended for real rather than being cut short. The reward is positive because `default_reward()` pays 1.0 for a win and charges 1.0 for a
-loss, with the crown and tower terms on top.
+Red won. 600 steps is 6,000 ticks, the three minutes of normal time and the two of overtime:
+each side took one princess tower in normal time, nobody scored in overtime, and Red won the
+tiebreak. `terminated True` says the match ended for real rather than being cut short. The reward is negative because `default_reward()` charges 1.0 for a loss and pays 1.0 for a
+win, with the crown and tower terms on top.
 
 Swap `me.act(...)` for your own policy and that loop is a training loop with the learning taken
 out. Run it twice and you get the same numbers, because the seed fixes everything.
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
-treat them as "this ran", not as constants. These were run on 2026-09-27 on engine build
-`52aa2faa425c816d` with the 15.535 card table.
+treat them as "this ran", not as constants. These were run on 2026-09-28 on engine build
+`3cf184400be69a9e` with the 15.535 card table.
 
 ## The legality mask, which is the part people like
 

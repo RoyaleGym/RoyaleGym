@@ -217,9 +217,8 @@ about rewards, so you can change a reward without recompiling anything.
 
 **Cards.** The 15.535 card table, which comes with a clone, has 144 cards. The engine loads 132
 of them and refuses the other 12, each with a reason. The default catalogue, which is what you
-get when you name no cards, holds 129. It leaves out the Mirror, the Miner and the Goblin Drill.
-They load when you name them in `card_names`, and the environments can place them. Counted on
-RoyaleSim `244c893` (engine build `52aa2faa425c816d`) on 2026-09-27.
+get when you name no cards, holds all 132, the Mirror, the Miner and the Goblin Drill included.
+Counted on RoyaleSim `8269664` (engine build `3cf184400be69a9e`) on 2026-09-28.
 
 **Speed.** On a 4-core laptop with 8 GB of RAM, with other programs running, the engine did
 18,000 ticks in 0.35 to 0.42 seconds on one core. That is 43,000 to 51,000 ticks a second.

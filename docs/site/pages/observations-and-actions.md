@@ -20,7 +20,7 @@ The rest of this page is the exact detail, all of it printed by programs that we
 
 !!! warning "Your widths will not match these widths"
     Several numbers below depend on how many cards are in your card catalogue, and that
-    depends on the card table your engine reads. The run that produced this page had 129
+    depends on the card table your engine reads. The run that produced this page had 132
     cards in its catalogue. A clean install reads the same 15.535 table, but the catalogue grows
     as more cards become loadable, so yours may report something else. Nothing in RoyaleGym or RoyaleLearn types these widths in. They are read from
     the environment at startup, and you should do the same. Never treat a width on this
@@ -52,14 +52,14 @@ print("legal actions right now:", int(obs["blue"]["action_mask"].sum()), "of", o
 
 ```
 spatial      shape (20, 32, 18)   dtype float32
-vector       shape (1585,)        dtype float32
+vector       shape (1621,)        dtype float32
 action_mask  shape (2305,)        dtype int8
 mask_planes  shape (4, 32, 18)    dtype int8
-cards in this catalogue: 129
+cards in this catalogue: 132
 legal actions right now: 1 of 2305
 ```
 
-Every figure on this page was run on 2026-09-27 on engine build `c53cc07dda11fb7d` with the
+Every figure on this page was run on 2026-09-28 on engine build `3cf184400be69a9e` with the
 15.535 card table. Only one move is legal at the start, the wait, because a match refuses every
 deploy for its opening seconds. The mask section below comes back to that.
 
@@ -319,8 +319,8 @@ print("recorded in the config:", env.config()["obs_builder"]["params"]["reveal"]
 ```
 
 ```
-fair             vector 1585  spatial channels 20
-enemy_hand shown vector 2105  spatial channels 20
+fair             vector 1621  spatial channels 20
+enemy_hand shown vector 2153  spatial channels 20
 recorded in the config: {'enemy_elixir': False, 'enemy_hand': True, 'enemy_next_card': False, 'enemy_deck': False, 'enemy_spell_aim': False}
 ```
 
