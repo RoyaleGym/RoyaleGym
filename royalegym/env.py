@@ -373,7 +373,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         if self.viser is not None:
             self._decks = None if isinstance(init, Snapshot) else [list(d) for d in init.decks]
             self._forms = None if isinstance(init, Snapshot) else init.forms
-            self.viser.publish(state, cards, self.engine.arena(), self._decks, forms=self._forms)
+            self.viser.publish(state, cards, self.engine.arena(), self._decks, **self._forms_kw())
         self._refresh(state)
         infos = {a: self._info(a, state, NO_COMMAND, terminal=False) for a in self.agents}
         return dict(self._obs), infos
@@ -450,7 +450,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             if res.status == DeployStatus.OK
         ]
         self.viser.publish(
-            state, cards, self.engine.arena(), self._decks, events, forms=self._forms
+            state, cards, self.engine.arena(), self._decks, events, **self._forms_kw()
         )
 
     def _advance(self, commands: list[DeployCommand]) -> list[DeployResult]:
@@ -616,6 +616,11 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         }
 
     # -- extras ---------------------------------------------------------------
+
+    def _forms_kw(self) -> dict[str, Any]:
+        """``forms=`` for the publisher only when the battle has forms, so a publisher
+        written before them (duck-typed, as the tests' recorders are) keeps working."""
+        return {"forms": self._forms} if self._forms else {}
 
     def action_masks(self, agent: str = "blue") -> np.ndarray:
         """Boolean legal-action mask, the shape sb3-contrib MaskablePPO expects."""
