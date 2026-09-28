@@ -222,6 +222,21 @@ def battle_page() -> None:
          mp4_every=1, gif_every=3)
 
 
+def battle_in_viewer() -> None:
+    """RoyaleGym: the Try-it battle in the viewer's window, the whole window, at its busiest tick.
+
+    It was a screenshot of the window, of a battle nobody recorded, so it kept showing the
+    viewer as it looked the day it was taken. A capture draws what the window would draw,
+    both hands, the status block and the inspector included, with no window open and the
+    clock on screen frozen, so it is remade with everything else and is the same bytes
+    every run.
+    """
+    src = trace()
+    t = _busiest_tick(src)
+    shot(src, out_dir("RoyaleGym") / "battle-in-viewer.png", ticks=(t, t + 1, 1),
+         scale=18, crop="full")
+
+
 def _busiest_tick(src) -> int:
     """The tick with the most units alive, found by sweeping the trace."""
     best, best_n = 0, -1
@@ -440,6 +455,7 @@ SHOTS = {
     "replay-scrubbed": replay_scrubbed,
     "live-training-env": live_training_env,
     "site-hero": site_hero,
+    "battle-in-viewer": battle_in_viewer,
     **{n.replace("_", "-"): _figure(n) for n in FIGURES},
 }
 

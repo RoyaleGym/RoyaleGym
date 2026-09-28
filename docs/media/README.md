@@ -81,8 +81,9 @@ machine, and nothing sweeps that yet. There is no honest way to fake any of them
 
 Some pictures in the READMEs are not made here, and nothing else in the four repos remakes
 them: the `family.svg` diagrams, which are drawn by hand, and a few screenshots of the viewer
-(`battle-in-viewer.png` here, `engine-battle-viewer.png` in RoyaleSim, `self-play-env.png` in
-RoyaleLearn and the `tile-*.png` stills in RoyaleViser).
+(`engine-battle-viewer.png` in RoyaleSim, `self-play-env.png` in RoyaleLearn and the `tile-*.png`
+stills in RoyaleViser). `battle-in-viewer.png` here was one of them until 2026-09-28; it is now
+the `battle-in-viewer` shot, the Try-it battle captured in the whole window.
 
 ## The drawn figures
 
