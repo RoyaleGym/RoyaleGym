@@ -97,6 +97,7 @@ from .protocol import (
     Engine,
     EntityKind,
     Placement,
+    SpellMotion,
     TowerSlot,
     slot_cost,
     to_engine,
@@ -167,23 +168,18 @@ class PlacementOracle:
         # THE RELOCATIONS (state.rs resolve_point), for a card placed as a troop
         # (``_places_as_troop``). A tap whose snapped one-tile box shares area with an alive
         # OWN crown tower's box (the half-open arm) or an alive OWN building's box
-        # (placement.TROOP_BUILDING_TAPS = as_tower_tap) is moved off it, unless
-        # placement.ILLEGAL_TAP is "refuse", so no body there blocks it.
+        # (placement.TROOP_BUILDING_TAPS = as_tower_tap), or whose tile is the tile of a live
+        # bottle of its own side (placement.LIVE_BOTTLE_TAPS, ``own_live_bottles``), is moved off
+        # it, unless placement.ILLEGAL_TAP is "refuse", so no body there blocks it.
         self.buildings_move_taps = rules.troop_building_taps == AS_TOWER_TAP
+        self.bottles_move_taps = rules.live_bottle_taps == BOTTLE_RELOCATE
         self.troop_taps_relocate = rules.illegal_building_tap != "refuse" and (
-            self.king_half_open or self.buildings_move_taps
+            self.king_half_open or self.buildings_move_taps or self.bottles_move_taps
         )
-        # With ANY relocation on, the live bottle's included (placement.LIVE_BOTTLE_TAPS), the
-        # core judges the body where the tap resolves: under placement.TAP_SNAP =
-        # client16402_tile_centre at the centre of the tile the tap is in, in the ARENA's frame.
-        # The zone is still judged at the tap itself. The live bottle's own move (off the tile
-        # of an own Rage bottle standing out its fuse) is not modelled: a bottle is no body,
-        # and the move lands only where no building's box is.
-        any_relocation = (
-            self.king_half_open
-            or self.buildings_move_taps
-            or rules.live_bottle_taps == BOTTLE_RELOCATE
-        )
+        # With ANY relocation on, the core judges the body where the tap resolves: under
+        # placement.TAP_SNAP = client16402_tile_centre at the centre of the tile the tap is in,
+        # in the ARENA's frame. The zone is still judged at the tap itself.
+        any_relocation = self.king_half_open or self.buildings_move_taps or self.bottles_move_taps
         self.bodies_at_tile_centre = any_relocation and rules.tap_snap == TILE_CENTRE_SNAP
         if self.king_half_open and len(arena.king_blocks) != 2:
             raise ValueError(
@@ -267,11 +263,27 @@ class PlacementOracle:
             out.append(e.footprint)
         return out
 
+    @staticmethod
+    def own_live_bottles(state: BattleState, team: int) -> list[tuple[int, int]]:
+        """The points of the live bottles ``team`` owns: spell objects standing out a positive
+        fuse (a Rage's bottle, a Lumberjack's death bottle), on the board from the cast to the
+        release. A zero fuse (the Goblin Curse's area that makes an area) is no bottle; the
+        engine reports it with no fuse left, so it is left out by its ``delay_ticks``. Under
+        spells.SUMMON_FUSE_START = death_bomb_flight, which does not ship, a bottle can stand one
+        tick at zero, and that tick is missed."""
+        return [
+            (s.x, s.y)
+            for s in state.spells
+            if s.team == team and s.motion == SpellMotion.FUSE and s.delay_ticks > 0
+        ]
+
     def own_tower_zone(
         self, state: BattleState, team: int, px: np.ndarray, py: np.ndarray
     ) -> np.ndarray:
-        """Where a ``team`` troop tap is moved off an own crown tower (the half-open arm) or an
-        own building (placement.TROOP_BUILDING_TAPS = as_tower_tap), so no body blocks it.
+        """Where a ``team`` troop tap is moved off an own crown tower (the half-open arm), an
+        own building (placement.TROOP_BUILDING_TAPS = as_tower_tap) or an own live bottle's tile
+        (placement.LIVE_BOTTLE_TAPS = client16402_relocate, state.rs
+        relocate_off_own_live_bottle), so no body blocks it.
 
         The core snaps the tap to a one-tile box, floored in the PLACER's frame
         (placement.SNAP_EVEN_CORNER = placer_frame: in the own frame, then back) or in the
@@ -296,6 +308,16 @@ class PlacementOracle:
             boxes += self.own_building_boxes(state, team)
         for x0, y0, x1, y1 in boxes:
             zone |= (lo_x < x1) & (x0 < hi_x) & (lo_y < y1) & (y0 < hi_y)
+        if self.bottles_move_taps:
+            # A bottle's tile is the tile its point is on, snapped as a tap is; two one-tile
+            # boxes on that grid share area only when they are the same tile.
+            for bx, by in self.own_live_bottles(state, team):
+                fbx = a.width - bx if own else bx
+                fby = a.height - by if own else by
+                bcx, bcy = (fbx // t) * t + t // 2, (fby // t) * t + t // 2
+                if own:
+                    bcx, bcy = a.width - bcx, a.height - bcy
+                zone |= (cx == bcx) & (cy == bcy)
         return zone
 
     @staticmethod
@@ -499,7 +521,16 @@ class PlacementOracle:
             blockers = self._blockers(state)
         else:
             extra, blockers = 0, ()
-        return (int(placement), team, pitch_div, extra, rects, blockers, self._troop_laws(card))
+        # The own live bottles, which are spells and not entities, so not in ``blockers``.
+        bottles = (
+            tuple(sorted((s.team, s.x, s.y, s.delay_ticks > 0) for s in state.spells
+                         if s.motion == SpellMotion.FUSE))
+            if self.bottles_move_taps
+            else ()
+        )
+        return (
+            int(placement), team, pitch_div, extra, rects, blockers, self._troop_laws(card), bottles
+        )
 
     def point_grid(
         self, state: BattleState, team: int, card: CardInfo, pitch_div: int

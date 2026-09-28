@@ -44,6 +44,7 @@ from royalegym.protocol import (
     ShuffleMode,
     SpawnSpec,
     default_calibration,
+    to_engine,
 )
 from royalegym.rust_engine import (
     CORE_IMPORT_ERROR,
@@ -502,3 +503,64 @@ def test_a_spell_with_a_troop_placement_keeps_the_closed_block():
                 assert np.array_equal(
                     got["SPELL"], oracle.legal_points(state, team, spell, px, py)
                 ), (team, pitch, "point_grid != legal_points")
+
+
+def bottle_board(parser_cls, oracle_patch=None) -> tuple[list[str], int]:
+    """An own Cannon on each side and a live Rage bottle on its tile, on the pre-batch arms
+    (the closed block, own buildings not moved) with the live bottle's move on: every action
+    of both seats against ``check_deploy``, and how many Knight taps on the bottle's tile the
+    engine accepts where the Cannon's body stands."""
+    arms = {**OLD_ARMS, KEY: "closed_block", "placement.LIVE_BOTTLE_TAPS": "client16402_relocate"}
+    rest = pinned({k: v for k, v in arms.items() if k != KEY})
+    engine = engine_on_arm("closed_block", calibration_overrides=rest)
+    assert engine.rules().live_bottle_taps == "client16402_relocate"
+    ids = {c.name: c.card_id for c in engine.cards()}
+    deck = [ids[n] for n in ("Rage", "Knight", "Minions", "Archer", "Cannon", "Fireball",
+                             "Giant", "Musketeer")]
+    a, t = engine.arena(), engine.arena().subtile
+    tile = (9, 10)  # own frame, clear of the towers
+    cx, cy = tile[0] * t + t // 2, tile[1] * t + t // 2
+    spawns = [SpawnSpec(team, ids["Cannon"], *to_engine(a, team, cx, cy)) for team in (BLUE, RED)]
+    engine.reset(1, MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE,
+                               elixir_milli=[10000, 10000], spawns=spawns,
+                               start_tick=engine.rules().deploy_lockout_ticks))
+    casts = [DeployCommand(team, 0, *to_engine(a, team, cx, cy)) for team in (BLUE, RED)]
+    assert [r.status for r in engine.step(casts, 1)] == [0, 0], "the Rage casts were refused"
+    state = engine.state()
+    parser = parser_cls()
+    parser.bind(engine)
+    if oracle_patch is not None:
+        oracle_patch(parser.oracle)
+    assert all(parser.oracle.own_live_bottles(state, team) for team in (BLUE, RED)), "no bottle"
+    problems, opened = [], 0
+    for team in (BLUE, RED):
+        for action, m, status in mask_disagreements(engine, parser, state, team):
+            why = DeployStatus(status).name
+            problems.append(f"seat {team} action {action}: mask {m}, engine {why}")
+        knight = state.players[team].hand.index(ids["Knight"])
+        x, y = to_engine(a, team, cx, cy)
+        opened += engine.check_deploy(DeployCommand(team, knight, x, y)) == DeployStatus.OK
+    return problems, opened
+
+
+@needs_core
+@pytest.mark.parametrize("parser_cls", [TileActionParser, HalfTileActionParser])
+def test_a_tap_on_an_own_live_bottle_is_moved_off_it(parser_cls):
+    """placement.LIVE_BOTTLE_TAPS = client16402_relocate (state.rs relocate_off_own_live_bottle):
+    a troop tapped on the tile of its own side's live bottle is moved off it, so a body under
+    the tap no longer refuses it. Here the body is an own Cannon, which the pre-batch arms do
+    not move a tap off, so the bottle is the only reason the engine takes the tap."""
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    problems, opened = bottle_board(parser_cls)
+    assert not problems, f"{len(problems)} disagreements; first {problems[:6]}"
+    assert opened == 2, f"the bottle opened the Cannon's tile for {opened} of 2 seats"
+
+
+@needs_core
+def test_plant_a_mask_blind_to_the_live_bottle_is_caught():
+    if not ledger_has_key():
+        pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
+    problems, _ = bottle_board(TileActionParser, lambda o: setattr(o, "bottles_move_taps", False))
+    seats = {p.split()[1] for p in problems}
+    assert seats == {"0", "1"}, f"PLANT DID NOT LAND on both seats: {problems[:4]}"
