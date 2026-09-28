@@ -470,6 +470,12 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # STATUS_HIDDEN: a building hidden in the ground (the Tesla). Higher bits reserved.
     # -1 means the engine did not report, so read it through ``status_of``, never raw.
     status_flags: int = -1
+    # The unit's LEVEL, one scale across rarities, as the engine played it (asked for by
+    # the sim session, 2026-09-28): a Mirror's copy reads its card's level plus one, a
+    # Clone's copy the Clone's, a unit a card produced its parent's. So a unit that matches
+    # no catalogue row by hitpoints can still be priced exactly. -1 means the engine did
+    # not report: every engine before the column, and every MockEngine entity.
+    level: int = -1
 
 
 #: ``EntityState.status_flags`` bits. Read them through ``status_of``.

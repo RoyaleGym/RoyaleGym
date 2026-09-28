@@ -103,6 +103,16 @@ def test_status_flags_bits_land_where_the_engine_puts_them():
     assert status_of(decode_entity([*LEGACY, *NEW, 0])) == 0, "0 is a reported value"
 
 
+def test_level_follows_status_flags_and_reads_as_not_reported_when_absent():
+    """2026-09-28: the unit's level, asked for by sim so a Mirror's copy (one level up) can
+    be priced. It trails status_flags, and every engine before it decodes as -1. The two
+    are both ints, so a swap would raise nothing: the values here differ on purpose."""
+    assert EntityState.__struct_fields__[-2:] == ("status_flags", "level")
+    assert decode_entity([*LEGACY, *NEW, 5]).level == -1
+    e = decode_entity([*LEGACY, *NEW, 5, 12])
+    assert (e.status_flags, e.level) == (5, 12)
+
+
 def test_an_engine_that_sends_only_the_old_columns_decodes_as_not_reported():
     """The engine installed today, and every trace recorded before 2026-09-24."""
     e = decode_entity(LEGACY)
