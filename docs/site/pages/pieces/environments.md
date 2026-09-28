@@ -98,18 +98,17 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 1]  tick 6000
+winner 1  crowns [0, 1]  tick 3600
 ```
 
-Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes, and it was one crown
-each then: Red took Blue's left princess tower at tick 1840 and Blue took Red's left one at tick
-3600. So the match went to overtime, where the first crown wins, and nobody took one before it ran
-out at tick 6000. Level on crowns, a tiebreak decided it: the side whose weakest standing tower has
-less health left loses, and that was Red (re-run 2026-09-27 on engine build `c53cc07dda11fb7d` with
-the 15.535 card table).
+Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes. Red took Blue's left
+princess tower at tick 1840, and that one crown was the score when normal time ran out, so Red won
+1-0 at tick 3600 (re-run 2026-09-27 on engine build `52aa2faa425c816d` with the 15.535 card
+table). Level then, it would have gone to overtime, where the first crown wins, and after that to
+a tiebreak: the side whose weakest standing tower has less health left loses.
 
-One env step is half a second of game time, which is 10 ticks. That battle was 600 steps, all five
-minutes of it, so each player made 600 decisions. It takes under a second of real time.
+One env step is half a second of game time, which is 10 ticks. That battle was 360 steps, so each
+player made 360 decisions. It takes under a second of real time.
 
 !!! warning "Name the deck, and name it card by card"
     Notice the deck is looked up by name and not by number. A card id is only a position in the
@@ -153,7 +152,7 @@ print(f"steps {steps}  reward {total:.3f}  terminated {terminated}")
 
 ```
 legal moves on the first step: 1 of 2305
-steps 600  reward 1.019  terminated True
+steps 600  reward 1.023  terminated True
 ```
 
 Only the wait is legal on the first step, because a match refuses every deploy for its opening
@@ -169,7 +168,7 @@ out. Run it twice and you get the same numbers, because the seed fixes everythin
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
 treat them as "this ran", not as constants. These were run on 2026-09-27 on engine build
-`c53cc07dda11fb7d` with the 15.535 card table.
+`52aa2faa425c816d` with the 15.535 card table.
 
 ## The legality mask, which is the part people like
 

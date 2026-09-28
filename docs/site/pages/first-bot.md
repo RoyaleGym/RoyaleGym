@@ -86,20 +86,18 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 1]  tick 6000
+winner 1  crowns [0, 1]  tick 3600
 ```
 
 Blue is player 0 and Red is player 1. A *tick* is the game's own 50 ms step and there are 20 in a
-second, so tick 3600 is exactly three minutes, the end of normal time. It was one crown each
-then: Red brought down Blue's left princess tower at tick 1840, and Blue took Red's left one at
-tick 3600, the last tick of normal time. So the match went to overtime, where the first crown
-wins, and nobody took one: overtime ran its full two minutes, to tick 6000. Level on crowns, a
-tiebreak decided it: the side whose weakest standing tower has less health left loses, and Red's
-right princess tower was down to 23 (run 2026-09-27 on engine build `c53cc07dda11fb7d` with the
-15.535 card table).
+second, so tick 3600 is exactly three minutes, the end of normal time. Red brought down Blue's
+left princess tower at tick 1840, and that one crown was still the whole score when normal time
+ran out, so Red won 1-0 at tick 3600 (run 2026-09-27 on engine build `52aa2faa425c816d` with the
+15.535 card table). Level then, the match would have gone to overtime, where the first crown wins,
+and after that to a tiebreak: the side whose weakest standing tower has less health left loses.
 
-One env step is half a second of game time, which is 10 ticks. So each player made 600 decisions
-in that battle, all five minutes of it. It took under a second of real time.
+One env step is half a second of game time, which is 10 ticks. So each player made 360 decisions
+in that battle. It took under a second of real time.
 
 !!! tip "Always name the deck, card by card"
     If you leave `state_mutator` out, each side is dealt eight random cards from whatever card
@@ -317,7 +315,8 @@ nothing. A stream sends one frame per engine tick, but not from the first one: n
 until the run has heard a hello from the viewer, and the run only listens for one once a second.
 So the first second or so goes unsent, even with the viewer already open when the run starts.
 The count above is from 2026-09-24 (engine build `cb784bb583586789`), when this battle ran 3,728
-ticks; on the build the rest of this page was run on it runs 6,000, so expect a larger count.
+ticks; on the build the rest of this page was run on it runs 3,600, so expect a slightly
+smaller count.
 Attach the viewer later and you get fewer frames. Nothing is sent while nobody is listening.
 
 !!! warning "One env does not read the `ROYALEVISER` variable. This trips people up."
