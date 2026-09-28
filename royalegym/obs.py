@@ -653,6 +653,7 @@ def fair_fields(
     *,
     enemy_elixir_milli: int | None = None,
     enemy_last_card: bool = False,
+    hand_costs: Sequence[int] | None = None,
 ) -> dict[str, np.ndarray]:
     """Every fair vector field but the board's four, by name, from what a player sees.
 
@@ -666,6 +667,13 @@ def fair_fields(
     ``enemy_elixir_milli`` is the true enemy bar for ``Reveal.enemy_elixir`` only; left
     at None, the field is the memory's count, which is the fair one.
 
+    ``hand_costs`` is what each own hand slot costs right now (``PlayerState.hand_costs``:
+    a Mirror costs the card it copies plus its own one, -1 when there is nothing to copy).
+    Left at None, each slot is priced at its card's listed elixir, exactly as before it
+    existed. A price p >= 0 is written p / MAX_MANA and is affordable when the own bar
+    holds p; p < 0 keeps the listed elixir and is never affordable. The env passes None
+    for now, until RoyaleImitate passes its own, so the two never disagree in between.
+
     Keys are ``FAIR_FIELDS`` in order, then ``enemy_last_card`` when asked for. Each
     array is float32 and already clipped to [0, 1], as in the vector. They are views of
     one buffer, laid out in that order.
@@ -674,7 +682,7 @@ def fair_fields(
     buf = np.zeros(width, dtype=np.float32)
     _write_fair(
         buf, off, memory, clock, hand, next_card, own_elixir_milli, cards, max_mana,
-        enemy_elixir_milli, enemy_last_card,
+        enemy_elixir_milli, enemy_last_card, hand_costs,
     )
     np.clip(buf, 0.0, 1.0, out=buf)
     return {k: buf[s] for k, s in off.items()}
@@ -692,6 +700,7 @@ def _write_fair(
     max_mana: int,
     enemy_elixir_milli: int | None,
     enemy_last_card: bool,
+    hand_costs: Sequence[int] | None = None,
 ) -> None:
     """Write every fair field but the board's four into ``out`` at ``off``, NOT clipped.
 
@@ -713,7 +722,7 @@ def _write_fair(
     foe_milli = memory.enemy_elixir_milli() if enemy_elixir_milli is None else enemy_elixir_milli
     _write_hand(
         out[off["own_hand_cards"]], out[off["own_hand_cost"]], out[off["own_hand_affordable"]],
-        hand, cards, own_elixir_milli, num_cards, max_mana,
+        hand, cards, own_elixir_milli, num_cards, max_mana, hand_costs,
     )
     cycle = out[off["own_cycle_6_8"]].reshape(DECK_SIZE - HAND_SIZE - 1, onehot)
     for i, card in enumerate(memory.own_cycle[1:]):
@@ -792,9 +801,13 @@ def build_vector(
     num_cards = len(cards)
     off, width = _vector_slots(num_cards, reveal, enemy_last_card)
     vec = np.zeros(width, dtype=np.float32)
+    # hand_costs HELD at None: the env prices a slot by its listed elixir until RoyaleImitate
+    # passes its own prices through fair_fields (Learn's ruling, 2026-09-28); then this
+    # passes me.hand_costs, in the same window.
     _write_fair(
         vec, off, memory, MatchClock.of(state), me.hand, me.next_card, me.elixir_milli,
         cards, max_mana, foe.elixir_milli if reveal.enemy_elixir else None, enemy_last_card,
+        None,
     )
     vec[off["own_tower_hp"]] = [me.tower_hp[s] / max(1, me.tower_max_hp[s]) for s in TowerSlot]
     vec[off["enemy_tower_hp"]] = [
@@ -939,16 +952,20 @@ def _write_hand(
     elixir_milli: int,
     num_cards: int,
     max_mana: int,
+    hand_costs: Sequence[int] | None = None,
 ) -> None:
-    """Card one-hots, costs and affordable flags for one hand, into zeroed views."""
+    """Card one-hots, costs and affordable flags for one hand, into zeroed views. A slot
+    is priced at ``hand_costs`` where given (see ``fair_fields``), else its listed elixir."""
     one = one_flat.reshape(HAND_SIZE, num_cards + 1)
     for i, c in enumerate(hand):
         if c == EMPTY_CARD:
             one[i, num_cards] = 1
             continue
         one[i, c] = 1
-        cost[i] = cards[c].elixir / max_mana
-        afford[i] = 1.0 if elixir_milli >= cards[c].elixir * 1000 else 0.0
+        listed = cards[c].elixir
+        price = listed if hand_costs is None else int(hand_costs[i])
+        cost[i] = (price if price >= 0 else listed) / max_mana
+        afford[i] = 1.0 if price >= 0 and elixir_milli >= price * 1000 else 0.0
 
 
 # ---------------------------------------------------------------------------

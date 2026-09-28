@@ -331,6 +331,42 @@ def test_splitting_the_clock_changes_nothing_but_the_seen_tick(mock_cards):
     assert b[900]["own_elixir_leaked"][0] == pytest.approx((17 / 56) / LEAK_SCALE, abs=1e-4)
 
 
+def test_a_slot_is_priced_by_hand_costs_when_they_are_given(mock_cards):
+    """Learn's ruling (2026-09-28): ``hand_costs`` prices each own slot (a Mirror costs the
+    card it copies plus one; -1 when it has nothing to copy), and None writes exactly what
+    the listed elixir did. Each slot here reads differently under the two, so a price
+    written to the wrong slot, or ignored, shows."""
+    names = {c.name: i for i, c in enumerate(mock_cards)}
+    deck = [names[n] for n in ("Skeletons", "Knight", "Archer", "Goblins", "Minions", "Fireball",
+                               "Musketeer", "Valkyrie")]
+    max_mana = default_calibration().int("match.MAX_MANA")
+    listed = [mock_cards[c].elixir for c in deck[:4]]
+    prices = [listed[0], 4, -1, listed[3] + 5]  # as listed, dearer, nothing to copy, dearer
+    assert prices[1] != listed[1]
+    assert prices[3] != listed[3]
+    bar = 1000 * 4  # pays 4 exactly: the listed Archer, not the priced slot 3
+    clock = MatchClock.at(1)
+
+    def fields(**kw):
+        m = memory_of(mock_cards, deck, own=bar)
+        m.advance(1, clock.regular_ticks, clock.overtime, [], [])
+        return fair_fields(m, clock, deck[:4], deck[4], bar, mock_cards, max_mana, **kw)
+
+    plain, none, priced = fields(), fields(hand_costs=None), fields(hand_costs=prices)
+    for k in plain:
+        assert np.array_equal(plain[k], none[k]), k
+    assert np.allclose(plain["own_hand_cost"], [p / max_mana for p in listed])
+    want_cost = [listed[0], 4, listed[2], listed[3] + 5]
+    assert np.allclose(priced["own_hand_cost"], [p / max_mana for p in want_cost])
+    assert list(priced["own_hand_affordable"]) == [
+        float(listed[0] <= 4), 1.0, 0.0, 0.0
+    ], "p <= bar is affordable, -1 never is"
+    assert plain["own_hand_affordable"][2] == float(listed[2] <= 4), "the control slot"
+    for k in plain:
+        if k not in ("own_hand_cost", "own_hand_affordable"):
+            assert np.array_equal(plain[k], priced[k]), f"{k} moved with the prices"
+
+
 def test_a_play_the_bar_cannot_pay_is_counted(mock_cards):
     names = {c.name: i for i, c in enumerate(mock_cards)}
     deck = [names[n] for n in ("Skeletons", "Knight", "Archer", "Goblins", "Minions", "Fireball",
