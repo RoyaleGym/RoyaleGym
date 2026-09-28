@@ -158,13 +158,31 @@ class DefendOpponent:
         return NOOP
 
 
+def _forward_cell(cells: np.ndarray, mirror: bool) -> tuple[int, int]:
+    """The furthest-forward cell, and of those the one furthest to the RIGHT of the own
+    frame, or with ``mirror`` to the LEFT. The planes are in the acting seat's own frame,
+    so the plain choice always attacks down the same lane, whichever seat plays it."""
+    y, x = max(cells.tolist(), key=lambda c: (c[0], -c[1] if mirror else c[1]))
+    return int(y), int(x)
+
+
 class PushOpponent:
     """Place as far up the board as the rules allow, every time you can.
 
     The mirror of ``DefendOpponent`` and the other half of the question a bot is meant
     to answer for itself. Aggressive placement is not free: everything it plays lands
     far from its own towers and cannot come back to defend.
+
+    ``mirror``: of the furthest-forward cells take the leftmost rather than the rightmost.
+    The plain bot always pushes down its own right lane, so a defence learned only against
+    it is only ever taught on one side; its twin pushes down the left (relayed by the sim
+    session from a review of a similar project, whose scripted opponent has a mirrored
+    twin for the same reason). Not a rung of ``ladder()``: tools that play every pairing
+    of it would change what they measure.
     """
+
+    def __init__(self, mirror: bool = False) -> None:
+        self.mirror = bool(mirror)
 
     def act(self, obs: dict[str, Any], mask: np.ndarray, rng: np.random.Generator) -> int:
         del rng
@@ -174,8 +192,8 @@ class PushOpponent:
         for slot in range(planes.shape[0]):
             cells = np.argwhere(planes[slot] > 0)
             if cells.size:
-                y, x = max(cells.tolist(), key=lambda c: (c[0], c[1]))
-                return _index(planes, slot, int(y), int(x))
+                y, x = _forward_cell(cells, self.mirror)
+                return _index(planes, slot, y, x)
         return NOOP
 
 
@@ -190,12 +208,15 @@ class PatientOpponent:
     That approximation is the interesting part and its limit: the mask says what is
     LEGAL, and a card becomes legal when it is affordable, so counting playable slots
     is a lower bound on elixir and not a reading of it. A cheap hand looks rich.
+
+    ``mirror``: commit down the left lane rather than the right, as ``PushOpponent``'s.
     """
 
-    def __init__(self, ready: int = 3) -> None:
+    def __init__(self, ready: int = 3, mirror: bool = False) -> None:
         if ready < 1:
             raise ValueError("ready must be at least 1 card")
         self.ready = ready
+        self.mirror = bool(mirror)
 
     def act(self, obs: dict[str, Any], mask: np.ndarray, rng: np.random.Generator) -> int:
         del rng
@@ -206,9 +227,8 @@ class PatientOpponent:
         if len(playable) < self.ready:
             return NOOP
         slot = playable[0]
-        cells = np.argwhere(planes[slot] > 0)
-        y, x = max(cells.tolist(), key=lambda c: (c[0], c[1]))
-        return _index(planes, slot, int(y), int(x))
+        y, x = _forward_cell(np.argwhere(planes[slot] > 0), self.mirror)
+        return _index(planes, slot, y, x)
 
 
 def ladder() -> tuple[tuple[str, Any], ...]:

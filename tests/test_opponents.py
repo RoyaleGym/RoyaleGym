@@ -100,8 +100,15 @@ def play(opponent, steps: int = 60, seed: int = 0) -> list[tuple[int, dict]]:
 
 @pytest.mark.parametrize(
     "opponent",
-    [FirstAffordableOpponent(), DefendOpponent(), PushOpponent(), PatientOpponent(2)],
-    ids=lambda o: type(o).__name__,
+    [
+        FirstAffordableOpponent(),
+        DefendOpponent(),
+        PushOpponent(),
+        PatientOpponent(2),
+        PushOpponent(mirror=True),
+        PatientOpponent(2, mirror=True),
+    ],
+    ids=lambda o: type(o).__name__ + ("-mirror" if getattr(o, "mirror", False) else ""),
 )
 def test_an_opponent_never_returns_an_action_the_engine_refuses(opponent) -> None:
     """An illegal action is turned into a no-op and logged, so a bot that emits them
@@ -146,6 +153,38 @@ def own_frame_rows(opponent, steps: int = 80) -> list[int]:
             rows.append(((action - 1) % (ny * nx)) // nx)
     env.close()
     return rows
+
+
+def own_frame_cols(opponent, steps: int = 200) -> tuple[list[int], int]:
+    """The own-frame column each accepted placement landed on, and the board's width."""
+    env = env_fn()()
+    obs, _ = env.reset(seed=0)
+    rng = np.random.default_rng(0)
+    cols, nx = [], 0
+    for _ in range(steps):
+        if not env.agents:
+            break
+        action = int(opponent.act(obs["blue"], obs["blue"]["action_mask"], rng))
+        planes = np.asarray(obs["blue"]["mask_planes"])
+        obs, _, _, _, info = env.step({"blue": action, "red": NOOP})
+        if action != NOOP and info["blue"]["deploy_status"] == 0:
+            _, ny, nx = planes.shape
+            cols.append(((action - 1) % (ny * nx)) % nx)
+    env.close()
+    return cols, nx
+
+
+@pytest.mark.parametrize("make", [PushOpponent, lambda **k: PatientOpponent(2, **k)])
+def test_the_mirrored_twin_attacks_down_the_other_lane(make) -> None:
+    """The plain bot's forward cells are its own frame's rightmost, so it pushes down one
+    lane every time; the twin's are the leftmost. Each must stay on its side, and each must
+    have played, or the split says nothing."""
+    plain, nx = own_frame_cols(make())
+    twin, _ = own_frame_cols(make(mirror=True))
+    assert plain, "the plain bot never placed"
+    assert twin, "the twin never placed"
+    assert min(plain) >= nx // 2, f"the plain bot placed at own-frame column {min(plain)}"
+    assert max(twin) < nx // 2, f"the twin placed at own-frame column {max(twin)}"
 
 
 def test_the_defender_stays_on_its_own_half() -> None:
