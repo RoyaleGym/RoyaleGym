@@ -386,6 +386,11 @@ class MatchMemory:
         self.num_cards = num_cards
         self.law = law
         self.cost: list[int] = [0] * num_cards
+        # A MIRROR costs the card it copies plus its own one (match.MIRROR_COST_RULE), and it
+        # copies its side's last ACCEPTED play that was not a Mirror (match.MIRROR_RECORD, the
+        # engine's ``mirror_target``). Both are public: every play is. [own, enemy].
+        self.is_mirror: list[bool] = [False] * num_cards
+        self.last_play: list[int] = [EMPTY_CARD, EMPTY_CARD]
         self.tick = -1
         self.exact = True
         self.own_fine = 0
@@ -406,6 +411,7 @@ class MatchMemory:
 
     def bind(self, cards: Sequence[CardInfo]) -> None:
         self.cost = [c.elixir for c in cards]
+        self.is_mirror = [c.placement == Placement.MIRROR for c in cards]
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -446,6 +452,7 @@ class MatchMemory:
         self.foe_plays = 0
         self.foe_recent = []
         self.unaffordable = [0, 0]
+        self.last_play = [EMPTY_CARD, EMPTY_CARD]
         self._note_own_cards()
 
     def observe(self, state: BattleState, team: int) -> None:
@@ -504,6 +511,11 @@ class MatchMemory:
         the bar floors at zero. The engine refuses such a play, so on an engine's own log
         this stays 0; anywhere else it means a missed play or a different elixir law.
 
+        A MIRROR play is charged the card it copies plus its own elixir: its side's last
+        play that was not a Mirror, which this memory has seen, since plays are public. A
+        Mirror with no earlier play to copy is refused by the engine, so seeing one means a
+        play was missed: it is charged its own elixir and ``exact`` goes False.
+
         ``own_last_play_tick`` becomes ``tick``, the moment the play is SEEN, not the
         moment it was made. That is what ``observe`` has always recorded, and a policy
         trained on it reads ``own_ticks_since_play`` that way.
@@ -540,11 +552,24 @@ class MatchMemory:
             if when != at:
                 fine, spilled = self.law.advance(fine, due, at, when, regular_ticks, overtime)
                 at, due, lost = when, 0, lost + spilled
-            due += self.cost[card]
+            due += self._price(card, side)
             if due * self.law.scale > fine:
                 self.unaffordable[side] += 1
         fine, spilled = self.law.advance(fine, due, at, tick, regular_ticks, overtime)
         return fine, lost + spilled
+
+    def _price(self, card: int, side: int) -> int:
+        """What a play of ``card`` by ``side`` (0 own, 1 enemy) cost, and the copy target it
+        leaves: a Mirror costs its side's last non-Mirror play plus its own and changes
+        nothing; any other card costs its elixir and becomes that side's last play."""
+        if not self.is_mirror[card]:
+            self.last_play[side] = card
+            return self.cost[card]
+        copied = self.last_play[side]
+        if copied == EMPTY_CARD:
+            self.exact = False
+            return self.cost[card]
+        return self.cost[copied] + self.cost[card]
 
     def _note_own_cards(self) -> None:
         for c in (*self.own_hand, *self.own_cycle):
