@@ -419,8 +419,14 @@ def test_plant_without_the_probe_heal_disagrees_again(monkeypatch):
     are offered and refused again, as they were when a training run stopped on them."""
     monkeypatch.setattr(rust_engine, "troop_ruled_spells", lambda *a, **k: frozenset())
     engine = RustEngine()
-    if "Heal" not in {c.name for c in engine.cards()}:
+    heal = next((c for c in engine.cards() if c.name == "Heal"), None)
+    if heal is None:
         pytest.skip(f"{NOT_A_PASS}: this catalogue has no Heal")
+    if heal.placement == Placement.TROOP:
+        pytest.skip(
+            f"{NOT_A_PASS}: this engine gives Heal a troop's placement code itself (RoyaleSim "
+            "95698c5 on), so there is nothing for the probe to do and no defect to plant"
+        )
     problems, _ = every_card_gate(engine, "opening", TileActionParser())
     assert any(" Heal at own point" in p and "OCCUPIED" in p for p in problems), problems[:4]
 

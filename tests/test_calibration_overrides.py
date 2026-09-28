@@ -67,6 +67,12 @@ def test_only_a_key_the_ledger_ships_another_arm_of_is_overridden():
     assert symmetric_overrides(ledger("client_spawn_lane", ["client_spawn_lane"])) == {}
     # No candidates list at all: the preferred arm.
     assert symmetric_overrides(ledger("client_spawn_lane")) == {KEY: arms[0]}
+    # The death-spawn slide (parity's round 5): selected back to not_read once it ships.
+    death = "spawner.DEATH_SPAWN_PUSHBACK"
+    slide = {"value": "client_ring_slide", "candidates": ["not_read", "client_ring_slide"]}
+    assert symmetric_overrides({"spawner": {"DEATH_SPAWN_PUSHBACK": slide}}) == {death: "not_read"}
+    shipped = {"value": "not_read", "candidates": ["not_read", "client_ring_slide"]}
+    assert symmetric_overrides({"spawner": {"DEATH_SPAWN_PUSHBACK": shipped}}) == {}
 
 
 @needs_core

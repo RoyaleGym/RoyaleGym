@@ -1241,6 +1241,9 @@ SYMMETRIC_ARMS: dict[str, tuple[str, ...]] = {
     # The half-open king block is half-open in the ARENA's frame, so the two seats may tap
     # different own-frame points around their kings; the closed block is the same for both.
     "placement.TROOP_TOWER_TAPS": ("closed_block",),
+    # The measured slide lays a death-spawn ring (Golem, Lava Hound) in the arena's frame for
+    # both seats, so a Red death is not the rotation of a Blue one; not_read is symmetric.
+    "spawner.DEATH_SPAWN_PUSHBACK": ("not_read",),
 }
 
 

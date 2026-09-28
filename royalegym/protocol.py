@@ -284,6 +284,12 @@ class DeployStatus(enum.IntEnum):
     # index is 14. The member exists before any engine sends it, because RustEngine
     # refuses to construct against an engine exporting a reason name missing here.
     NOTHING_TO_MIRROR = 13
+    # A hero's ability button (HERO-SPEC, RoyaleSim's hero build): no live hero of this
+    # button's card; its ability not ready yet (deploying, or casting); already used. The
+    # engine's reason indices are 15-17; these exist first for the same reason as above.
+    NO_HERO = 14
+    ABILITY_NOT_READY = 15
+    ABILITY_SPENT = 16
 
 
 class Winner(enum.IntEnum):
