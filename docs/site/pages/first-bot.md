@@ -86,19 +86,20 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3728
+winner 0  crowns [1, 1]  tick 6000
 ```
 
 Blue is player 0 and Red is player 1. A *tick* is the game's own 50 ms step and there are 20 in a
-second, so tick 3600 is exactly three minutes, the end of normal time. Neither side had a crown
-then, so this match went to overtime, where the first crown wins. Blue took one of Red's princess
-towers at tick 3728, 6.4 seconds in (re-run 2026-09-24 on engine build `cb784bb583586789` with the
-15.535 card table). Had overtime run out level too, a tiebreak would have decided it: the side
-whose weakest standing tower has less health left loses.
+second, so tick 3600 is exactly three minutes, the end of normal time. It was one crown each
+then: Red brought down Blue's left princess tower at tick 1840, and Blue took Red's left one at
+tick 3600, the last tick of normal time. So the match went to overtime, where the first crown
+wins, and nobody took one: overtime ran its full two minutes, to tick 6000. Level on crowns, a
+tiebreak decided it: the side whose weakest standing tower has less health left loses, and Red's
+right princess tower was down to 23 (run 2026-09-27 on engine build `c53cc07dda11fb7d` with the
+15.535 card table).
 
-One env step is half a second of game time, which is 10 ticks. So each player made 373 decisions
-in that battle, the last one cut short when the tower fell. It took about half a second of real
-time.
+One env step is half a second of game time, which is 10 ticks. So each player made 600 decisions
+in that battle, all five minutes of it. It took under a second of real time.
 
 !!! tip "Always name the deck, card by card"
     If you leave `state_mutator` out, each side is dealt eight random cards from whatever card
@@ -174,16 +175,16 @@ print(f"blue deployed {blue.plays} times")
 ```
 
 ```
-winner 0  crowns [3, 1]  tick 4771
-blue deployed 39 times
+winner 0  crowns [3, 1]  tick 1328
+blue deployed 8 times
 ```
 
-Read that result. Blue won with three crowns, but it did not take three towers. Red took one of
-Blue's princess towers first, Blue took one of Red's back, and it was level at one crown each when
-the three minutes ran out. In overtime Blue brought down Red's king tower at tick 4771, 58
-seconds in, and a fallen king tower counts as all three crowns. Blue deployed 39 times in the
-whole match, because it plays the instant it can afford whatever is in slot 0 and does nothing
-else at all (run 2026-09-26 on engine build `ea9686b2a2af91fd` with the 15.535 card table).
+Read that result. Blue won with three crowns, but it did not take three towers. Red took Blue's
+left princess tower first, at tick 860, and Blue took Red's left one at tick 900. Then at tick
+1328, barely a minute in, Blue brought down Red's king tower, and a fallen king tower counts as
+all three crowns. Blue deployed 8 times in the whole match, because it plays the instant it can
+afford whatever is in slot 0 and does nothing else at all (run 2026-09-27 on engine build
+`c53cc07dda11fb7d` with the 15.535 card table).
 
 That is a stupid bot and it beat the random one here. That is the point. A fixed rule with no
 learning in it can already beat picking legal moves out of a hat, which tells you the random
@@ -312,11 +313,12 @@ frames sent 3528  dropped 0
 ```
 
 The `time.sleep` is there because a battle otherwise finishes in half a second and you would see
-nothing. A stream sends one frame per engine tick, and this battle ran 3,728 ticks. It sent 3,528
-because nothing goes out until the run has heard a hello from the viewer, and the run only
-listens for one once a second. So the first second or so went unsent, even though the viewer was
-already open when the run started (run 2026-09-24 on engine build `cb784bb583586789`). Attach
-the viewer later and you get fewer frames. Nothing is sent while nobody is listening.
+nothing. A stream sends one frame per engine tick, but not from the first one: nothing goes out
+until the run has heard a hello from the viewer, and the run only listens for one once a second.
+So the first second or so goes unsent, even with the viewer already open when the run starts.
+The count above is from 2026-09-24 (engine build `cb784bb583586789`), when this battle ran 3,728
+ticks; on the build the rest of this page was run on it runs 6,000, so expect a larger count.
+Attach the viewer later and you get fewer frames. Nothing is sent while nobody is listening.
 
 !!! warning "One env does not read the `ROYALEVISER` variable. This trips people up."
     You may have seen `set ROYALEVISER=127.0.0.1:9870` written as the way to switch the viewer on.

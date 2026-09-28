@@ -47,7 +47,7 @@ New here? The install steps are under [Install](#install).
 <table>
   <tr>
     <td width="33%" align="center"><img width="100%" src="docs/media/two-apis.png" alt="Two APIs over one battle: ClashParallelEnv driving both seats through PettingZoo, and a Gymnasium env driving one seat, stepping the same board."><br><b>Two APIs, one battle</b><br><sub>PettingZoo when you want both players (the two seats) to be bots. Gymnasium when you want one seat, and the env plays the other.</sub></td>
-    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.png" alt="The legality mask: the actions playable on one step of a battle, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. In the Try-it battle below, 1623 of the 2305 are once play opens on step 9. Before that only waiting is legal, because a match refuses every deploy for its first 90 ticks.</sub></td>
+    <td width="33%" align="center"><img width="100%" src="docs/media/legality-mask.png" alt="The legality mask: the actions playable on one step of a battle, drawn per hand card over the 18 by 32 tile board."><br><b>An exact list of legal moves</b><br><sub>Every observation says which of the 2305 card-and-tile moves are playable right now. In the Try-it battle below, 1640 of the 2305 are once play opens on step 9. Before that only waiting is legal, because a match refuses every deploy for its first 90 ticks.</sub></td>
     <td width="33%" align="center"><img width="100%" src="docs/media/self-play-batch.png" alt="Batched self-play: four boards become eight agent slots, and one policy is fed both seats' observations, each in its own frame."><br><b>One bot plays itself</b><br><sub>N battles run as 2N player slots, so one bot learns from both sides of every match in a single batch.</sub></td>
   </tr>
   <tr>
@@ -89,18 +89,19 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3728
+winner 0  crowns [1, 1]  tick 6000
 ```
 
-That is a whole match, re-run 2026-09-24 on engine build `cb784bb583586789` with the **15.535 card
-table**, which is what the install above puts at `cards.json`. Neither side had a crown when the
-three minutes ran out, so the match went to overtime, and Blue won it by taking one of Red's
-princess towers at tick 3728.
+That is a whole match, re-run 2026-09-27 on engine build `c53cc07dda11fb7d` with the **15.535 card
+table**, which is what the install above puts at `cards.json`. It was one crown each when the three
+minutes ran out: Red took Blue's left princess tower at tick 1840 and Blue took Red's left one at
+tick 3600. Nobody scored in overtime, so at tick 6000 a tiebreak decided it, and Blue won: Red's
+weakest standing tower had less health left, 23 hitpoints.
 
-Measured on a clean runner, not here: RoyaleGym suite run 36095561188, building the engine from
-**RoyaleSim `32a2997`**. The compiled engine in that run is `engine_binary` `32a34a7b395b737a`.
+Measured on the project's desktop, not on a clean runner, building the engine from
+**RoyaleSim `95698c5`**. The compiled engine is `engine_binary` `81e6053f776be9fa`.
 
-**This result has moved three times, and each move is traced to one engine rule.** All three were
+**This result has moved four times, and each move is traced to one engine rule.** All three were
 found the same way: switch that one rule back, run this exact program, and get the previous result
 exactly.
 
@@ -110,9 +111,13 @@ exactly.
 - On 2026-09-24 it moved to `winner 1  crowns [0, 1]  tick 3600`, when attacking units started
   being pushed apart by their neighbours, as recordings of real matches show
   (`movement.ATTACKING_UNIT_MOVEMENT`).
-- Later on 2026-09-24 it moved to the result above, when a walking unit stopped turning aside for
-  a unit next to it that is still deploying and faces the same way, again as recordings of real
-  matches show (`movement.DEPLOYING_HEADING`).
+- Later on 2026-09-24 it moved to `winner 0  crowns [1, 0]  tick 3728`, when a walking unit
+  stopped turning aside for a unit next to it that is still deploying and faces the same way, again
+  as recordings of real matches show (`movement.DEPLOYING_HEADING`).
+- On 2026-09-27 it moved to the result above, when a troop tapped on its own crown tower started
+  being moved off it and the king's no-deploy block started opening on its far edges, both as
+  measured on the client (`placement.TROOP_TOWER_TAPS`). With that rule switched back, this build
+  prints `winner 0  crowns [1, 0]  tick 3728` exactly.
 
 **The RoyaleSim commit is written here because the digest cannot supply it.** `build_digest` hashes
 the calibration values and the arena compiled into the extension; it has no access to the Rust at
@@ -127,7 +132,7 @@ The card table is the other, and it is not a smaller effect: at an earlier build
 So if your result differs, the digest and the vintage together tell you which of the two moved,
 rather than leaving you to suspect your install. `RustEngine().config()` prints yours.
 
-Both players are picking at random from the legal moves, and one of them still took a tower. That
+Both players are picking at random from the legal moves, and each of them still took a tower. That
 is the bar your bot starts from.
 
 These eight cards are here so the battle comes out the same on your machine as it did on ours.
@@ -136,8 +141,8 @@ against recordings, which `cards.json` lists under `thin_slice`, so the example 
 best-measured part of the engine. Any eight will do. Leave the deck out and each team is dealt a
 random eight, which is the default.
 
-One env step is half a second of game time, which is 10 ticks. The battle ended at tick 3728,
-so each player made 373 decisions, the last one cut short when the tower fell. The whole battle takes well under a second of real time, and how far under depends
+One env step is half a second of game time, which is 10 ticks. The battle ended at tick 6000,
+the full five minutes, so each player made 600 decisions. The whole battle takes under a second of real time, and how far under depends
 entirely on what else your machine is doing: four runs on 2026-09-22, on a laptop with 8 GB of
 memory and several other jobs going, gave 0.57 to 0.74 s. Treat any timing on this page the same way.
 

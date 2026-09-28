@@ -98,18 +98,18 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 0  crowns [1, 0]  tick 3728
+winner 0  crowns [1, 1]  tick 6000
 ```
 
-Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes, and neither side had a
-crown then, so the match went to overtime, where the first crown wins. Blue took one of Red's
-princess towers at tick 3728 (re-run 2026-09-24 on engine build `cb784bb583586789` with the 15.535
-card table). Had overtime run out level too, a tiebreak would have decided it: the side whose
-weakest standing tower has less health left loses.
+Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes, and it was one crown
+each then: Red took Blue's left princess tower at tick 1840 and Blue took Red's left one at tick
+3600. So the match went to overtime, where the first crown wins, and nobody took one before it ran
+out at tick 6000. Level on crowns, a tiebreak decided it: the side whose weakest standing tower has
+less health left loses, and that was Red (re-run 2026-09-27 on engine build `c53cc07dda11fb7d` with
+the 15.535 card table).
 
-One env step is half a second of game time, which is 10 ticks. That battle was 373 steps, the last
-one cut short when the tower fell, so each player made 373 decisions. It takes well under a second
-of real time.
+One env step is half a second of game time, which is 10 ticks. That battle was 600 steps, all five
+minutes of it, so each player made 600 decisions. It takes under a second of real time.
 
 !!! warning "Name the deck, and name it card by card"
     Notice the deck is looked up by name and not by number. A card id is only a position in the
@@ -153,15 +153,15 @@ print(f"steps {steps}  reward {total:.3f}  terminated {terminated}")
 
 ```
 legal moves on the first step: 1 of 2305
-steps 360  reward 1.347  terminated True
+steps 600  reward 1.019  terminated True
 ```
 
 Only the wait is legal on the first step, because a match refuses every deploy for its opening
-seconds. Play opens at step 9, and from then on this hand has 1267 legal moves.
+seconds. Play opens at step 9, and from then on this hand has 1318 legal moves.
 
-Blue won. 360 steps is 3,600 ticks, exactly the three minutes, so Blue was a crown ahead when
-normal time ran out, and `terminated True` says the match ended for real rather than being cut
-short. The reward is positive because `default_reward()` pays 1.0 for a win and charges 1.0 for a
+Blue won. 600 steps is 6,000 ticks, the three minutes of normal time and the two of overtime:
+each side took one princess tower in normal time, nobody scored in overtime, and Blue won the
+tiebreak. `terminated True` says the match ended for real rather than being cut short. The reward is positive because `default_reward()` pays 1.0 for a win and charges 1.0 for a
 loss, with the crown and tower terms on top.
 
 Swap `me.act(...)` for your own policy and that loop is a training loop with the learning taken
@@ -169,7 +169,7 @@ out. Run it twice and you get the same numbers, because the seed fixes everythin
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
 treat them as "this ran", not as constants. These were run on 2026-09-27 on engine build
-`ec198b459cf311a4` with the 15.535 card table.
+`c53cc07dda11fb7d` with the 15.535 card table.
 
 ## The legality mask, which is the part people like
 

@@ -42,12 +42,14 @@ pytestmark = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERR
 #: example's own deck and seed, counting each hand slot under both rules: the whole
 #: difference is the Cannon, 222 legal tiles before and 240 after, and Zap, Fireball and
 #: Archer do not move at all. So this number changing again means a placement rule
-#: changed, and the per-slot breakdown says which card.
+#: changed, and the per-slot breakdown says which card. It did again on 2026-09-27, 1623 to
+#: 1640, when RoyaleSim 95698c5 shipped placement.TROOP_TOWER_TAPS: the whole difference is
+#: the Archer, the one troop in hand, which may now be tapped on 17 more own tiles (7 at the
+#: king's block, 5 on each princess tower's box; the engine moves it off the tower).
 PROOF = {
     # The first step now offers only the no-op -- a match refuses every deploy for its
-    # opening ticks -- so the informative figure moved to the step where play opens. 1623
-    # is the same count as before; what changed is which step it describes.
-    "01_one_battle.py": "legal moves once play opens, on step 9: 1623 of 2305",
+    # opening ticks -- so the informative figure moved to the step where play opens.
+    "01_one_battle.py": "legal moves once play opens, on step 9: 1640 of 2305",
     "02_one_seat_against_a_bot.py": "against rush-left",
     "03_self_play_batch.py": "agent-episodes finished in 400 vector steps",
     "04_your_own_reward.py": "% of the signal",

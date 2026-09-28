@@ -84,7 +84,7 @@ the environments, so you have something to play against from your first minute.
 
     Every observation tells your bot which of the 2305 card and tile moves it can actually
     play right now. How many that is depends on the deck and on what is in hand: in the Try-it
-    battle it is 1623 once play opens on step 9. Before that it is 1, the wait, because a match
+    battle it is 1640 once play opens on step 9. Before that it is 1, the wait, because a match
     refuses every deploy for its first 90 ticks. Your bot never wastes a decision on a card it
     cannot afford.
 

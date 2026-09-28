@@ -20,7 +20,7 @@ The rest of this page is the exact detail, all of it printed by programs that we
 
 !!! warning "Your widths will not match these widths"
     Several numbers below depend on how many cards are in your card catalogue, and that
-    depends on the card table your engine reads. The run that produced this page had 121
+    depends on the card table your engine reads. The run that produced this page had 129
     cards in its catalogue. A clean install reads the same 15.535 table, but the catalogue grows
     as more cards become loadable, so yours may report something else. Nothing in RoyaleGym or RoyaleLearn types these widths in. They are read from
     the environment at startup, and you should do the same. Never treat a width on this
@@ -52,14 +52,14 @@ print("legal actions right now:", int(obs["blue"]["action_mask"].sum()), "of", o
 
 ```
 spatial      shape (20, 32, 18)   dtype float32
-vector       shape (1489,)        dtype float32
+vector       shape (1585,)        dtype float32
 action_mask  shape (2305,)        dtype int8
 mask_planes  shape (4, 32, 18)    dtype int8
-cards in this catalogue: 121
+cards in this catalogue: 129
 legal actions right now: 1 of 2305
 ```
 
-Every figure on this page was run on 2026-09-27 on engine build `ec198b459cf311a4` with the
+Every figure on this page was run on 2026-09-27 on engine build `c53cc07dda11fb7d` with the
 15.535 card table. Only one move is legal at the start, the wait, because a match refuses every
 deploy for its opening seconds. The mask section below comes back to that.
 
@@ -232,7 +232,7 @@ The second half of that program printed this:
 
 ```
 step   1  legal actions     1  elixir 6.18
-step   9  legal actions  1623  elixir 7.61
+step   9  legal actions  1640  elixir 7.61
 step  20  legal actions     1  elixir 0.57
 step  60  legal actions     1  elixir 0.71
 ```
@@ -241,7 +241,7 @@ At step 1 the only legal move is the wait. On the Rust engine a match refuses ev
 first 90 ticks. The real game has the same opening wait, and 90 ticks is the best measurement
 of its length so far. So for the first nine decisions there is nothing else to choose,
 whatever the deck. Step 9 ends at tick 90, and play opens: the player has 7.61 elixir, can afford
-all four cards in hand, and 1623 of the 2305 moves are legal.
+all four cards in hand, and 1640 of the 2305 moves are legal.
 
 At steps 20 and 60 exactly one move is legal again, the wait. At step 20 the player had 0.57
 elixir and was holding Knight, Cannon, Minions and Giant, the cheapest of them 3. It could not
@@ -255,7 +255,7 @@ with the buildings already on the board. The mask covers elixir, which half of t
 arena you may play in, water, the river, the footprint of buildings already down, and
 the rectangle around each enemy crown tower that is still alive.
 
-Once play opens, the count depends on the deck, the card table and the elixir, so 1623 is not a
+Once play opens, the count depends on the deck, the card table and the elixir, so 1640 is not a
 property of the game.
 
 Two details worth trusting the project for:
@@ -315,8 +315,8 @@ print("recorded in the config:", env.config()["obs_builder"]["params"]["reveal"]
 ```
 
 ```
-fair             vector 1489  spatial channels 20
-enemy_hand shown vector 1977  spatial channels 20
+fair             vector 1585  spatial channels 20
+enemy_hand shown vector 2105  spatial channels 20
 recorded in the config: {'enemy_elixir': False, 'enemy_hand': True, 'enemy_next_card': False, 'enemy_deck': False, 'enemy_spell_aim': False}
 ```
 

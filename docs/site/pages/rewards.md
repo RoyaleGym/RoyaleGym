@@ -30,13 +30,13 @@ below it is the output that came back.
 
     ---
 
-    What you actually want. It paid out on 1 step out of 373, the last one.
+    What you actually want. It paid out on 2 steps out of 600, and they cancelled.
 
 - __3. Tower damage__
 
     ---
 
-    The same goal, measured more often. It paid out on 60 steps out of 373.
+    The same goal, measured more often. It paid out on 67 steps out of 600.
 
 - __4. Both together__
 
@@ -47,9 +47,10 @@ below it is the output that came back.
 </div>
 
 Every program here plays the same battle, between two players choosing at random. It is the
-battle from RoyaleGym's README: level when the three minutes run out, then won by Blue in
-overtime by taking one of Red's princess towers. The outputs were run on 2026-09-26 on engine
-build `ea9686b2a2af91fd` with the 15.535 card table. A newer engine can end the battle
+battle from RoyaleGym's README: one crown each when the three minutes run out, still level when
+overtime runs out, and won by Blue on the tiebreak, because Red's weakest standing tower had less
+health left. The outputs were run on 2026-09-27 on engine build `c53cc07dda11fb7d` with the
+15.535 card table. A newer engine can end the battle
 differently, and then every number below moves with it.
 
 ## The interface
@@ -132,12 +133,12 @@ play(ZeroReward())
 ```
 
 ```
-ZeroReward: blue total +0.000  over 373 steps, 0 of them non-zero
+ZeroReward: blue total +0.000  over 600 steps, 0 of them non-zero
 ```
 
-Three lines of your own code and it ran a whole match. 373 steps is one decision every half
-second, for three minutes of game time plus the six and a half seconds of overtime this battle
-went to.
+Three lines of your own code and it ran a whole match. 600 steps is one decision every half
+second, for three minutes of game time plus the full two minutes of overtime this battle went
+to.
 
 Name the eight cards, as the program does. A card id is only a position in the
 catalogue and positions move between card tables, so the same number is not the same
@@ -160,14 +161,15 @@ play(CrownReward())
 ```
 
 ```
-CrownReward: blue total +1.000  over 373 steps, 1 of them non-zero
+CrownReward: blue total +0.000  over 600 steps, 2 of them non-zero
 ```
 
 That is the shipped `CrownReward`, near enough line for line, and this battle makes its
-weakness unusually visible. One tower fell in the whole match, so exactly one of 373 decisions
-got a number that was not zero, and it was the very last one. The other 372 told the bot nothing
-at all. A bot reading only this signal learns that it won, and nothing about which of its
-decisions got it there.
+weakness unusually visible. Two towers fell in the whole match, one on each side, so exactly two
+of 600 decisions got a number that was not zero: -1 when Red took Blue's tower and +1 when Blue
+took one back. They add up to nothing, and the other 598 told the bot nothing at all. A bot
+reading only this signal does not even learn that it won, because the tiebreak decided that,
+and crowns never saw it.
 
 That is the problem with scoring only the thing you care about. It is correct and it is
 almost silent.
@@ -195,10 +197,10 @@ play(TowerDamageReward())
 ```
 
 ```
-TowerDamageReward: blue total +0.414  over 373 steps, 60 of them non-zero
+TowerDamageReward: blue total +0.410  over 600 steps, 67 of them non-zero
 ```
 
-Same battle, same bots, and now 60 steps carry a number instead of 1. That is what
+Same battle, same bots, and now 67 steps carry a number instead of 2. That is what
 people mean when they call a reward *dense*. The bot gets told it is getting warmer
 long before anything falls over.
 
@@ -223,14 +225,14 @@ print("blue's last step, term by term:", shaped.terms_for(0))
 ```
 
 ```
-CombinedReward: blue total +1.241  over 373 steps, 60 of them non-zero
-blue's last step, term by term: {'WinLossReward': 1.0, 'CrownReward': 0.2, 'TowerDamageReward': 0.0022935779816513737}
+CombinedReward: blue total +1.041  over 600 steps, 68 of them non-zero
+blue's last step, term by term: {'WinLossReward': 1.0, 'CrownReward': 0.0, 'TowerDamageReward': 0.0}
 ```
 
 `WinLossReward` pays +1 the moment the battle is won, -1 when it is lost, and nothing
 before that. Blue wins this one, which is why the last step reads 1.0 and why both combined totals
-on this page are above 1. On that last step all three terms paid: the win, the
-crown, and the final sliver of the tower's hitpoints, each already multiplied by its weight.
+on this page are above 1. On that last step only the win paid: the battle ended on the tiebreak,
+so no crown fell and no tower was hit in it.
 The win is the actual objective. The other two terms exist to give the bot something to go on in
 the meantime, which is why their weights are small.
 
@@ -264,7 +266,7 @@ print(json.dumps(default_reward().config(), indent=2)[:400])
 ```
 
 ```
-CombinedReward: blue total +1.251  over 373 steps, 124 of them non-zero
+CombinedReward: blue total +1.041  over 600 steps, 184 of them non-zero
 {
   "terms": [
     {
@@ -291,7 +293,7 @@ CombinedReward: blue total +1.251  over 373 steps, 124 of them non-zero
       "class": "ElixirTradeReward
 ```
 
-124 non-zero steps out of 373, because `ElixirTradeReward` pays out whenever a unit dies and
+184 non-zero steps out of 600, because `ElixirTradeReward` pays out whenever a unit dies and
 whenever a spell is cast. The JSON is cut off at 400 characters by the `[:400]` in the program, which is why
 the last line stops mid word. It is the whole recipe, and it is how the reward ends up
 written into a checkpoint. `ClashParallelEnv.config()` carries the same thing under
@@ -331,8 +333,8 @@ both_seats(TowerDamageReward())
 ```
 
 ```
-CrownReward: blue +1.000  red -1.000  sum +0.000
-TowerDamageReward: blue +0.414  red -0.414  sum +0.000
+CrownReward: blue +0.000  red +0.000  sum +0.000
+TowerDamageReward: blue +0.410  red -0.410  sum +0.000
 ```
 
 Every shipped term is meant to add to zero like this, except three that score only one
