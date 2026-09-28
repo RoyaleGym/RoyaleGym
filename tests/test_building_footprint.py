@@ -68,6 +68,7 @@ from royalegym.protocol import (
     TEAMS,
     Arena,
     BattleState,
+    CardInfo,
     DeployCommand,
     DeployStatus,
     Engine,
@@ -395,39 +396,58 @@ def test_the_mask_equals_the_engine_for_every_card(rust, board, parser_cls):
             )
 
 
+def heal_without_the_probe(monkeypatch) -> CardInfo | None:
+    """Heal's catalogue row as the engine states it, with the adapter's probe switched off,
+    or None when this catalogue has no Heal. Which rule Heal carries is the CARD TABLE's:
+    on the 15.535 table it is a spell with a troop's territory that the core refuses on a
+    building (kind 3 up to RoyaleSim 1d661b0, kind 0 from 95698c5); on the 2018 table it
+    is a plain area spell, cast anywhere, and there is nothing for the probe to decide."""
+    with monkeypatch.context() as m:
+        m.setattr(rust_engine, "troop_ruled_spells", lambda *a, **k: frozenset())
+        engine = RustEngine()
+    return next((c for c in engine.cards() if c.name == "Heal"), None)
+
+
 @needs_core
-def test_a_spell_the_core_judges_by_a_troops_rule_gets_a_troops_placement(rust):
+def test_a_spell_the_core_judges_by_a_troops_rule_gets_a_troops_placement(rust, monkeypatch):
     """Heal takes a troop's territory and is refused on buildings; the Log takes the same
     territory and lands on them. Up to RoyaleSim 1d661b0 both are kind code 3, so the
-    adapter asks the core which is which (``troop_ruled_spells``). From the next build the
-    core gives Heal kind code 0 itself, and this holds with nothing to ask."""
-    names = {c.name for c in rust.cards()}
+    adapter asks the core which is which (``troop_ruled_spells``). From 95698c5 the core
+    gives Heal kind code 0 itself, and this holds with nothing to ask."""
+    raw = heal_without_the_probe(monkeypatch)
+    if raw is None:
+        pytest.skip(f"{NOT_A_PASS}: this catalogue has no Heal")
     troop_spells = {
         c.name for c in rust.cards() if c.placement == Placement.TROOP and c.card_kind == "SPELL"
     }
     rolling = {c.name for c in rust.cards() if c.placement == Placement.ROLLING}
-    if "Heal" not in names:
-        pytest.skip(f"{NOT_A_PASS}: this catalogue has no Heal")
-    assert "Heal" in troop_spells, troop_spells
-    assert "Log" in rolling, rolling
     assert not troop_spells & {"Log", "BarbLog", "RoyalDelivery"}, troop_spells
+    assert "Log" not in {c.name for c in rust.cards()} or "Log" in rolling, rolling
+    if raw.placement in (Placement.ROLLING, Placement.TROOP):
+        assert "Heal" in troop_spells, troop_spells
+    else:
+        # A plain area spell here (the 2018 table): the probe leaves it as the engine says.
+        heal = next(c for c in rust.cards() if c.name == "Heal")
+        assert heal.placement == raw.placement, (heal, raw)
 
 
 @needs_core
 def test_plant_without_the_probe_heal_disagrees_again(monkeypatch):
     """The every-card gate is what holds this: with the probe gone, Heal's own-tower taps
-    are offered and refused again, as they were when a training run stopped on them."""
-    monkeypatch.setattr(rust_engine, "troop_ruled_spells", lambda *a, **k: frozenset())
-    engine = RustEngine()
-    heal = next((c for c in engine.cards() if c.name == "Heal"), None)
-    if heal is None:
+    are offered and refused again, as they were when a training run stopped on them. Only
+    where the probe is what gives Heal its rule: an engine that states it (95698c5 on) or a
+    table where Heal is a plain spell (2018) has no defect to plant."""
+    raw = heal_without_the_probe(monkeypatch)
+    if raw is None:
         pytest.skip(f"{NOT_A_PASS}: this catalogue has no Heal")
-    if heal.placement == Placement.TROOP:
-        pytest.skip(
-            f"{NOT_A_PASS}: this engine gives Heal a troop's placement code itself (RoyaleSim "
-            "95698c5 on), so there is nothing for the probe to do and no defect to plant"
-        )
-    problems, _ = every_card_gate(engine, "opening", TileActionParser())
+    if raw.placement != Placement.ROLLING:
+        # Nothing to plant here, so check the other half: the probe must not move Heal at
+        # all where the engine states its rule itself (95698c5 on) or Heal is a plain spell.
+        heal = next(c for c in RustEngine().cards() if c.name == "Heal")
+        assert heal.placement == raw.placement, (heal, raw)
+        return
+    monkeypatch.setattr(rust_engine, "troop_ruled_spells", lambda *a, **k: frozenset())
+    problems, _ = every_card_gate(RustEngine(), "opening", TileActionParser())
     assert any(" Heal at own point" in p and "OCCUPIED" in p for p in problems), problems[:4]
 
 
