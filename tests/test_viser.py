@@ -9,6 +9,8 @@ import pytest
 
 from royalegym import viser as viser_mod
 from royalegym.env import ClashParallelEnv
+from royalegym.mock_engine import MockEngine
+from royalegym.protocol import MatchSetup
 from royalegym.viser import ViserPublisher
 
 sources = pytest.importorskip("royaleviser.sources")
@@ -104,3 +106,36 @@ def test_a_second_publisher_on_a_taken_port_says_it_is_a_second_run() -> None:
         )
     finally:
         first.close()
+
+
+def test_the_special_forms_rows_decode_as_the_viewer_reads_them() -> None:
+    """``evo`` and ``abilities``, the engine's rows with NAMES where the engine has ids,
+    through RoyaleViser's own decoder. MockEngine has no forms, so its frames carry these
+    rows empty and the round trip above cannot see them; a player that has both is built
+    here. A card id left where the viewer reads a name fails ``decode_frame`` HERE, in the
+    repo that builds the row, and not later in a viewer's red."""
+    import msgspec
+
+    eng = MockEngine()
+    ids = {c.name: c.card_id for c in eng.cards()}
+    deck = [ids[n] for n in ("Musketeer", "Cannon", "Knight", "Archer", "Giant", "Minions",
+                             "Fireball", "Zap")]
+    forms = [[2, 1, 0, 0, 0, 0, 0, 0], [0] * 8]
+    eng.reset(1, MatchSetup(decks=[deck, deck]))
+    state = eng.state()
+    blue = msgspec.structs.replace(
+        state.players[0], abilities=[[1, 0, 2]], evo=[[ids["Cannon"], 2, 1]]
+    )
+    state = msgspec.structs.replace(state, players=[blue, state.players[1]])
+    names = {c.card_id: c.name for c in eng.cards()}
+    d = viser_mod.frame_dict(
+        state, names.__getitem__, eng.arena().subtile, [deck, deck], forms=forms
+    )
+    frame = model.decode_frame(msgspec.msgpack.encode(d))
+    assert model.problems(frame) == []
+    assert [tuple(r) for r in frame.players[0].abilities] == [("Musketeer", 1, 0, 2)]
+    assert [tuple(r) for r in frame.players[0].evo] == [("Cannon", 2, 1)]
+    # The slip it exists for: an id where the viewer reads a name does not decode.
+    d["players"][0]["evo"] = [[ids["Cannon"], 2, 1]]
+    with pytest.raises(msgspec.ValidationError):
+        model.decode_frame(msgspec.msgpack.encode(d))
