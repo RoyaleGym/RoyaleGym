@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import pytest
 
-from royalegym.obs import MatchClock, MatchMemory
+from royalegym.obs import MatchClock, MatchMemory, Reveal, build_vector, vector_layout
 from royalegym.protocol import (
     DECK_SIZE,
     EMPTY_CARD,
@@ -163,3 +163,45 @@ def test_the_dated_play_path_prices_a_mirror_by_what_it_copies(engine):
     cost_of_listed = paid(k + mi)
     assert paid(2 * k + mi) != cost_of_listed, "the listed price must read differently"
     assert after([(0, mirror)]) == (paid(mi), False), "nothing seen to copy"
+
+
+@needs_core
+def test_the_vector_prices_a_mirror_slot_by_what_it_copies(engine):
+    """The env's own hand fields read the Mirror at its copy plus one (fair_fields'
+    ``hand_costs``, passed from the engine), not at its listed one: the price the mask and
+    the reward already use. RoyaleImitate writes the same from its log (its cc78f2f)."""
+    ids = {c.name: c.card_id for c in engine.cards()}
+    knight, mirror = ids["Knight"], ids["Mirror"]
+    deck = [mirror, knight, *[ids[n] for n in FILLERS]][:DECK_SIZE]
+    engine.reset(
+        1,
+        MatchSetup(
+            decks=[deck, deck], shuffle=ShuffleMode.NONE, elixir_milli=[7000, 6500],
+            start_tick=engine.rules().deploy_lockout_ticks,
+        ),
+    )
+    a, t = engine.arena(), engine.arena().subtile
+    s = engine.state()
+    slot = s.players[0].hand.index(knight)
+    tap = to_engine(a, 0, 9 * t + t // 2, 6 * t + t // 2)
+    assert engine.step([DeployCommand(0, slot, *tap)], 10)[0].status == DeployStatus.OK
+    s = engine.state()
+    me = s.players[0]
+    assert mirror in me.hand, me.hand
+    m_slot = me.hand.index(mirror)
+    price = me.hand_costs[m_slot]
+    k, mi = engine.cards()[knight].elixir, engine.cards()[mirror].elixir
+    assert price == k + mi
+    mem = memories(engine)[0]
+    mem.observe(s, 0)
+    max_mana = engine.calibration.int("match.MAX_MANA")
+    vec = build_vector(s, 0, list(engine.cards()), max_mana, Reveal(), mem)
+    at, off = 0, {}
+    for f in vector_layout(len(engine.cards())):
+        off[f.key] = slice(at, at + f.size)
+        at += f.size
+    cost = vec[off["own_hand_cost"]][m_slot]
+    afford = vec[off["own_hand_affordable"]][m_slot]
+    assert cost == pytest.approx(price / max_mana), (cost, price)
+    assert cost != pytest.approx(mi / max_mana), "the listed price must read differently"
+    assert afford == float(me.elixir_milli >= 1000 * price), (afford, me.elixir_milli)

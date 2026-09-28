@@ -696,8 +696,8 @@ def fair_fields(
     a Mirror costs the card it copies plus its own one, -1 when there is nothing to copy).
     Left at None, each slot is priced at its card's listed elixir, exactly as before it
     existed. A price p >= 0 is written p / MAX_MANA and is affordable when the own bar
-    holds p; p < 0 keeps the listed elixir and is never affordable. The env passes None
-    for now, until RoyaleImitate passes its own, so the two never disagree in between.
+    holds p; p < 0 keeps the listed elixir and is never affordable. The env passes the
+    engine's prices; RoyaleImitate rebuilds the same ones from its log (from its cc78f2f).
 
     Keys are ``FAIR_FIELDS`` in order, then ``enemy_last_card`` when asked for. Each
     array is float32 and already clipped to [0, 1], as in the vector. They are views of
@@ -826,13 +826,13 @@ def build_vector(
     num_cards = len(cards)
     off, width = _vector_slots(num_cards, reveal, enemy_last_card)
     vec = np.zeros(width, dtype=np.float32)
-    # hand_costs HELD at None: the env prices a slot by its listed elixir until RoyaleImitate
-    # passes its own prices through fair_fields (Learn's ruling, 2026-09-28); then this
-    # passes me.hand_costs, in the same window.
+    # Each own slot priced as the engine prices it (a Mirror: its copy plus one), where the
+    # engine states the prices. RoyaleImitate passes the same prices rebuilt from its log
+    # (RoyaleImitate cc78f2f, checked against these at every step), so the two agree.
     _write_fair(
         vec, off, memory, MatchClock.of(state), me.hand, me.next_card, me.elixir_milli,
         cards, max_mana, foe.elixir_milli if reveal.enemy_elixir else None, enemy_last_card,
-        None,
+        me.hand_costs if len(me.hand_costs) == HAND_SIZE else None,
     )
     vec[off["own_tower_hp"]] = [me.tower_hp[s] / max(1, me.tower_max_hp[s]) for s in TowerSlot]
     vec[off["enemy_tower_hp"]] = [
