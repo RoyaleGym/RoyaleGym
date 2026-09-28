@@ -73,6 +73,25 @@ def test_only_a_key_the_ledger_ships_another_arm_of_is_overridden():
     assert symmetric_overrides({"spawner": {"DEATH_SPAWN_PUSHBACK": slide}}) == {death: "not_read"}
     shipped = {"value": "not_read", "candidates": ["not_read", "client_ring_slide"]}
     assert symmetric_overrides({"spawner": {"DEATH_SPAWN_PUSHBACK": shipped}}) == {}
+    # Sim's placement batch: the even box floored in the arena's frame and the building tap
+    # pushed in arena coordinates, each selected back to its seat-symmetric arm once it ships.
+    flipped = {
+        "SNAP_EVEN_CORNER": {"value": "absolute", "candidates": ["placer_frame", "absolute"]},
+        "TROOP_BUILDING_TAPS": {
+            "value": "as_tower_tap", "candidates": ["not_relocated", "as_tower_tap"]
+        },
+    }
+    assert symmetric_overrides({"placement": flipped}) == {
+        "placement.SNAP_EVEN_CORNER": "placer_frame",
+        "placement.TROOP_BUILDING_TAPS": "not_relocated",
+    }
+    kept = {
+        "SNAP_EVEN_CORNER": {"value": "placer_frame", "candidates": ["placer_frame", "absolute"]},
+        "TROOP_BUILDING_TAPS": {
+            "value": "not_relocated", "candidates": ["not_relocated", "as_tower_tap"]
+        },
+    }
+    assert symmetric_overrides({"placement": kept}) == {}, "shipped already"
 
 
 @needs_core

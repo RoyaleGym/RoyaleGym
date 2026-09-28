@@ -1362,6 +1362,12 @@ SYMMETRIC_ARMS: dict[str, tuple[str, ...]] = {
     # The measured slide lays a death-spawn ring (Golem, Lava Hound) in the arena's frame for
     # both seats, so a Red death is not the rotation of a Blue one; not_read is symmetric.
     "spawner.DEATH_SPAWN_PUSHBACK": ("not_read",),
+    # The absolute arm floors an even box's tap in the arena's frame, so a 2x2 building is not
+    # the rotation of its twin; the placer's frame is the same for both seats.
+    "placement.SNAP_EVEN_CORNER": ("placer_frame",),
+    # as_tower_tap moves a tap off an own building by the axis push, measured in arena
+    # coordinates; not_relocated moves nothing.
+    "placement.TROOP_BUILDING_TAPS": ("not_relocated",),
 }
 
 
