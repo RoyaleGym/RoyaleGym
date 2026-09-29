@@ -36,7 +36,7 @@ below it is the output that came back.
 
     ---
 
-    The same goal, measured more often. It paid out on 75 steps out of 600.
+    The same goal, measured more often. It paid out on 74 steps out of 600.
 
 - __4. Both together__
 
@@ -49,7 +49,7 @@ below it is the output that came back.
 Every program here plays the same battle, between two players choosing at random. It is the
 battle from RoyaleGym's README: one crown each when the three minutes run out, still level when
 overtime runs out, and won by Red on the tiebreak, because Blue's weakest standing tower had less
-health left. The outputs were run on 2026-09-28 on engine build `bb6797d83bdf3031` with the
+health left. The outputs were run on 2026-09-28 on engine build `1950b9cd997e8a97` with the
 15.535 card table. A newer engine can end the battle
 differently, and then every number below moves with it.
 
@@ -197,10 +197,10 @@ play(TowerDamageReward())
 ```
 
 ```
-TowerDamageReward: blue total -0.978  over 600 steps, 75 of them non-zero
+TowerDamageReward: blue total -0.968  over 600 steps, 74 of them non-zero
 ```
 
-Same battle, same bots, and now 75 steps carry a number instead of 2. That is what
+Same battle, same bots, and now 74 steps carry a number instead of 2. That is what
 people mean when they call a reward *dense*. The bot gets told it is getting warmer
 long before anything falls over.
 
@@ -225,7 +225,7 @@ print("blue's last step, term by term:", shaped.terms_for(0))
 ```
 
 ```
-CombinedReward: blue total -1.098  over 600 steps, 76 of them non-zero
+CombinedReward: blue total -1.097  over 600 steps, 75 of them non-zero
 blue's last step, term by term: {'WinLossReward': -1.0, 'CrownReward': 0.0, 'TowerDamageReward': 0.0}
 ```
 
@@ -266,7 +266,7 @@ print(json.dumps(default_reward().config(), indent=2)[:400])
 ```
 
 ```
-CombinedReward: blue total -1.105  over 600 steps, 203 of them non-zero
+CombinedReward: blue total -1.104  over 600 steps, 203 of them non-zero
 {
   "terms": [
     {
@@ -334,7 +334,7 @@ both_seats(TowerDamageReward())
 
 ```
 CrownReward: blue +0.000  red +0.000  sum +0.000
-TowerDamageReward: blue -0.978  red +0.978  sum +0.000
+TowerDamageReward: blue -0.968  red +0.968  sum +0.000
 ```
 
 Every shipped term is meant to add to zero like this, except three that score only one
