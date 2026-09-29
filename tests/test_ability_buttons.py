@@ -373,8 +373,9 @@ def test_a_champions_button_agrees_with_the_engine_through_a_press_and_its_coold
     t = eng.arena().subtile
     # Each seat's champion at its own left bridge, and its Giant at its own right bridge, so
     # each champion meets the other seat's Giant: something in reach to dash at, that does
-    # not fight back. A press with nothing in reach is taken and paid, then waits for a
-    # target (RoyaleSim 2dff142), so a lone champion never reaches its cooldown.
+    # not fight back, so the chain and its cooldown come soon after the press. What a press
+    # with nothing in reach does next (wait for a target, or run to one) is the engine's
+    # rule, and it has moved; this test reads only the rows, never how long the wait is.
     for card, (tx, ty) in ((champion, (3, 13)), (giant, (14, 14))):
         state = eng.state()
         cmds = []
