@@ -92,6 +92,15 @@ def test_only_a_key_the_ledger_ships_another_arm_of_is_overridden():
         },
     }
     assert symmetric_overrides({"placement": kept}) == {}, "shipped already"
+    # RoyaleSim round 12: the roll's hit shape open on the arena's max-y edge, selected back
+    # to the closed rectangle once it ships.
+    rolls = ["rect_vs_circle_edge", "rect_contains_centre", "client15535_max_y_edge_open"]
+    opened = {"value": "client15535_max_y_edge_open", "candidates": rolls}
+    assert symmetric_overrides({"spells": {"ROLLING_HIT_SHAPE": opened}}) == {
+        "spells.ROLLING_HIT_SHAPE": "rect_vs_circle_edge"
+    }
+    closed = {"value": "rect_vs_circle_edge", "candidates": rolls}
+    assert symmetric_overrides({"spells": {"ROLLING_HIT_SHAPE": closed}}) == {}
 
 
 @needs_core

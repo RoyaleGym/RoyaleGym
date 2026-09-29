@@ -1369,6 +1369,10 @@ SYMMETRIC_ARMS: dict[str, tuple[str, ...]] = {
     # as_tower_tap moves a tap off an own building by the axis push, measured in arena
     # coordinates; not_relocated moves nothing.
     "placement.TROOP_BUILDING_TAPS": ("not_relocated",),
+    # The measured roll's swept rectangle is open on its max-y edge in the ARENA's frame, so
+    # a Log whose front edge exactly touches a unit misses it rolling +y and hits it rolling
+    # -y; the closed rectangle against the circle's edge is the same for both seats.
+    "spells.ROLLING_HIT_SHAPE": ("rect_vs_circle_edge",),
 }
 
 
