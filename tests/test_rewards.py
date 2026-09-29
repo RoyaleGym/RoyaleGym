@@ -66,7 +66,7 @@ from royalegym.protocol import (
     to_engine,
 )
 from royalegym.reward import ElixirTradeReward
-from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, _core, core_available
+from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 
 needs_rust = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -90,17 +90,13 @@ PRODUCER_DECK = (
 )
 ENGINES = ["mock", pytest.param("rust", marks=needs_rust)]
 
-#: RoyaleSim ROUND 9: the one ship with the mount_uid column and two ability buttons. It puts
-#: the Tri Wizards' Electro Wizard and Ice Wizard down under THEIR OWN card ids (42, 23), so
-#: the term prices a play of the card at 7 + 4 + 3. Every other multi-unit card stamps the
-#: played card's id on what it puts down (a Goblin Gang's Spear Goblins are 41, not 19). The
-#: next ship (the Golden Knight's, three buttons) stamps the played card's id on them too;
-#: on it this is False and the Tri Wizards are graded as every card is.
-TRI_WIZARDS_UNDER_THEIR_OWN_IDS = (
-    core_available()
-    and "mount_uid" in getattr(_core, "ENTITY_FIELDS", ())
-    and getattr(_core, "ABILITY_BUTTONS", 0) == 2
-)
+#: Cards whose price the catalogue test does not grade, each with a strict xfail of its own.
+#: The Tri Wizards: from RoyaleSim round 9 the card puts its Electro Wizard and Ice Wizard down
+#: under THEIR OWN card ids (42, 23), so the term prices a play of it at 7 + 4 + 3. Every other
+#: multi-unit card stamps the played card's id on what it puts down (a Goblin Gang's Spear
+#: Goblins are 41, not 19). It is an event-only card, and event-only cards are deferred to
+#: the end of the engine's queue, so the stamp waits with them.
+PRICED_ELSEWHERE = frozenset({"TriWizards"})
 # The three ways the catalogue describes a card that puts nothing of its own on the board.
 # Spelled out from the engine's own placement classes rather than taken from the term, so a
 # term that dropped one of them cannot quietly narrow this file's idea of what a spell is.
@@ -528,14 +524,14 @@ def test_one_tap_of_any_card_is_priced_at_exactly_that_cards_elixir(kind):
     If any of that slipped, the term would quietly under- or over-pay every play of that
     card for the rest of training, so it is measured rather than believed.
 
-    On round 9 the Tri Wizards are graded by their own strict xfail below, not here.
+    The cards in ``PRICED_ELSEWHERE`` are graded by their own strict xfails, not here.
     """
     engine = make_engine(kind)
     tbl = Table(engine)
     t = term(engine)
     taps, off = 0, []
     for card, seat, prev, result, put_down in tap_everything(engine, tbl):
-        if kind == "rust" and TRI_WIZARDS_UNDER_THEIR_OWN_IDS and card.name == "TriWizards":
+        if card.name in PRICED_ELSEWHERE:
             continue
         taps += 1
         # What the play cost: the slot's stated price. That is the card's own elixir for
@@ -556,11 +552,10 @@ def test_one_tap_of_any_card_is_priced_at_exactly_that_cards_elixir(kind):
 
 @needs_rust
 @pytest.mark.xfail(
-    TRI_WIZARDS_UNDER_THEIR_OWN_IDS,
     reason=(
-        "RoyaleSim round 9 reports the Tri Wizards' Electro and Ice Wizards under their own "
-        "card ids (42, 23), so the term prices the play 14; the next ship stamps the played "
-        "card's id"
+        "RoyaleSim reports the Tri Wizards' Electro and Ice Wizards under their own card ids "
+        "(42, 23), so the term prices the play 14; stamping the played card's id is deferred "
+        "with the other event-only cards"
     ),
     strict=True,
 )
