@@ -118,21 +118,41 @@ def test_the_mask_reads_each_buttons_row_on_both_seats():
     assert got == {BLUE: [1, 0, 0], RED: [0, 1, 0]}
 
 
-def test_an_engine_that_reports_buttons_the_parser_cannot_press_is_refused():
-    """A champion deck marks no form, so only the engine's rows show it has a button."""
+def _champions(rows: int) -> type[MockEngine]:
+    """MockEngine whose Red reports ``rows`` champion buttons: a champion deck marks no
+    form, so only the engine's rows show it has a button."""
     class Champions(MockEngine):
         def state(self):
             s = super().state()
-            red = msgspec.structs.replace(s.players[RED], abilities=[[0, 0, 1, 0, 0]])
+            red = msgspec.structs.replace(s.players[RED], abilities=[[0, 0, 1, 0, 0]] * rows)
             return msgspec.structs.replace(s, players=[s.players[BLUE], red])
 
-    with pytest.raises(ValueError, match=r"seat 1.*ability_buttons=True"):
-        ClashParallelEnv(engine=Champions()).reset(seed=1)
+    return Champions
+
+
+def test_a_champion_on_a_parser_without_buttons_plays_as_a_troop():
+    """Any deck may hold a champion (the default mutator deals the whole catalogue), so a
+    parser without buttons is not refused one: its space is what it always was, and the
+    champion's ability is never offered. Refused, every default env on an engine with a
+    champion button stopped at the first deck that dealt one (RoyaleSim's Golden Knight
+    build: three of the examples)."""
+    env = ClashParallelEnv(engine=_champions(1)())
+    obs, _ = env.reset(seed=1)
+    assert "ability_ready" not in obs["red"]
+    assert len(obs["red"]["action_mask"]) == env.action_parser.n_tile_actions
+    env.step({"blue": 0, "red": 0})
+
+
+def test_a_parser_with_buttons_must_reach_every_button_the_engine_reports():
     env = ClashParallelEnv(
-        engine=Champions(), action_parser=TileActionParser(ability_buttons=True)
+        engine=_champions(1)(), action_parser=TileActionParser(ability_buttons=True)
     )
     obs, _ = env.reset(seed=1)
     assert list(obs["red"]["ability_ready"]) == [0, 0]
+    with pytest.raises(ValueError, match=r"reports 3 ability buttons for seat 1.*can press 2"):
+        ClashParallelEnv(
+            engine=_champions(3)(), action_parser=TileActionParser(ability_buttons=True)
+        ).reset(seed=1)
 
 
 def test_mock_engine_models_no_hero():

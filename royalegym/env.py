@@ -355,16 +355,19 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
                 )
             self.engine.reset(engine_seed, init)
         state = self.engine.state()
-        # Whatever put them there (a hero form, a champion, a snapshot), every button the
-        # engine reports must be one the parser can press.
+        # A parser WITH buttons must reach every button the engine reports, whatever put it
+        # there (a hero form, a champion, a snapshot). A parser without them is the space
+        # every policy before the buttons was trained on: a champion any deck may hold (the
+        # default mutator deals the whole catalogue) plays as a troop, and its ability is
+        # never offered. A hero is refused above instead, because only a setup that asked
+        # for the form deals one.
         pressable = getattr(self.action_parser, "n_buttons", 0)
         for p in state.players:
-            if len(p.abilities) > pressable:
+            if pressable and len(p.abilities) > pressable:
                 raise ValueError(
                     f"the engine reports {len(p.abilities)} ability buttons for seat "
                     f"{p.team} (heroes and champions) and the action parser can press "
                     f"{pressable}, so no policy on it could press the rest"
-                    + ("; build the parser with ability_buttons=True" if not pressable else "")
                 )
         self._state = state
         self.decision_ticks = max(1, -(-self.decision_ms // state.tick_ms))
