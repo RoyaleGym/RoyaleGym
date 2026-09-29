@@ -78,6 +78,7 @@ from .mock_engine import MockEngine
 from .obs import ObsBuilder, SpatialObsBuilder
 from .protocol import (
     BLUE,
+    HAND_SIZE,
     RED,
     TEAMS,
     BattleState,
@@ -415,6 +416,15 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         state = self.engine.state()
         self._state = state
         self.last_results = results
+        # The presses this step's results accepted, for the observation's memories: a press
+        # is a public event, and a unit pressed and killed inside one step leaves its row
+        # looking like a death. Only for a builder that takes them.
+        if hasattr(self.obs_builder, "see_presses"):
+            self.obs_builder.see_presses([
+                (r.team, r.hand_slot - HAND_SIZE)
+                for r in results
+                if r.status == DeployStatus.OK and r.hand_slot >= HAND_SIZE
+            ])
         self._episode_steps += 1
         full = self.full_elixir_milli
         for team in TEAMS:

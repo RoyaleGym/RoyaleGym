@@ -173,6 +173,46 @@ def test_a_champion_going_dark_because_he_died_is_not_charged():
     cost = ability_row(row).cost
     assert counted[False] - counted[True] == cost * 1000, (counted, cost)
 
+    # Pressed AND killed inside one gap: the rows show only the death, so they charge
+    # nothing, and the env's accepted presses (``observe(presses=)``) charge it all the same.
+    for given, want in ((None, counted[False]), ([(1, 0)], counted[True])):
+        m = memories(engine)[0]
+        m.observe(state(start.tick, lit, True, 3000), 0)
+        m.observe(state(start.tick + 10, dark, False, 3000), 0, given)
+        assert m.enemy_elixir_milli() == want, (given, m.enemy_elixir_milli(), want)
+
+
+@needs_core
+def test_the_env_hands_its_memories_the_presses_it_saw_accepted():
+    """ClashParallelEnv gives the observation builder each step's accepted presses, so a
+    unit pressed and killed inside one step is still charged (the integrator session's
+    probe: a Golden Knight pressed and killed in one HalfTile step left Blue's count 1000
+    high and exact False for the rest of the battle)."""
+    from royalegym.action import TileActionParser
+    from royalegym.env import ClashParallelEnv
+
+    engine = RustEngine()
+    if "GoldenKnight" not in {c.name for c in engine.cards()}:
+        pytest.skip("SKIPPED, NOT PASSED: this catalogue holds no Golden Knight")
+    ids = {c.name: c.card_id for c in engine.cards()}
+    deck = [ids["GoldenKnight"], *(ids[n] for n in FILLERS)]
+    env = ClashParallelEnv(engine, action_parser=TileActionParser(ability_buttons=True))
+    setup = MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE,
+                       start_tick=engine.rules().deploy_lockout_ticks)
+    obs, _ = env.reset(seed=1, options={"setup": setup})
+    parser = env.action_parser
+    slot = env.battle_state.players[1].hand.index(ids["GoldenKnight"])
+    obs, *_ = env.step({"blue": 0, "red": parser.encode(slot, 3, 13)})
+    seen = []
+    for _ in range(60):
+        press = parser.n_tile_actions if obs["red"]["action_mask"][parser.n_tile_actions] else 0
+        obs, *_ = env.step({"blue": 0, "red": press})
+        seen.append(env.obs_builder.presses)
+        if press:
+            break
+    assert seen[-1] == [(1, 0)], seen[-3:]
+    assert all(m.exact for m in env.obs_builder.memory.values())
+
 
 def test_the_dated_path_charges_the_presses_it_is_given():
     law = ElixirLaw.load()

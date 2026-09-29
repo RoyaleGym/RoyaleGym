@@ -385,9 +385,10 @@ class MatchMemory:
     the match, the moment the count disagrees with the bar it is modelling -- on
     EITHER side. Three things make that happen: a play was missed (a deck that repeats
     a card can hide one, because a play that swaps a card for itself changes no hand
-    slot), a press was missed (a hero or champion pressed and killed between two
-    observations shows only its death), or the engine's elixir law is not the one in
-    calibration.json.
+    slot), a press was missed (read off the rows, a hero or champion pressed and killed
+    between two observations shows only its death; the env hands ``observe`` the presses
+    it saw accepted, so its memories cannot miss one), or the engine's elixir law is not
+    the one in calibration.json.
 
     The enemy half of that check is the ONE place this class looks at the
     opponent's bar, and it does exactly one thing with it: set a boolean. The value
@@ -489,20 +490,43 @@ class MatchMemory:
         self.rows = [None, None]
         self._note_own_cards()
 
-    def observe(self, state: BattleState, team: int) -> None:
-        """Advance to ``state``. A no-op unless the clock moved forward."""
+    def observe(
+        self,
+        state: BattleState,
+        team: int,
+        presses: Sequence[tuple[int, int]] | None = None,
+    ) -> None:
+        """Advance to ``state``. A no-op unless the clock moved forward.
+
+        ``presses``, where the caller has them, are the ability presses accepted since the
+        last observation, each ``(team, button)``: the env's own results, the same public
+        event a player sees. They are charged at the price the button's row showed, and are
+        exact at any gap. Without them the presses are read off the rows (``presses_seen``),
+        which misses a unit pressed and killed between two observations.
+        """
         if self.tick < 0 or state.tick < self.tick:
             self.seed(state, team)
             return
         if state.tick == self.tick:
             return
         me, foe = state.players[team], state.players[1 - team]
-        presses = []
+        presses_by_side: list[list[tuple[int, int]]] = []
         for side, p in enumerate((me, foe)):
             before, self.rows[side] = self.rows[side], list(p.abilities)
-            standing = {e.card_id for e in state.entities if e.team == p.team}
-            seen = presses_seen(before, p.abilities, standing) if before is not None else []
-            presses.append([(self.tick, cost) for cost in seen])
+            if presses is not None:
+                shown = before if before is not None else p.abilities
+                seen = [
+                    ability_row(shown[k]).cost
+                    for t, k in presses
+                    if t == p.team and 0 <= k < len(shown)
+                ]
+            elif before is not None:
+                standing = {e.card_id for e in state.entities if e.team == p.team}
+                seen = presses_seen(before, p.abilities, standing)
+            else:
+                seen = []
+            presses_by_side.append([(self.tick, cost) for cost in seen])
+        presses = presses_by_side
         # The engine pays every accepted command before the first tick of a step, so a
         # play or a press seen between two observations is dated at the earlier one.
         self.advance(
@@ -1113,8 +1137,14 @@ class ObsBuilder(ABC):
 
     def reset(self, state: BattleState) -> None:
         """Called at the start of every episode: both seats forget the last one."""
+        self.presses = None
         for team, memory in self.memory.items():
             memory.seed(state, team)
+
+    def see_presses(self, presses: Sequence[tuple[int, int]] | None) -> None:
+        """The ability presses accepted since the last build, each ``(team, button)``, for
+        the memories to charge (``MatchMemory.observe``); None reads them off the rows."""
+        self.presses = None if presses is None else list(presses)
 
     def counts_are_exact(self, team: int) -> bool:
         """Whether this seat's counted features are still provably right.
@@ -1183,7 +1213,7 @@ class ObsBuilder(ABC):
 
     def _vector(self, state: BattleState, team: int) -> np.ndarray:
         memory = self.memory[team]
-        memory.observe(state, team)
+        memory.observe(state, team, getattr(self, "presses", None))
         # The flag goes only when it is ON, and by keyword. With it off this is the exact call
         # it was before D2, so anything that wraps or substitutes build_vector with the old
         # six arguments keeps working -- this suite's own plant tests do, and the first
