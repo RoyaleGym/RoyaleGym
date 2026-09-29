@@ -384,9 +384,10 @@ def slot_cost(player: PlayerState, slot: int, card: CardInfo) -> int:
 
 class AbilityRow(NamedTuple):
     """One ``PlayerState.abilities`` row by column. ``card_id`` is the button's base card
-    and ``cooldown_ticks`` the ticks until it can be pressed again (0 when ready); an
-    engine before the champion columns reads EMPTY_CARD (the viewer then names the button
-    from the deck's hero entries) and -1, not reported."""
+    and ``cooldown_ticks`` the ticks its cooldown has left: 0 when ready, and also 0 while a
+    champion's ability runs, since the cooldown starts when it ends (``available`` is 0 then,
+    so read the two together). An engine before the champion columns reads EMPTY_CARD (the
+    viewer then names the button from the deck's hero entries) and -1, not reported."""
 
     available: int
     spent: int
@@ -500,7 +501,8 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # D10 (2026-09-25): one int of bits, each set by the engine's own predicate, not a copy
     # of it. STATUS_UNDERGROUND: tunnelling now (untargetable, immune to every hit).
     # STATUS_INVISIBLE: invisible to enemies now (untargetable; area damage still lands).
-    # STATUS_HIDDEN: a building hidden in the ground (the Tesla). Higher bits reserved.
+    # STATUS_HIDDEN: a building hidden in the ground (the Tesla). STATUS_EVOLVED: an evolved
+    # unit. STATUS_HERO: a hero unit. Higher bits reserved.
     # -1 means the engine did not report, so read it through ``status_of``, never raw.
     status_flags: int = -1
     # The unit's LEVEL, one scale across rarities, as the engine played it (asked for by
@@ -598,7 +600,9 @@ class PlayerState(msgspec.Struct, frozen=True):
     tower_hp: list[int]  # indexed by TowerSlot; 0 = destroyed
     tower_max_hp: list[int]
     king_active: bool
-    # One row per ability button, in button order (ABILITY_BUTTONS): [available, spent,
+    # One row per ability button the side has, in button order: its heroes, then its
+    # champion, up to the engine's count (``ability_button_count``; 3 from RoyaleSim 2245f9f,
+    # where ABILITY_BUTTONS here, 2, is only the fallback). [available, spent,
     # cost], then card_id and cooldown_ticks from an engine with champions. Read a row
     # with ``ability_row``, never by unpacking it: an engine may append columns.
     # available 1 when the press would be taken but for the elixir (a living unit behind

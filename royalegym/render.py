@@ -37,8 +37,10 @@ FLOATS
     simulation.
 
 WHAT IT CANNOT DO
-    Show anything the trace did not record: troop projectiles, targets, attack timers
-    and paths are not in ``EntityState``. A spell's hit radius is not recorded
+    Show anything the trace did not record, and some of what it did: paths are recorded
+    nowhere, and troop projectiles (``BattleState.projectiles``), targets and attack phases
+    (``EntityState.target_uid``, ``attack_phase``) are recorded but not drawn by this page.
+    A spell's hit radius is not recorded
     (``SpellState`` has none), so spell markers are drawn at a FIXED size that says
     nothing about what the spell hits, and a trace recorded before the engine
     modelled spells carries none. With ``frame_every_tick=False`` frames are

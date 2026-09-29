@@ -2,7 +2,8 @@
 
 Components (each an ABC with swappable implementations):
     ObsBuilder        obs.py           SpatialObsBuilder, EntityListObsBuilder
-    ActionParser      action.py        TileActionParser (Discrete 2305), HalfTileActionParser
+    ActionParser      action.py        TileActionParser (Discrete 2305, + ability buttons
+                                       when asked), HalfTileActionParser
     RewardFunction    reward.py        WinLoss, Crown, TowerHP, ElixirTrade, ElixirLeak, Combined;
                                        IllegalAction and PlacementDepth ship unused, as templates
     DoneCondition     done_condition.py  GameOver, FirstCrown (terminations); StepLimit,

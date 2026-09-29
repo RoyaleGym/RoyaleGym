@@ -208,6 +208,13 @@ class ElixirTradeReward(RewardFunction):
     reported under. Both are measured in tests/test_rewards.py over every card either
     engine will place, on both seats, because the whole rule rests on them.
 
+    ONE CARD BREAKS IT: THE TRI WIZARDS. From RoyaleSim round 9 their Electro Wizard and Ice
+    Wizard are reported under THEIR OWN card ids (42, 23), not the Tri Wizards', so each
+    matches its own card's row and is priced as that card: a 7-elixir play totals 14. Every
+    other multi-unit card stamps the played card's id on what it puts down. The engine's
+    stamp is deferred with the other event-only cards; tests/test_rewards.py holds the
+    card to a strict xfail of its own (``PRICED_ELSEWHERE``).
+
     EXACT ARITHMETIC. Unit values are ``Fraction(elixir, count)`` and the sum is
     exact until the final division. A running float sum of the same values depends
     on entity iteration order, so on a perfectly rotation-mirrored transition (the

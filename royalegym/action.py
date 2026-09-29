@@ -4,6 +4,8 @@ THE ACTION SPACE: ``Discrete(1 + 4 * 18 * 32) = 2305``
     Index 0 is NO-OP. Index ``1 + slot * 576 + ty * 18 + tx`` plays hand slot
     ``slot`` at the centre of tile ``(tx, ty)``, in the ACTING player's own frame
     (own king at the bottom), so Blue and Red share one policy head.
+    ``ability_buttons=True`` adds one action per ability button after these,
+    ``n_buttons`` of them (the engine's count): Discrete(2308) on RoyaleSim 2245f9f on.
 
 WHY THIS AND NOT THE ALTERNATIVES
     * Joint Discrete over (slot x tile) is the only shape in which a mask can say
@@ -1027,7 +1029,7 @@ class GridActionParser(ActionParser):
 
 
 class TileActionParser(GridActionParser):
-    """The default: Discrete(2305), tile centres."""
+    """The default: Discrete(2305), tile centres (plus ``n_buttons`` with ability_buttons)."""
 
     pitch_div = 1
 

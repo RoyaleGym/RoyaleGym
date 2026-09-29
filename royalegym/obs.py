@@ -24,7 +24,9 @@ FAIR INFORMATION, AND THE ``Reveal``
     exactly that reason. The one field that changes a slot instead of adding one
     is ``enemy_elixir``: the fair slot already holds the counted value, and the
     reveal swaps in the value read from the state. The two agree on a played-out
-    battle (tests/test_env_obs.py); a disagreement is a bug in the counter.
+    battle, presses included (tests/test_env_obs.py, tests/test_press_memory.py); a
+    disagreement is a bug in the counter, or one of the misses ``MatchMemory`` names and
+    flags with ``exact``.
 
 Floats appear here and only here-onwards (policy input). They are computed from
 integer state by the same operations for both seats, so the flip is exact.
@@ -1091,7 +1093,8 @@ class ObsBuilder(ABC):
         self.mask_space = spaces.Box(0, 1, shape=(int(action_parser.space.n),), dtype=np.int8)
         self.mask_plane_shape = action_parser.mask_plane_shape()
         # A parser with ability buttons puts them last in the mask; they also go out on
-        # their own as ``ability_ready``, the minimal observation of a hero's ability.
+        # their own as ``ability_ready``, the minimal observation of a hero's or a
+        # champion's ability.
         with_buttons = getattr(action_parser, "ability_buttons", False)
         self.ability_buttons = (
             int(getattr(action_parser, "n_buttons", ABILITY_BUTTONS)) if with_buttons else 0
