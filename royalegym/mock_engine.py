@@ -137,6 +137,7 @@ UNREPORTED_ENTITY_FIELDS: tuple[str, ...] = (
     "buffs",
     "status_flags",
     "level",
+    "mount_uid",
 )
 
 # The card subset the mock supports. A mock design choice (a spread of placement

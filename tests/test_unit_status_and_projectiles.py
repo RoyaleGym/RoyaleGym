@@ -107,10 +107,23 @@ def test_level_follows_status_flags_and_reads_as_not_reported_when_absent():
     """2026-09-28: the unit's level, asked for by sim so a Mirror's copy (one level up) can
     be priced. It trails status_flags, and every engine before it decodes as -1. The two
     are both ints, so a swap would raise nothing: the values here differ on purpose."""
-    assert EntityState.__struct_fields__[-2:] == ("status_flags", "level")
+    assert EntityState.__struct_fields__[-3:-1] == ("status_flags", "level")
     assert decode_entity([*LEGACY, *NEW, 5]).level == -1
     e = decode_entity([*LEGACY, *NEW, 5, 12])
     assert (e.status_flags, e.level) == (5, 12)
+
+
+def test_mount_uid_follows_level_and_reaches_the_viewer_only_for_a_rider():
+    """2026-09-28: the uid of the unit a unit rides (the Ram Rider's rider on its ram), asked
+    for by the viser session. It trails level; without it a unit decodes as riding nothing,
+    and the viewer's unit carries ``extra["mount"]`` only for a rider."""
+    assert EntityState.__struct_fields__[-2:] == ("level", "mount_uid")
+    plain = decode_entity([*LEGACY, *NEW, 5, 12])
+    assert plain.mount_uid == -1
+    assert "mount" not in unit_dict(plain, name_of)["extra"]
+    rider = decode_entity([*LEGACY, *NEW, 5, 12, 88])
+    assert (rider.level, rider.mount_uid) == (12, 88)
+    assert unit_dict(rider, name_of)["extra"]["mount"] == 88
 
 
 def test_an_engine_that_sends_only_the_old_columns_decodes_as_not_reported():

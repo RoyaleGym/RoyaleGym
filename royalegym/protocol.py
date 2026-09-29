@@ -488,6 +488,10 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # no catalogue row by hitpoints can still be priced exactly. -1 means the engine did
     # not report: every engine before the column, and every MockEngine entity.
     level: int = -1
+    # The uid of the unit this one RIDES (the Ram Rider's rider on its ram; the engine's
+    # Battle.rider_states), asked for by the viser session so a viewer can draw a rider as a
+    # rider. -1 for a unit that rides nothing, and for every engine before the column.
+    mount_uid: int = -1
 
 
 #: ``EntityState.status_flags`` bits. Read them through ``status_of``.

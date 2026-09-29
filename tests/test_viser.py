@@ -98,6 +98,10 @@ def test_a_second_publisher_on_a_taken_port_says_it_is_a_second_run() -> None:
                 f"the error does not mention {expected!r}, so a reader still cannot tell a "
                 f"second run from a broken machine: {message}"
             )
+        # No shell's syntax (cmd's `set NAME=value` sets nothing in PowerShell or bash), and
+        # no fixed port to try next: the taken one may be any.
+        assert "ROYALEVISER=" not in message, message
+        assert "9872" not in message, message
         # The cause is kept rather than swallowed: whoever is debugging a genuinely odd
         # bind failure still needs the operating system's own words.
         assert caught.value.__cause__ is not None, (

@@ -8,7 +8,7 @@ and nothing graphical.
     from royalegym.env import ClashParallelEnv, ClashSelfPlayVecEnv
     from royalegym.viser import ViserPublisher
     env = ClashParallelEnv(viser=ViserPublisher())        # 127.0.0.1:9870
-    # or, for self-play:  set ROYALEVISER=127.0.0.1:9870, then
+    # or, for self-play, with the ROYALEVISER environment variable set to 127.0.0.1:9870:
     vec = ClashSelfPlayVecEnv(8)                          # binds ONE, watches game 0
     # then, in another process:  python -m royaleviser --stream 127.0.0.1:9870
 
@@ -124,6 +124,9 @@ def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
             "shield": e.shield,
             # None when the engine did not report it (status_of); bits in protocol.STATUS_*
             "status_flags": status_of(e),
+            # The uid of the unit this one rides (the Ram Rider's rider on its ram), only
+            # when it rides one: the viewer draws the pair as a rider on a mount.
+            **({"mount": e.mount_uid} if e.mount_uid >= 0 else {}),
         },
         "footprint": list(e.footprint) if e.footprint is not None else None,
     }
@@ -290,9 +293,10 @@ class ViserPublisher:
             raise OSError(
                 f"cannot stream to {host}:{port} because something is already using it, "
                 "which is almost always another run of your own: ONE run holds this port "
-                "for as long as it is streaming. A second run on the same machine needs "
-                "its own, so set ROYALEVISER=127.0.0.1:9872 (any free port) and point the "
-                f"viewer at the same number. The original error was: {exc}"
+                "for as long as it is streaming. A second run on the same machine needs its "
+                f"own port: set the ROYALEVISER environment variable to {host}:<another free "
+                "port> and point the viewer at the same number. The original error was: "
+                f"{exc}"
             ) from exc
         self._sock.setblocking(False)
         self.address: tuple[str, int] = self._sock.getsockname()[:2]
