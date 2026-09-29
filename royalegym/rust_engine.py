@@ -597,6 +597,7 @@ class RustEngine:
         ground_deploy_point: str | None = None,
         calibration_overrides: Mapping[str, Any] | None = None,
         tap_snap: str | None = None,
+        command_delay_ticks: int | tuple[int, int] = 0,
     ) -> None:
         """``path_search``: None = the ledger's ``pathfinding.PATH_SEARCH`` (the game's own
         search, measured on client 16.402, which is NOT seat-symmetric:
@@ -719,6 +720,8 @@ class RustEngine:
             ground_deploy_point,
         )
         self._battle = _core.Battle(*battle_args, **overrides)
+        self.command_delay_ticks: tuple[int, int] = (0, 0)
+        self.set_command_delay_ticks(command_delay_ticks)
         self._card_table = self._stamp_card_table(before)
         terr = territory_differences(self._battle, self._rules, self._arena, self.slot_of_k)
         if terr:
@@ -843,6 +846,35 @@ class RustEngine:
 
     def rules(self) -> DeployRules:
         return self._rules
+
+    def set_command_delay_ticks(self, delay: int | tuple[int, int]) -> None:
+        """THE COMMAND DELAY, in ticks, from the next ``reset`` on: an int for both seats, or
+        (Blue, Red). A play or press accepted on tick T runs on T + delay, checked again in
+        full then; until it runs the card stays in hand, the bar unspent, and the card or
+        button refuses another command (CARD_PENDING). 0, the default, runs every command at
+        once. The live client's is measured at 21-22 ticks (RoyaleSim r16).
+
+        A delay above 0 needs an engine that has it and can name its refusal: refused here,
+        not at the first refused command."""
+        pair = (delay, delay) if isinstance(delay, int) else tuple(delay)
+        if len(pair) != 2 or any(not isinstance(d, int) or d < 0 for d in pair):
+            raise ValueError(
+                f"command_delay_ticks must be ticks >= 0, one or (blue, red): {delay!r}"
+            )
+        if pair != (0, 0):
+            if not hasattr(self._battle, "set_command_delay_ticks"):
+                raise NotImplementedError(
+                    "this RoyaleSim build has no command delay (Battle.set_command_delay_ticks, "
+                    "RoyaleSim r16 on)"
+                )
+            if "CARD_PENDING" not in getattr(_core, "DEPLOY_REASONS", ()):
+                raise NotImplementedError(
+                    "this RoyaleSim build delays commands but does not name the refusal of a "
+                    "card whose command is waiting (DEPLOY_REASONS lacks CARD_PENDING)"
+                )
+        if hasattr(self._battle, "set_command_delay_ticks"):
+            self._battle.set_command_delay_ticks(*pair)
+        self.command_delay_ticks = (int(pair[0]), int(pair[1]))
 
     def unit_hitpoints(self, card_id: int, level: int) -> list[tuple[str, str, int]]:
         """Every unit a play of ``card_id`` at unified ``level`` puts on the board, as the
@@ -1038,6 +1070,11 @@ class RustEngine:
             "ground_deploy_point": self.ground_deploy_point,
             # Only when set, so an engine that selects nothing reads as it always did.
             **({"tap_snap": self.tap_snap} if self.tap_snap is not None else {}),
+            **(
+                {"command_delay_ticks": list(self.command_delay_ticks)}
+                if self.command_delay_ticks != (0, 0)
+                else {}
+            ),
             # Only when there are any, so a plain engine's config reads as it always did.
             **(
                 {"calibration_overrides": dict(self.calibration_overrides)}

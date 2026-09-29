@@ -738,7 +738,12 @@ class GridActionParser(ActionParser):
 
     pitch_div = 1
 
-    def __init__(self, buildings: str = "any_tap", ability_buttons: bool = False) -> None:
+    def __init__(
+        self,
+        buildings: str = "any_tap",
+        ability_buttons: bool = False,
+        hold_while_pending: bool = False,
+    ) -> None:
         if buildings not in BUILDING_TAP_ARMS:
             raise ValueError(f"buildings must be one of {BUILDING_TAP_ARMS}, not {buildings!r}")
         self.buildings = buildings
@@ -747,6 +752,13 @@ class GridActionParser(ActionParser):
         self.ability_buttons = bool(ability_buttons)
         # How many: the bound engine's count (``bind``), heroes' and champions' buttons.
         self.n_buttons = ABILITY_BUTTONS if self.ability_buttons else 0
+        # Under a command delay the mask is by default the game's rule, the engine's own:
+        # every card and button but the ones with a command waiting, paid from the bar less
+        # what the waiting commands have spoken for. A player may queue a second play before
+        # the first lands, and something replaying recorded play has to be offered it. ON, a
+        # seat with a command waiting is offered only the no-op: an option for a policy that
+        # should wait for its last command to run before choosing the next.
+        self.hold_while_pending = bool(hold_while_pending)
         self._engine: Engine | None = None
         self._judge: Engine | None = None
 
@@ -804,6 +816,7 @@ class GridActionParser(ActionParser):
             "buildings": self.buildings,
             # Only when on, so a parser without buttons reports what it always did.
             **({"ability_buttons": True} if self.ability_buttons else {}),
+            **({"hold_while_pending": True} if self.hold_while_pending else {}),
         }
 
     def button_of(self, action: int) -> int | None:
@@ -839,6 +852,12 @@ class GridActionParser(ActionParser):
         if state.tick < self.oracle.rules.deploy_lockout_ticks:
             return mask
         player = state.players[team]
+        if player.pending and self.hold_while_pending:
+            return mask
+        # What the bar can still pay: the engine subtracts the waiting commands' cost when it
+        # accepts another. A card or button with a command waiting is refused (CARD_PENDING).
+        bar = player.elixir_milli - 1000 * player.pending_cost
+        waiting = {(row[0], row[1]) for row in player.pending}
         per = self.nx * self.ny
         # A button is pressable when the engine calls it available (a living hero or
         # champion behind it, off cooldown, not mid-ability), a hero's charge is unspent and
@@ -846,7 +865,8 @@ class GridActionParser(ActionParser):
         # the state by column, whichever card the button is.
         for k, row in enumerate(player.abilities[: self.n_buttons]):
             b = ability_row(row)
-            usable = b.available and not b.spent and player.elixir_milli >= b.cost * 1000
+            usable = b.available and not b.spent and bar >= b.cost * 1000
+            usable = usable and (1, HAND_SIZE + k) not in waiting
             mask[self.n_tile_actions + k] = int(usable)
         for slot, card_id in enumerate(player.hand):
             if card_id == EMPTY_CARD:
@@ -855,7 +875,7 @@ class GridActionParser(ActionParser):
             # The engine's price for the slot where it states one (a Mirror costs the card
             # it copies plus its own), -1 when no play of it resolves.
             cost = slot_cost(player, slot, card)
-            if cost < 0 or player.elixir_milli < cost * 1000:
+            if cost < 0 or bar < cost * 1000 or (0, card_id) in waiting:
                 continue
             if card.placement == Placement.MIRROR:
                 # Placed exactly as the card it copies (match.MIRROR_PLACEMENT); with
@@ -1075,6 +1095,11 @@ def mask_disagreements(
     """
     mask = parser.action_mask(state, team)
     out = []
+    # The hold is a rule for the policy, stricter than the engine's: it offers nothing, so
+    # there is nothing of its to disagree with. Build the parser with
+    # hold_while_pending=False to grade the mask against the engine under a waiting command.
+    if state.players[team].pending and parser.hold_while_pending:
+        return out
     for action in range(1, int(parser.space.n)):
         cmd = parser.parse(action, state, team)
         assert cmd is not None

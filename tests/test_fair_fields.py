@@ -202,6 +202,18 @@ def test_the_primitive_gives_the_env_fields_across_the_switch_to_2x(engine):
     assert run.seen["rates"] == {1, 2}, f"rates seen {run.seen['rates']}"
 
 
+def test_the_primitive_gives_the_env_fields_across_the_switch_to_3x(engine):
+    """Triple elixir (RoyaleSim r16's report of it): 150 ticks either side of the tick the
+    third rate starts, in overtime, the engine's elixir_rate against the primitive's."""
+    law = ElixirLaw.load()
+    if law.gain_3x <= law.gain_2x:
+        pytest.skip("SKIPPED, NOT PASSED: this calibration has no third elixir rate")
+    start = MatchClock.at(0).regular_ticks + law.triple_ticks - 150
+    run = play_out(engine, seed=13, start_tick=start, ticks=300)
+    clean(run)
+    assert run.seen["rates"] == {2, 3}, f"rates seen {run.seen['rates']}"
+
+
 def test_the_primitive_gives_the_env_fields_across_regulation_and_past_4800(engine):
     """From 35 ticks before the end of regulation on an empty board, so nobody can take a
     crown and it goes on into overtime; then a second battle started past tick 4800.

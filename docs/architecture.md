@@ -109,7 +109,7 @@ aliases.
 
 | Piece | Shipped implementations |
 |---|---|
-| `ObsBuilder` | `SpatialObsBuilder` (20-channel board + `mask_planes` + a `12n + 37`-float vector + the mask), `EntityListObsBuilder` |
+| `ObsBuilder` | `SpatialObsBuilder` (20-channel board + `mask_planes` + a `12n + 43`-float vector + the mask), `EntityListObsBuilder` |
 | `ActionParser` | `TileActionParser` (`Discrete(2305)`), `HalfTileActionParser` (`Discrete(9217)`) |
 | `RewardFunction` | `WinLoss`, `Crown`, `TowerHP`, `ElixirTrade`, `ElixirLeak`, `PlacementDepth`, `IllegalAction`, `Combined`; `default_reward()` is WinLoss 1.0 + Crown 0.2 + TowerHP 0.1 + ElixirTrade 0.02. `PlacementDepth` and `IllegalAction` ship unused, as templates |
 | `StateMutator` | `Default`, `MidGame`, `ScriptedBoard`, `Snapshot`, `Weighted`, `DeckCurriculum` (curriculum lives here) |

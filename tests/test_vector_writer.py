@@ -77,13 +77,21 @@ def _old_hand_block(
 
 def _old_fair_fields(
     memory, clock, hand, next_card, own_elixir_milli, cards, max_mana, *,
-    enemy_elixir_milli=None, enemy_last_card=False,
+    enemy_elixir_milli=None, enemy_last_card=False, own_pending=(),
 ) -> dict[str, np.ndarray]:
     num_cards = len(cards)
     onehot = num_cards + 1
     full = 1000 * max_mana
     foe_milli = memory.enemy_elixir_milli() if enemy_elixir_milli is None else enemy_elixir_milli
-    one, cost, afford = _old_hand_block(hand, cards, own_elixir_milli, num_cards, max_mana)
+    held = sum(int(row[5]) for row in own_pending)
+    waiting = {int(row[1]) for row in own_pending if int(row[0]) == 0}
+    pending = np.array(
+        [1.0 if c != EMPTY_CARD and c in waiting else 0.0 for c in hand], dtype=np.float32
+    )
+    one, cost, afford = _old_hand_block(
+        hand, cards, own_elixir_milli - 1000 * held, num_cards, max_mana
+    )
+    afford = afford * (1.0 - pending)
     cycle = np.zeros((DECK_SIZE - HAND_SIZE - 1, onehot), dtype=np.float32)
     for i, card in enumerate(memory.own_cycle[1:]):
         cycle[i, num_cards if card == EMPTY_CARD else card] = 1
@@ -98,6 +106,8 @@ def _old_fair_fields(
         "own_hand_cards": one,
         "own_hand_cost": cost,
         "own_hand_affordable": afford,
+        "own_hand_pending": pending,
+        "own_pending_cost": np.array([held / max_mana], dtype=np.float32),
         "own_next_card": _old_one_hot(next_card, onehot, num_cards),
         "own_cycle_6_8": cycle.reshape(-1),
         "own_deck": memory.own_deck.astype(np.float32),
@@ -113,7 +123,7 @@ def _old_fair_fields(
         "enemy_plays": np.array([min(1.0, memory.foe_plays / PLAYS_SCALE)], dtype=np.float32),
         "clock": np.array([reg_left, float(clock.overtime), ot_left], dtype=np.float32),
         "elixir_rate": np.array(
-            [float(clock.elixir_rate == 1), float(clock.elixir_rate == 2)], dtype=np.float32
+            [float(clock.elixir_rate == r) for r in (1, 2, 3)], dtype=np.float32
         ),
     }
     if enemy_last_card:
@@ -132,7 +142,7 @@ def _old_build_vector(
     parts = _old_fair_fields(
         memory, MatchClock.of(state), me.hand, me.next_card, me.elixir_milli, cards, max_mana,
         enemy_elixir_milli=foe.elixir_milli if reveal.enemy_elixir else None,
-        enemy_last_card=enemy_last_card,
+        enemy_last_card=enemy_last_card, own_pending=me.pending,
     )
     own_hp, foe_hp = (
         np.array([p.tower_hp[s] / max(1, p.tower_max_hp[s]) for s in TowerSlot], dtype=np.float32)

@@ -320,6 +320,9 @@ class DeployStatus(enum.IntEnum):
     NO_HERO = 14
     ABILITY_NOT_READY = 15
     ABILITY_SPENT = 16
+    # Under a command delay (RoyaleSim r16, ``RustEngine(command_delay_ticks=)``): this card
+    # or button already has an accepted command waiting to run. The engine's index is 18.
+    CARD_PENDING = 17
 
 
 class Winner(enum.IntEnum):
@@ -619,6 +622,15 @@ class PlayerState(msgspec.Struct, frozen=True):
     # The catalogue id of the card a Mirror played now would copy (the side's last
     # accepted play that was not a Mirror), -1 when there is none.
     mirror_target: int = -1
+    # Under a command delay (RoyaleSim r16): the side's commands accepted and not run yet,
+    # in the order they run, each [kind, what, x, y, ticks_left, cost]: kind 0 a play (what
+    # the catalogue card id, x and y the tap), kind 1 a button press (what the command slot,
+    # HAND_SIZE + button). The hand and ``elixir_milli`` change only when a command runs,
+    # as the client's do (measured on the live client); ``pending_cost`` is the elixir the
+    # waiting commands have spoken for, which the engine subtracts when it accepts another.
+    # Empty and 0 with no delay, and from an engine before them.
+    pending: list[list[int]] = []
+    pending_cost: int = 0
 
 
 class BattleState(msgspec.Struct, frozen=True):
@@ -626,7 +638,7 @@ class BattleState(msgspec.Struct, frozen=True):
     tick_ms: int
     regular_ticks: int  # length of regulation time in ticks
     overtime_ticks: int  # length of overtime in ticks
-    elixir_rate: int  # 1 or 2 (the multiplier currently in force)
+    elixir_rate: int  # 1, 2 or 3 (the multiplier currently in force; 3 from RoyaleSim r16)
     overtime: bool
     players: list[PlayerState]  # indexed by team
     entities: list[EntityState]  # includes crown towers
@@ -1550,8 +1562,9 @@ class ElixirLaw(msgspec.Struct, frozen=True):
         ``match.MANA_REGEN_MS_OVERTIME`` (RoyaleSim r15: 60 s and 9300 ms; the tick that runs
         from 4800 is the first). That gain is TRUNCATED in the same unit, as the engine's is
         (``gain_3x``: 1505 a tick where the exact rate is 1505.4), so it is the engine's bar
-        that is modelled and not the game's. ``rate_at`` still says 2 there, as the engine's
-        ``elixir_rate`` does. A calibration without the keys has no third rate; one whose
+        that is modelled and not the game's. ``rate_at`` says 3 there, as the engine's
+        ``elixir_rate`` does from RoyaleSim r16 (r15's said 2, a defect of its report, not of
+        its bar). A calibration without the keys has no third rate; one whose
         overtime regen is the 2x one (every table before r15) has a third rate equal to it.
         ``seed_fine``'s lattice is the 1x and 2x gains', so a bar seeded past the switch can
         be off by less than one milli-elixir's worth, and ``MatchMemory.exact`` says so.
@@ -1636,6 +1649,8 @@ class ElixirLaw(msgspec.Struct, frozen=True):
 
     def rate_at(self, tick: int, regular_ticks: int, overtime: bool = False) -> int:
         """The multiplier in force during the tick that runs FROM ``tick``."""
+        if overtime and self.gain_3x and tick >= regular_ticks + self.triple_ticks:
+            return 3
         if overtime or tick >= regular_ticks - self.speedup_ticks:
             return 2
         return 1
@@ -1645,6 +1660,8 @@ class ElixirLaw(msgspec.Struct, frozen=True):
             return self.gain_1x
         if rate == 2:
             return self.gain_2x
+        if rate == 3 and self.gain_3x:
+            return self.gain_3x
         raise ValueError(f"unknown elixir rate {rate}")
 
     def regen(self, tick_from: int, tick_to: int, regular_ticks: int, overtime: bool) -> int:

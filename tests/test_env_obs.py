@@ -669,24 +669,26 @@ def test_plant_spell_sort_key_without_aim_and_hits_is_caught(monkeypatch):
 # --- the layout: widths, and what a Reveal does to them -----------------------
 
 
-def test_the_fair_vector_is_12n_plus_37_wide_and_the_layout_says_so():
+def test_the_fair_vector_is_12n_plus_43_wide_and_the_layout_says_so():
     """The width, asserted rather than derived.
 
-    The spec this rewrite was built to called it 12n + 36. It is 12n + 37, and the
-    extra slot is real: the fair block is the old 5n + 30 with the reveal-gated
+    The spec this rewrite was built to called it 12n + 36. It is 12n + 43, and the
+    extra slots are real: the fair block is the old 5n + 30 with the reveal-gated
     enemy-elixir slot kept (it now holds the COUNT) plus 7n + 7 of new features --
     deck n, cycle 6-8 3(n+1), last card n+1, cards seen n, possible hand n, and
-    three scalars (ticks since own play, elixir leaked, enemy plays). The test is
-    the arithmetic; the docstring is only the reason.
+    three scalars (ticks since own play, elixir leaked, enemy plays) -- and, with
+    RoyaleSim r16, the elixir rate's 3x slot and the own waiting commands (a flag per
+    hand slot and their cost). The test is the arithmetic; the docstring is only the
+    reason.
     """
     n = len(ENG.cards())
     fields = vector_layout(n)
     assert all(f.fair for f in fields)
-    assert sum(f.size for f in fields) == 12 * n + 37
+    assert sum(f.size for f in fields) == 12 * n + 43
     b = SpatialObsBuilder()
     b.bind(ENG, PARSER)
-    assert b.vec_size == 12 * n + 37
-    assert b.observation_space()["vector"].shape == (12 * n + 37,)
+    assert b.vec_size == 12 * n + 43
+    assert b.observation_space()["vector"].shape == (12 * n + 43,)
 
 
 def test_the_layout_is_self_describing_and_gapless():
@@ -1625,7 +1627,7 @@ def _vector_content_errors(builder, eng, parser, plays, seat=BLUE) -> list[str]:
     check("crowns", [me.crowns / 3.0, foe.crowns / 3.0])
     check("own_tower_hp", [me.tower_hp[s] / max(1, me.tower_max_hp[s]) for s in TowerSlot])
     check("enemy_tower_hp", [foe.tower_hp[s] / max(1, foe.tower_max_hp[s]) for s in TowerSlot])
-    check("elixir_rate", [float(st.elixir_rate == 1), float(st.elixir_rate == 2)])
+    check("elixir_rate", [float(st.elixir_rate == r) for r in (1, 2, 3)])
     return errors
 
 

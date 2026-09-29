@@ -283,7 +283,7 @@ tiles of 576; the tiles a positional channel helps are the empty ones. Two diffe
 Both this session and learn had been counting them as one.
 
 
-## 4. The flat `vector`, float32 `[12n + 37]` (fair)
+## 4. The flat `vector`, float32 `[12n + 43]` (fair)
 
 All slots are clipped to `[0, 1]`. The offsets in the table are for n = 16, which is
 `MockEngine`'s default catalogue and what the test suite runs on. It is **not** the
@@ -296,22 +296,24 @@ full card list, which is larger and gives a wider vector. Read offsets from
 | 1 | `enemy_elixir` | 1 | 0..1 | opponent's elixir / MAX_MANA (**counted**, see below) | fair (source switches under `Reveal.enemy_elixir`) |
 | 2–69 | `own_hand_cards` | 4(n+1) | 0/1 | hand slot card one-hot; index n = empty slot | fair |
 | 70–73 | `own_hand_cost` | 4 | 0..1 | hand slot elixir cost / MAX_MANA | fair |
-| 74–77 | `own_hand_affordable` | 4 | 0/1 | affordable right now | fair |
-| 78–94 | `own_next_card` | n+1 | 0/1 | cycle position 5 | fair |
-| 95–145 | `own_cycle_6_8` | 3(n+1) | 0/1 | cycle positions 6, 7, 8; index n = not deduced yet | fair |
-| 146–161 | `own_deck` | n | 0/1 | own deck multi-hot, as deduced so far | fair |
-| 162–178 | `own_last_card` | n+1 | 0/1 | last card own played; index n = none yet | fair |
-| 179 | `own_ticks_since_play` | 1 | 0..1 | ticks since own last play / 600, clipped | fair |
-| 180 | `own_elixir_leaked` | 1 | 0..1 | own elixir lost to the cap so far / 20, clipped | fair |
-| 181–196 | `enemy_cards_seen` | n | 0/1 | cards the opponent has played at least once | fair |
-| 197–212 | `enemy_possible_hand` | n | 0/1 | cards that could be in the opponent's hand now | fair |
-| 213 | `enemy_plays` | 1 | 0..1 | opponent's plays this match / 40, clipped | fair |
-| 214–216 | `own_tower_hp` | 3 | 0..1 | tower hp / max, `[king, left, right]` | fair |
-| 217–219 | `enemy_tower_hp` | 3 | 0..1 | the same, in the opponent's own-frame slots | fair |
-| 220–221 | `crowns` | 2 | 0..1 | own crowns / 3, enemy crowns / 3 | fair |
-| 222–223 | `king_active` | 2 | 0/1 | own king active, enemy king active | fair |
-| 224–226 | `clock` | 3 | 0..1 | regulation left / regulation, in overtime, overtime left / overtime | fair |
-| 227–228 | `elixir_rate` | 2 | 0/1 | one-hot over 1x, 2x | fair |
+| 74–77 | `own_hand_affordable` | 4 | 0/1 | affordable right now: the bar less `own_pending_cost` pays it, and it has no play waiting | fair |
+| 78–81 | `own_hand_pending` | 4 | 0/1 | this slot's card has a play waiting to run (command delay, RoyaleSim r16); the seat's own taps only | fair |
+| 82 | `own_pending_cost` | 1 | 0..1 | elixir the own waiting commands hold / MAX_MANA | fair |
+| 83–99 | `own_next_card` | n+1 | 0/1 | cycle position 5 | fair |
+| 100–150 | `own_cycle_6_8` | 3(n+1) | 0/1 | cycle positions 6, 7, 8; index n = not deduced yet | fair |
+| 151–166 | `own_deck` | n | 0/1 | own deck multi-hot, as deduced so far | fair |
+| 167–183 | `own_last_card` | n+1 | 0/1 | last card own played; index n = none yet | fair |
+| 184 | `own_ticks_since_play` | 1 | 0..1 | ticks since own last play / 600, clipped | fair |
+| 185 | `own_elixir_leaked` | 1 | 0..1 | own elixir lost to the cap so far / 20, clipped | fair |
+| 186–201 | `enemy_cards_seen` | n | 0/1 | cards the opponent has played at least once | fair |
+| 202–217 | `enemy_possible_hand` | n | 0/1 | cards that could be in the opponent's hand now | fair |
+| 218 | `enemy_plays` | 1 | 0..1 | opponent's plays this match / 40, clipped | fair |
+| 219–221 | `own_tower_hp` | 3 | 0..1 | tower hp / max, `[king, left, right]` | fair |
+| 222–224 | `enemy_tower_hp` | 3 | 0..1 | the same, in the opponent's own-frame slots | fair |
+| 225–226 | `crowns` | 2 | 0..1 | own crowns / 3, enemy crowns / 3 | fair |
+| 227–228 | `king_active` | 2 | 0/1 | own king active, enemy king active | fair |
+| 229–231 | `clock` | 3 | 0..1 | regulation left / regulation, in overtime, overtime left / overtime | fair |
+| 232–234 | `elixir_rate` | 3 | 0/1 | one-hot over 1x, 2x, 3x (triple elixir late in overtime, RoyaleSim r16 on) | fair |
 | appended | `enemy_hand_cards` | 4(n+1) | 0/1 | the opponent's hand | **reveal** (`enemy_hand`) |
 | appended | `enemy_next_card` | n+1 | 0/1 | the opponent's cycle position 5 | **reveal** (`enemy_next_card`) |
 | appended | `enemy_deck` | n | 0/1 | the opponent's deck | **reveal** (`enemy_deck`) |
@@ -320,10 +322,10 @@ full card list, which is larger and gives a wider vector. Read offsets from
 `PLAYS_SCALE`) that decide where a feature saturates. They are not game numbers and
 are not read from calibration.
 
-### 12n + 37, not 12n + 36
+### 12n + 43, not 12n + 36
 
-The specification this rewrite was built to called the width 12n + 36. It is 12n + 37,
-and the extra slot is real rather than an accident. The arithmetic, term by term:
+The specification this rewrite was built to called the width 12n + 36. It is 12n + 43,
+and the extra slots are real rather than accidents. The arithmetic, term by term:
 
 | block | width |
 |---|---|
@@ -334,10 +336,12 @@ and the extra slot is real rather than an accident. The arithmetic, term by term
 | `enemy_cards_seen` | + n |
 | `enemy_possible_hand` | + n |
 | `own_ticks_since_play`, `own_elixir_leaked`, `enemy_plays` | + 3 |
-| **total** | **12n + 37** |
+| `elixir_rate`'s 3x slot (RoyaleSim r16's triple elixir) | + 1 |
+| `own_hand_pending`, `own_pending_cost` (RoyaleSim r16's command delay) | + 5 |
+| **total** | **12n + 43** |
 
 The previous layout's 5n + 30 includes the one enemy-elixir slot, which is kept and
-now holds the count, so it is not double-counted. A test asserts 12n + 37 directly.
+now holds the count, so it is not double-counted. A test asserts 12n + 43 directly.
 
 ### The counted enemy elixir
 

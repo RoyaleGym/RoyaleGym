@@ -226,6 +226,10 @@ def vector_layout(
         VectorField("own_hand_cards", HAND_SIZE * onehot, "hand slot card one-hot [4 x (n+1)]"),
         VectorField("own_hand_cost", HAND_SIZE, "hand slot elixir cost / MAX_MANA [4]"),
         VectorField("own_hand_affordable", HAND_SIZE, "hand slot affordable now [4]"),
+        VectorField(
+            "own_hand_pending", HAND_SIZE, "hand slot card has a play waiting to run [4]"
+        ),
+        VectorField("own_pending_cost", 1, "elixir the own waiting commands hold / MAX_MANA"),
         VectorField("own_next_card", onehot, "cycle position 5 (next card) one-hot [n+1]"),
         VectorField(
             "own_cycle_6_8",
@@ -260,7 +264,7 @@ def vector_layout(
             3,
             "regulation left / regulation, in overtime, overtime left / overtime",
         ),
-        VectorField("elixir_rate", 2, "elixir rate one-hot [1x, 2x]"),
+        VectorField("elixir_rate", 3, "elixir rate one-hot [1x, 2x, 3x]"),
     ]
     if enemy_last_card:
         fields.append(
@@ -441,6 +445,12 @@ class MatchMemory:
         self.unaffordable = [0, 0]  # plays the counted bar could not pay: own, enemy
         # Each side's ability rows as last seen, [own, enemy]; None until a state shows them.
         self.rows: list[list[list[int]] | None] = [None, None]
+        # THE COMMAND DELAY, [own, enemy] ticks (``ObsBuilder.command_delay``): a play or a
+        # press accepted on tick T runs, and is paid, on T + delay. The waiting commands the
+        # last state showed, and the presses accepted and not run yet as (tick, elixir).
+        self.delay = [0, 0]
+        self.waiting: list[list[list[int]]] = [[], []]
+        self.press_queue: list[list[tuple[int, int]]] = [[], []]
 
     def bind(self, cards: Sequence[CardInfo]) -> None:
         self.cost = [c.elixir for c in cards]
@@ -455,6 +465,12 @@ class MatchMemory:
             state.tick, me.elixir_milli, foe.elixir_milli, me.hand, me.next_card, foe.hand
         )
         self.rows = [list(me.abilities), list(foe.abilities)]
+        self.waiting = [list(me.pending), list(foe.pending)]
+        # A press already waiting is paid when it runs: its tick is the state's plus its
+        # ticks left, and its cost is the row's.
+        self.press_queue = [
+            [(state.tick + row[4], row[5]) for row in p.pending if row[0] == 1] for p in (me, foe)
+        ]
 
     def start(
         self,
@@ -488,6 +504,8 @@ class MatchMemory:
         self.unaffordable = [0, 0]
         self.last_play = [EMPTY_CARD, EMPTY_CARD]
         self.rows = [None, None]
+        self.waiting = [[], []]
+        self.press_queue = [[], []]
         self._note_own_cards()
 
     def observe(
@@ -510,8 +528,10 @@ class MatchMemory:
         if state.tick == self.tick:
             return
         me, foe = state.players[team], state.players[1 - team]
+        last = state.tick - 1
+        plays_by_side: list[list[tuple[int, int]]] = []
         presses_by_side: list[list[tuple[int, int]]] = []
-        for side, p in enumerate((me, foe)):
+        for side, (p, hand) in enumerate(((me, self.own_hand), (foe, self.foe_hand))):
             before, self.rows[side] = self.rows[side], list(p.abilities)
             if presses is not None:
                 shown = before if before is not None else p.abilities
@@ -525,18 +545,34 @@ class MatchMemory:
                 seen = presses_seen(before, p.abilities, standing)
             else:
                 seen = []
-            presses_by_side.append([(self.tick, cost) for cost in seen])
-        presses = presses_by_side
-        # The engine pays every accepted command before the first tick of a step, so a
-        # play or a press seen between two observations is dated at the earlier one.
+            # The engine pays every accepted command before the first tick of a step, so a
+            # play or a press accepted at the earlier observation is paid there -- or, under
+            # a command delay, the delay later, when it runs. A play is seen when its card
+            # leaves the hand, which is when it runs: one the last state showed waiting runs
+            # its ticks left after that state, and one accepted since runs the delay after.
+            waiting = list(self.waiting[side])
+            plays = []
+            for card in cards_that_left(hand, p.hand):
+                due = self.tick + self.delay[side]
+                for i, row in enumerate(waiting):
+                    if row[0] == 0 and row[1] == card:
+                        due = self.tick + row[4]
+                        del waiting[i]
+                        break
+                plays.append((min(max(due, self.tick), last), card))
+            plays_by_side.append(plays)
+            self.waiting[side] = list(p.pending)
+            queue = self.press_queue[side] + [(self.tick + self.delay[side], c) for c in seen]
+            presses_by_side.append([(max(due, self.tick), c) for due, c in queue if due <= last])
+            self.press_queue[side] = [(due, c) for due, c in queue if due > last]
         self.advance(
             state.tick,
             state.regular_ticks,
             state.overtime,
-            [(self.tick, c) for c in cards_that_left(self.own_hand, me.hand)],
-            [(self.tick, c) for c in cards_that_left(self.foe_hand, foe.hand)],
-            own_presses=presses[0],
-            foe_presses=presses[1],
+            plays_by_side[0],
+            plays_by_side[1],
+            own_presses=presses_by_side[0],
+            foe_presses=presses_by_side[1],
         )
         if self.law.to_milli(self.own_fine) != me.elixir_milli:
             self.exact = False
@@ -691,7 +727,7 @@ class MatchClock(NamedTuple):
     regular_ticks: int
     overtime_ticks: int
     overtime: bool
-    elixir_rate: int  # 1 or 2
+    elixir_rate: int  # 1, 2 or 3
 
     @classmethod
     def of(cls, state: BattleState) -> MatchClock:
@@ -724,6 +760,8 @@ FAIR_FIELDS = (
     "own_hand_cards",
     "own_hand_cost",
     "own_hand_affordable",
+    "own_hand_pending",
+    "own_pending_cost",
     "own_next_card",
     "own_cycle_6_8",
     "own_deck",
@@ -752,6 +790,7 @@ def fair_fields(
     enemy_elixir_milli: int | None = None,
     enemy_last_card: bool = False,
     hand_costs: Sequence[int] | None = None,
+    own_pending: Sequence[Sequence[int]] = (),
 ) -> dict[str, np.ndarray]:
     """Every fair vector field but the board's four, by name, from what a player sees.
 
@@ -772,6 +811,14 @@ def fair_fields(
     holds p; p < 0 keeps the listed elixir and is never affordable. The env passes the
     engine's prices; RoyaleImitate rebuilds the same ones from its log (from its cc78f2f).
 
+    ``own_pending`` is the player's OWN commands accepted and not run yet, under a command
+    delay (``PlayerState.pending``: [kind, what, x, y, ticks_left, cost] rows). A player
+    knows its own taps, so it is fair: a hand slot whose card has a play waiting is flagged
+    and not affordable, and the bar a new play is paid from is the own bar less the waiting
+    cost, as the engine accepts. The own bar itself stays unspent until a command runs, as
+    the client's does. The enemy's waiting commands are never an input: the client shows
+    an opponent's play only when it runs, and so does the enemy count.
+
     Keys are ``FAIR_FIELDS`` in order, then ``enemy_last_card`` when asked for. Each
     array is float32 and already clipped to [0, 1], as in the vector. They are views of
     one buffer, laid out in that order.
@@ -780,7 +827,7 @@ def fair_fields(
     buf = np.zeros(width, dtype=np.float32)
     _write_fair(
         buf, off, memory, clock, hand, next_card, own_elixir_milli, cards, max_mana,
-        enemy_elixir_milli, enemy_last_card, hand_costs,
+        enemy_elixir_milli, enemy_last_card, hand_costs, own_pending,
     )
     np.clip(buf, 0.0, 1.0, out=buf)
     return {k: buf[s] for k, s in off.items()}
@@ -799,6 +846,7 @@ def _write_fair(
     enemy_elixir_milli: int | None,
     enemy_last_card: bool,
     hand_costs: Sequence[int] | None = None,
+    own_pending: Sequence[Sequence[int]] = (),
 ) -> None:
     """Write every fair field but the board's four into ``out`` at ``off``, NOT clipped.
 
@@ -818,10 +866,18 @@ def _write_fair(
     onehot = num_cards + 1
     full = 1000 * max_mana
     foe_milli = memory.enemy_elixir_milli() if enemy_elixir_milli is None else enemy_elixir_milli
+    held = sum(int(row[5]) for row in own_pending)
+    waiting = {int(row[1]) for row in own_pending if int(row[0]) == 0}
+    flags = out[off["own_hand_pending"]]
+    for i, c in enumerate(hand):
+        flags[i] = 1.0 if c != EMPTY_CARD and c in waiting else 0.0
+    out[off["own_pending_cost"]] = held / max_mana
     _write_hand(
         out[off["own_hand_cards"]], out[off["own_hand_cost"]], out[off["own_hand_affordable"]],
-        hand, cards, own_elixir_milli, num_cards, max_mana, hand_costs,
+        hand, cards, own_elixir_milli - 1000 * held, num_cards, max_mana, hand_costs,
     )
+    if waiting:
+        out[off["own_hand_affordable"]] *= 1.0 - flags
     cycle = out[off["own_cycle_6_8"]].reshape(DECK_SIZE - HAND_SIZE - 1, onehot)
     for i, card in enumerate(memory.own_cycle[1:]):
         cycle[i, num_cards if card == EMPTY_CARD else card] = 1
@@ -843,7 +899,7 @@ def _write_fair(
     out[off["enemy_possible_hand"]] = memory.enemy_possible_hand()
     out[off["enemy_plays"]] = min(1.0, memory.foe_plays / PLAYS_SCALE)
     out[off["clock"]] = (reg_left, float(clock.overtime), ot_left)
-    out[off["elixir_rate"]] = (float(clock.elixir_rate == 1), float(clock.elixir_rate == 2))
+    out[off["elixir_rate"]] = tuple(float(clock.elixir_rate == r) for r in (1, 2, 3))
     if enemy_last_card:
         # The newest entry of the cycle memory the vector already uses for
         # enemy_possible_hand, so it is derived from tested state, not kept twice.
@@ -905,7 +961,7 @@ def build_vector(
     _write_fair(
         vec, off, memory, MatchClock.of(state), me.hand, me.next_card, me.elixir_milli,
         cards, max_mana, foe.elixir_milli if reveal.enemy_elixir else None, enemy_last_card,
-        me.hand_costs if len(me.hand_costs) == HAND_SIZE else None,
+        me.hand_costs if len(me.hand_costs) == HAND_SIZE else None, me.pending,
     )
     vec[off["own_tower_hp"]] = [me.tower_hp[s] / max(1, me.tower_max_hp[s]) for s in TowerSlot]
     vec[off["enemy_tower_hp"]] = [
@@ -1138,8 +1194,10 @@ class ObsBuilder(ABC):
     def reset(self, state: BattleState) -> None:
         """Called at the start of every episode: both seats forget the last one."""
         self.presses = None
+        delay = getattr(self, "command_delay", (0, 0))
         for team, memory in self.memory.items():
             memory.seed(state, team)
+            memory.delay = [delay[team], delay[1 - team]]
 
     def see_presses(self, presses: Sequence[tuple[int, int]] | None) -> None:
         """The ability presses accepted since the last build, each ``(team, button)``, for

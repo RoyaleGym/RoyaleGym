@@ -52,14 +52,14 @@ print("legal actions right now:", int(obs["blue"]["action_mask"].sum()), "of", o
 
 ```
 spatial      shape (20, 32, 18)   dtype float32
-vector       shape (1621,)        dtype float32
+vector       shape (1627,)        dtype float32
 action_mask  shape (2305,)        dtype int8
 mask_planes  shape (4, 32, 18)    dtype int8
 cards in this catalogue: 132
 legal actions right now: 1 of 2305
 ```
 
-Every figure on this page was run on 2026-09-28 on engine build `3cf184400be69a9e` with the
+Every figure on this page was run on 2026-09-29 on engine build `49419e725439f608` with the
 15.535 card table. Only one move is legal at the start, the wait, because a match refuses every
 deploy for its opening seconds. The mask section below comes back to that.
 
@@ -326,8 +326,8 @@ print("recorded in the config:", env.config()["obs_builder"]["params"]["reveal"]
 ```
 
 ```
-fair             vector 1621  spatial channels 20
-enemy_hand shown vector 2153  spatial channels 20
+fair             vector 1627  spatial channels 20
+enemy_hand shown vector 2159  spatial channels 20
 recorded in the config: {'enemy_elixir': False, 'enemy_hand': True, 'enemy_next_card': False, 'enemy_deck': False, 'enemy_spell_aim': False}
 ```
 

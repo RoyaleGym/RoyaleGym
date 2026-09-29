@@ -458,7 +458,7 @@ class MockEngine:
         }
         # Triple elixir: the overtime regen from MANA_TRIPLE_AFTER_OVERTIME_S into overtime,
         # truncated in the same unit as the Rust core's (protocol.ElixirLaw). elixir_rate
-        # still reports 2 there, as the core's does.
+        # reports 3 there, as the core's does from RoyaleSim r16.
         # Both keys or no third rate, as ElixirLaw.load.
         try:
             r3 = cal.int("match.MANA_REGEN_MS_OVERTIME")
@@ -933,6 +933,8 @@ class MockEngine:
 
     def _rate(self) -> int:
         s = self._sim()
+        if self.gain_3x and s.overtime and s.tick >= self.regular_ticks + self.triple_ticks:
+            return 3
         if s.overtime or s.tick >= self.regular_ticks - self.speedup_ticks:
             return 2
         return 1
@@ -1058,9 +1060,7 @@ class MockEngine:
 
         # UPKEEP ------------------------------------------------------------
         rate = self._rate()
-        gain = self.gain[rate]
-        if self.gain_3x and s.overtime and s.tick >= self.regular_ticks + self.triple_ticks:
-            gain = self.gain_3x
+        gain = self.gain_3x if rate == 3 else self.gain[rate]
         cap = self.max_mana * self.elixir_scale
         for team in TEAMS:
             s.elixir[team] = min(cap, s.elixir[team] + gain)

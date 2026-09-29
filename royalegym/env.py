@@ -238,6 +238,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         render_mode: str | None = None,
         recorder: ReplayRecorder | None = None,
         viser: ViserPublisher | None = None,
+        command_delay_ticks: int | tuple[int, int] | None = None,
         # Kept for callers written before the rename.
         terminal_conditions: Sequence[DoneCondition] | None = None,
         state_setter: StateMutator | None = None,
@@ -257,10 +258,25 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         if isinstance(truncation_cond, TerminationCondition):
             raise TypeError(f"{type(truncation_cond).__name__} is a termination, not a truncation")
         self.engine: Engine = engine if engine is not None else MockEngine()
+        # THE COMMAND DELAY (RoyaleSim r16): plays and presses run this many ticks after the
+        # tap, one int for both seats or (blue, red). None leaves the engine's own (0 unless
+        # it was built with one); an engine without a delay refuses anything above 0.
+        if command_delay_ticks is not None:
+            setter = getattr(self.engine, "set_command_delay_ticks", None)
+            if setter is None:
+                if command_delay_ticks not in (0, (0, 0)):
+                    raise NotImplementedError(
+                        f"{type(self.engine).__name__} has no command delay; "
+                        "use RustEngine on RoyaleSim r16 or later"
+                    )
+            else:
+                setter(command_delay_ticks)
         self.action_parser = action_parser or TileActionParser()
         self.action_parser.bind(self.engine)
         self.obs_builder = obs_builder or SpatialObsBuilder()
         self.obs_builder.bind(self.engine, self.action_parser)
+        # The observation's memories date a play at the tick it runs, so they need the delay.
+        self.obs_builder.command_delay = tuple(getattr(self.engine, "command_delay_ticks", (0, 0)))
         self.reward_fn = reward_fn or default_reward()
         self.reward_fn.bind(self.engine)
         self.termination: DoneCondition = termination_cond or GameOverCondition()
