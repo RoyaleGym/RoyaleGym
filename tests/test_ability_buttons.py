@@ -407,3 +407,49 @@ def test_a_champions_button_agrees_with_the_engine_through_a_press_and_its_coold
         f"the button did not come back after its cooldown: pressed {pressed}, counted "
         f"{counted}, back {back}"
     )
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_a_sides_buttons_are_its_heroes_then_its_champion():
+    """Blue deals a hero Musketeer and a Golden Knight: its hero's button first and its
+    champion's second, each row naming its card. Red deals the same cards, no hero form: its
+    champion's button is its first. The champion's second button, pressed through the action
+    space, is the one the engine takes, on every tick of the champion's arrival."""
+    if _champion_battle("GoldenKnight") is None:
+        pytest.skip("this engine has no champion button (the Golden Knight's)")
+    eng = RustEngine()
+    ids = {c.name: c.card_id for c in eng.cards()}
+    names = ("Musketeer", "GoldenKnight", "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap")
+    deck = [ids[n] for n in names]
+    eng.reset(1, MatchSetup(
+        decks=[deck, deck], shuffle=ShuffleMode.NONE, forms=[[2] + [0] * 7, [0] * 8],
+        elixir_milli=[10000, 10000], start_tick=eng.rules().deploy_lockout_ticks,
+    ))
+    parser = TileActionParser(ability_buttons=True)
+    parser.bind(eng)
+    state = eng.state()
+    assert [ability_row(r).card_id for r in state.players[BLUE].abilities] == [
+        ids["Musketeer"], ids["GoldenKnight"]
+    ]
+    assert [ability_row(r).card_id for r in state.players[RED].abilities] == [ids["GoldenKnight"]]
+
+    t = eng.arena().subtile
+    slot = state.players[BLUE].hand.index(ids["GoldenKnight"])
+    x, y = to_engine(eng.arena(), BLUE, 3 * t + t // 2, 3 * t + t // 2)
+    assert eng.step([DeployCommand(BLUE, slot, x, y)], 1)[0].status == DeployStatus.OK
+    problems, on_at = [], None
+    for _ in range(100):
+        state = eng.state()
+        problems += _agree(eng, parser, state)
+        if parser.action_mask(state, BLUE)[parser.n_tile_actions + 1]:
+            on_at = state.tick
+            break
+        eng.step([], 1)
+    assert on_at is not None, (
+        f"Blue's champion button never came on: {state.players[BLUE].abilities}"
+    )
+    assert not parser.action_mask(state, BLUE)[parser.n_tile_actions], "no hero on the board"
+    cmd = parser.parse(parser.n_tile_actions + 1, state, BLUE)
+    assert cmd.hand_slot == HAND_SIZE + 1
+    assert eng.step([cmd], 1)[0].status == DeployStatus.OK
+    assert problems == [], problems[:6]
