@@ -858,9 +858,8 @@ def _write_fair(
     the old path.
 
     WHY IT WRITES INTO ONE BUFFER. Building the vector used to make about twenty small
-    arrays per seat per step, clip each, concatenate them and clip again. That was the
-    largest single item in a training worker's step: 391 us of a 1,255 us game decision,
-    measured by the train session on 2026-09-26.
+    arrays per seat per step, clip each, concatenate them and clip again, and that was
+    the largest single cost of building an observation.
     """
     num_cards = len(cards)
     onehot = num_cards + 1
