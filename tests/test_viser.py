@@ -143,6 +143,10 @@ def test_the_special_forms_rows_decode_as_the_viewer_reads_them() -> None:
     assert [tuple(r) for r in frame.players[0].abilities] == [
         ("Musketeer", 1, 0, 2), ("Knight", 0, 0, 1)
     ]
+    # The cooldown on the viewer's own key (RoyaleViser 856abbe): -1 where the row does not
+    # say. Its length is checked against the rows by model.problems above.
+    assert frame.players[0].ability_cooldowns == [-1, 40]
+    assert frame.players[1].ability_cooldowns == []
     assert [tuple(r) for r in frame.players[0].evo] == [("Cannon", 2, 1)]
     # The slip it exists for: an id where the viewer reads a name does not decode.
     d["players"][0]["evo"] = [[ids["Cannon"], 2, 1]]

@@ -65,7 +65,7 @@ def test_the_parser_adds_the_buttons_only_when_asked():
 def test_a_row_is_read_by_column_whatever_the_engine_appends():
     """The rows grow columns (card_id and cooldown_ticks for the champions), and a reader
     that unpacked three would stop at the first engine that sends five."""
-    assert ability_row([1, 0, 2]) == (1, 0, 2, EMPTY_CARD, 0)
+    assert ability_row([1, 0, 2]) == (1, 0, 2, EMPTY_CARD, -1)
     assert ability_row([0, 0, 3, 17, 40]) == (0, 0, 3, 17, 40)
     assert ability_row([1, 0, 3, 17, 0, 99]).card_id == 17
 
@@ -167,6 +167,7 @@ def test_the_stream_names_the_heroes_and_the_evolutions():
                     [2, 1, 0, 0, 0, 0, 0, 0])
     assert d["abilities"] == [["Musketeer", 1, 0, 2]]
     assert d["evo"] == [["Cannon", 2, 1]]
+    assert "ability_cooldowns" not in d, "no row says a cooldown: the frame is unchanged"
     unknown = player_dict(p, lambda c: names.get(c, "?"), None, None)
     assert unknown["abilities"] == [["", 1, 0, 2]], "no forms: the name is unknown, not guessed"
 
@@ -181,6 +182,8 @@ def test_the_stream_names_a_champion_button_by_its_card_in_the_viewers_four_colu
     d = player_dict(p, lambda c: names.get(c, f"card{c}"), [3, 5, 1, 2, 4, 6, 7, 9],
                     [2, 0, 0, 0, 0, 0, 0, 0])
     assert d["abilities"] == [["Musketeer", 1, 0, 2], ["Golden Knight", 0, 0, 1]]
+    # The cooldown on its own key, parallel to the rows: -1 where a row does not say.
+    assert d["ability_cooldowns"] == [-1, 40]
     unknown = player_dict(p, lambda c: names.get(c, "?"), None, None)
     assert [r[0] for r in unknown["abilities"]] == ["", "Golden Knight"], (
         "a row that names its card needs no forms"

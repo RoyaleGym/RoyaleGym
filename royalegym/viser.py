@@ -189,7 +189,12 @@ def player_dict(
     id; ``abilities`` is each button's [name, available, spent, cost], the viewer's four
     columns. The name is the row's card where the engine states it (a champion's button
     does), else the k-th hero entry of the deck, else "" where the deck's forms are unknown.
+    ``ability_cooldowns`` is its own key, parallel to ``abilities``: each button's ticks
+    until it can be pressed again, -1 where the engine's row does not say. Only when some
+    row says, so a frame from an engine without the column is what it always was.
     """
+    buttons = [ability_row(row) for row in p.abilities]
+    cooldowns = [b.cooldown_ticks for b in buttons]
     heroes = (
         [name_of(c) for c, f in zip(deck, forms, strict=False) if f == 2]
         if deck is not None and forms is not None
@@ -218,8 +223,9 @@ def player_dict(
                 b.spent,
                 b.cost,
             ]
-            for k, b in enumerate(map(ability_row, p.abilities))
+            for k, b in enumerate(buttons)
         ],
+        **({"ability_cooldowns": cooldowns} if any(c >= 0 for c in cooldowns) else {}),
     }
 
 

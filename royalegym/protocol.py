@@ -384,15 +384,15 @@ def slot_cost(player: PlayerState, slot: int, card: CardInfo) -> int:
 
 class AbilityRow(NamedTuple):
     """One ``PlayerState.abilities`` row by column. ``card_id`` is the button's base card
-    and ``cooldown_ticks`` the ticks until it can be pressed again; an engine before the
-    champion columns reads EMPTY_CARD (the viewer then names the button from the deck's
-    hero entries) and 0."""
+    and ``cooldown_ticks`` the ticks until it can be pressed again (0 when ready); an
+    engine before the champion columns reads EMPTY_CARD (the viewer then names the button
+    from the deck's hero entries) and -1, not reported."""
 
     available: int
     spent: int
     cost: int
     card_id: int = EMPTY_CARD
-    cooldown_ticks: int = 0
+    cooldown_ticks: int = -1
 
 
 def ability_row(row: Sequence[int]) -> AbilityRow:
