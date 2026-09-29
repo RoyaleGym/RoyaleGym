@@ -185,7 +185,8 @@ tile" separately would happily suggest putting a Knight on the enemy king. This 
 What it covers: elixir, territory, water, the river band, the bodies of enemy buildings, and the
 no-deploy rectangle around each living enemy crown tower. Your own buildings and princess towers
 do not block a troop: the engine moves a troop or a Heal tapped on one off it, as the game does,
-and the mask offers that tap. The no-deploy block around your own king still refuses.
+and the mask offers that tap, unless there is nowhere to move it. The no-deploy block around your
+own king still refuses.
 
 On the first step of a battle only the wait is legal, because a match refuses every deploy for
 its first 90 ticks. That is why the program above prints 1 there. After that the number moves

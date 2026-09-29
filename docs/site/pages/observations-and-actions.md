@@ -258,7 +258,8 @@ with the buildings already on the board. The mask covers elixir, which half of t
 arena you may play in, water, the river, the bodies of enemy buildings, and the
 rectangle around each enemy crown tower that is still alive. Your own buildings and
 princess towers do not block a troop: tap a troop or a Heal on one and the engine moves
-it off, as the game does, so the mask offers that tap. The no-deploy block around your
+it off, as the game does, so the mask offers that tap, unless there is nowhere to move it
+(a board crowded with your own buildings). The no-deploy block around your
 own king still refuses.
 
 Once play opens, the count depends on the deck, the card table and the elixir, so 1640 is not a

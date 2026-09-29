@@ -171,7 +171,10 @@ the bodies of enemy buildings and the no-deploy rectangle around each living ene
 Your own buildings and princess towers do not block a troop: the engine moves a troop, a Miner or
 a Heal tapped on one off it (`placement.TROOP_BUILDING_TAPS`, `TROOP_TOWER_TAPS`,
 `SPELL_AS_DEPLOY_TAPS`), and a building tap that does not fit is moved too, so the mask offers
-those taps. The no-deploy block around your own king still refuses.
+those taps. When the engine's ring search finds nowhere to put the unit, the tap stays on the
+body and is refused, and the mask does not offer it
+(`test_a_moved_tap_with_nowhere_to_go_is_not_offered`). The no-deploy block around your own
+king still refuses.
 
 Measured 2026-09-25 on engine build 8218abee7e4f0497, at `reset(seed=0)` with both decks set
 to Knight, Giant, Cannon, Log, Fireball, Zap, Minions, Valkyrie and no shuffle, so the first
