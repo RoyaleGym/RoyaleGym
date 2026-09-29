@@ -127,8 +127,11 @@ def test_the_special_forms_rows_decode_as_the_viewer_reads_them() -> None:
     forms = [[2, 1, 0, 0, 0, 0, 0, 0], [0] * 8]
     eng.reset(1, MatchSetup(decks=[deck, deck]))
     state = eng.state()
+    # A hero's row as every engine sends it, and a champion's with the columns the champion
+    # engine appends (card_id, cooldown_ticks): the viewer's four columns either way.
     blue = msgspec.structs.replace(
-        state.players[0], abilities=[[1, 0, 2]], evo=[[ids["Cannon"], 2, 1]]
+        state.players[0], abilities=[[1, 0, 2], [0, 0, 1, ids["Knight"], 40]],
+        evo=[[ids["Cannon"], 2, 1]],
     )
     state = msgspec.structs.replace(state, players=[blue, state.players[1]])
     names = {c.card_id: c.name for c in eng.cards()}
@@ -137,7 +140,9 @@ def test_the_special_forms_rows_decode_as_the_viewer_reads_them() -> None:
     )
     frame = model.decode_frame(msgspec.msgpack.encode(d))
     assert model.problems(frame) == []
-    assert [tuple(r) for r in frame.players[0].abilities] == [("Musketeer", 1, 0, 2)]
+    assert [tuple(r) for r in frame.players[0].abilities] == [
+        ("Musketeer", 1, 0, 2), ("Knight", 0, 0, 1)
+    ]
     assert [tuple(r) for r in frame.players[0].evo] == [("Cannon", 2, 1)]
     # The slip it exists for: an id where the viewer reads a name does not decode.
     d["players"][0]["evo"] = [[ids["Cannon"], 2, 1]]

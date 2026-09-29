@@ -1046,7 +1046,9 @@ class ObsBuilder(ABC):
         # A parser with ability buttons puts them last in the mask; they also go out on
         # their own as ``ability_ready``, the minimal observation of a hero's ability.
         with_buttons = getattr(action_parser, "ability_buttons", False)
-        self.ability_buttons = ABILITY_BUTTONS if with_buttons else 0
+        self.ability_buttons = (
+            int(getattr(action_parser, "n_buttons", ABILITY_BUTTONS)) if with_buttons else 0
+        )
         # A troop by KIND: a spell may carry a troop's placement (Heal) without its laws.
         self._troop_probe = next(
             (c for c in self.cards if c.placement == Placement.TROOP and not card_is_spell(c)),

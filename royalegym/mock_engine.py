@@ -375,6 +375,9 @@ class _Sim(msgspec.Struct):
 class MockEngine:
     """Deterministic, seeded, integer-only. Satisfies ``protocol.Engine``."""
 
+    #: Ability buttons per side. It models no hero or champion, so every press is NO_HERO.
+    ability_button_count = ABILITY_BUTTONS
+
     def __init__(
         self,
         calibration: Calibration | None = None,
@@ -994,7 +997,7 @@ class MockEngine:
             return DeployStatus.GAME_OVER
         if cmd.team not in TEAMS:
             return DeployStatus.BAD_TEAM
-        if HAND_SIZE <= cmd.hand_slot < HAND_SIZE + ABILITY_BUTTONS:
+        if HAND_SIZE <= cmd.hand_slot < HAND_SIZE + self.ability_button_count:
             return DeployStatus.NO_HERO  # this engine models no hero (reset refuses forms)
         if not 0 <= cmd.hand_slot < HAND_SIZE:
             return DeployStatus.BAD_SLOT

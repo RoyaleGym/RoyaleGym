@@ -1,16 +1,20 @@
-"""A hero's ability button, as an action (RoyaleSim 244c893 on; HERO-SPEC 6.2).
+"""An ability button, as an action (RoyaleSim 244c893 on; HERO-SPEC 6.2).
 
-The engine takes a command in slot HAND_SIZE + k as a press of ability button k: the hero
-of that side's k-th deck entry of form 2. The parser offers the buttons only when asked
-(``ability_buttons=True``), after every tile action, and masks each from the state: on
-when its hero is up and unspent and the bar can pay. Graded here against the engine
-itself: the mask is on exactly when the engine accepts the press, off before the hero
-exists and after its charge is spent, and a press the mask offered makes the ability
-happen.
+The engine takes a command in slot HAND_SIZE + k as a press of ability button k. A side's
+buttons are its hero entries (form 2) in deck order, then its champions in deck order;
+how many is the engine's count. The parser offers the buttons only when asked
+(``ability_buttons=True``), after every tile action, and masks each from the engine's row
+for it, whichever card it is: on when the engine calls it available (a living unit behind
+it, off cooldown, not mid-ability), a hero's charge is unspent and the bar can pay. Graded
+here against the engine itself for a hero: the mask is on exactly when the engine accepts
+the press, off before the hero exists and after its charge is spent, and a press the mask
+offered makes the ability happen. The champion's columns (card_id, cooldown_ticks) and its
+third button are graded on stated rows until the engine has them.
 """
 
 from __future__ import annotations
 
+import msgspec
 import numpy as np
 import pytest
 
@@ -21,6 +25,7 @@ from royalegym.obs import SpatialObsBuilder
 from royalegym.protocol import (
     ABILITY_BUTTONS,
     BLUE,
+    EMPTY_CARD,
     HAND_SIZE,
     RED,
     DeployCommand,
@@ -29,6 +34,7 @@ from royalegym.protocol import (
     MatchSetup,
     PlayerState,
     ShuffleMode,
+    ability_row,
     to_engine,
 )
 from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, _core, core_available
@@ -54,6 +60,79 @@ def test_the_parser_adds_the_buttons_only_when_asked():
         assert with_buttons.button_of(plain.n_actions - 1) is None
         cmd = with_buttons.parse(plain.n_actions + 1, None, BLUE)  # a press reads no state
         assert (cmd.team, cmd.hand_slot) == (BLUE, HAND_SIZE + 1)
+
+
+def test_a_row_is_read_by_column_whatever_the_engine_appends():
+    """The rows grow columns (card_id and cooldown_ticks for the champions), and a reader
+    that unpacked three would stop at the first engine that sends five."""
+    assert ability_row([1, 0, 2]) == (1, 0, 2, EMPTY_CARD, 0)
+    assert ability_row([0, 0, 3, 17, 40]) == (0, 0, 3, 17, 40)
+    assert ability_row([1, 0, 3, 17, 0, 99]).card_id == 17
+
+
+def _three_buttons() -> MockEngine:
+    eng = MockEngine()
+    eng.ability_button_count = 3  # the champion engine's count: two hero forms, a champion
+    return eng
+
+
+def test_the_button_count_is_the_engines():
+    eng = _three_buttons()
+    plain, parser = TileActionParser(), TileActionParser(ability_buttons=True)
+    plain.bind(eng)
+    parser.bind(eng)
+    assert (parser.n_buttons, parser.n_actions) == (3, plain.n_actions + 3)
+    assert parser.button_of(plain.n_actions + 2) == 2
+    for team in (BLUE, RED):
+        cmd = parser.parse(plain.n_actions + 2, None, team)
+        assert (cmd.team, cmd.hand_slot) == (team, HAND_SIZE + 2)
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    assert b.observation_space()["ability_ready"].shape == (3,)
+
+
+def test_the_mask_reads_each_buttons_row_on_both_seats():
+    """No card named anywhere: a hero's row of three columns, champions' rows of five (and
+    one with a sixth the gym does not know), cooldown, a spent charge and the bar, per seat."""
+    eng = _three_buttons()
+    parser = TileActionParser(ability_buttons=True)
+    parser.bind(eng)
+    eng.reset(1, MatchSetup(decks=[list(range(8)), list(range(8))]))
+    state = eng.state()
+    rows = {
+        BLUE: [
+            [1, 0, 2],  # a hero, up and unspent, 2 of the 5 elixir: on
+            [0, 0, 3, 17, 40],  # a champion on cooldown for 40 more ticks: off
+            [1, 0, 6, 18, 0],  # a champion ready, but 6 elixir on a bar of 5: off
+        ],
+        RED: [
+            [0, 1, 2],  # a hero whose one charge is spent: off
+            [1, 0, 3, 17, 0, 7],  # a champion ready, and a column no engine sends yet: on
+        ],  # no third button on this side: off
+    }
+    state = msgspec.structs.replace(state, players=[
+        msgspec.structs.replace(p, elixir_milli=5000, abilities=rows[p.team])
+        for p in state.players
+    ])
+    got = {t: list(parser.action_mask(state, t)[parser.n_tile_actions:]) for t in (BLUE, RED)}
+    assert got == {BLUE: [1, 0, 0], RED: [0, 1, 0]}
+
+
+def test_an_engine_that_reports_buttons_the_parser_cannot_press_is_refused():
+    """A champion deck marks no form, so only the engine's rows show it has a button."""
+    class Champions(MockEngine):
+        def state(self):
+            s = super().state()
+            red = msgspec.structs.replace(s.players[RED], abilities=[[0, 0, 1, 0, 0]])
+            return msgspec.structs.replace(s, players=[s.players[BLUE], red])
+
+    with pytest.raises(ValueError, match=r"seat 1.*ability_buttons=True"):
+        ClashParallelEnv(engine=Champions()).reset(seed=1)
+    env = ClashParallelEnv(
+        engine=Champions(), action_parser=TileActionParser(ability_buttons=True)
+    )
+    obs, _ = env.reset(seed=1)
+    assert list(obs["red"]["ability_ready"]) == [0, 0]
 
 
 def test_mock_engine_models_no_hero():
@@ -92,6 +171,22 @@ def test_the_stream_names_the_heroes_and_the_evolutions():
     assert unknown["abilities"] == [["", 1, 0, 2]], "no forms: the name is unknown, not guessed"
 
 
+def test_the_stream_names_a_champion_button_by_its_card_in_the_viewers_four_columns():
+    names = {3: "Musketeer", 9: "Golden Knight"}
+    p = PlayerState(
+        team=RED, elixir_milli=5000, hand=[3, 5, 1, 2], next_card=4, crowns=0,
+        tower_hp=[1, 1, 1], tower_max_hp=[1, 1, 1], king_active=False,
+        abilities=[[1, 0, 2], [0, 0, 1, 9, 40, 7]],
+    )
+    d = player_dict(p, lambda c: names.get(c, f"card{c}"), [3, 5, 1, 2, 4, 6, 7, 9],
+                    [2, 0, 0, 0, 0, 0, 0, 0])
+    assert d["abilities"] == [["Musketeer", 1, 0, 2], ["Golden Knight", 0, 0, 1]]
+    unknown = player_dict(p, lambda c: names.get(c, "?"), None, None)
+    assert [r[0] for r in unknown["abilities"]] == ["", "Golden Knight"], (
+        "a row that names its card needs no forms"
+    )
+
+
 def _hero_battle():
     eng = RustEngine()
     ids = {c.name: c.card_id for c in eng.cards()}
@@ -111,7 +206,7 @@ def _agree(eng, parser, state) -> list[str]:
     out = []
     for team in (BLUE, RED):
         mask = parser.action_mask(state, team)
-        for k in range(ABILITY_BUTTONS):
+        for k in range(parser.n_buttons):
             status = eng.check_deploy(DeployCommand(team, HAND_SIZE + k, 0, 0))
             if bool(mask[parser.n_tile_actions + k]) != (status == DeployStatus.OK):
                 out.append(f"tick {state.tick} seat {team} button {k}: mask "
@@ -186,7 +281,10 @@ def test_the_observation_carries_the_buttons_and_keeps_its_planes():
     assert obs["action_mask"].shape == (parser.n_actions,)
     assert obs["mask_planes"].shape == parser.mask_plane_shape()
     assert list(obs["ability_ready"]) == list(obs["action_mask"][parser.n_tile_actions:])
-    assert b.observation_space()["ability_ready"].shape == (ABILITY_BUTTONS,)
+    assert b.observation_space()["ability_ready"].shape == (parser.n_buttons,)
+    assert parser.n_buttons == eng.ability_button_count == _core.ABILITY_BUTTONS
+    # One past the last button is refused as a slot, whatever the count.
+    assert eng._wire(DeployCommand(BLUE, 99, 0, 0))[1] == HAND_SIZE + parser.n_buttons
     plain = TileActionParser()
     plain.bind(eng)
     b2 = SpatialObsBuilder()

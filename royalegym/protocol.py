@@ -48,7 +48,7 @@ from collections.abc import Sequence
 from functools import lru_cache
 from math import gcd
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, NamedTuple, Protocol, runtime_checkable
 
 import msgspec
 
@@ -193,9 +193,11 @@ BLUE = 0
 RED = 1
 TEAMS = (BLUE, RED)
 HAND_SIZE = 4
-#: A hero's ability BUTTONS per side (RoyaleSim's ``ABILITY_BUTTONS``): command slot
-#: HAND_SIZE + k presses button k, the hero of that side's k-th deck entry of form 2
-#: (``MatchSetup.forms``); x and y are not read.
+#: Ability BUTTONS per side for an engine that does not state its own count. An engine
+#: that does states it as ``ability_button_count`` (RustEngine reads RoyaleSim's
+#: ``ABILITY_BUTTONS``), and the parser, the observation and the wire all use that. Command
+#: slot HAND_SIZE + k presses button k; x and y are not read. A side's buttons are its hero
+#: entries (form 2 in ``MatchSetup.forms``) in deck order, then its champions in deck order.
 ABILITY_BUTTONS = 2
 DECK_SIZE = 8
 EMPTY_CARD = -1
@@ -311,9 +313,10 @@ class DeployStatus(enum.IntEnum):
     # index is 14. The member exists before any engine sends it, because RustEngine
     # refuses to construct against an engine exporting a reason name missing here.
     NOTHING_TO_MIRROR = 13
-    # A hero's ability button (HERO-SPEC, RoyaleSim's hero build): no live hero of this
-    # button's card; its ability not ready yet (deploying, or casting); already used. The
-    # engine's reason indices are 15-17; these exist first for the same reason as above.
+    # An ability button (HERO-SPEC, RoyaleSim's hero build): no living hero or champion
+    # behind it; not ready (a champion on cooldown or mid-ability); a hero's one charge
+    # already used. The engine's reason indices are 15-17; these exist first for the same
+    # reason as above.
     NO_HERO = 14
     ABILITY_NOT_READY = 15
     ABILITY_SPENT = 16
@@ -377,6 +380,24 @@ def slot_cost(player: PlayerState, slot: int, card: CardInfo) -> int:
     if len(player.hand_costs) == HAND_SIZE:
         return int(player.hand_costs[slot])
     return card.elixir
+
+
+class AbilityRow(NamedTuple):
+    """One ``PlayerState.abilities`` row by column. ``card_id`` is the button's base card
+    and ``cooldown_ticks`` the ticks until it can be pressed again; an engine before the
+    champion columns reads EMPTY_CARD (the viewer then names the button from the deck's
+    hero entries) and 0."""
+
+    available: int
+    spent: int
+    cost: int
+    card_id: int = EMPTY_CARD
+    cooldown_ticks: int = 0
+
+
+def ability_row(row: Sequence[int]) -> AbilityRow:
+    """``row`` by column: its first five, whatever an engine appends after them."""
+    return AbilityRow(*(int(v) for v in row[:5]))
 
 
 class DeployCommand(msgspec.Struct, frozen=True):
@@ -577,9 +598,12 @@ class PlayerState(msgspec.Struct, frozen=True):
     tower_hp: list[int]  # indexed by TowerSlot; 0 = destroyed
     tower_max_hp: list[int]
     king_active: bool
-    # [available, spent, cost] per ability button, in deck order of the side's form-2
-    # entries: available 1 when its newest living hero has deployed and not used its
-    # charge. Empty from an engine without heroes.
+    # One row per ability button, in button order (ABILITY_BUTTONS): [available, spent,
+    # cost], then card_id and cooldown_ticks from an engine with champions. Read a row
+    # with ``ability_row``, never by unpacking it: an engine may append columns.
+    # available 1 when the press would be taken but for the elixir (a living unit behind
+    # it, off cooldown, not mid-ability); spent 1 once a hero's one charge is used (a
+    # champion's stays 0). Empty from an engine without heroes or champions.
     abilities: list[list[int]] = []
     # [card_id, plays since its last evolved play, 1 when its next play is evolved] per
     # evolved deck card, in deck order. Empty from an engine without evolutions.

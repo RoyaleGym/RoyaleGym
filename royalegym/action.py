@@ -107,6 +107,7 @@ from .protocol import (
     Placement,
     SpellMotion,
     TowerSlot,
+    ability_row,
     slot_cost,
     to_engine,
     to_own,
@@ -739,9 +740,11 @@ class GridActionParser(ActionParser):
         if buildings not in BUILDING_TAP_ARMS:
             raise ValueError(f"buildings must be one of {BUILDING_TAP_ARMS}, not {buildings!r}")
         self.buildings = buildings
-        # OPT-IN: ABILITY_BUTTONS more actions after the tile ones, action n_tile + k
+        # OPT-IN: one more action per ability button after the tile ones, action n_tile + k
         # pressing button k. Off, the space is what every policy so far was trained on.
         self.ability_buttons = bool(ability_buttons)
+        # How many: the bound engine's count (``bind``), heroes' and champions' buttons.
+        self.n_buttons = ABILITY_BUTTONS if self.ability_buttons else 0
         self._engine: Engine | None = None
         self._judge: Engine | None = None
 
@@ -765,7 +768,9 @@ class GridActionParser(ActionParser):
         self.ny = self.arena.tiles_y * self.pitch_div
         self.pitch = self.arena.subtile // self.pitch_div
         self.n_tile_actions = 1 + HAND_SIZE * self.nx * self.ny
-        self.n_actions = self.n_tile_actions + (ABILITY_BUTTONS if self.ability_buttons else 0)
+        if self.ability_buttons:
+            self.n_buttons = int(getattr(engine, "ability_button_count", ABILITY_BUTTONS))
+        self.n_actions = self.n_tile_actions + self.n_buttons
         self._space: spaces.Discrete = spaces.Discrete(self.n_actions)
         # ``buildable`` memo. Keyed on everything relocation reads; see that method.
         self._buildable: dict[tuple[Any, ...], np.ndarray] = {}
@@ -802,7 +807,7 @@ class GridActionParser(ActionParser):
     def button_of(self, action: int) -> int | None:
         """The ability button ``action`` presses, or None for the no-op or a tile action."""
         k = int(action) - self.n_tile_actions
-        return k if self.ability_buttons and 0 <= k < ABILITY_BUTTONS else None
+        return k if 0 <= k < self.n_buttons else None
 
     def encode(self, slot: int, x_idx: int, y_idx: int) -> int:
         return 1 + slot * self.nx * self.ny + y_idx * self.nx + x_idx
@@ -833,12 +838,14 @@ class GridActionParser(ActionParser):
             return mask
         player = state.players[team]
         per = self.nx * self.ny
-        if self.ability_buttons:
-            # A button is pressable when its hero is up and unspent and the bar can pay:
-            # the engine's own check (state.rs check_ability_button), read off the state.
-            for k, (available, spent, cost) in enumerate(player.abilities[:ABILITY_BUTTONS]):
-                usable = available and not spent and player.elixir_milli >= cost * 1000
-                mask[self.n_tile_actions + k] = int(usable)
+        # A button is pressable when the engine calls it available (a living hero or
+        # champion behind it, off cooldown, not mid-ability), a hero's charge is unspent and
+        # the bar can pay: the engine's own check (state.rs check_ability_button), read off
+        # the state by column, whichever card the button is.
+        for k, row in enumerate(player.abilities[: self.n_buttons]):
+            b = ability_row(row)
+            usable = b.available and not b.spent and player.elixir_milli >= b.cost * 1000
+            mask[self.n_tile_actions + k] = int(usable)
         for slot, card_id in enumerate(player.hand):
             if card_id == EMPTY_CARD:
                 continue

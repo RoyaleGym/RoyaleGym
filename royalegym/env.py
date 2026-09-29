@@ -355,6 +355,17 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
                 )
             self.engine.reset(engine_seed, init)
         state = self.engine.state()
+        # Whatever put them there (a hero form, a champion, a snapshot), every button the
+        # engine reports must be one the parser can press.
+        pressable = getattr(self.action_parser, "n_buttons", 0)
+        for p in state.players:
+            if len(p.abilities) > pressable:
+                raise ValueError(
+                    f"the engine reports {len(p.abilities)} ability buttons for seat "
+                    f"{p.team} (heroes and champions) and the action parser can press "
+                    f"{pressable}, so no policy on it could press the rest"
+                    + ("; build the parser with ability_buttons=True" if not pressable else "")
+                )
         self._state = state
         self.decision_ticks = max(1, -(-self.decision_ms // state.tick_ms))
         self.obs_builder.reset(state)

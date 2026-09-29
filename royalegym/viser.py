@@ -59,6 +59,7 @@ from .protocol import (
     PlayerState,
     ProjectileState,
     SpellState,
+    ability_row,
     status_of,
 )
 
@@ -185,8 +186,9 @@ def player_dict(
     An empty hand slot (EMPTY_CARD) is the empty string: known to be empty, not unknown.
 
     The special forms, by NAME: ``evo`` is the engine's rows with the card's name for its
-    id; ``abilities`` is the engine's [available, spent, cost] rows with the name of the
-    k-th hero entry of the deck in front, "" where the deck's forms are unknown.
+    id; ``abilities`` is each button's [name, available, spent, cost], the viewer's four
+    columns. The name is the row's card where the engine states it (a champion's button
+    does), else the k-th hero entry of the deck, else "" where the deck's forms are unknown.
     """
     heroes = (
         [name_of(c) for c, f in zip(deck, forms, strict=False) if f == 2]
@@ -209,7 +211,14 @@ def player_dict(
         "king_active": p.king_active,
         "evo": [[name_of(c), plays, nxt] for c, plays, nxt in p.evo],
         "abilities": [
-            [heroes[k] if k < len(heroes) else "", *row] for k, row in enumerate(p.abilities)
+            [
+                name_of(b.card_id) if b.card_id != EMPTY_CARD
+                else heroes[k] if k < len(heroes) else "",
+                b.available,
+                b.spent,
+                b.cost,
+            ]
+            for k, b in enumerate(map(ability_row, p.abilities))
         ],
     }
 
