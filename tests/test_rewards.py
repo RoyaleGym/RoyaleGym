@@ -432,6 +432,11 @@ def cycle_in(
     raise AssertionError(f"card {card_id} never reached seat {seat}'s hand")
 
 
+#: How long a tap's own spell and area rows may last before ``tap_everything`` reads what it
+#: put down: the longest spell in the catalogue (a Graveyard's 180-odd ticks) with room.
+SETTLE_TICKS = 600
+
+
 def tap_everything(engine, tbl: Table):
     """Tap every card the engine will accept, each seat, and yield (card, seat, the state the
     tap was made from, its result, the units it put down).
@@ -439,6 +444,14 @@ def tap_everything(engine, tbl: Table):
     A TAP and not a seeded spawn, because they do not put the same thing down: a seeded
     Goblin Gang is one goblin, a tapped one is six. The term scores what a tap left, so
     that is what has to be measured.
+
+    AND WHAT IT LEFT ONCE IT HAS FINISHED LEAVING IT: the units are read when the card's
+    own spell and area rows are gone, not two ticks after the tap. A card that puts its
+    units down through a deploy spawn area (the Tri Wizards: the TriWizard on C+5, the
+    other two on C+6, RoyaleSim round 9) had put nothing down at two ticks and read as a
+    play worth 0. So had a Goblin Barrel (its goblins land around +8) and a Graveyard (its
+    skeletons over some 180 ticks), which is why "anything a spell leaves scores zero" was
+    never graded until this read. A unit is counted from the tick it is first seen.
     """
     ids = [c.card_id for c in engine.cards()]
     # Single-unit troops: a filler that puts down one unit and nothing after it.
@@ -466,9 +479,20 @@ def tap_everything(engine, tbl: Table):
                 # (2026-09-27), dropped out of both tests without a word.
                 refused.append((card.name, seat, DeployStatus(result.status).name))
                 continue
-            yield card, seat, prev, result, [
-                e for e in engine.state().entities if e.uid not in before and e.kind not in TOWERS
-            ]
+            put_down: dict[int, EntityState] = {}
+            for waited in range(SETTLE_TICKS + 1):
+                state = engine.state()
+                for e in state.entities:
+                    if e.uid not in before and e.kind not in TOWERS:
+                        put_down.setdefault(e.uid, e)
+                if not any(s.team == seat and s.card_id == card.card_id for s in state.spells):
+                    break
+                assert waited < SETTLE_TICKS, (
+                    f"{card.name}'s spell or area rows outlived {SETTLE_TICKS} ticks, so what "
+                    "it puts down was never read whole"
+                )
+                engine.step([], 1)
+            yield card, seat, prev, result, list(put_down.values())
     assert not refused, f"taps the engine refused, so these cards went unmeasured: {refused}"
 
 
