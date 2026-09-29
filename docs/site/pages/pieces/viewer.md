@@ -127,22 +127,23 @@ This is how you get an image for your own write-up, your pull request or your Di
 needed, and the clock on screen is frozen so the same source gives you the same bytes.
 
 ```python
+import pygame
 from royaleviser.capture import capture
 from royaleviser.sources import open_source
 
 out = capture(open_source("tests/fixtures/frames-synthetic-A.jsonl.gz"),
               "shot.png", ticks=(120, 121, 1), scale=24, crop="left")
 for p in out:
-    print(p.name, p.stat().st_size, "bytes")
+    print(p.name, pygame.image.load(str(p)).get_size())
 ```
 
 ```
-shot.png 69964 bytes
+shot.png (777, 832)
 ```
 
-That was run from the RoyaleViser folder, at RoyaleViser `63ecb80` on 2026-09-24, with no display
-driver set at all, twice, and gave exactly the same file size both times. The size moves when the
-viewer's drawing changes, so yours may differ by a little.
+That was run from the RoyaleViser folder, at RoyaleViser `76bd9a1` on 2026-09-28, with no display
+driver set at all. The numbers are the picture's width and height in pixels, which move only when
+the window's layout does; the file's size in bytes moves whenever the viewer's drawing changes.
 
 A clip is the same call with a different suffix. Ticks 0 to 400, every eighth tick, at half the
 pixel size:
@@ -151,11 +152,11 @@ pixel size:
 out = capture(open_source("tests/fixtures/frames-synthetic-A.jsonl.gz"),
               "clip.gif", ticks=(0, 400, 8), scale=16, crop="left")
 for p in out:
-    print(p.name, p.stat().st_size, "bytes")
+    print(p.name, pygame.image.load(str(p)).get_size())
 ```
 
 ```
-clip.gif 258697 bytes
+clip.gif (633, 576)
 ```
 
 A quarter of a megabyte for the scripted battle. The whole signature:

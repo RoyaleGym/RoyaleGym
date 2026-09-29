@@ -618,7 +618,8 @@ class RustEngine:
 
         ``ground_deploy_point``: None = the ledger's ``formation.GROUND_DEPLOY_POINT``
         (``client16402_one_unit``, the game's own, measured): a GROUND summon's ring is
-        laid on a point one native unit off the tap -- in x when the tap is on the
+        laid on a point one native unit off the point the tap resolves to (its tile centre
+        under placement.TAP_SNAP) -- in x when the tap is on the
         arena's LEFT half, either seat, and in y when the owner is side 1, either half.
         A FLYING summon's ring is laid on the tap itself. Two offsets keyed two
         different ways, so the shipped arm is neither seat-symmetric nor frame-symmetric.
@@ -635,7 +636,8 @@ class RustEngine:
         those arms instead of the shipped ones and refuses a key or arm it does not have.
         ``config()`` and every trace recorded from this engine carry them, because an
         overridden engine plays other battles from the same build. A key the mask follows
-        (``OVERRIDE_FOLLOWED``: ``placement.TROOP_TOWER_TAPS``) is applied to this engine's
+        (``OVERRIDE_FOLLOWED``: the six placement keys of the relocation rule) is applied to
+        this engine's
         own calibration too, so ``rules()`` -- what the mask reads -- state the arm the core
         runs. Any other key the mask's rules read is refused, and so are the ``match`` and
         ``time`` sections, which this package reads elsewhere (the elixir law, the clock):
@@ -904,11 +906,12 @@ class RustEngine:
             raise ValueError("ticks must be >= 0")
         raw = self._battle.step([self._wire(c) for c in commands], int(ticks))
         # TOLERANT UNPACK. The core's per-command tuple grew two TRAILING elements, the
-        # RESOLVED position: where an accepted building actually took, the tap for anything
-        # else, and the requested point for a refusal. This used to unpack exactly three and
-        # so raised `too many values to unpack` against the new core -- on every engine
-        # deploy, in every repo, the moment the extension was rebuilt. The trailing shape
-        # was chosen so a tolerant reader keeps working; this reader was not one. It is now,
+        # RESOLVED position: where an accepted play was put (snapped, moved off an own body,
+        # a building relocated), and the requested point for a refusal. This used to unpack
+        # exactly three and so raised `too many values to unpack` against the new core -- on
+        # every engine deploy, in every repo, the moment the extension was rebuilt. The
+        # trailing shape was chosen so a tolerant reader keeps working; this reader was not one.
+        # It is now,
         # in both directions: an older core returning three still works, and the command's
         # own point is the fallback, which is exactly what the field used to hold.
         out = []

@@ -206,8 +206,14 @@ class Placement(enum.IntEnum):
 
     TROOP     spells_characters.csv       outside every ALIVE enemy crown tower's
                                           NoDeploySize rect, off the river band, not
-                                          water, not no-deploy, not inside a building
-                                          footprint (see ``DeployRules``)
+                                          water, not no-deploy, not on an enemy
+                                          building's or tower's body. A tap on an own
+                                          building, crown tower or live bottle is MOVED
+                                          off it under the relocation arms
+                                          (placement.TROOP_BUILDING_TAPS,
+                                          TROOP_TOWER_TAPS, LIVE_BOTTLE_TAPS), so an own
+                                          body does not refuse it; the own king's
+                                          no-deploy block still does (see ``DeployRules``)
     BUILDING  spells_buildings.csv        own half only (never the opened ground), not
                                           water, not no-deploy, footprint may not
                                           overlap a building
@@ -228,8 +234,9 @@ class Placement(enum.IntEnum):
               Drill)                      (placement.SPAWN_PATHFIND_TERRITORY =
                                           anywhere_but_water). Then the card's KIND's
                                           footprint rule: a troop (the Miner) is refused on
-                                          a building or a tower, and is moved off its own
-                                          crown tower as a TROOP is; a building (the Goblin
+                                          an enemy building or tower, and is moved off its
+                                          own building, crown tower or live bottle as a
+                                          TROOP is; a building (the Goblin
                                           Drill) is judged by its building's footprint
                                           (``building_placement``). Needs ``card_kind``.
     MIRROR    the Mirror                  the tap is judged by the placement of the card it
@@ -382,12 +389,17 @@ class DeployCommand(msgspec.Struct, frozen=True):
 class DeployResult(msgspec.Struct, frozen=True):
     """What an engine did with one command, and where.
 
-    ``x`` and ``y`` are the ENGINE frame and are the RESOLVED position: where an
-    accepted deploy actually put things, which for a building whose footprint did not
-    fit is where the engine relocated it to and not where it was tapped. For anything
-    else, and for a REFUSED command, they are the point the command asked for, so a
-    penalty term can still say where the mask and the engine disagreed rather than
-    only that they did.
+    ``x`` and ``y`` are the ENGINE frame and are the RESOLVED position: the point the
+    engine acted on for an accepted play. Under placement.TAP_SNAP that is the tap's tile
+    centre, spells included; a troop tap on an own tower, building or live bottle is where
+    it was moved to; a building is where it landed, an even box on a tile corner. Measured
+    on RoyaleSim 0d0ccd6: a Knight, a Fireball or a Log tapped at (148500, 148500) reports
+    (153000, 153000), a Tesla (144000, 144000), and a Knight tapped on its own princess
+    tower at (63000, 117000) reports (63000, 81000). A single ground troop then STANDS one
+    native unit off that point (formation.GROUND_DEPLOY_POINT: that Knight at (152982,
+    153000)). For a REFUSED command they are the point the command asked for, so a penalty
+    term can still say where the mask and the engine disagreed rather than only that they
+    did.
 
     THEY USED TO BE THE COMMAND, ALWAYS. That was harmless until the engine began
     relocating a building whose box does not fit, and then it was not: measured over
@@ -417,7 +429,7 @@ class DeployResult(msgspec.Struct, frozen=True):
     card_id: int  # EMPTY_CARD if the slot was bad
     status: int  # DeployStatus
     tick: int  # engine tick at which the command was evaluated
-    x: int = 0  # ENGINE frame, subtiles, as commanded (see the class doc)
+    x: int = 0  # ENGINE frame, subtiles, where the engine acted (see the class doc)
     y: int = 0
 
 

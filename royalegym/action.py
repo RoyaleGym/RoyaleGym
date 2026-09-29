@@ -20,10 +20,12 @@ WHY THIS AND NOT THE ALTERNATIVES
       CAN mask exactly, and is the better choice at scale, but it needs a custom
       policy; the joint Discrete works with stock MaskablePPO today and 2305
       logits is small.
-    * Tile resolution, not half-tile. The tilemap is half-tile (36 x 64), and
-      some real placements differ by half a tile (the bridge span is half-tile
-      offset). Half-tile would be Discrete(9217): 4x the logits for placements
-      that mostly differ by a quarter of a unit hitbox. ``HalfTileActionParser``
+    * Tile resolution, not half-tile. The tilemap is half-tile (36 x 64).
+      Half-tile would be Discrete(9217): 4x the logits, and under placement.TAP_SNAP =
+      client16402_tile_centre the engine snaps every tap to its tile centre, spells
+      too, so half-tile taps land where tile taps do. Measured by the docs session on
+      RoyaleSim 0d0ccd6: a Knight's 992 legal half-tile moves put it on 215 points,
+      against the tile grid's 213; a Fireball's 576 either way. ``HalfTileActionParser``
       is provided so that trade can be measured instead of argued.
     * No "hold" or timing sub-action: timing is expressed by choosing NO-OP on
       a decision step, at ``decision_ms`` granularity (see env.py).
@@ -46,9 +48,14 @@ HOW THE MASK IS COMPUTED, AND WHY INDEPENDENTLY OF THE ENGINE
     own half) are grids over half-cells, and a point needs every cell it
     touches. POINT rules are tested on the point itself: the bodies already on
     the board, and the closed NoDeploySize rect of every alive enemy crown tower
-    (``DeployRules``). The rect rule equals a cell rule only while every rect
-    edge lies on a half-cell boundary (the shipped sizes do); testing the point
-    keeps the mask right if a regenerated cards.json ever breaks that.
+    (``DeployRules``). A troop's body is judged where the tap resolves -- its tile
+    centre under placement.TAP_SNAP -- and an own building's, tower's or live
+    bottle's tile does not refuse a troop tap, which the engine moves off it
+    (``PlacementOracle.own_tower_zone``), unless the move finds nowhere to go
+    (``GridActionParser.moved_taps_that_land``). The rect rule equals a cell rule
+    only while every rect edge lies on a half-cell boundary (the shipped sizes do);
+    testing the point keeps the mask right if a regenerated cards.json ever breaks
+    that.
 
     A BUILDING IS ASKED A DIFFERENT QUESTION, AND IT IS NOT "DOES IT FIT HERE"
     A building stands on a square of TILES, and a tap that does not fit is not
