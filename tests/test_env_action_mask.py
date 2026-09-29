@@ -383,9 +383,9 @@ def test_plant_mask_offers_the_river_to_a_goblin_barrel(monkeypatch):
 def test_plant_mask_ignores_building_footprints(monkeypatch):
     orig = PlacementOracle.point_grid
 
-    def no_footprints(self, state, team, card, pitch_div):
+    def no_footprints(self, state, team, card, pitch_div, **kw):
         stripped = msgspec.structs.replace(state, entities=[])
-        return orig(self, stripped, team, card, pitch_div)
+        return orig(self, stripped, team, card, pitch_div, **kw)
 
     monkeypatch.setattr(PlacementOracle, "point_grid", no_footprints)
     found, _ = _all_disagreements(TileActionParser, PROBES[1:2])

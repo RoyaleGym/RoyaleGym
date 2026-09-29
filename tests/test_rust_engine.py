@@ -1289,10 +1289,11 @@ def test_plant_mask_hot_path_without_rects_is_caught(rust, mock, oracle, monkeyp
     three-way check must see it -- otherwise it certifies code the policy never uses."""
     orig = PlacementOracle.point_grid
 
-    def blind(self, state, team, card, pitch_div):
+    def blind(self, state, team, card, pitch_div, **kw):
         players = list(state.players)
         players[1 - team] = msgspec.structs.replace(players[1 - team], tower_hp=[0, 0, 0])
-        return orig(self, msgspec.structs.replace(state, players=players), team, card, pitch_div)
+        stripped = msgspec.structs.replace(state, players=players)
+        return orig(self, stripped, team, card, pitch_div, **kw)
 
     monkeypatch.setattr(PlacementOracle, "point_grid", blind)
     assert PlacementOracle.point_grid is blind, "plant did not land"

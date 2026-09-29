@@ -475,9 +475,10 @@ def test_plant_mask_blind_to_placed_buildings_is_caught(monkeypatch):
     rust = RustEngine(**({"calibration_overrides": over} if over else {}))
     real = PlacementOracle.point_grid
 
-    def blind(self, state, team, card, pitch_div):
+    def blind(self, state, team, card, pitch_div, **kw):
         bare = [e for e in state.entities if e.kind != EntityKind.BUILDING]
-        return real(self, msgspec.structs.replace(state, entities=bare), team, card, pitch_div)
+        stripped = msgspec.structs.replace(state, entities=bare)
+        return real(self, stripped, team, card, pitch_div, **kw)
 
     monkeypatch.setattr(PlacementOracle, "point_grid", blind)
     problems = building_gate(rust, "buildings", TileActionParser())

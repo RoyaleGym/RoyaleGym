@@ -423,8 +423,8 @@ def test_plant_all_zero_mask_is_caught_only_by_the_illegal_direction(monkeypatch
 def test_plant_mask_ignores_building_footprints(monkeypatch):
     orig = PlacementOracle.point_grid
 
-    def no_footprints(self, state, team, card, pitch_div):
-        return orig(self, msgspec.structs.replace(state, entities=[]), team, card, pitch_div)
+    def no_footprints(self, state, team, card, pitch_div, **kw):
+        return orig(self, msgspec.structs.replace(state, entities=[]), team, card, pitch_div, **kw)
 
     monkeypatch.setattr(PlacementOracle, "point_grid", no_footprints)
     assert PlacementOracle.point_grid is no_footprints

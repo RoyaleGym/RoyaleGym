@@ -349,7 +349,9 @@ def test_plant_mask_refusing_a_log_over_buildings_is_caught(spell_engines, monke
     monkeypatch.setattr(
         PlacementOracle,
         "point_grid",
-        lambda self, st, team, card, pitch: orig_pg(self, st, team, as_troop(card), pitch),
+        lambda self, st, team, card, pitch, **kw: orig_pg(
+            self, st, team, as_troop(card), pitch, **kw
+        ),
     )
     dis, _, _ = spell_legality(rust, mock, planted, TERRITORY_STATES["red_left_down"])
     assert dis, "PLANT DID NOT LAND: a footprint-blocked Log mask passed"

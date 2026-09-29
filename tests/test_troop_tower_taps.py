@@ -564,3 +564,55 @@ def test_plant_a_mask_blind_to_the_live_bottle_is_caught():
     problems, _ = bottle_board(TileActionParser, lambda o: setattr(o, "bottles_move_taps", False))
     seats = {p.split()[1] for p in problems}
     assert seats == {"0", "1"}, f"PLANT DID NOT LAND on both seats: {problems[:4]}"
+
+
+def crowded_board(parser_cls, oracle_patch=None, parser_patch=None) -> list[str]:
+    """Each side's own half tiled with Cannons, three tiles apart, so every tile of it is in a
+    building's box and a tap moved off an own tower or building finds nowhere to go: the
+    engine then leaves it where it was, on the body, and refuses it. On the arms as shipped.
+    Every action of both seats against ``check_deploy``."""
+    engine = RustEngine()
+    ids = {c.name: c.card_id for c in engine.cards()}
+    deck = [ids[n] for n in ("Knight", "Minions", "Archer", "Giant", "Fireball", "Zap", "Log",
+                             "Musketeer")]
+    a, t = engine.arena(), engine.arena().subtile
+    spawns = [
+        SpawnSpec(team, ids["Cannon"], *to_engine(a, team, tx * t + t // 2, ty * t + t // 2))
+        for team in (BLUE, RED)
+        for ty in range(1, 15, 3)
+        for tx in range(1, 18, 3)
+    ]
+    engine.reset(1, MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE,
+                               elixir_milli=[10000, 10000], spawns=spawns,
+                               start_tick=engine.rules().deploy_lockout_ticks))
+    state = engine.state()
+    parser = parser_cls()
+    parser.bind(engine)
+    if parser_patch is not None:
+        parser_patch(parser)
+    problems = []
+    for team in (BLUE, RED):
+        for action, m, status in mask_disagreements(engine, parser, state, team):
+            why = DeployStatus(status).name
+            problems.append(f"seat {team} action {action}: mask {m}, engine {why}")
+    return problems
+
+
+@needs_core
+@pytest.mark.parametrize("parser_cls", [TileActionParser, HalfTileActionParser])
+def test_a_moved_tap_with_nowhere_to_go_is_not_offered(parser_cls):
+    """The relocations search a bounded ring for a tile that fits (state.rs ring_nearest_fit);
+    when none does, the tap stays on the body it was moved for and is refused. The mask asks
+    the engine about exactly those taps (``moved_taps_that_land``)."""
+    problems = crowded_board(parser_cls)
+    assert not problems, f"{len(problems)} disagreements; first {problems[:6]}"
+
+
+@needs_core
+def test_plant_a_mask_that_trusts_every_move_is_caught():
+    """Measured 2026-09-28 before the engine was asked: 156 taps a seat offered and refused
+    OCCUPIED on this board, the DeployRefused that stops a training run."""
+    problems = crowded_board(TileActionParser, parser_patch=lambda p: setattr(p, "_judge", None))
+    seats = {p.split()[1] for p in problems}
+    assert seats == {"0", "1"}, f"PLANT DID NOT LAND on both seats: {problems[:4]}"
+    assert all("mask 1, engine OCCUPIED" in p for p in problems), problems[:4]

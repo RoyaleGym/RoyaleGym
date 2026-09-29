@@ -94,6 +94,7 @@ from .protocol import (
     CardInfo,
     DeployCommand,
     DeployRules,
+    DeployStatus,
     Engine,
     EntityKind,
     Placement,
@@ -533,9 +534,13 @@ class PlacementOracle:
         )
 
     def point_grid(
-        self, state: BattleState, team: int, card: CardInfo, pitch_div: int
+        self, state: BattleState, team: int, card: CardInfo, pitch_div: int, moves: bool = True
     ) -> np.ndarray:
         """Engine-frame legality of placing ``card`` at each candidate point.
+
+        ``moves=False``: as if no tap were moved off an own tower, building or bottle, so a
+        body under the tap refuses it. The parser compares the two to find the taps that are
+        legal only because they are moved (``GridActionParser.moved_taps_that_land``).
 
         pitch_div=1: tile centres [32, 18]. pitch_div=2: half-cell centres [64, 36].
         Ignores elixir and hand; those are applied per slot by the parser.
@@ -558,6 +563,8 @@ class PlacementOracle:
         flag is a guard against a future one, not a change to either.
         """
         key = self.grid_key(state, team, card, pitch_div)
+        if key is not None and not moves:
+            key = (*key, "no moves")
         if key is not None:
             cached = self._grids.get(key)
             if cached is not None:
@@ -600,7 +607,7 @@ class PlacementOracle:
                     continue
                 r = e.radius + extra
                 clear &= ((bys - e.y) ** 2)[:, None] + ((bxs - e.x) ** 2)[None, :] > r * r
-            if self._moved_off_own_tower(card):
+            if moves and self._moved_off_own_tower(card):
                 # From the snapped point: the core moves the tap it has already snapped.
                 clear |= self.own_tower_zone(state, team, bxs[None, :], bys[:, None])
             ok &= clear
@@ -729,6 +736,7 @@ class GridActionParser(ActionParser):
         # pressing button k. Off, the space is what every policy so far was trained on.
         self.ability_buttons = bool(ability_buttons)
         self._engine: Engine | None = None
+        self._judge: Engine | None = None
 
     def bind(self, engine: Engine) -> None:
         super().bind(engine)
@@ -756,6 +764,11 @@ class GridActionParser(ActionParser):
         self._buildable: dict[tuple[Any, ...], np.ndarray] = {}
         self.buildable_hits = 0
         self.buildable_misses = 0
+        # Whether a MOVED troop tap lands is the engine's too (``moved_taps_that_land``).
+        self._judge = engine if self.oracle.troop_taps_relocate else None
+        self._landed: dict[tuple[Any, ...], np.ndarray] = {}
+        self.landed_hits = 0
+        self.landed_misses = 0
 
     @property
     def space(self) -> spaces.Discrete:
@@ -839,8 +852,68 @@ class GridActionParser(ActionParser):
                 grid = grid[::-1, ::-1]  # engine frame -> Red's own frame
             if self._engine is not None and self.oracle._building_like(card):
                 grid = self.buildable(state, team, card, grid)
+            if self._judge is not None and self.oracle._moved_off_own_tower(card):
+                grid = self.moved_taps_that_land(state, team, slot, card, grid)
             mask[1 + slot * per : 1 + (slot + 1) * per] = grid.reshape(-1)
         return mask
+
+    def moved_taps_that_land(
+        self, state: BattleState, team: int, slot: int, card: CardInfo, legal: np.ndarray
+    ) -> np.ndarray:
+        """Own-frame ``legal`` without the MOVED troop taps the engine would still refuse.
+
+        A troop tap on an own crown tower, an own building or an own live bottle's tile is moved
+        off it (``PlacementOracle.own_tower_zone``), so the mask offers it where a body would
+        otherwise refuse it. But the move searches a bounded ring of tiles for one that fits,
+        and when none does the tap stays where it was and the body under it refuses it (state.rs
+        ring_nearest_fit). Measured on a board tiled with own Cannons (2026-09-28): 156 taps a
+        seat offered and refused OCCUPIED, each a DeployRefused in a training run. So the engine
+        is asked about exactly those cells, the ones legal only because the tap is moved, as
+        ``buildable`` asks it where a building lands: the move is its rule, and a copy here
+        would drift from it.
+
+        MEMOISED on what the move reads: the team, the card's placement and kind (every troop
+        of one placement takes the same territory and the same footprint test, so one answer
+        serves a whole hand of them; the Miner's and the Heal's classes are their own), the
+        pitch, every non-troop body (the ring's fit is off every building's box, and off the
+        troop's territory, which no enemy tower changes) and the own live bottles, and the
+        cells asked about. Troops do not enter it. It reads the engine's CURRENT battle, as
+        ``buildable`` does.
+        """
+        assert self._judge is not None
+        stay = self.oracle.point_grid(state, team, card, self.pitch_div, moves=False)
+        if team == RED:
+            stay = stay[::-1, ::-1]
+        moved = legal & ~stay
+        if not moved.any():
+            return legal
+        bottles = tuple(sorted(self.oracle.own_live_bottles(state, team)))
+        key = (
+            team,
+            card.placement,
+            card.card_kind,
+            self.pitch_div,
+            self.oracle._blockers(state),
+            bottles,
+            moved.tobytes(),
+        )
+        hit = self._landed.get(key)
+        if hit is None:
+            self.landed_misses += 1
+            hit = np.zeros_like(moved)
+            pitch, half = self.pitch, self.pitch // 2
+            for yi, xi in zip(*np.nonzero(moved), strict=True):
+                x, y = to_engine(self.arena, team, xi * pitch + half, yi * pitch + half)
+                status = self._judge.check_deploy(DeployCommand(team, slot, x, y))
+                hit[yi, xi] = status == DeployStatus.OK
+            if len(self._landed) >= GRID_CACHE_SIZE:
+                self._landed.clear()
+            hit.flags.writeable = False
+            self._landed[key] = hit
+        else:
+            self.landed_hits += 1
+        out: np.ndarray = legal & (~moved | hit)
+        return out
 
     def buildable(
         self, state: BattleState, team: int, card: CardInfo, legal: np.ndarray
