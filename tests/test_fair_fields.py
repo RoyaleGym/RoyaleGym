@@ -217,6 +217,12 @@ def test_the_primitive_gives_the_env_fields_across_regulation_and_past_4800(engi
     clean(run)
     assert run.seen["max_tick"] > 4800, f"got only to tick {run.seen['max_tick']}"
     assert run.plays[1] > 0
+    # Past the switch the law is the triple one where the calibration has it (RoyaleSim r15:
+    # 60 s into overtime); the run above held the env's bars to it tick by tick.
+    law = ElixirLaw.load()
+    if law.gain_3x > law.gain_2x:
+        assert law.regen(4800, 4801, 3600, True) == law.gain_3x
+        assert law.regen(4799, 4800, 3600, True) == law.gain_2x
 
 
 def test_plant_plays_dated_one_tick_late_are_caught(engine):

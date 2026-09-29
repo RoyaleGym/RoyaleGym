@@ -456,6 +456,17 @@ class MockEngine:
             1: self.tick_ms * self.max_mana * self.elixir_scale // self.regen_1x,
             2: self.tick_ms * self.max_mana * self.elixir_scale // self.regen_2x,
         }
+        # Triple elixir: the overtime regen from MANA_TRIPLE_AFTER_OVERTIME_S into overtime,
+        # truncated in the same unit as the Rust core's (protocol.ElixirLaw). elixir_rate
+        # still reports 2 there, as the core's does.
+        # Both keys or no third rate, as ElixirLaw.load.
+        try:
+            r3 = cal.int("match.MANA_REGEN_MS_OVERTIME")
+            after_s = cal.int("match.MANA_TRIPLE_AFTER_OVERTIME_S")
+        except KeyError:
+            r3, after_s = 0, 0
+        self.gain_3x = self.tick_ms * self.max_mana * self.elixir_scale // r3 if r3 > 0 else 0
+        self.triple_ticks = _ceil_div(after_s * 1000, self.tick_ms)
         for rate, per_tick in self.gain.items():
             if per_tick * (self.regen_1x if rate == 1 else self.regen_2x) != (
                 self.tick_ms * self.max_mana * self.elixir_scale
@@ -1047,9 +1058,12 @@ class MockEngine:
 
         # UPKEEP ------------------------------------------------------------
         rate = self._rate()
+        gain = self.gain[rate]
+        if self.gain_3x and s.overtime and s.tick >= self.regular_ticks + self.triple_ticks:
+            gain = self.gain_3x
         cap = self.max_mana * self.elixir_scale
         for team in TEAMS:
-            s.elixir[team] = min(cap, s.elixir[team] + self.gain[rate])
+            s.elixir[team] = min(cap, s.elixir[team] + gain)
             if s.king_active[team] and s.king_timer[team] > 0:
                 s.king_timer[team] -= 1
         dying: set[int] = set()

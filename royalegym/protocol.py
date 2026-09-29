@@ -1545,6 +1545,16 @@ class ElixirLaw(msgspec.Struct, frozen=True):
         calibration.json yet; MockEngine reads the same row). Overtime is always
         past the threshold under the shipped numbers, so the flag never decides
         the rate on its own; it is taken as 2x anyway rather than relying on that.
+
+    TRIPLE ELIXIR. From ``match.MANA_TRIPLE_AFTER_OVERTIME_S`` into overtime the bar fills in
+        ``match.MANA_REGEN_MS_OVERTIME`` (RoyaleSim r15: 60 s and 9300 ms; the tick that runs
+        from 4800 is the first). That gain is TRUNCATED in the same unit, as the engine's is
+        (``gain_3x``: 1505 a tick where the exact rate is 1505.4), so it is the engine's bar
+        that is modelled and not the game's. ``rate_at`` still says 2 there, as the engine's
+        ``elixir_rate`` does. A calibration without the keys has no third rate; one whose
+        overtime regen is the 2x one (every table before r15) has a third rate equal to it.
+        ``seed_fine``'s lattice is the 1x and 2x gains', so a bar seeded past the switch can
+        be off by less than one milli-elixir's worth, and ``MatchMemory.exact`` says so.
     """
 
     scale: int  # fine units per elixir
@@ -1553,6 +1563,8 @@ class ElixirLaw(msgspec.Struct, frozen=True):
     cap_fine: int  # MAX_MANA in fine units
     tick_ms: int
     speedup_ticks: int  # ticks before the end of regulation at which 2x starts
+    gain_3x: int = 0  # fine units per tick at the overtime rate, truncated; 0: no third rate
+    triple_ticks: int = 0  # ticks into overtime at which it starts
 
     @classmethod
     def load(cls, calibration: Calibration | None = None) -> ElixirLaw:
@@ -1571,6 +1583,11 @@ class ElixirLaw(msgspec.Struct, frozen=True):
         speedup_s = load_globals_csv().get("MANA_SPEED_UP_WHEN_REMAINING_SECONDS", (None, None))[0]
         if speedup_s is None:
             raise KeyError("globals.csv lacks MANA_SPEED_UP_WHEN_REMAINING_SECONDS")
+        try:
+            r3 = cal.int("match.MANA_REGEN_MS_OVERTIME")
+            after_s = cal.int("match.MANA_TRIPLE_AFTER_OVERTIME_S")
+        except KeyError:
+            r3, after_s = 0, 0
         return cls(
             scale=scale,
             gain_1x=gains[1],
@@ -1578,6 +1595,8 @@ class ElixirLaw(msgspec.Struct, frozen=True):
             cap_fine=max_mana * scale,
             tick_ms=tick_ms,
             speedup_ticks=-(-speedup_s * 1000 // tick_ms),
+            gain_3x=tick_ms * max_mana * scale // r3 if r3 > 0 else 0,
+            triple_ticks=-(-after_s * 1000 // tick_ms),
         )
 
     @property
@@ -1637,7 +1656,11 @@ class ElixirLaw(msgspec.Struct, frozen=True):
         if tick_to <= tick_from:
             return 0
         if overtime:
-            return (tick_to - tick_from) * self.gain_2x
+            if not self.gain_3x:
+                return (tick_to - tick_from) * self.gain_2x
+            triple_from = regular_ticks + self.triple_ticks
+            fast = max(0, min(tick_to, triple_from) - tick_from)
+            return fast * self.gain_2x + ((tick_to - tick_from) - fast) * self.gain_3x
         threshold = regular_ticks - self.speedup_ticks
         slow = max(0, min(tick_to, threshold) - tick_from)
         fast = (tick_to - tick_from) - slow
