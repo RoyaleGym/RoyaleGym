@@ -167,7 +167,11 @@ and one with both (`test_the_mask_equals_the_engine_for_every_card` in
 Collector, is cycled into both hands first. The test allows no disagreement, on either card
 table, so a wrong mask for any card on those boards fails a test instead of a training run.
 The mask covers elixir, territory, water, the river band,
-building footprints and the no-deploy rectangle around each living enemy crown tower.
+the bodies of enemy buildings and the no-deploy rectangle around each living enemy crown tower.
+Your own buildings and princess towers do not block a troop: the engine moves a troop, a Miner or
+a Heal tapped on one off it (`placement.TROOP_BUILDING_TAPS`, `TROOP_TOWER_TAPS`,
+`SPELL_AS_DEPLOY_TAPS`), and a building tap that does not fit is moved too, so the mask offers
+those taps. The no-deploy block around your own king still refuses.
 
 Measured 2026-09-25 on engine build 8218abee7e4f0497, at `reset(seed=0)` with both decks set
 to Knight, Giant, Cannon, Log, Fireball, Zap, Minions, Valkyrie and no shuffle, so the first

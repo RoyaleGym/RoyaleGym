@@ -221,7 +221,10 @@ tile (17, 31). Both agree.
 
     One joint list of 2305 can say exactly which pairs are allowed, and 2305 is a small
     number for a network. `HalfTileActionParser` ships beside it at `Discrete(9217)`, at
-    half tile resolution, so the trade can be measured rather than argued about.
+    half tile resolution, so the trade can be measured rather than argued about. Measured on
+    engine build `bb6797d83bdf3031` with a Cannon on each side, it buys almost nothing: the game
+    snaps every tap to the centre of its tile, so a Knight's 992 half-tile moves land on 215
+    points against 213 for its 247 tile moves, and a Fireball's land on 576 either way.
 
 Timing is not a separate choice either. A decision happens every 500 ms of game time,
 and waiting is just picking index 0.
@@ -252,8 +255,11 @@ that by being refused.
 
 The count moves with your elixir, with your hand, with the towers still standing and
 with the buildings already on the board. The mask covers elixir, which half of the
-arena you may play in, water, the river, the footprint of buildings already down, and
-the rectangle around each enemy crown tower that is still alive.
+arena you may play in, water, the river, the bodies of enemy buildings, and the
+rectangle around each enemy crown tower that is still alive. Your own buildings and
+princess towers do not block a troop: tap a troop or a Heal on one and the engine moves
+it off, as the game does, so the mask offers that tap. The no-deploy block around your
+own king still refuses.
 
 Once play opens, the count depends on the deck, the card table and the elixir, so 1640 is not a
 property of the game.
