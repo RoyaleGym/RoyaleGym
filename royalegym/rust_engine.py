@@ -844,6 +844,28 @@ class RustEngine:
     def rules(self) -> DeployRules:
         return self._rules
 
+    def unit_hitpoints(self, card_id: int, level: int) -> list[tuple[str, str, int]]:
+        """Every unit a play of ``card_id`` at unified ``level`` puts on the board, as the
+        engine's (role, unit name, hitpoints) rows: the card's own row first (role "own",
+        the unit its catalogue row describes), then each unit it puts down, each at the level
+        it takes (roles "second_summon", "spawn", "death_spawn", "release"). The engine's
+        rows as they are (RoyaleSim ``Battle.unit_hitpoints``), so a consumer can tell a
+        unit's hitpoints at the level it was played at, which the catalogue row gives only
+        at the catalogue's level (a Knight: 1766 at 11, 1938 at 12).
+
+        ValueError for an unknown card id or a level the card's ladder lacks, naming it.
+        NotImplementedError from an engine build before the rows (RoyaleSim round 9).
+        Not part of ``protocol.Engine``: MockEngine has no levels, so a consumer asks for it
+        with ``getattr`` and keeps its own rule where it is absent.
+        """
+        rows = getattr(self._battle, "unit_hitpoints", None)
+        if rows is None:
+            raise NotImplementedError(
+                "this RoyaleSim build does not list the units a card puts down "
+                "(Battle.unit_hitpoints, RoyaleSim round 9 on)"
+            )
+        return [(str(r), str(n), int(hp)) for r, n, hp in rows(int(card_id), int(level))]
+
     def reset(self, seed: int, setup: MatchSetup) -> None:
         """``protocol.validate_setup`` first -- nothing is read into the core, and no
         adapter table is indexed, until the whole setup has passed. See the module doc."""
