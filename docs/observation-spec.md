@@ -415,7 +415,9 @@ env computes its own vector through the same four, so the numbers match by const
   to `tick` through the plays since the last call, each a `(tick, card)` pair. A play
   inside the interval splits the regeneration at its tick. The env's `observe` calls
   the same method, dating every play at the previous observation, because the engine
-  pays a command before the step's first tick.
+  pays a command before the step's first tick. Ability presses (a hero's, a champion's)
+  go in as the optional `own_presses` and `foe_presses`, each a `(tick, elixir)` pair:
+  paid from the bar like a play, and no play.
 * `MatchClock.at(tick)` is the clock of a match still running at `tick`, from the rules.
   `MatchClock.of(state)` is the clock an engine reports.
 * `fair_fields(memory, clock, hand, next_card, own_elixir_milli, cards, max_mana)`

@@ -274,9 +274,12 @@ def test_the_whole_published_surface_is_still_here():
     assert list(inspect.signature(MatchMemory.start).parameters)[:6] == [
         "self", "tick", "own_elixir_milli", "enemy_elixir_milli", "own_hand", "next_card"
     ]
-    assert list(inspect.signature(MatchMemory.advance).parameters) == [
+    advance = inspect.signature(MatchMemory.advance).parameters
+    assert list(advance)[:6] == [
         "self", "tick", "regular_ticks", "overtime", "own_plays", "foe_plays"
     ]
+    # Anything after them is optional, so a caller passing the six still works.
+    assert all(p.default is not p.empty for p in list(advance.values())[6:]), advance
 
 
 def test_the_published_names_cover_the_fair_block_exactly():

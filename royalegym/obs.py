@@ -135,6 +135,7 @@ from .protocol import (
     Placement,
     SpellMotion,
     TowerSlot,
+    ability_row,
     card_is_spell,
     default_calibration,
     default_elixir_law,
@@ -326,6 +327,23 @@ def cards_that_left(before: Sequence[int], after: Sequence[int]) -> list[int]:
     return [b for b, a in zip(before, after, strict=True) if b != a and b != EMPTY_CARD]
 
 
+def presses_seen(
+    before: Sequence[Sequence[int]], after: Sequence[Sequence[int]], standing: set[int]
+) -> list[int]:
+    """The costs of the ability presses one side made between two observations of its
+    ``abilities`` rows, button by button: a hero's charge turning spent, or a champion's
+    button going dark while a unit of its card still stands (``standing``: the card ids of
+    that side's units on the board). A button gone dark with its unit gone is a death, not a
+    press. See ``MatchMemory``."""
+    out = []
+    for b, a in zip(map(ability_row, before), map(ability_row, after), strict=False):
+        spent = not b.spent and a.spent
+        dark = b.available and not a.available and not a.spent and a.card_id in standing
+        if spent or dark:
+            out.append(a.cost)
+    return out
+
+
 class MatchMemory:
     """One seat's memory of the match so far, kept from the states it is shown.
 
@@ -353,11 +371,21 @@ class MatchMemory:
     still identical for the two seats of a mirrored battle, but not necessarily the
     order they happened in.
 
+    AND A PRESS. An ability press (a hero's, a champion's) is paid from the bar and changes
+    no hand slot, so it is read from the side's ``abilities`` rows instead, which name the
+    same public event: a hero's charge turns spent, or a champion's button goes dark while
+    he still stands (``presses_seen``). It costs the row's price, dated like a play, and
+    is no play: the cycle, the last play a Mirror copies and the play counts stay as they
+    were. Uncharged, one enemy Golden Knight press left the count 1000 high for the rest of
+    the match (found by the docs session, 2026-09-29).
+
     AND IT SAYS WHEN IT CANNOT BE EXACT. ``exact`` goes False, and stays False for
     the match, the moment the count disagrees with the bar it is modelling -- on
-    EITHER side. Two things make that happen: a play was missed (a deck that repeats
+    EITHER side. Three things make that happen: a play was missed (a deck that repeats
     a card can hide one, because a play that swaps a card for itself changes no hand
-    slot), or the engine's elixir law is not the one in calibration.json.
+    slot), a press was missed (a hero or champion pressed and killed between two
+    observations shows only its death), or the engine's elixir law is not the one in
+    calibration.json.
 
     The enemy half of that check is the ONE place this class looks at the
     opponent's bar, and it does exactly one thing with it: set a boolean. The value
@@ -408,6 +436,8 @@ class MatchMemory:
         self.foe_plays = 0
         self.foe_recent: list[int] = []  # the cards behind the enemy hand, oldest first
         self.unaffordable = [0, 0]  # plays the counted bar could not pay: own, enemy
+        # Each side's ability rows as last seen, [own, enemy]; None until a state shows them.
+        self.rows: list[list[list[int]] | None] = [None, None]
 
     def bind(self, cards: Sequence[CardInfo]) -> None:
         self.cost = [c.elixir for c in cards]
@@ -421,6 +451,7 @@ class MatchMemory:
         self.start(
             state.tick, me.elixir_milli, foe.elixir_milli, me.hand, me.next_card, foe.hand
         )
+        self.rows = [list(me.abilities), list(foe.abilities)]
 
     def start(
         self,
@@ -453,6 +484,7 @@ class MatchMemory:
         self.foe_recent = []
         self.unaffordable = [0, 0]
         self.last_play = [EMPTY_CARD, EMPTY_CARD]
+        self.rows = [None, None]
         self._note_own_cards()
 
     def observe(self, state: BattleState, team: int) -> None:
@@ -463,14 +495,22 @@ class MatchMemory:
         if state.tick == self.tick:
             return
         me, foe = state.players[team], state.players[1 - team]
+        presses = []
+        for side, p in enumerate((me, foe)):
+            before, self.rows[side] = self.rows[side], list(p.abilities)
+            standing = {e.card_id for e in state.entities if e.team == p.team}
+            seen = presses_seen(before, p.abilities, standing) if before is not None else []
+            presses.append([(self.tick, cost) for cost in seen])
         # The engine pays every accepted command before the first tick of a step, so a
-        # play seen between two observations is dated at the earlier one.
+        # play or a press seen between two observations is dated at the earlier one.
         self.advance(
             state.tick,
             state.regular_ticks,
             state.overtime,
             [(self.tick, c) for c in cards_that_left(self.own_hand, me.hand)],
             [(self.tick, c) for c in cards_that_left(self.foe_hand, foe.hand)],
+            own_presses=presses[0],
+            foe_presses=presses[1],
         )
         if self.law.to_milli(self.own_fine) != me.elixir_milli:
             self.exact = False
@@ -493,8 +533,12 @@ class MatchMemory:
         overtime: bool,
         own_plays: Sequence[tuple[int, int]],
         foe_plays: Sequence[tuple[int, int]],
+        own_presses: Sequence[tuple[int, int]] = (),
+        foe_presses: Sequence[tuple[int, int]] = (),
     ) -> None:
-        """Move to ``tick`` through the plays made since the last tick, each ``(tick, card)``.
+        """Move to ``tick`` through the plays made since the last tick, each ``(tick, card)``,
+        and the ability presses, each ``(tick, elixir)``: a press is paid from the bar like a
+        play and is no play (see ``MatchMemory``).
 
         THE ONE PLACE A PLAY CHANGES THIS MEMORY. ``observe`` reads plays off hand slots
         and dates them all at the previous observation; a caller holding a timed log of
@@ -521,8 +565,8 @@ class MatchMemory:
         trained on it reads ``own_ticks_since_play`` that way.
         """
         clock = (tick, regular_ticks, overtime)
-        self.own_fine, leaked = self._bar(self.own_fine, own_plays, 0, *clock)
-        self.foe_fine, _ = self._bar(self.foe_fine, foe_plays, 1, *clock)
+        self.own_fine, leaked = self._bar(self.own_fine, own_plays, own_presses, 0, *clock)
+        self.foe_fine, _ = self._bar(self.foe_fine, foe_plays, foe_presses, 1, *clock)
         self.leak_fine += leaked
         for _, card in sorted(own_plays, key=lambda p: p[0]):
             self.own_cycle = [*self.own_cycle[1:], card]
@@ -539,6 +583,7 @@ class MatchMemory:
         self,
         fine: int,
         plays: Sequence[tuple[int, int]],
+        presses: Sequence[tuple[int, int]],
         side: int,
         tick: int,
         regular_ticks: int,
@@ -546,13 +591,15 @@ class MatchMemory:
     ) -> tuple[int, int]:
         """One bar from ``self.tick`` to ``tick``: (fine units, fine units lost to the cap)."""
         at, due, lost = self.tick, 0, 0
-        for when, card in sorted(plays, key=lambda p: p[0]):
+        paid = [(when, card, None) for when, card in plays]
+        paid += [(when, None, cost) for when, cost in presses]
+        for when, card, cost in sorted(paid, key=lambda p: p[0]):
             if not self.tick <= when < tick:
                 raise ValueError(f"a play at tick {when} is outside [{self.tick}, {tick})")
             if when != at:
                 fine, spilled = self.law.advance(fine, due, at, when, regular_ticks, overtime)
                 at, due, lost = when, 0, lost + spilled
-            due += self._price(card, side)
+            due += self._price(card, side) if card is not None else cost
             if due * self.law.scale > fine:
                 self.unaffordable[side] += 1
         fine, spilled = self.law.advance(fine, due, at, tick, regular_ticks, overtime)
