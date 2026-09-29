@@ -316,3 +316,94 @@ def test_an_env_plays_a_hero_deck_with_buttons():
         if term["blue"] or trunc["blue"]:
             break
     assert "ability_ready" in obs["blue"]
+
+
+def _champion_battle(name: str):
+    """Both seats deal the same deck with the champion ``name`` in it (a champion needs no
+    form), past the opening lockout, with elixir to spare; None when the engine has no such
+    card, or reports no button for it."""
+    eng = RustEngine()
+    ids = {c.name: c.card_id for c in eng.cards()}
+    if name not in ids:
+        return None
+    deck = [ids[name], *(ids[n] for n in DECK if n != "Musketeer")]
+    eng.reset(1, MatchSetup(
+        decks=[deck, deck], shuffle=ShuffleMode.NONE,
+        elixir_milli=[10000, 10000], start_tick=eng.rules().deploy_lockout_ticks,
+    ))
+    if not any(ability_row(r).card_id == ids[name] for r in eng.state().players[BLUE].abilities):
+        return None
+    parser = TileActionParser(ability_buttons=True)
+    parser.bind(eng)
+    return eng, parser, ids[name]
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_a_champions_button_agrees_with_the_engine_through_a_press_and_its_cooldown():
+    """The Golden Knight (RoyaleSim's first champion) on both seats, every button, every tick:
+    the mask is on exactly when the engine takes the press. Each seat presses the first time
+    its mask offers it; the press is taken and paid, the button goes off while the chain runs
+    and through the cooldown the row counts down, and comes back on. A champion's charge is
+    never spent. Nothing here is the Golden Knight's but the name that deals it."""
+    battle = _champion_battle("GoldenKnight")
+    if battle is None:
+        pytest.skip("this engine has no champion button (the Golden Knight's)")
+    eng, parser, champion = battle
+    giant = next(c.card_id for c in eng.cards() if c.name == "Giant")
+    t = eng.arena().subtile
+    # Each seat's champion at its own left bridge, and its Giant at its own right bridge, so
+    # each champion meets the other seat's Giant: something in reach to dash at, that does
+    # not fight back. A press with nothing in reach is taken and paid, then waits for a
+    # target (RoyaleSim 2dff142), so a lone champion never reaches its cooldown.
+    for card, (tx, ty) in ((champion, (3, 13)), (giant, (14, 14))):
+        state = eng.state()
+        cmds = []
+        for team in (BLUE, RED):
+            slot = state.players[team].hand.index(card)
+            x, y = to_engine(eng.arena(), team, tx * t + t // 2, ty * t + t // 2)
+            cmds.append(DeployCommand(team, slot, x, y))
+        assert [r.status for r in eng.step(cmds, 1)] == [DeployStatus.OK] * 2
+
+    problems: list[str] = []
+    pressed: dict[int, int] = {}
+    counted: dict[int, int] = {}
+    back: dict[int, int] = {}
+    for _ in range(900):
+        state = eng.state()
+        problems += _agree(eng, parser, state)
+        presses = []
+        for team in (BLUE, RED):
+            p = state.players[team]
+            rows = [ability_row(r) for r in p.abilities]
+            assert [(b.card_id, b.spent) for b in rows] == [(champion, 0)], rows
+            on = bool(parser.action_mask(state, team)[parser.n_tile_actions])
+            if team in pressed and rows[0].cooldown_ticks > 0:
+                counted[team] = max(counted.get(team, 0), rows[0].cooldown_ticks)
+            if on and team in pressed and team not in back:
+                back[team] = state.tick
+            if on and team not in pressed:
+                presses.append(parser.parse(parser.n_tile_actions, state, team))
+        if presses:
+            before = {q: state.players[q].elixir_milli for q in (BLUE, RED)}
+            results = eng.step(presses, 1)
+            after = eng.state()
+            for cmd, r in zip(presses, results, strict=True):
+                assert r.status == DeployStatus.OK, (cmd, DeployStatus(r.status).name)
+                cost = ability_row(state.players[cmd.team].abilities[0]).cost
+                paid = before[cmd.team] - after.players[cmd.team].elixir_milli
+                assert paid >= cost * 1000 - 100, f"seat {cmd.team} paid {paid} for {cost}"
+                assert not parser.action_mask(after, cmd.team)[parser.n_tile_actions], (
+                    f"seat {cmd.team}: the button is still on the tick after its press"
+                )
+                pressed[cmd.team] = state.tick
+            continue
+        if len(back) == 2:
+            break
+        eng.step([], 1)
+    assert problems == [], problems[:6]
+    assert set(pressed) == {BLUE, RED}, f"a seat never had its button on: pressed {pressed}"
+    assert set(counted) == {BLUE, RED}, f"no cooldown was counted down: {counted}"
+    assert set(back) == {BLUE, RED}, (
+        f"the button did not come back after its cooldown: pressed {pressed}, counted "
+        f"{counted}, back {back}"
+    )
