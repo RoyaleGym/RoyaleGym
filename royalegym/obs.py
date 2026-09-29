@@ -1213,7 +1213,14 @@ class ObsBuilder(ABC):
 
     def _vector(self, state: BattleState, team: int) -> np.ndarray:
         memory = self.memory[team]
-        memory.observe(state, team, getattr(self, "presses", None))
+        # By keyword and only when there are any, as below: an observe that wraps or stands in
+        # for this one with the old (state, team) keeps working, and no press accepted since
+        # the last build is the same as the rows showing none.
+        presses = getattr(self, "presses", None)
+        if presses:
+            memory.observe(state, team, presses=presses)
+        else:
+            memory.observe(state, team)
         # The flag goes only when it is ON, and by keyword. With it off this is the exact call
         # it was before D2, so anything that wraps or substitutes build_vector with the old
         # six arguments keeps working -- this suite's own plant tests do, and the first
