@@ -40,6 +40,7 @@ from royalegym.protocol import (
     DeployCommand,
     DeployRules,
     DeployStatus,
+    EntityKind,
     MatchSetup,
     ShuffleMode,
     SpawnSpec,
@@ -616,3 +617,40 @@ def test_plant_a_mask_that_trusts_every_move_is_caught():
     seats = {p.split()[1] for p in problems}
     assert seats == {"0", "1"}, f"PLANT DID NOT LAND on both seats: {problems[:4]}"
     assert all("mask 1, engine OCCUPIED" in p for p in problems), problems[:4]
+
+
+@needs_core
+@pytest.mark.parametrize("parser_cls", [TileActionParser, HalfTileActionParser])
+def test_a_miner_on_a_raged_enemy_tower_is_offered(parser_cls):
+    """The integrator session's play (2026-09-28): Blue casts Rage on Red's left princess
+    tower, and a tick later taps its Miner on that tile. The bottle is Blue's own, standing on
+    the enemy half, so the core moves the Miner's tap off it and takes it; before the mask
+    followed the bottle it refused the tap, and a policy could never play the combo. On the
+    arms as shipped, every action of both seats against ``check_deploy``."""
+    engine = RustEngine()
+    ids = {c.name: c.card_id for c in engine.cards()}
+    if "Miner" not in ids:
+        pytest.skip("SKIPPED, NOT PASSED: this catalogue has no Miner")
+    deck = [ids[n] for n in ("Rage", "Miner", "Knight", "Archer", "Fireball", "Zap", "Giant",
+                             "Musketeer")]
+    engine.reset(1, MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE,
+                               elixir_milli=[10000, 10000],
+                               start_tick=engine.rules().deploy_lockout_ticks))
+    tower = next(
+        e for e in engine.state().entities
+        if e.team == RED and e.kind == EntityKind.PRINCESS_TOWER and e.tower_slot == 1
+    )
+    assert [r.status for r in engine.step([DeployCommand(BLUE, 0, tower.x, tower.y)], 1)] == [0]
+    state = engine.state()
+    parser = parser_cls()
+    parser.bind(engine)
+    assert parser.oracle.own_live_bottles(state, BLUE), "the Rage bottle is not live"
+    problems = [
+        f"seat {team} action {action}: mask {m}, engine {DeployStatus(status).name}"
+        for team in (BLUE, RED)
+        for action, m, status in mask_disagreements(engine, parser, state, team)
+    ]
+    assert not problems, f"{len(problems)} disagreements; first {problems[:6]}"
+    miner = state.players[BLUE].hand.index(ids["Miner"])
+    tap = DeployCommand(BLUE, miner, tower.x, tower.y)
+    assert engine.check_deploy(tap) == DeployStatus.OK, "the core no longer moves this tap"
