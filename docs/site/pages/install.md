@@ -329,13 +329,14 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 
 ```
 16 cards in the stand-in
-winner 0  crowns [2, 1]  tick 5950
+winner 0  crowns [3, 1]  tick 5585
 ```
 
 Each player took one tower in the three minutes, so the match went to overtime, and player 0 won
-it by taking a second tower at tick 5950, nearly two minutes into overtime. `MockEngine` reads
-RoyaleSim's calibration file each time it starts, so this result moves when that file does. It
-was run on 2026-09-24 against the calibration in RoyaleSim `2e5895c`.
+it by taking the king tower at tick 5585, a minute and a half into overtime. A king tower is worth
+all three crowns. `MockEngine` reads RoyaleSim's calibration file each time it starts, so this
+result moves when that file does. It was run on 2026-09-29 against the calibration in RoyaleSim
+`1e843ea`, the one with triple elixir late in overtime.
 
 Be clear about what you are using, though. `MockEngine` is a stand in, not a second simulator. It
 carries 16 cards rather than the full catalogue, spells resolve instantly, there are no stuns or
