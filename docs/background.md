@@ -39,7 +39,8 @@ monthly client update can move it.
 | Arena is 18 x 32 tiles = 36 x 64 half-tiles; water at `y` in [15, 17]; bridges 2 tiles wide at `x` centres 3.5 and 14.5 | confirmed; `tilemaps/tilemap.csv` ships in the client |
 | Distances are milli-tiles (1000 per tile); times are milliseconds | confirmed |
 | Logic tick is 20 Hz / 50 ms | inferred, then measured: the elixir phase boundaries at ticks 2400/3600/4800/6000 land exactly on 2/3/4/5 minutes |
-| Starting elixir 5; 180 s regulation plus 120 s overtime; king activation 3300 ms | confirmed |
+| Starting elixir 5; 180 s regulation plus 120 s overtime | confirmed |
+| King activation 3300 ms, the globals table's value | **refuted** as the delay the game plays: of 36 kings woken by a princess tower's fall on the 16.402 recordings, 28 take their first target exactly 71 ticks (3550 ms) after the fall and the other 8 within a tick of it. The engine uses 3550 |
 | Globals that exist and matter: `LOGIC_DEFAULT_TARGET_USE_LANE_ID`, `LOGIC_LANE_ID_BASED_DEPLOY_SEQUENCE`, `LOGIC_XPOS_BASED_TOWER_TARGETING`, `LOGIC_PRESERVE_TARGET_IF_HIT_STARTED`, `LOGIC_RANGE_EXTENSION_TO_KEEP_TARGET = 25`, `ADD_CHARACTER_RANGE_TO_RADIUS` (range is edge to edge) | confirmed in the shipped game data |
 | `PATHFINDING_DEFAULT_COST = 8`, `ROAD = 5`, `WATER = 7`, `BUILDING = 50` | **refuted**: absent from the 2018, 2022 and 2023 globals tables; the only source is one hobby repository's docstring |
 | The `Speed` field divides by 60 (Medium = 1.0 tiles/s) or by 50 (1.2 tiles/s) | neither, and no public source settles it — a 20% error either way. Measured: one `Speed` unit is one milli-tile per 50 ms tick, so the raw column *is* the per-tick step |
