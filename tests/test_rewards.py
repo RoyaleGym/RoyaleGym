@@ -66,7 +66,7 @@ from royalegym.protocol import (
     to_engine,
 )
 from royalegym.reward import ElixirTradeReward
-from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
+from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, _core, core_available
 
 needs_rust = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -89,6 +89,18 @@ PRODUCER_DECK = (
     "Fireball", "Arrows", "Witch", "Tombstone", "Knight", "Cannon", "Giant", "Musketeer",
 )
 ENGINES = ["mock", pytest.param("rust", marks=needs_rust)]
+
+#: RoyaleSim ROUND 9: the one ship with the mount_uid column and two ability buttons. It puts
+#: the Tri Wizards' Electro Wizard and Ice Wizard down under THEIR OWN card ids (42, 23), so
+#: the term prices a play of the card at 7 + 4 + 3. Every other multi-unit card stamps the
+#: played card's id on what it puts down (a Goblin Gang's Spear Goblins are 41, not 19). The
+#: next ship (the Golden Knight's, three buttons) stamps the played card's id on them too;
+#: on it this is False and the Tri Wizards are graded as every card is.
+TRI_WIZARDS_UNDER_THEIR_OWN_IDS = (
+    core_available()
+    and "mount_uid" in getattr(_core, "ENTITY_FIELDS", ())
+    and getattr(_core, "ABILITY_BUTTONS", 0) == 2
+)
 # The three ways the catalogue describes a card that puts nothing of its own on the board.
 # Spelled out from the engine's own placement classes rather than taken from the term, so a
 # term that dropped one of them cannot quietly narrow this file's idea of what a spell is.
@@ -437,9 +449,9 @@ def cycle_in(
 SETTLE_TICKS = 600
 
 
-def tap_everything(engine, tbl: Table):
-    """Tap every card the engine will accept, each seat, and yield (card, seat, the state the
-    tap was made from, its result, the units it put down).
+def tap_everything(engine, tbl: Table, only: frozenset[str] | None = None):
+    """Tap every card the engine will accept (or those named in ``only``), each seat, and
+    yield (card, seat, the state the tap was made from, its result, the units it put down).
 
     A TAP and not a seeded spawn, because they do not put the same thing down: a seeded
     Goblin Gang is one goblin, a tapped one is six. The term scores what a tap left, so
@@ -460,6 +472,8 @@ def tap_everything(engine, tbl: Table):
     ]
     refused: list[tuple[str, int, str]] = []
     for card in engine.cards():
+        if only is not None and card.name not in only:
+            continue
         deck = [card.card_id, *[i for i in ids if i != card.card_id][:7]]
         for seat in (BLUE, RED):
             setup = MatchSetup(
@@ -513,12 +527,16 @@ def test_one_tap_of_any_card_is_priced_at_exactly_that_cards_elixir(kind):
 
     If any of that slipped, the term would quietly under- or over-pay every play of that
     card for the rest of training, so it is measured rather than believed.
+
+    On round 9 the Tri Wizards are graded by their own strict xfail below, not here.
     """
     engine = make_engine(kind)
     tbl = Table(engine)
     t = term(engine)
     taps, off = 0, []
     for card, seat, prev, result, put_down in tap_everything(engine, tbl):
+        if kind == "rust" and TRI_WIZARDS_UNDER_THEIR_OWN_IDS and card.name == "TriWizards":
+            continue
         taps += 1
         # What the play cost: the slot's stated price. That is the card's own elixir for
         # every card but a Mirror, which costs the card it copies plus its own one.
@@ -534,6 +552,35 @@ def test_one_tap_of_any_card_is_priced_at_exactly_that_cards_elixir(kind):
             )
     assert off == [], f"plays priced at something other than what they cost: {off}"
     assert taps >= 20, f"only {taps} taps landed; the check would be vacuous"
+
+
+@needs_rust
+@pytest.mark.xfail(
+    TRI_WIZARDS_UNDER_THEIR_OWN_IDS,
+    reason=(
+        "RoyaleSim round 9 reports the Tri Wizards' Electro and Ice Wizards under their own "
+        "card ids (42, 23), so the term prices the play 14; the next ship stamps the played "
+        "card's id"
+    ),
+    strict=True,
+)
+def test_a_play_of_the_tri_wizards_is_priced_at_the_card():
+    """A play of the Tri Wizards is worth the card: 7, not its wizards' own cards' 7 + 4 + 3.
+
+    From round 9 the card puts three different wizards down through a deploy spawn area;
+    before it, only the TriWizard. The price is the property either way, so it is what is
+    asserted, with the units read listed beside it."""
+    engine = make_engine("rust")
+    if "TriWizards" not in {c.name for c in engine.cards()}:
+        pytest.skip("this engine's catalogue has no Tri Wizards")
+    t = term(engine)
+    priced, read = [], []
+    for _card, seat, _prev, _result, put_down in tap_everything(
+        engine, Table(engine), only=frozenset({"TriWizards"})
+    ):
+        priced.append((seat, str(sum((t.unit_value(e) for e in put_down), Fraction(0)))))
+        read.append(sorted((e.card_id, e.max_hp) for e in put_down))
+    assert priced == [(BLUE, "7"), (RED, "7")], f"{priced}; units read: {read}"
 
 
 @needs_rust
