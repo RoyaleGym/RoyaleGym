@@ -215,7 +215,7 @@ to draw something.
 - A recording holds only the recording player's hand. The opponent's shows as
   `hand: not in this source`.
 - The learning panel has been filled by a real training run, and RoyaleViser's README shows that
-  picture: a laptop run on 2026-09-22, caught at iteration 33. Two tiles in it are not data.
+  picture. Two tiles in it are not data.
   `ELO vs pool` reads 1200 and `win rate` reads 0.0 % because a learner that is still training is
   never played against the pool under its own name, so those two read the same whatever the run is
   doing. Everything else on the panel is what the learner reported that minute. A status arrives
