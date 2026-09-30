@@ -113,9 +113,24 @@ def test_the_engines_own_mask_agrees_with_the_engine_while_commands_wait():
     assert seen["refused_pending"] > 0, "no tap met a waiting card: the check saw no pending"
 
 
+#: Named, not drawn: a drawn deck may hold a card that pays the OPPONENT elixir (an Elixir
+#: Golem's pieces do when they die), which the count does not model and flags as not exact.
+#: So "always exact" held only while the seed never drew one; RoyaleSim r17's longer card
+#: list drew one. Eight plain cards across the elixir range, both seats.
+MEMORY_DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Zap", "Musketeer")
+
+
 @needs_delay
 def test_the_memories_stay_exact_under_a_delay():
-    env = ClashParallelEnv(RustEngine(), command_delay_ticks=DELAY)
+    from royalegym.state_mutator import DefaultStateMutator
+
+    engine = RustEngine()
+    ids = {c.name: c.card_id for c in engine.cards()}
+    deck = [ids[n] for n in MEMORY_DECK]
+    env = ClashParallelEnv(
+        engine, command_delay_ticks=DELAY,
+        state_mutator=DefaultStateMutator(decks=[deck, deck]),
+    )
     off = []
 
     def on_state(obs):
