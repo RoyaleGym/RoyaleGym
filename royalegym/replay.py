@@ -100,6 +100,12 @@ class TraceFrame(msgspec.Struct, array_like=True):
     # absent here never reaches the screen however complete the engine's export is.
     # Trailing and defaulted: an older trace is a shorter array and decodes with [].
     projectiles: list[ProjectileState] = []
+    # Each player's special-form rows, as the state gives them (``PlayerState.evo`` and
+    # ``PlayerState.abilities``): the evolution counters and the ability buttons. The header
+    # records the deck's forms once, but a replay draws an evolution coming up or a button
+    # pressed only from these, so they go in every frame. Trailing and defaulted as above.
+    evo: list[list[list[int]]] = []
+    abilities: list[list[list[int]]] = []
 
 
 class TraceHeader(msgspec.Struct):
@@ -241,6 +247,8 @@ def _frame(engine: Engine) -> TraceFrame:
         spells=list(s.spells),
         next_cards=[p.next_card for p in s.players],
         projectiles=list(s.projectiles),
+        evo=[[list(r) for r in p.evo] for p in s.players],
+        abilities=[[list(r) for r in p.abilities] for p in s.players],
     )
 
 
