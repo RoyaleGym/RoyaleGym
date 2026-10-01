@@ -165,9 +165,8 @@ building sits in the wrong place. That is engine behaviour, so it is fixed here.
 
 **A mechanic is not modelled.** These are the ones the engine does not do yet, in plain words:
 morph, the push of most troops' own shots, like the Zappies', air units doing anything cleverer
-than flying straight at their target, tower troops, and the Skeleton King's and the Mighty
-Miner's buttons (both play as plain troops). Every other evolution, hero form and champion's
-button of a ladder card runs. Rage and Heal load, but parts of how they work
+than flying straight at their target, and tower troops. Every evolution, hero form and
+champion's button of a ladder card runs. Rage and Heal load, but parts of how they work
 are not measured yet. The 18 cards in `thin_slice` are the ones the engine has been checked on.
 For the other cards it loads from the 15.535 table, only some rules are measured against
 recordings, such as the Inferno damage ramp and the Mortar's minimum range.
