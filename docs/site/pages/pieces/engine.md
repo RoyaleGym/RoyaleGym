@@ -1,7 +1,7 @@
 # The engine
 
 [![repo](https://img.shields.io/badge/repo-RoyaleSim-DEA584?style=flat-square&logo=rust&logoColor=white)](https://github.com/RoyaleGym/RoyaleSim)
-![cards](https://img.shields.io/badge/cards-133%20of%20145%20load%2C%20same%20in%20a%20clone-555?style=flat-square)
+![cards](https://img.shields.io/badge/cards-136%20of%20145%20load%2C%20same%20in%20a%20clone-555?style=flat-square)
 ![tick](https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square)
 ![speed](https://img.shields.io/badge/one%20worker-16%2C100%20battles%2Fhour-2ea043?style=flat-square)
 ![same seed](https://img.shields.io/badge/same%20seed-same%20battle-2ea043?style=flat-square)
@@ -215,9 +215,11 @@ about rewards, so you can change a reward without recompiling anything.
 ## The numbers, and where they come from
 
 **Cards.** The card table that comes with a clone has 145 cards: the 15.535 client's 144, plus
-the Minion Giant. The engine loads 133 of them and refuses the other 12, each with a reason. The
-default catalogue, which is what you get when you name no cards, holds all 133, the Mirror, the
-Miner and the Goblin Drill included, with the Minion Giant last. Counted on RoyaleSim `087c060` on
+the Minion Giant. The engine loads 136 of them and refuses the other 9, each with a reason. The
+default catalogue, which is what you get when you name no cards, holds all 136, the Mirror, the
+Miner and the Goblin Drill included. A card that becomes loadable is appended, so no card's id
+moves: the Minion Giant, then the Little Prince, Goblinstein and the Boss Bandit come last.
+Counted on RoyaleSim `89163ba` on
 2026-09-30.
 
 **Speed.** On a 4-core laptop with 8 GB of RAM, with other programs running, the engine did
