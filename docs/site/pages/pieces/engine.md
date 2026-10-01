@@ -164,10 +164,9 @@ Four reasons, and they are all "the battle itself is wrong or missing something"
 building sits in the wrong place. That is engine behaviour, so it is fixed here.
 
 **A mechanic is not modelled.** These are the ones the engine does not do yet, in plain words:
-morph, attacks that chain from one target to the next like the Electro Dragon's, the push of most
-troops' own shots, like the Zappies', air units doing anything cleverer than flying straight at their target,
-tower troops, and most evolutions, hero forms and champion abilities. Three evolutions, two hero
-forms and the Golden Knight's dash do run. Rage and Heal load, but parts of how they work
+morph, the push of most troops' own shots, like the Zappies', air units doing anything cleverer
+than flying straight at their target, tower troops, and some evolutions, hero forms and champions'
+buttons. Most evolutions and hero forms do run, and so do a few champions' buttons. Rage and Heal load, but parts of how they work
 are not measured yet. The 18 cards in `thin_slice` are the ones the engine has been checked on.
 For the other cards it loads from the 15.535 table, only some rules are measured against
 recordings, such as the Inferno damage ramp and the Mortar's minimum range.

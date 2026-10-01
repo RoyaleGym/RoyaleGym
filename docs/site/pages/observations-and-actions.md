@@ -211,6 +211,14 @@ Check it by hand, because it is the kind of thing you want to be sure of. Slot 0
 very last index, so it should be the last hand slot on the far corner tile: slot 3,
 tile (17, 31). Both agree.
 
+**Ability buttons are opt in.** Some special cards have a button: a hero form's ability, or a
+champion's. The default parser has no move for them, so a champion plays as a plain troop, and a
+deck that marks a hero form is refused. Build the parser with `TileActionParser(ability_buttons=True)`
+and it adds one move per button after the 2305, as many as the engine has (three today, so
+2308 moves). Move `2305 + k` presses button `k`. A side's buttons are its hero forms in deck
+order, then its champion. The mask allows a press only when the button is ready and you have the
+elixir it costs, and the observation gains `ability_ready`, one flag per button.
+
 ??? note "Why one big list of 2305 and not three separate choices"
     You could ask the bot for a card, then an x, then a y. Three small choices are
     easier to learn, but they cannot be masked properly. Whether a move is legal depends
