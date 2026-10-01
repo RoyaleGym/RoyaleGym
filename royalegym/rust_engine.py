@@ -629,7 +629,7 @@ class RustEngine:
 
         ``tap_snap``: None = the ledger's ``placement.TAP_SNAP``. ``"none"`` judges a troop's
         body at its tap, the seat-symmetric arm (``SymmetricRustEngine`` asks for it). Passed to
-        the core's own keyword, which an engine before RoyaleSim's round 9 lacks: then it is
+        the core's own keyword, which an engine before RoyaleSim 6909b6f lacks: then it is
         refused here. The mask follows it, as it follows ``OVERRIDE_FOLLOWED``.
 
         ``calibration_overrides``: ledger key -> value, as ``data/calibration.json`` writes
@@ -672,7 +672,7 @@ class RustEngine:
             if not battle_takes("tap_snap"):
                 raise ValueError(
                     f"tap_snap={tap_snap!r}: this engine's Battle has no tap_snap keyword "
-                    "(RoyaleSim's round 9 adds it)"
+                    "(RoyaleSim 6909b6f adds it)"
                 )
             if "TAP_SNAP" in cal.raw.get("placement", {}):
                 cal = cal.with_override("placement.TAP_SNAP", tap_snap)
@@ -852,7 +852,7 @@ class RustEngine:
         (Blue, Red). A play or press accepted on tick T runs on T + delay, checked again in
         full then; until it runs the card stays in hand, the bar unspent, and the card or
         button refuses another command (CARD_PENDING). 0, the default, runs every command at
-        once. The live client's is measured at 21-22 ticks (RoyaleSim r16).
+        once. The live client's is measured at 21-22 ticks (RoyaleSim df69520).
 
         A delay above 0 needs an engine that has it and can name its refusal: refused here,
         not at the first refused command."""
@@ -865,7 +865,7 @@ class RustEngine:
             if not hasattr(self._battle, "set_command_delay_ticks"):
                 raise NotImplementedError(
                     "this RoyaleSim build has no command delay (Battle.set_command_delay_ticks, "
-                    "RoyaleSim r16 on)"
+                    "RoyaleSim df69520 on)"
                 )
             if "CARD_PENDING" not in getattr(_core, "DEPLOY_REASONS", ()):
                 raise NotImplementedError(
@@ -886,7 +886,7 @@ class RustEngine:
         at the catalogue's level (a Knight: 1766 at 11, 1938 at 12).
 
         ValueError for an unknown card id or a level the card's ladder lacks, naming it.
-        NotImplementedError from an engine build before the rows (RoyaleSim round 9).
+        NotImplementedError from an engine build before the rows (RoyaleSim 6909b6f).
         Not part of ``protocol.Engine``: MockEngine has no levels, so a consumer asks for it
         with ``getattr`` and keeps its own rule where it is absent.
         """
@@ -894,7 +894,7 @@ class RustEngine:
         if rows is None:
             raise NotImplementedError(
                 "this RoyaleSim build does not list the units a card puts down "
-                "(Battle.unit_hitpoints, RoyaleSim round 9 on)"
+                "(Battle.unit_hitpoints, RoyaleSim 6909b6f on)"
             )
         return [(str(r), str(n), int(hp)) for r, n, hp in rows(int(card_id), int(level))]
 

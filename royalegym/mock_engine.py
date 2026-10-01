@@ -458,7 +458,7 @@ class MockEngine:
         }
         # Triple elixir: the overtime regen from MANA_TRIPLE_AFTER_OVERTIME_S into overtime,
         # truncated in the same unit as the Rust core's (protocol.ElixirLaw). elixir_rate
-        # reports 3 there, as the core's does from RoyaleSim r16.
+        # reports 3 there, as the core's does from RoyaleSim df69520.
         # Both keys or no third rate, as ElixirLaw.load.
         try:
             r3 = cal.int("match.MANA_REGEN_MS_OVERTIME")

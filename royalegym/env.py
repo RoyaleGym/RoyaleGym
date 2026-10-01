@@ -258,7 +258,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         if isinstance(truncation_cond, TerminationCondition):
             raise TypeError(f"{type(truncation_cond).__name__} is a termination, not a truncation")
         self.engine: Engine = engine if engine is not None else MockEngine()
-        # THE COMMAND DELAY (RoyaleSim r16): plays and presses run this many ticks after the
+        # THE COMMAND DELAY (RoyaleSim df69520): plays and presses run this many ticks after the
         # tap, one int for both seats or (blue, red). None leaves the engine's own (0 unless
         # it was built with one); an engine without a delay refuses anything above 0.
         if command_delay_ticks is not None:
@@ -267,7 +267,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
                 if command_delay_ticks not in (0, (0, 0)):
                     raise NotImplementedError(
                         f"{type(self.engine).__name__} has no command delay; "
-                        "use RustEngine on RoyaleSim r16 or later"
+                        "use RustEngine on RoyaleSim df69520 or later"
                     )
             else:
                 setter(command_delay_ticks)

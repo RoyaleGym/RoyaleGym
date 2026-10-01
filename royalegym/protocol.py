@@ -320,7 +320,7 @@ class DeployStatus(enum.IntEnum):
     NO_HERO = 14
     ABILITY_NOT_READY = 15
     ABILITY_SPENT = 16
-    # Under a command delay (RoyaleSim r16, ``RustEngine(command_delay_ticks=)``): this card
+    # Under a command delay (RoyaleSim df69520, ``RustEngine(command_delay_ticks=)``): this card
     # or button already has an accepted command waiting to run. The engine's index is 18.
     CARD_PENDING = 17
 
@@ -622,7 +622,7 @@ class PlayerState(msgspec.Struct, frozen=True):
     # The catalogue id of the card a Mirror played now would copy (the side's last
     # accepted play that was not a Mirror), -1 when there is none.
     mirror_target: int = -1
-    # Under a command delay (RoyaleSim r16): the side's commands accepted and not run yet,
+    # Under a command delay (RoyaleSim df69520): the side's commands accepted and not run yet,
     # in the order they run, each [kind, what, x, y, ticks_left, cost]: kind 0 a play (what
     # the catalogue card id, x and y the tap), kind 1 a button press (what the command slot,
     # HAND_SIZE + button). The hand and ``elixir_milli`` change only when a command runs,
@@ -638,7 +638,7 @@ class BattleState(msgspec.Struct, frozen=True):
     tick_ms: int
     regular_ticks: int  # length of regulation time in ticks
     overtime_ticks: int  # length of overtime in ticks
-    elixir_rate: int  # 1, 2 or 3 (the multiplier currently in force; 3 from RoyaleSim r16)
+    elixir_rate: int  # 1, 2 or 3 (the multiplier currently in force; 3 from RoyaleSim df69520)
     overtime: bool
     players: list[PlayerState]  # indexed by team
     entities: list[EntityState]  # includes crown towers
@@ -1559,13 +1559,13 @@ class ElixirLaw(msgspec.Struct, frozen=True):
         the rate on its own; it is taken as 2x anyway rather than relying on that.
 
     TRIPLE ELIXIR. From ``match.MANA_TRIPLE_AFTER_OVERTIME_S`` into overtime the bar fills in
-        ``match.MANA_REGEN_MS_OVERTIME`` (RoyaleSim r15: 60 s and 9300 ms; the tick that runs
+        ``match.MANA_REGEN_MS_OVERTIME`` (RoyaleSim 1e843ea: 60 s and 9300 ms; the tick that runs
         from 4800 is the first). That gain is TRUNCATED in the same unit, as the engine's is
         (``gain_3x``: 1505 a tick where the exact rate is 1505.4), so it is the engine's bar
         that is modelled and not the game's. ``rate_at`` says 3 there, as the engine's
-        ``elixir_rate`` does from RoyaleSim r16 (r15's said 2, a defect of its report, not of
-        its bar). A calibration without the keys has no third rate; one whose
-        overtime regen is the 2x one (every table before r15) has a third rate equal to it.
+        ``elixir_rate`` does from RoyaleSim df69520 (1e843ea's said 2, a defect of its report,
+        not of its bar). A calibration without the keys has no third rate; one whose
+        overtime regen is the 2x one (every table before 1e843ea) has a third rate equal to it.
         ``seed_fine``'s lattice is the 1x and 2x gains', so a bar seeded past the switch can
         be off by less than one milli-elixir's worth, and ``MatchMemory.exact`` says so.
     """

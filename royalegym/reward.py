@@ -208,7 +208,7 @@ class ElixirTradeReward(RewardFunction):
     reported under. Both are measured in tests/test_rewards.py over every card either
     engine will place, on both seats, because the whole rule rests on them.
 
-    ONE CARD BREAKS IT: THE TRI WIZARDS. From RoyaleSim round 9 their Electro Wizard and Ice
+    ONE CARD BREAKS IT: THE TRI WIZARDS. From RoyaleSim 6909b6f their Electro Wizard and Ice
     Wizard are reported under THEIR OWN card ids (42, 23), not the Tri Wizards', so each
     matches its own card's row and is priced as that card: a 7-elixir play totals 14. Every
     other multi-unit card stamps the played card's id on what it puts down. The engine's

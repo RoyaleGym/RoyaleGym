@@ -297,7 +297,7 @@ full card list, which is larger and gives a wider vector. Read offsets from
 | 2–69 | `own_hand_cards` | 4(n+1) | 0/1 | hand slot card one-hot; index n = empty slot | fair |
 | 70–73 | `own_hand_cost` | 4 | 0..1 | hand slot elixir cost / MAX_MANA | fair |
 | 74–77 | `own_hand_affordable` | 4 | 0/1 | affordable right now: the bar less `own_pending_cost` pays it, and it has no play waiting | fair |
-| 78–81 | `own_hand_pending` | 4 | 0/1 | this slot's card has a play waiting to run (command delay, RoyaleSim r16); the seat's own taps only | fair |
+| 78–81 | `own_hand_pending` | 4 | 0/1 | this slot's card has a play waiting to run (command delay, RoyaleSim df69520); the seat's own taps only | fair |
 | 82 | `own_pending_cost` | 1 | 0..1 | elixir the own waiting commands hold / MAX_MANA | fair |
 | 83–99 | `own_next_card` | n+1 | 0/1 | cycle position 5 | fair |
 | 100–150 | `own_cycle_6_8` | 3(n+1) | 0/1 | cycle positions 6, 7, 8; index n = not deduced yet | fair |
@@ -313,7 +313,7 @@ full card list, which is larger and gives a wider vector. Read offsets from
 | 225–226 | `crowns` | 2 | 0..1 | own crowns / 3, enemy crowns / 3 | fair |
 | 227–228 | `king_active` | 2 | 0/1 | own king active, enemy king active | fair |
 | 229–231 | `clock` | 3 | 0..1 | regulation left / regulation, in overtime, overtime left / overtime | fair |
-| 232–234 | `elixir_rate` | 3 | 0/1 | one-hot over 1x, 2x, 3x (triple elixir late in overtime, RoyaleSim r16 on) | fair |
+| 232–234 | `elixir_rate` | 3 | 0/1 | one-hot over 1x, 2x, 3x (triple elixir late in overtime, RoyaleSim df69520 on) | fair |
 | appended | `enemy_hand_cards` | 4(n+1) | 0/1 | the opponent's hand | **reveal** (`enemy_hand`) |
 | appended | `enemy_next_card` | n+1 | 0/1 | the opponent's cycle position 5 | **reveal** (`enemy_next_card`) |
 | appended | `enemy_deck` | n | 0/1 | the opponent's deck | **reveal** (`enemy_deck`) |
@@ -336,8 +336,8 @@ and the extra slots are real rather than accidents. The arithmetic, term by term
 | `enemy_cards_seen` | + n |
 | `enemy_possible_hand` | + n |
 | `own_ticks_since_play`, `own_elixir_leaked`, `enemy_plays` | + 3 |
-| `elixir_rate`'s 3x slot (RoyaleSim r16's triple elixir) | + 1 |
-| `own_hand_pending`, `own_pending_cost` (RoyaleSim r16's command delay) | + 5 |
+| `elixir_rate`'s 3x slot (RoyaleSim df69520's triple elixir) | + 1 |
+| `own_hand_pending`, `own_pending_cost` (RoyaleSim df69520's command delay) | + 5 |
 | **total** | **12n + 43** |
 
 The previous layout's 5n + 30 includes the one enemy-elixir slot, which is kept and
