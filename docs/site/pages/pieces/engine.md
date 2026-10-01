@@ -219,7 +219,7 @@ the Minion Giant. The engine loads 136 of them and refuses the other 9, each wit
 default catalogue, which is what you get when you name no cards, holds all 136, the Mirror, the
 Miner and the Goblin Drill included. A card that becomes loadable is appended, so no card's id
 moves: the Minion Giant, then the Little Prince, Goblinstein and the Boss Bandit come last.
-Counted on RoyaleSim `89163ba` on
+Counted on RoyaleSim `92a3abb` on
 2026-09-30.
 
 **Speed.** On a 4-core laptop with 8 GB of RAM, with other programs running, the engine did

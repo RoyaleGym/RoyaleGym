@@ -60,7 +60,7 @@ legal actions right now: 1 of 2305
 ```
 
 Every figure on this page was run on 2026-09-30 on engine build `650078fef1aca217` (RoyaleSim
-`89163ba`) with the 15.535 card table plus the Minion Giant. Only one move is legal at the start, the wait, because a match refuses every
+`92a3abb`) with the 15.535 card table plus the Minion Giant. Only one move is legal at the start, the wait, because a match refuses every
 deploy for its opening seconds. The mask section below comes back to that.
 
 The deck is named card by card on purpose. With no deck named, each side is dealt eight
