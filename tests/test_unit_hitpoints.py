@@ -44,5 +44,5 @@ def test_an_unknown_card_or_level_is_refused_and_an_older_build_says_so(monkeypa
     with pytest.raises(ValueError, match="level 99"):
         eng.unit_hitpoints(eng.cards()[0].card_id, 99)
     monkeypatch.setattr(eng, "_battle", SimpleNamespace())
-    with pytest.raises(NotImplementedError, match="round 9"):
+    with pytest.raises(NotImplementedError, match="6909b6f"):
         eng.unit_hitpoints(0, eng.card_level)
