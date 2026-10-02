@@ -7,12 +7,12 @@ and a temporary HOME, it:
       with royalesim and any sibling not yet on PyPI from WHEELS (--wheels DIR, --find-links)
   P3  proves isolation: every royale* package imports from the new venv's site-packages,
       nothing from the checkout
-  P4  copies examples/quickstart.py the way a user gets it (not imported), replaces its ONE
-      literal `total_steps=200_000` with --steps (a literal that is not there exactly once is
+  P4  copies examples/quickstart.py the way a user gets it (not imported), sets its size to a
+      test's (SMALL, each literal exactly once; timestep_limit = --steps; a literal that is not
       a FAIL, not a long run) and runs it under a time limit; it must exit 0
   P5  records one battle with the INSTALLED package's public API and saves a trace
   P6  opens that trace in the viewer headless (SDL_VIDEODRIVER=dummy, --seconds, --shot)
-  P7  runs the exact command the quickstart PRINTS ("Watch it: ..."), headless
+  P7  runs the README's "Try it" as pasted, then the royaleviser command it gives, headless
 Each phase reports PASS, FAIL or BLOCKED. BLOCKED means a prerequisite is missing (no prebuilt
 royalesim wheel, no quickstart.py, no [all] extra): it is NOT a pass. It also lists HOLES:
 things a newcomer would hit that are not failures of a phase (a missing console script, a
@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -35,6 +36,16 @@ import time
 from pathlib import Path
 
 ORG = "RoyaleGym"
+#: The quickstart's size literals, set to a test's (tests/test_quickstart.py has the same, plus
+#: a forced CPU and no viewer). Here device stays "auto" and viser stays on, as a user runs it:
+#: CI has no GPU, so this is also the check that the CPU fallback works.
+SMALL = {
+    "n_envs=32,": "n_envs=4,",
+    "steps_per_update=16_384,": "steps_per_update=512,",
+    "ppo_batch_size=16_384,": "ppo_batch_size=512,",
+    "ppo_minibatch_size=2_048,": "ppo_minibatch_size=256,",
+    "checkpoint_every=200_000,": "checkpoint_every=512,",
+}
 PACKAGES = ["royalesim", "royalegym", "royalelearn", "royaleviser", "royaleimitate"]
 REPO = {
     "royalesim": "RoyaleSim",
@@ -169,8 +180,8 @@ def main() -> int:
     ap.add_argument(
         "--steps",
         type=int,
-        default=2000,
-        help="the training budget the quickstart's total_steps literal is set to",
+        default=1024,
+        help="the quickstart's timestep_limit for this run",
     )
     ap.add_argument("--timeout", type=int, default=900, help="seconds the quickstart may take")
     ap.add_argument("--keep", action="store_true", help="keep the temporary folder")
@@ -276,33 +287,36 @@ def main() -> int:
 
         # P4
         qs = work / "quickstart.py"
-        watch, out = [], ""
         src = fetch_quickstart(gym, qs)
         if not src:
             phase("P4 quickstart.py runs", "BLOCKED", f"no examples/quickstart.py in {gym}")
         else:
             text = qs.read_text(encoding="utf-8")
-            literal = "total_steps=200_000"
-            if text.count(literal) != 1:
+            small = {**SMALL, "timestep_limit=1_000_000_000,": f"timestep_limit={args.steps},"}
+            moved = [k for k in small if text.count(k) != 1]
+            if moved:
                 phase(
                     "P4 quickstart.py runs",
                     "FAIL",
-                    f"from {src}: {literal!r} occurs {text.count(literal)} times, not once",
+                    f"from {src}: not there exactly once, so the size cannot be set: {moved}",
                 )
-                out = ""
             else:
-                qs.write_text(text.replace(literal, f"total_steps={args.steps}"), encoding="utf-8")
+                for big, little in small.items():
+                    text = text.replace(big, little)
+                qs.write_text(text, encoding="utf-8")
                 code, out, secs = run([py, "quickstart.py"], env, work, args.timeout)
-                ok = code == 0
+                ckpts = work / "runs" / "quickstart" / "checkpoints"
+                saved = ckpts.is_dir() and any(ckpts.iterdir())
+                ok = code == 0 and saved
                 phase(
                     "P4 quickstart.py runs",
                     "PASS" if ok else ("BLOCKED" if sim_missing and "royalesim" in out else "FAIL"),
-                    f"from {src}; total_steps {args.steps}; exit {code}; " + tail(out, 6),
+                    f"from {src}; timestep_limit {args.steps}; exit {code}; checkpoint "
+                    + ("written" if saved else "MISSING")
+                    + "; "
+                    + tail(out, 6),
                     secs,
                 )
-            watch = [
-                ln.split("Watch it:", 1)[1].strip() for ln in out.splitlines() if "Watch it:" in ln
-            ]
 
         # P5
         code, out, secs = run([py, "-c", TRACE_SNIPPET], env, work, 600)
@@ -335,38 +349,43 @@ def main() -> int:
                 + tail(out, 4),
                 secs,
             )
-        # P7: the command the quickstart tells the user to run, as printed, headless.
-        if not src:
-            phase("P7 the printed viewer command works", "BLOCKED", "no quickstart")
-        elif not watch:
+        # P7: the README's "Try it" as pasted, then the viewer command the README gives for the
+        # battle it saved, headless.
+        page = gym / "README.md"
+        readme = page.read_text(encoding="utf-8") if page.exists() else ""
+        program = re.search(r"## Try it.*?```python\n(.*?)```", readme, re.S)
+        command = re.search(r"`(royaleviser [^`]+\.msgpack)`", readme)
+        if not (program and command):
             phase(
-                "P7 the printed viewer command works",
-                "FAIL" if out else "BLOCKED",
-                "the quickstart printed no 'Watch it:' line",
+                "P7 the README's Try it and its viewer command",
+                "FAIL",
+                "the README has no Try it program or no royaleviser command for its battle",
             )
         else:
-            words = watch[-1].split()
+            code, out7, secs = run([py, "-c", program.group(1)], env, work, 600)
+            words = command.group(1).split()
             exe = shutil.which(words[0], path=env["PATH"])
-            if not exe:
+            shot = work / "shot7.png"
+            if code != 0 or not exe:
                 phase(
-                    "P7 the printed viewer command works",
+                    "P7 the README's Try it and its viewer command",
                     "FAIL",
-                    f"{words[0]!r} is not a command after the install ({watch[-1]})",
+                    f"Try it exit {code}; {words[0]!r} found: {bool(exe)}; " + tail(out7, 4),
+                    secs,
                 )
             else:
-                shot = work / "shot7.png"
-                code, out7, secs = run(
+                code, out7, secs2 = run(
                     [exe, *words[1:], "--seconds", "2", "--shot", str(shot)], env, work, 300
                 )
                 good = code == 0 and shot.exists() and shot.stat().st_size > 1000
                 phase(
-                    "P7 the printed viewer command works",
+                    "P7 the README's Try it and its viewer command",
                     "PASS" if good else "FAIL",
-                    f"{watch[-1]} -> exit {code}; "
+                    f"{command.group(1)} -> exit {code}; "
                     + (f"shot {shot.stat().st_size} bytes" if shot.exists() else "no shot")
                     + "; "
                     + tail(out7, 3),
-                    secs,
+                    secs + secs2,
                 )
         return finish(args, root, 0 if all(r["status"] == "PASS" for r in results) else 1)
     except Exception as ex:  # a crash of this script is a FAIL of the test, said as such

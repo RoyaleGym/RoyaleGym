@@ -11,7 +11,14 @@ change the observation's shape; each such change is listed here.
   imitation. The extras `[sim]`, `[learn]`, `[viser]` and `[imitate]` install one each.
 - `make_env()`: a two-seat battle in one call, with a starter deck and tower damage as the reward.
 - `play_battle()`: play one battle with a trained bot and save it for the viewer.
-- `examples/quickstart.py`: train a first bot in one file, then watch it.
+- `examples/quickstart.py`: one file that names every piece of the env (engine, state mutator,
+  obs builder, action parser, rewards, end conditions) and trains on the GPU. Watch it live
+  with `royaleviser`.
+- `SpatialObsBuilder(evolutions=True)`: which hand cards play evolved now, and the evolved units
+  on the board. `evolution_progress=True` adds how far each counter has got.
+- `DefaultStateMutator(decks=...)` takes card names.
+- `EntityKind`, `to_own`, `MatchSetup`, `deck_ids`, `Winner` and `TowerSlot` import from
+  `royalegym`, so every page can say everything does.
 - `royalegym.__version__`, and type hints that type checkers read (`py.typed`).
 - The command delay (`command_delay_ticks`): a play runs some ticks after the tap, as in the game.
 - Ability buttons for heroes and champions (`TileActionParser(ability_buttons=True)`).
