@@ -111,7 +111,7 @@ RoyaleGym writes card names without spaces. Most are the game's names run togeth
 
 ## Cards
 
-The engine's card list, as it stands on engine build `a581356680589e2c`, by the names
+The engine's card list, as it stands on engine build `1cb11c66cdd25ced`, by the names
 RoyaleGym uses. Hitpoints are for one unit at level 11. A few names in the list are special
 versions used in game events. To get the list for the engine you have installed:
 
