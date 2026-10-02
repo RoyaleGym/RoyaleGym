@@ -95,7 +95,7 @@ shows which term is paying for it.
 
 `default_reward()` mixes the first four.
 
-These outputs were run on 2026-10-01 on engine build `a581356680589e2c`. Battles change with the
+These outputs were run on 2026-10-02 on engine build `1cb11c66cdd25ced`. Battles change with the
 engine version, so your totals may differ.
 
 Next: [Observations and Actions](observations-and-actions.md), what the bot sees and the moves it

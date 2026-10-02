@@ -102,6 +102,6 @@ buttons ready: [0 0 0]
 `ability_ready` has one flag per button. No button is ready at the start. The mask allows a press
 only when the button is ready and you have the elixir for it.
 
-These outputs were run on 2026-10-01 on engine build `a581356680589e2c`.
+These outputs were run on 2026-10-02 on engine build `1cb11c66cdd25ced`.
 
 Next: [Custom Decks](custom-decks.md), to choose the cards.
