@@ -66,7 +66,7 @@ ability buttons: 1 | moves: 2308
 A deck with a hero or a champion gets three extra moves, one per button slot, so 2308 instead of
 2305. Here only one slot holds a button. A slot with no button is never allowed.
 
-These outputs were run on 2026-10-01 on engine build `650078fef1aca217`. Hands depend on the
+These outputs were run on 2026-10-01 on engine build `a581356680589e2c`. Hands depend on the
 engine version, so yours may differ.
 
 Next: [Rewards](rewards.md), to change what your bot is paid for.
