@@ -91,10 +91,12 @@ checkpoint's folder.
   already at 600,000 trains 400,000 more.
 - You can change the learning rates, `ppo_epochs`, the batch sizes, `ppo_ent_coef` and
   `gae_gamma` between runs; it carries on and prints what changed.
-- If you change the network size or the opponent, it refuses to carry on and says why.
-- If you change what's inside `build_env`, such as the deck or the reward, it does **not**
-  notice: it carries on training the old bot under the new setup. Use a new `save_dir` when you
-  want a new bot.
+- If you change the network size, the opponent, `n_envs`, what the bot sees or what it can do, or
+  you update RoyaleGym, it refuses to carry on and says what differs.
+- If you change the deck or the reward inside `build_env`, it carries on training the old bot
+  under the new setup, and prints one line that names what changed:
+  `build_env makes a different environment from this run's last one: the decks.` Use a new
+  `save_dir` when you want a new bot.
 - `resume=False` refuses a folder that already holds a run. It never deletes anything.
 
 ## Using a Trained Bot

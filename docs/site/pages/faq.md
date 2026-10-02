@@ -27,8 +27,8 @@ RoyaleGym never touches the game, your account or Supercell's servers, so there'
 
 ### What computer do I need?
 
-- Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.13 or 3.12.
-  Not Python 3.14 yet: the viewer can't install on it.
+- Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.12, 3.13 or
+  3.14.
 - About 5 GB of free disk space, most of it for PyTorch.
 - 16 GB of memory (RAM) or more. Training with the quickstart's settings can use around 10 GB.
 - To train at a useful speed, an NVIDIA graphics card: a GTX 16-series, an RTX 20-series, or
@@ -254,8 +254,9 @@ uninstall it too (on Windows: Settings > Apps > Installed apps > Python > Uninst
 ### What happens when Clash Royale updates?
 
 New cards and balance changes reach RoyaleGym in a new version of the engine. To update, find
-the newest version on the [Releases page](https://github.com/RoyaleGym/RoyaleGym/releases), for
-example `v0.1.2`, and run this with that version at the end:
+the newest version on the [Releases page](https://github.com/RoyaleGym/RoyaleGym/releases), and
+run this with that version in place of `v0.1.2` at the end. Updating from v0.1.1? Run
+`pip uninstall -y pygame` first: the viewer now uses pygame-ce in its place.
 
 ```
 pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.2

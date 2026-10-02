@@ -68,8 +68,8 @@ You see something like:
 ERROR: Package 'royalegym' requires a different Python: 3.11.9 not in '>=3.12'
 ```
 
-Your Python is too old. Install Python 3.13 or 3.12 (step 1 of [Install](install.md)), then
-make the virtual environment again (step 3).
+Your Python is too old. Install Python 3.14, 3.13 or 3.12 (step 1 of [Install](install.md)),
+then make the virtual environment again (step 3).
 
 ### `Failed to build 'pygame'`, or no version of `pygame`
 
@@ -80,9 +80,9 @@ Failed to build 'pygame'
 ERROR: Could not find a version that satisfies the requirement pygame>=2.6
 ```
 
-Your Python is 3.14 or newer, and the viewer can't install on it yet. Install Python 3.13 (step
-1 of [Install](install.md)), make the virtual environment again with it (step 3), and repeat
-steps 4 and 5.
+You used an older install line. Its viewer needs `pygame`, which doesn't install on Python 3.14.
+The viewer now uses `pygame-ce`, which does. Copy the install line from step 5 of
+[Install](install.md#5-install-royalegym) again, with its copy button.
 
 ### `Could not find a version that satisfies the requirement torch`
 
@@ -90,8 +90,8 @@ steps 4 and 5.
   2.2.2)`. PyTorch no longer makes a version for Intel Macs that RoyaleGym can use, so it doesn't
   install there. You need a Mac with Apple silicon, or a Windows or Linux computer.
 - **Anywhere else**, your Python is probably newer than PyTorch supports yet. Check with
-  `python --version`, install Python 3.13 or 3.12, make the virtual environment again (step 3),
-  and repeat step 4.
+  `python --version`, install Python 3.14 (or 3.13 or 3.12), make the virtual environment again
+  (step 3), and repeat step 4.
 
 ### `Could not find a version that satisfies the requirement royalegym`
 
@@ -342,6 +342,22 @@ helps more than more cores. `n_envs` is fixed for a run: to try another number, 
 The virtual environment isn't on (see [No module named 'royalegym'](#no-module-named-royalegym)),
 or the viewer isn't installed. Run the install line from step 5 of
 [Install](install.md#5-install-royalegym) again.
+
+### `module 'pygame' has no attribute 'init'`
+
+You see this when you start the viewer:
+
+```text
+AttributeError: module 'pygame' has no attribute 'init'
+```
+
+You removed `pygame` after updating. The viewer now uses `pygame-ce`, and the two share one
+folder, so removing `pygame` took `pygame-ce`'s files with it. Put them back, with the virtual
+environment on:
+
+```
+pip install --force-reinstall pygame-ce
+```
 
 ### The viewer window stays empty
 

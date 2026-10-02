@@ -19,8 +19,8 @@ No. It trains in the simulator, and that's all it does.
 RoyaleGym never touches the game, your account or Supercell's servers. There's nothing to ban.
 
 **What computer do I need?**
-Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.13 or 3.12, and
-16 GB of memory. To train a bot you also want an NVIDIA graphics card (GTX 16-series, RTX
+Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.12, 3.13 or
+3.14, and 16 GB of memory. To train a bot you also want an NVIDIA graphics card (GTX 16-series, RTX
 20-series or newer). Without one, everything still works, but training is too slow to be much
 fun. The [FAQ](faq.md#what-computer-do-i-need) has the details.
 

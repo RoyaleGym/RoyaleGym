@@ -11,13 +11,14 @@ If anything goes wrong, look up the message on [It Doesn't Work](it-doesnt-work.
 
 ## 1. Install Python
 
-You need **Python 3.13 or 3.12**. Not 3.14 or newer yet: the viewer can't install on those.
+You need **Python 3.12, 3.13 or 3.14**. The newest, 3.14, is a good choice.
 
 === "Windows"
 
     1. Go to [python.org/downloads/windows](https://www.python.org/downloads/windows/).
-    2. Under **Stable Releases**, find the newest **Python 3.13** (or 3.12) and click
-       **Download Windows installer (64-bit)**. Skip the newer versions above it.
+    2. Under **Stable Releases**, find the newest **Python 3.14** (or 3.13 or 3.12) and click
+       **Download Windows installer (64-bit)**. If a version newer than 3.14 is listed above it,
+       skip that one.
     3. Run the installer. On its first screen, **tick "Add python.exe to PATH"** at the bottom.
        Leave the other box as it is.
     4. Click **Install Now**. When it finishes, you can ignore the "Disable path length limit"
@@ -32,8 +33,8 @@ You need **Python 3.13 or 3.12**. Not 3.14 or newer yet: the viewer can't instal
     PyTorch that RoyaleGym needs no longer installs.
 
     Go to [python.org/downloads/macos](https://www.python.org/downloads/macos/), download the
-    **macOS 64-bit universal2 installer** for the newest Python 3.13 (or 3.12), and run it. Skip
-    newer versions.
+    **macOS 64-bit universal2 installer** for the newest Python 3.14 (or 3.13 or 3.12), and run it.
+    Skip anything newer than 3.14.
 
 === "Linux"
 
@@ -45,8 +46,8 @@ You need **Python 3.13 or 3.12**. Not 3.14 or newer yet: the viewer can't instal
     ```
 
     `sudo` asks for your password, and nothing shows while you type it. That's normal. Older
-    versions of Ubuntu come with an older Python: install Python 3.12 or 3.13 with your package
-    manager first, or upgrade Ubuntu.
+    versions of Ubuntu come with an older Python: install Python 3.12, 3.13 or 3.14 with your
+    package manager first, or upgrade Ubuntu.
 
 ## 2. Open a Terminal
 
@@ -79,12 +80,12 @@ A terminal is the window where you type commands.
 You should see something like:
 
 ```text
-Python 3.13.16
+Python 3.14.8
 ```
 
-3.12 is fine too. If it shows another version, you have more than one Python and the terminal
-found the wrong one first. Name the version in step 3 instead: `py -3.13 -m venv venv` on
-Windows, `python3.13 -m venv venv` on a Mac or Linux. After that, inside the virtual
+3.12 and 3.13 are fine too. If it shows another version, you have more than one Python and the
+terminal found the wrong one first. Name the version in step 3 instead, for example
+`py -3.14 -m venv venv` on Windows or `python3.14 -m venv venv` on a Mac or Linux. After that, inside the virtual
 environment, plain `python` is the right one.
 
 ## 3. Make a Folder for Your Bot
@@ -205,7 +206,7 @@ If `pip` prints a notice that "a new release of pip is available", you can ignor
 ## 5. Install RoyaleGym
 
 ```
-pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.1
+pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.2
 ```
 
 Copy the whole line with the copy button, quotes included. `[all]` means "with every part": the
@@ -226,7 +227,7 @@ python -c "import royalegym, torch; print('RoyaleGym', royalegym.__version__, '|
 You should see:
 
 ```text
-RoyaleGym 0.1.1 | graphics card: True
+RoyaleGym 0.1.2 | graphics card: True
 ```
 
 The version number may be newer. If it says `graphics card: False` on a computer with an NVIDIA

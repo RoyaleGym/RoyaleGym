@@ -241,8 +241,9 @@ python -c "from royalegym import RustEngine; print([c.name for c in RustEngine()
 ```
 
 Then change `save_dir="runs/quickstart"` to a new name, such as `save_dir="runs/hog"`, and the
-same in `watch.py`. Otherwise it quietly carries on training your old bot with the new deck,
-instead of starting a new one.
+same in `watch.py`. Otherwise it carries on training your old bot with the new deck, instead of
+starting a new one. It says so in one line before it starts:
+`build_env makes a different environment from this run's last one: the decks.`
 
 ### Evolutions and heroes
 
