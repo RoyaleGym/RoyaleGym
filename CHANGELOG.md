@@ -4,6 +4,23 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.2 (2026-10-02)
+
+### Fixed
+- Every "the engine is not installed" message points at the install page, whose line works before
+  PyPI, instead of a `pip install` line that does not; `make_env` uses the same words.
+- `MockEngine()` in an installed engine (which carries no raw 2018 card tables) says so and names the
+  real engine, instead of failing on a missing file.
+
+### Added
+- `.github/workflows/pypi.yml`: publishing to PyPI from a version tag, switched off until the PyPI
+  side is ready.
+- The fresh-user test runs on Python 3.12, 3.13 and 3.14.
+
+### Changed
+- The release page carries royaleviser 0.1.1, whose viewer uses pygame-ce (it installs on Python
+  3.14). If you installed an earlier release, run `pip uninstall pygame` before upgrading.
+
 ## 0.1.1 (2026-10-02)
 
 ### Fixed
