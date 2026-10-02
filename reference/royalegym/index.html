@@ -1971,6 +1971,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.SpellAimClock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SpellAimClock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.SpatialObsBuilder" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2152,6 +2163,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;evolved_channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.seen_aim_plane" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;seen_aim_plane
       
     </span>
   </a>
@@ -6193,6 +6215,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.SpellAimClock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SpellAimClock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.SpatialObsBuilder" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6374,6 +6407,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;evolved_channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.seen_aim_plane" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;seen_aim_plane
       
     </span>
   </a>
@@ -9875,6 +9919,60 @@ of the others happened to be constant.</p>
 
 
 
+<h3 id="royalegym.obs.SpellAimClock" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <code>SpellAimClock</code>
+
+
+<a href="#royalegym.obs.SpellAimClock" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>When each enemy spell's target became readable, from what a player sees.</p>
+<p>The client never draws an enemy spell's target. A thrown spell (FLIGHT) shows it through its
+arc once it has flown for a while, so its target counts as seen <code>after_ticks</code> ticks after it
+STARTS MOVING (not after the throw: a Goblin Barrel sits a while first). A spell seen while it
+still waits (<code>delay_ticks</code> &gt; 0) starts moving at that tick plus its delay, exactly. One first
+seen already moving is dated at that sight, which can only show its target later than a player
+knew it, never sooner. A rolling spell's path is drawn on the ground and an area spell sits on
+its target, so those count from the first sight.</p>
+<p>A spell has no id in <code>BattleState</code>; it is keyed by (team, card, target), which a flight keeps.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h3 id="royalegym.obs.SpatialObsBuilder" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <code>SpatialObsBuilder</code>
 
@@ -10296,15 +10394,15 @@ separately, and their variability says nothing about the representation.</p>
 
 
 <h3 id="royalegym.obs.spatial_channels" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">spatial_channels</span><span class="p">(</span><span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">spatial_channels</span><span class="p">(</span><span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">spell_aim</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.spatial_channels" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
 
-        <p>The spatial channels: the fair ones, the evolved-unit pair when asked for, then the
-revealed ones. The fair block keeps its offsets either way.</p>
+        <p>The spatial channels: the fair ones, the evolved-unit pair and the readable enemy spell
+targets when asked for, then the revealed ones. The fair block keeps its offsets either way.</p>
 
 
     </div>
@@ -10376,6 +10474,25 @@ can plant a defect into. Integer counts converted once, like
 counted. An engine that does not report the bits (<code>status_flags</code> -1) is refused:
 reading "not reported" as "not evolved" would hand a network zeros that look like an
 answer. Module-level so a test can plant a defect in it.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.obs.seen_aim_plane" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">seen_aim_plane</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">,</span> <span class="n">clock</span><span class="p">)</span></code>
+
+<a href="#royalegym.obs.seen_aim_plane" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>float32 [tiles_y, tiles_x], seen by <code>team</code>: the ENEMY's spells counted at their landing
+tile once <code>clock</code> says a player could read it. Module-level so a test can plant a defect.</p>
 
 
     </div>

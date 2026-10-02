@@ -183,6 +183,18 @@
 .rg-card--small .rg-card__icon svg { width: 1.5rem; height: 1.5rem; }
 .rg-card--small .rg-card__title { font-size: 0.85rem; }
 
+/* The five packages: each card leads with the package's own mark (a square file, the shield filling its height). */
+.rg-card__mark {
+  display: block;
+  width: 3.2rem;
+  height: 3.2rem;
+  margin: 0 0 0.1rem -0.3rem;
+  filter: drop-shadow(0 3px 6px rgb(8 14 50 / 25%));
+  transition: transform 0.2s;
+}
+.md-typeset a.rg-card--package:hover .rg-card__mark,
+.md-typeset a.rg-card--package:focus .rg-card__mark { transform: scale(1.05); }
+
 .md-typeset h2.rg-section { margin-top: 1.6rem; }
 .rg-section__lead { color: var(--md-default-fg-color--light); }
 
