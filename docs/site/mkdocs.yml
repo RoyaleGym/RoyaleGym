@@ -26,8 +26,9 @@ theme:
   # The home page's banner and cards (overrides/home.html).
   custom_dir: overrides
   language: en
-  logo: assets/crown.svg
-  favicon: assets/crown.svg
+  # The RoyaleGym mark (owner, 2026-10-02): the crown shield; the favicon is its simplified small form.
+  logo: assets/royalegym-mark.png
+  favicon: assets/favicon.png
   icon:
     repo: fontawesome/brands/github
   features:
@@ -42,22 +43,22 @@ theme:
     - content.action.edit
     - toc.follow
   palette:
-    # The viewer's own colours, so the site and the screenshots on it agree.
+    # The brand's royal blue and gold (stylesheets/extra.css defines "custom").
     - media: "(prefers-color-scheme)"
       toggle:
         icon: material/brightness-auto
         name: Follow my system
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: teal
-      accent: deep orange
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: teal
-      accent: deep orange
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light
