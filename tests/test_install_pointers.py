@@ -301,7 +301,9 @@ def test_every_file_the_readme_links_to_exists() -> None:
     missing = [t for t in readme_links() if not (REPO / t).exists()]
     assert not missing, f"README.md links to files that do not exist: {missing}"
     # Vacuity: it really is reading links, and the quickstart is among them.
-    assert "examples/quickstart.py" in readme_links(), readme_links()
+    # The Quick Start page hands a pip user quickstart.py; a link into examples/ would not.
+    quick = "](https://royalegym.github.io/RoyaleGym/quickstart/)"
+    assert quick in README.read_text(encoding="utf-8"), "the README lost its Quick Start link"
     # The docs are the published site now, not pages in this repo (owner, 2026-10-02:
     # "the docs link should go to the site instead of another readme").
     text = README.read_text(encoding="utf-8")

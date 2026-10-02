@@ -1,6 +1,7 @@
 """Train a Clash Royale bot.
 
-    pip install "royalegym[all]"
+Install first (https://royalegym.github.io/RoyaleGym/install/), then:
+
     python quickstart.py
 
 It prints a line after every update. To watch it play, run `royaleviser` in a second

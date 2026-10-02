@@ -1,6 +1,6 @@
 # RoyaleGym
 
-<p align="center"><a href="https://github.com/RoyaleGym/RoyaleGym/actions/workflows/suite.yml"><img alt="CI" src="https://github.com/RoyaleGym/RoyaleGym/actions/workflows/suite.yml/badge.svg"></a> <img alt="License" src="https://img.shields.io/github/license/RoyaleGym/RoyaleGym?style=flat-square&color=555"> <img alt="Python" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white"> <a href="https://royalegym.github.io/RoyaleGym/"><img alt="Docs" src="https://img.shields.io/badge/docs-royalegym.github.io-8957e5?style=flat-square&logo=readthedocs&logoColor=white"></a> <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/discord/1551699576304705647?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2"></a> <img alt="Last commit" src="https://img.shields.io/github/last-commit/RoyaleGym/RoyaleGym?style=flat-square&color=555"></p>
+<p align="center"><a href="https://github.com/RoyaleGym/RoyaleGym/actions/workflows/suite.yml"><img alt="CI" src="https://github.com/RoyaleGym/RoyaleGym/actions/workflows/suite.yml/badge.svg"></a> <img alt="License" src="https://img.shields.io/github/license/RoyaleGym/RoyaleGym?style=flat-square&color=555"> <img alt="Python" src="https://img.shields.io/badge/python-3.12%20%7C%203.13-3776AB?style=flat-square&logo=python&logoColor=white"> <a href="https://royalegym.github.io/RoyaleGym/"><img alt="Docs" src="https://img.shields.io/badge/docs-royalegym.github.io-8957e5?style=flat-square&logo=readthedocs&logoColor=white"></a> <a href="https://discord.gg/4D2BS5JBHP"><img alt="Discord" src="https://img.shields.io/discord/1551699576304705647?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2"></a> <img alt="Last commit" src="https://img.shields.io/github/last-commit/RoyaleGym/RoyaleGym?style=flat-square&color=555"></p>
 
 <p align="center"><img alt="APIs: Gymnasium and PettingZoo" src="https://img.shields.io/badge/APIs-Gymnasium%20%2B%20PettingZoo-0b7285?style=flat-square"> <img alt="Engine: Rust, deterministic" src="https://img.shields.io/badge/engine-Rust%2C%20deterministic-DEA584?style=flat-square&logo=rust&logoColor=white"> <img alt="Tick: 50 ms, 20 per second" src="https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square"> <img alt="Action space: 2305 moves" src="https://img.shields.io/badge/action%20space-2305%20moves-555?style=flat-square"></p>
 
@@ -11,10 +11,10 @@ battles, what it sees, the moves it can make, and a trainer.
 
 ## Install
 
-    pip install "royalegym[all]"
+    pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.1
 
-Python 3.12 or newer. No Rust, no game files. (Until it is on PyPI, see
-[Install](https://royalegym.github.io/RoyaleGym/install/) for the exact line.)
+Python 3.12 or 3.13. No Rust, no game files. On Windows with an NVIDIA card, install PyTorch first
+([Install](https://royalegym.github.io/RoyaleGym/install/), step 4).
 
 ## Try it
 
@@ -25,8 +25,9 @@ battle = play_battle(make_env(), blue="random", red="random", save_to="first_bat
 print("winner", battle.winner, "crowns", battle.crowns)
 ```
 
-Then watch it: `royaleviser first_battle.msgpack`. To train a bot, run
-[`examples/quickstart.py`](examples/quickstart.py).
+Save it as `first_battle.py` and run `python first_battle.py` (a few seconds). `winner` is 0 for
+Blue, 1 for Red and 2 for a draw. Then watch it: `royaleviser first_battle.msgpack`. To train a bot,
+follow the [Quick Start](https://royalegym.github.io/RoyaleGym/quickstart/): it gives you `quickstart.py`.
 
 ## Next
 

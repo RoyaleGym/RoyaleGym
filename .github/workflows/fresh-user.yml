@@ -23,12 +23,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, windows-2022, macos-14]
+        python: ['3.12', '3.13']
+    name: fresh (${{ matrix.os }}, py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python }}
       - name: wheels -- royalesim from its release, the pure-Python siblings built from their repos
         shell: bash
         env:
@@ -46,7 +48,7 @@ jobs:
           # Run from an empty folder: the checkout is only the source pip copies, never on the path.
           cd "$RUNNER_TEMP"
           python "$GITHUB_WORKSPACE/tools/fresh_user_test.py" --gym "$GITHUB_WORKSPACE" --wheels "$RUNNER_TEMP/wheels" \
-            --steps 2000 --timeout 1200 --report "$GITHUB_WORKSPACE/fresh-user-${{ matrix.os }}.json"
+            --steps 2000 --timeout 1200 --report "$GITHUB_WORKSPACE/fresh-user-${{ matrix.os }}-py${{ matrix.python }}.json"
       # The line the docs give: the latest RoyaleGym release, installed BY NAME from its page, with
       # the quickstart and README of that same tag. The step above tests main; this one tests what
       # a reader gets today.
@@ -65,9 +67,9 @@ jobs:
           cd "$RUNNER_TEMP"
           python "$GITHUB_WORKSPACE/tools/fresh_user_test.py" --gym "$RUNNER_TEMP/released" --by-name \
             --wheels "https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/$TAG" \
-            --steps 2000 --timeout 1200 --report "$GITHUB_WORKSPACE/fresh-user-release-${{ matrix.os }}.json"
+            --steps 2000 --timeout 1200 --report "$GITHUB_WORKSPACE/fresh-user-release-${{ matrix.os }}-py${{ matrix.python }}.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fresh-user-${{ matrix.os }}
-          path: fresh-user*-${{ matrix.os }}.json
+          name: fresh-user-${{ matrix.os }}-py${{ matrix.python }}
+          path: fresh-user*-${{ matrix.os }}-py${{ matrix.python }}.json
