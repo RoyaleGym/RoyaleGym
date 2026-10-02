@@ -246,3 +246,27 @@ def test_config_records_the_flags():
     assert cfg["evolutions"] is True
     assert cfg["evolution_progress"] is True
     assert "evolutions" not in SpatialObsBuilder().config()
+
+
+@needs_engine
+def test_evo_skeletons_progress_runs_a_half_at_a_time_to_the_evolved_play():
+    """With the engine's cycle length (2 basic plays for the Skeletons), the bar reads 0, 0.5,
+    then 1 on the play that puts down the evolved form, and starts again."""
+    env = make_env(
+        deck=DECK,
+        evolved=["Skeletons"],
+        obs_builder=SpatialObsBuilder(evolutions=True, evolution_progress=True),
+    )
+    names = {c.card_id: c.name for c in env.engine.cards()}
+    off = env.obs_builder.vector_offsets()
+    bars, flags = [], []
+
+    def watch(obs, slot, card, state):
+        if slot >= 0 and names[card] == "Skeletons":
+            vec = obs["blue"]["vector"]
+            bars.append(float(vec[off["own_hand_evo_progress"]][slot]))
+            flags.append(float(vec[off["own_hand_evolved"]][slot]))
+
+    _cycle(env, 60, watch, prefer="Skeletons")
+    assert bars[:6] == [0.0, 0.5, 1.0, 0.0, 0.5, 1.0]
+    assert flags[:6] == [0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
