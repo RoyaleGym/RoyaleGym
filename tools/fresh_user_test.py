@@ -14,6 +14,10 @@ and a temporary HOME, it:
   P5  records one battle with the INSTALLED package's public API and saves a trace
   P6  opens that trace in the viewer headless (SDL_VIDEODRIVER=dummy, --seconds, --shot)
   P7  runs the README's "Try it" as pasted, then the royaleviser command it gives, headless
+  P8  runs each sibling README's "Try it" program (RoyaleSim, RoyaleLearn, RoyaleImitate, the
+      README at the tag of the installed version) from a file in an empty folder, with one
+      change: every total_steps=N becomes total_steps=1, one update. A sibling's own CI runs
+      from an editable checkout, so this is where a wheel-only failure shows.
 Each phase reports PASS, FAIL or BLOCKED. BLOCKED means a prerequisite is missing (no prebuilt
 royalesim wheel, no quickstart.py, no [all] extra): it is NOT a pass. It also lists HOLES:
 things a newcomer would hit that are not failures of a phase (a missing console script, a
@@ -34,6 +38,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 from pathlib import Path
 
 ORG = "RoyaleGym"
@@ -56,8 +61,35 @@ REPO = {
     "royaleimitate": "RoyaleImitate",
 }
 
+#: The siblings whose README "Try it" is a program (P8). RoyaleViser's is shell commands that
+#: open a window (P6 opens the viewer headless); RoyaleGym's own is P7.
+SIBLING_TRY_ITS = ("royalesim", "royalelearn", "royaleimitate")
+#: A Try it trains for its stated total_steps; P8 trains for one update, so a leg stays minutes.
+TOTAL_STEPS = re.compile(r"total_steps=[0-9_]+")
+
 results: list[dict] = []
 holes: list[str] = []
+
+
+def try_it_program(readme: str) -> tuple[str, int] | None:
+    """The first python block in the README's "## Try it" section, with every total_steps=N
+    cut to total_steps=1, and the number of cuts. None when the section has no python block."""
+    parts = readme.split("## Try it", 1)
+    if len(parts) < 2:
+        return None
+    section = re.split(r"^## ", parts[1], maxsplit=1, flags=re.M)[0]
+    block = re.search(r"```python\n(.*?)```", section, re.S)
+    if not block:
+        return None
+    return TOTAL_STEPS.subn("total_steps=1", block.group(1))
+
+
+def fetch_readme(package: str, version: str) -> str:
+    """The sibling's README at the tag its installed version was built from (stage_release
+    refuses a tag that is not the version, so v<version> names it)."""
+    url = f"https://raw.githubusercontent.com/{ORG}/{REPO[package]}/v{version}/README.md"
+    with urllib.request.urlopen(url, timeout=60) as page:
+        return page.read().decode("utf-8")
 
 
 def phase(name, status, detail, seconds=0.0):
@@ -399,6 +431,35 @@ def main() -> int:
                     + tail(out7, 3),
                     secs + secs2,
                 )
+        # P8: each sibling README's Try it, saved to a file the way a user saves it (a trainer's
+        # worker processes re-import the file, which `python -c` cannot give them).
+        versions = {k: v.get("version") for k, v in info["mods"].items() if "error" not in v}
+        for package in SIBLING_TRY_ITS:
+            name = f"P8 {package}'s README Try it (total_steps cut to 1)"
+            version = versions.get(package)
+            if not version:
+                phase(name, "BLOCKED", f"{package} is not installed")
+                continue
+            try:
+                readme = fetch_readme(package, version)
+            except OSError as ex:
+                phase(name, "BLOCKED", f"its README at v{version} could not be fetched: {ex}")
+                continue
+            found = try_it_program(readme)
+            if found is None:
+                phase(name, "FAIL", f"its README at v{version} has no Try it program")
+                continue
+            program, cuts = found
+            folder = work / f"try-{package}"
+            folder.mkdir()
+            (folder / "try_it.py").write_text(program, encoding="utf-8")
+            code, out8, secs = run([py, "try_it.py"], env, folder, args.timeout)
+            phase(
+                name,
+                "PASS" if code == 0 else "FAIL",
+                f"README at v{version}; {cuts} total_steps cut; exit {code}; " + tail(out8, 4),
+                secs,
+            )
         return finish(args, root, 0 if all(r["status"] == "PASS" for r in results) else 1)
     except Exception as ex:  # a crash of this script is a FAIL of the test, said as such
         phase("test", "FAIL", f"{type(ex).__name__}: {ex}")
