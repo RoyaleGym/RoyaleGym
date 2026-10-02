@@ -3052,6 +3052,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#working-on-royaleimitate-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Working on RoyaleImitate itself
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3230,6 +3247,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#working-on-royaleimitate-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Working on RoyaleImitate itself
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3313,16 +3347,19 @@ while it learns. Leave it out and RoyaleLearn behaves as if it did not exist.</p
   explains it.</li>
 </ul>
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
-<p>Install RoyaleLearn first, following its README, including its torch extra: this package needs
-torch and safetensors. That leaves you in a <code>Royale</code> folder with the public repos side by side
-and one virtual environment they share.</p>
+<p><code>royalegym[all]</code> already includes RoyaleImitate. Nothing more to install: follow
+<a href="https://royalegym.github.io/RoyaleGym/install/">Install</a>.</p>
+<p>RoyaleLearn finds the two sections through this package's entry points. A config that names
+<code>warm_start</code> or <code>imitation</code> without this package installed is refused at load, naming the section.</p>
+<h3 id="working-on-royaleimitate-itself">Working on RoyaleImitate itself<a class="headerlink" href="#working-on-royaleimitate-itself" title="Permanent link">&para;</a></h3>
+<p>Build RoyaleLearn from source first, following its guide's "Build from source", including its
+torch extra: this package needs torch and safetensors. That leaves you in a <code>Royale</code> folder with
+the public repos side by side and one virtual environment they share.</p>
 <p>These are Windows PowerShell commands, like RoyaleLearn's. On macOS or Linux, use
 <code>.venv/bin/python</code> in place of <code>.venv\Scripts\python</code>. From the <code>Royale</code> folder:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">://</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">RoyaleGym</span><span class="p">/</span><span class="n">RoyaleImitate</span><span class="p">.</span><span class="n">git</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p">.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">-e</span> <span class="n">RoyaleImitate</span> <span class="p">-</span><span class="n">-no-deps</span>
 </code></pre></div>
-<p>RoyaleLearn finds the two sections through this package's entry points. A config that names
-<code>warm_start</code> or <code>imitation</code> without this package installed is refused at load, naming the section.</p>
 <h2 id="use">Use<a class="headerlink" href="#use" title="Permanent link">&para;</a></h2>
 <p>Add the sections to a run's config. For example, to start from a saved policy and hold it still for
 the first 80,000 environment steps:</p>

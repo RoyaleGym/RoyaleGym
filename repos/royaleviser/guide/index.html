@@ -3465,6 +3465,8 @@ second.</p>
 <p>It always runs as its own separate program. Your training run never waits for it. When nobody is
 watching, it costs your training run almost nothing.</p>
 <h2 id="try-it">Try it<a class="headerlink" href="#try-it" title="Permanent link">&para;</a></h2>
+<p>Installed with <code>pip install "royalegym[all]"</code>? You already have <code>royaleviser</code>. Skip
+<a href="#setup">Setup</a>: it is only for working on the viewer itself.</p>
 <p>The install gives you a <code>royaleviser</code> command. It opens three ways:</p>
 <ul>
 <li><code>royaleviser</code> on its own waits for a training run on <code>127.0.0.1:9870</code> and shows it live.</li>
@@ -3473,8 +3475,8 @@ watching, it costs your training run almost nothing.</p>
 </ul>
 <p><code>python -m royaleviser</code> is the same program. The examples below use it, so they also work
 straight from a clone.</p>
-<p>Two recordings of the same scripted battle, one from each player's point of view, are committed
-with the tests. They are about 20 KB each, so they came down with your clone.</p>
+<p>The rest of this section uses files that only a clone of this repo has. Two recordings of the
+same scripted battle, one from each player's point of view, are committed with the tests. They are about 20 KB each, so they came down with your clone.</p>
 <p>You need the shared virtual environment from <a href="#setup">Setup</a> and this one package installed.
 Nothing else. No engine build, no game files, no recordings of your own. Then move into the
 <code>RoyaleViser</code> folder with <code>cd RoyaleViser</code> and run this one command:</p>
@@ -3801,6 +3803,9 @@ string}</code>, drawn underneath in the order you sent it.</p>
 datagram itself. The format and the six constants it has to match are in
 <a href="../internals/"><code>docs/internals.md</code></a>.</p>
 <h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
+<p>Installed with <code>pip install "royalegym[all]"</code>? You already have <code>royaleviser</code>. Skip this
+section: the clones, the virtual environment and Rust below are only for working on the viewer
+itself.</p>
 <p>The whole stack shares one setup. The repos sit side by side in one folder, with one virtual
 environment at its root. You do not need all of it to use the viewer, so it comes in two parts.</p>
 <p><strong>The short way, for the viewer on its own.</strong> No Rust, no engine build, no game files. You need
