@@ -223,3 +223,26 @@ def test_the_summary_says_when_it_cannot_tell() -> None:
     text = MatchResult(games=10, wins=5, losses=5, draws=0, names=("a", "b")).summary()
     assert "too close to call" in text
     assert "a vs b" in text
+
+
+def test_play_battle_takes_the_scripted_bots_by_name():
+    """The names RoyaleImitate's record() takes for a teacher play here too, in either
+    spelling of first-affordable; "random" and "noop" keep their meaning."""
+    import importlib
+
+    from royalegym import opponents
+
+    # royalegym.evaluate is also the name of a function the package exports.
+    evaluate = importlib.import_module("royalegym.evaluate")
+    from royalegym.selfplay import NoopOpponent, RandomLegalOpponent
+
+    kinds = {name: type(bot) for name, bot in opponents.ladder()}
+    for name in ("first-affordable", "first_affordable", "defend", "push", "patient"):
+        bot = evaluate._as_opponent(name)
+        assert type(bot) is kinds[name.replace("_", "-")], name
+    assert type(evaluate._as_opponent("random")) is RandomLegalOpponent
+    assert type(evaluate._as_opponent("noop")) is NoopOpponent
+    # A fresh bot each time: one shared between seats would share its state.
+    assert evaluate._as_opponent("push") is not evaluate._as_opponent("push")
+    with pytest.raises(ValueError, match="patient"):
+        evaluate._as_opponent("pusher")

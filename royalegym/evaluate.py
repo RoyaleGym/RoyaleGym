@@ -200,7 +200,8 @@ def play_battle(
 
     ``blue`` and ``red`` are each a trained policy (a function from one seat's observation
     to an action, as a learner's saved bot is), an ``Opponent``, ``"random"`` (a bot that
-    plays random legal moves) or ``"noop"`` (one that never plays). A policy's illegal move
+    plays random legal moves), ``"noop"`` (one that never plays) or a scripted bot by name
+    (``"first-affordable"``, ``"defend"``, ``"push"``, ``"patient"``). A policy's illegal move
     is played as a no-op.
     """
     players = {"blue": _as_opponent(blue), "red": _as_opponent(red)}
@@ -227,7 +228,16 @@ def _as_opponent(who: Opponent | Callable[[dict[str, Any]], int] | str) -> Oppon
             return RandomLegalOpponent()
         if who == "noop":
             return NoopOpponent()
-        raise ValueError(f'a player is a policy, an Opponent, "random" or "noop", not {who!r}')
+        from .opponents import ladder
+
+        # The scripted bots, a fresh one per call, by the names RoyaleImitate's record()
+        # also takes (first_affordable or first-affordable).
+        scripted = {name: bot for name, bot in ladder() if name not in ("random", "noop")}
+        bot = scripted.get(who.replace("_", "-"))
+        if bot is not None:
+            return bot
+        names = ", ".join(f'"{n}"' for n in ("random", "noop", *scripted))
+        raise ValueError(f"a player is a policy, an Opponent or one of {names}, not {who!r}")
     if hasattr(who, "act"):
         return who  # type: ignore[return-value]
     return CallableOpponent(lambda obs, mask: who(obs))  # type: ignore[operator]
