@@ -18,7 +18,8 @@ build and test commands, and the rules their tests enforce.
 
 ## Getting Started
 
-- [Introduction](https://royalegym.github.io/RoyaleGym/): what it is, quick answers, the five packages
+- [Home](https://royalegym.github.io/RoyaleGym/): a map of the site, the five packages, Discord, GitHub and Ko-fi
+- [Introduction](https://royalegym.github.io/RoyaleGym/introduction/): what it is, quick answers, the five packages
 - [Install](https://royalegym.github.io/RoyaleGym/install/): Python, a virtual environment, PyTorch, the install line, a check
 - [Quick Start](https://royalegym.github.io/RoyaleGym/quickstart/): one file, build_env() plus Learner(...), that trains a bot; its output, watching, stopping, decks
 - [FAQ](https://royalegym.github.io/RoyaleGym/faq/): computer, training, decks, testing and sharing a bot, updating
@@ -28,6 +29,7 @@ build and test commands, and the rules their tests enforce.
 ## Clash Royale
 
 - [Training an Agent](https://royalegym.github.io/RoyaleGym/clash-royale/training-an-agent/): custom rewards, every trainer setting, self-play, decks, watching, wandb
+- [Configuration Objects](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/): what each swappable part of a battle does
 - [Action Parsers](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/action-parsers/): the 2305 moves, the action mask, ability buttons, writing one
 - [Done Conditions](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/done-conditions/): termination vs truncation, the shipped ones, writing one
 - [Observation Builders](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/observation-builders/): the spatial observation, fair information, Reveal, writing one
