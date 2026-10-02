@@ -271,8 +271,19 @@ def test_mock_engine_without_its_card_tables_says_how_to_go_on(monkeypatch, tmp_
 
 def test_the_imitate_extras_require_record_and_clone():
     """The site's basic-clone guide records, clones, and plays the clone with
-    Learner.load_policy: royaleimitate 0.2.1."""
+    Learner.load_policy (royaleimitate 0.2.1). 0.2.3 keeps PublicLogMemory on the engine's
+    refill timer and starts a bot from a saved one when installed from a wheel."""
     extras = _extras()
     for extra in ("imitate", "all"):
         pins = [r for r in extras[extra] if r.startswith("royaleimitate")]
-        assert pins == ["royaleimitate>=0.2.1"], f"[{extra}]: {pins}"
+        assert pins == ["royaleimitate>=0.2.3"], f"[{extra}]: {pins}"
+
+
+def test_the_learn_extras_require_a_trainer_that_runs_extensions_from_wheels():
+    """Before royalelearn 0.5.2 a run with an extension section (royaleimitate's warm_start)
+    was refused for any package installed from a wheel, which is every user of the install
+    line."""
+    extras = _extras()
+    for extra in ("learn", "all"):
+        pins = [r for r in extras[extra] if r.startswith("royalelearn")]
+        assert pins == ["royalelearn[torch]>=0.5.2"], f"[{extra}]: {pins}"
