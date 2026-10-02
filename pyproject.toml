@@ -45,6 +45,10 @@ docs = [
 [tool.setuptools]
 packages = ["royalegym"]
 
+[tool.setuptools.package-data]
+# PEP 561: type checkers read an installed package's hints only when it ships this marker.
+royalegym = ["py.typed"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

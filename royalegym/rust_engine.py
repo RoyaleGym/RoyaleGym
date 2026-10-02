@@ -206,6 +206,8 @@ _I32_MAX = 2**31 - 1
 
 
 def core_available() -> bool:
+    """Whether the battle engine (``royalesim``) is installed; ``CORE_IMPORT_ERROR`` says
+    why not when it is not."""
     return _core is not None
 
 

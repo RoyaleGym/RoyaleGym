@@ -122,3 +122,35 @@ def test_play_battle_plays_a_bot_and_saves_a_battle_the_viewer_can_open(tmp_path
     assert calls["n"] > 10, "the bot was never asked for a move"
     assert out.winner in (0, 1, 2, None)
     assert out.crowns == trace.result.crowns
+
+
+# -- the public API: a version, type hints a checker reads, a docstring on every name --
+
+
+def test_the_package_says_its_version():
+    import royalegym
+
+    with PYPROJECT.open("rb") as f:
+        version = tomllib.load(f)["project"]["version"]
+    assert royalegym.__version__ == version
+
+
+def test_type_checkers_read_the_hints():
+    """PEP 561: without py.typed a type checker ignores an installed package's hints."""
+    import royalegym
+
+    assert (Path(royalegym.__file__).parent / "py.typed").exists()
+    with PYPROJECT.open("rb") as f:
+        data = tomllib.load(f)["tool"]["setuptools"].get("package-data", {})
+    assert "py.typed" in data.get("royalegym", []), "py.typed is not shipped in the wheel"
+
+
+def test_every_public_name_says_what_it_is():
+    import inspect
+
+    import royalegym
+
+    bare = [n for n in royalegym.__all__
+            if (inspect.isclass(getattr(royalegym, n)) or inspect.isfunction(getattr(royalegym, n)))
+            and not inspect.getdoc(getattr(royalegym, n))]
+    assert bare == [], f"public names with no docstring: {bare}"

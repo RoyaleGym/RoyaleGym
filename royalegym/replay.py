@@ -338,6 +338,8 @@ class ReplayRecorder:
 
 
 def save_trace(trace: Trace, path: str | Path) -> Path:
+    """Write a recorded battle to ``path`` (msgpack, or JSON when it ends in ``.json``) and
+    return the path. ``royaleviser PATH`` opens it."""
     p = Path(path)
     data = msgspec.json.encode(trace) if p.suffix == ".json" else msgspec.msgpack.encode(trace)
     p.write_bytes(data)
@@ -345,6 +347,7 @@ def save_trace(trace: Trace, path: str | Path) -> Path:
 
 
 def load_trace(path: str | Path) -> Trace:
+    """Read a battle ``save_trace`` wrote (msgpack, or JSON when it ends in ``.json``)."""
     p = Path(path)
     raw = p.read_bytes()
     if p.suffix == ".json":

@@ -34,6 +34,8 @@ render is deliberately NOT imported here: importing it from the package would ma
 ``python -m royalegym.render`` load the module twice (runpy's RuntimeWarning).
 """
 
+from importlib.metadata import PackageNotFoundError, version
+
 from .action import ActionParser, HalfTileActionParser, PlacementOracle, TileActionParser
 from .done_condition import (
     AllCondition,
@@ -140,6 +142,11 @@ def _register() -> None:
 
 
 _register()
+
+try:
+    __version__ = version("royalegym")
+except PackageNotFoundError:  # a source tree that was never installed
+    __version__ = "0+unknown"
 
 __all__ = [
     "CORE_IMPORT_ERROR",
