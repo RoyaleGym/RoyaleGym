@@ -137,6 +137,7 @@ from .protocol import (
     EntityState,
     Placement,
     SpellMotion,
+    SpellState,
     TowerSlot,
     ability_row,
     card_is_spell,
@@ -1490,15 +1491,25 @@ EVOLVED_SPATIAL_CHANNELS: list[tuple[str, str]] = [
 ]
 
 
+#: The plane ``SpatialObsBuilder(spell_aim_after_ticks=k)`` adds: fair because it shows an enemy
+#: spell's target only once a player could read it off the screen (``SpellAimClock``).
+SEEN_AIM_CHANNEL: tuple[str, str] = (
+    "enemy_spell_aim_seen",
+    "count of enemy spells whose landing point is in the tile, once a player could read it",
+)
+
+
 def spatial_channels(
-    reveal: Reveal | None = None, evolutions: bool = False
+    reveal: Reveal | None = None, evolutions: bool = False, spell_aim: bool = False
 ) -> list[tuple[str, str]]:
-    """The spatial channels: the fair ones, the evolved-unit pair when asked for, then the
-    revealed ones. The fair block keeps its offsets either way."""
+    """The spatial channels: the fair ones, the evolved-unit pair and the readable enemy spell
+    targets when asked for, then the revealed ones. The fair block keeps its offsets either way."""
     rev = reveal or Reveal()
     out = list(FAIR_SPATIAL_CHANNELS)
     if evolutions:
         out.extend(EVOLVED_SPATIAL_CHANNELS)
+    if spell_aim:
+        out.append(SEEN_AIM_CHANNEL)
     for field, entry in REVEAL_SPATIAL_CHANNELS.items():
         if getattr(rev, field):
             out.append(entry)
@@ -1616,6 +1627,67 @@ def evolved_channels(entities: Sequence[EntityState], team: int, arena: Arena) -
     return out
 
 
+class SpellAimClock:
+    """When each enemy spell's target became readable, from what a player sees.
+
+    The client never draws an enemy spell's target. A thrown spell (FLIGHT) shows it through its
+    arc once it has flown for a while, so its target counts as seen ``after_ticks`` ticks after it
+    STARTS MOVING (not after the throw: a Goblin Barrel sits a while first). A spell seen while it
+    still waits (``delay_ticks`` > 0) starts moving at that tick plus its delay, exactly. One first
+    seen already moving is dated at that sight, which can only show its target later than a player
+    knew it, never sooner. A rolling spell's path is drawn on the ground and an area spell sits on
+    its target, so those count from the first sight.
+
+    A spell has no id in ``BattleState``; it is keyed by (team, card, target), which a flight keeps.
+    """
+
+    def __init__(self, after_ticks: int) -> None:
+        self.after_ticks = after_ticks
+        self.starts: dict[tuple[int, int, int, int], int] = {}
+        self.tick = -1
+
+    def reset(self) -> None:
+        self.starts.clear()
+        self.tick = -1
+
+    def see(self, state: BattleState) -> None:
+        if state.tick == self.tick:
+            return
+        self.tick = state.tick
+        live = set()
+        for s in state.spells:
+            if s.motion != SpellMotion.FLIGHT:
+                continue
+            key = (s.team, s.card_id, s.aim_x, s.aim_y)
+            live.add(key)
+            if s.delay_ticks > 0:
+                self.starts[key] = state.tick + s.delay_ticks
+            else:
+                self.starts.setdefault(key, state.tick)
+        for key in list(self.starts):
+            if key not in live:
+                del self.starts[key]
+
+    def readable(self, s: SpellState, tick: int) -> bool:
+        if s.motion != SpellMotion.FLIGHT:
+            return True
+        start = self.starts.get((s.team, s.card_id, s.aim_x, s.aim_y))
+        return start is not None and s.delay_ticks == 0 and tick - start >= self.after_ticks
+
+
+def seen_aim_plane(
+    state: BattleState, team: int, arena: Arena, clock: SpellAimClock
+) -> np.ndarray:
+    """float32 [tiles_y, tiles_x], seen by ``team``: the ENEMY's spells counted at their landing
+    tile once ``clock`` says a player could read it. Module-level so a test can plant a defect."""
+    out = np.zeros((arena.tiles_y, arena.tiles_x), dtype=np.float32)
+    for s in state.spells:
+        if s.team != team and clock.readable(s, state.tick):
+            ty, tx = _tile(arena, team, s.aim_x, s.aim_y)
+            out[ty, tx] += 1
+    return out
+
+
 #: ``card_ids`` value for a tile nothing stands on.
 CARD_ID_EMPTY = 0
 #: ``card_ids`` value for a crown tower, the only entity class that carries no card. Kept
@@ -1703,10 +1775,21 @@ class SpatialObsBuilder(ObsBuilder):
         card_names: Sequence[str] | None = None,
         evolutions: bool = False,
         evolution_progress: bool = False,
+        spell_aim_after_ticks: int | None = None,
     ) -> None:
         super().__init__(reveal, calibration)
         self.card_identity = bool(card_identity)
         self.enemy_last_card = self.card_identity
+        if spell_aim_after_ticks is not None and (
+            not isinstance(spell_aim_after_ticks, int) or spell_aim_after_ticks < 0
+        ):
+            raise ValueError(
+                f"spell_aim_after_ticks is {spell_aim_after_ticks!r}: ticks of flight, 0 or more"
+            )
+        self.spell_aim_after_ticks = spell_aim_after_ticks
+        self._aim_clock = (
+            SpellAimClock(spell_aim_after_ticks) if spell_aim_after_ticks is not None else None
+        )
         if evolution_progress and not evolutions:
             raise ValueError("evolution_progress needs evolutions=True: it extends those fields")
         self.evolutions = bool(evolutions)
@@ -1741,7 +1824,9 @@ class SpatialObsBuilder(ObsBuilder):
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
         a = self.arena
-        self.channels = spatial_channels(self.reveal, self.evolutions)
+        self.channels = spatial_channels(
+            self.reveal, self.evolutions, self.spell_aim_after_ticks is not None
+        )
         self._channel_index = {name: i for i, (name, _) in enumerate(self.channels)}
         self.shape = (len(self.channels), a.tiles_y, a.tiles_x)
         h = a.half
@@ -1779,6 +1864,11 @@ class SpatialObsBuilder(ObsBuilder):
             )
         self._space = spaces.Dict(entries)
 
+    def reset(self, state: BattleState) -> None:
+        super().reset(state)
+        if self._aim_clock is not None:
+            self._aim_clock.reset()
+
     def channel_names(self) -> list[str]:
         return [name for name, _ in self.channels]
 
@@ -1811,6 +1901,11 @@ class SpatialObsBuilder(ObsBuilder):
         if self.evolutions:
             at = idx["own_evolved"]
             sp[at : at + 2] = evolved_channels(state.entities, team, self.arena)
+        if self._aim_clock is not None:
+            self._aim_clock.see(state)
+            sp[idx["enemy_spell_aim_seen"]] = seen_aim_plane(
+                state, team, self.arena, self._aim_clock
+            )
         np.clip(sp, 0.0, SPATIAL_CLIP, out=sp)
         out: dict[str, Any] = {
             "spatial": sp,
@@ -1824,6 +1919,8 @@ class SpatialObsBuilder(ObsBuilder):
     def config(self) -> dict[str, Any]:
         """Constructor state, including the card names the ``card_ids`` ids refer to."""
         out = super().config()
+        if self.spell_aim_after_ticks is not None:
+            out["spell_aim_after_ticks"] = self.spell_aim_after_ticks
         if self.evolutions:
             out["evolutions"] = True
         if self.evolution_progress:
