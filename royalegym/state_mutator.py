@@ -65,14 +65,17 @@ def random_deck(rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[int
 class DefaultStateMutator(StateMutator):
     """A normal battle from tick 0.
 
-    ``decks``: fixed [blue, red] decks; None draws a random 8-card deck per team.
+    ``decks``: fixed [blue, red] decks, each 8 card names (or catalogue ids, or a mix);
+    None draws a random 8-card deck per team. Names are looked up in the engine's
+    catalogue at every build, so a deck written by name means the same cards on every
+    card table; an id is only a position in it.
     ``mirror``: both teams get Blue's deck in the same order (ShuffleMode.MIRRORED)
     -- the setting for self-play symmetry checks.
     """
 
     def __init__(
         self,
-        decks: Sequence[Sequence[int]] | None = None,
+        decks: Sequence[Sequence[int | str]] | None = None,
         shuffle: ShuffleMode = ShuffleMode.INDEPENDENT,
         mirror: bool = False,
         forms: Sequence[Sequence[int]] | None = None,
@@ -92,7 +95,13 @@ class DefaultStateMutator(StateMutator):
 
     def _decks(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[list[int]]:
         if self.decks is not None:
-            decks = [list(d) for d in self.decks]
+            decks = [
+                [
+                    deck_ids([c], cards, f"decks[{i}]")[0] if isinstance(c, str) else int(c)
+                    for c in d
+                ]
+                for i, d in enumerate(self.decks)
+            ]
         else:
             decks = [random_deck(rng, cards) for _ in TEAMS]
         if self.mirror:
