@@ -1,4 +1,4 @@
-"""The README's Try-it runs as pasted: one battle, a printed winner, a saved battle to watch.
+"""The README's "Try it" runs as pasted: one battle, a printed winner, a saved battle to watch.
 
 The README is the short front page (40 lines at most). Its program is copied into an empty
 folder and run there, as a reader runs it. What it prints depends on the engine, so the
@@ -27,7 +27,7 @@ def _try_it() -> str:
     text = README.read_text(encoding="utf-8")
     section = text.split("## Try it", 1)[1]
     m = re.search(r"```python\n(.*?)```", section, re.S)
-    assert m, "the README's Try it section has no python block"
+    assert m, 'the README\'s "Try it" has no python block'
     return m.group(1)
 
 

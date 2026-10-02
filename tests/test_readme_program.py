@@ -46,7 +46,7 @@ from royalegym.rust_engine import build_digest as engine_build_digest
 
 REPO = Path(__file__).resolve().parents[1]
 #: The long guide that was the README until the short README landed. Its complete program,
-#: printed battle and badges are what this file checks; the short README's Try-it is
+#: printed battle and badges are what this file checks; the short README's "Try it" is
 #: checked by tests/test_readme_try_it.py.
 README = REPO / "docs" / "guide.md"
 #: BOTH STAMPS ARE READ FROM THE README, not copied into here, and the copies are why.
