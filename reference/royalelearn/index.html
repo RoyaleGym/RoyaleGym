@@ -618,6 +618,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../clash-royale/cloning-a-bot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloning a Bot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -629,10 +657,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
             
   
   
@@ -650,8 +678,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1910,6 +1938,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;package_provenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalelearn.identity.package_content_digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;package_content_digest
       
     </span>
   </a>
@@ -6370,6 +6409,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalelearn.identity.package_content_digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;package_content_digest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalelearn.identity.royalegym_provenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10050,8 +10100,8 @@ rather than its path; that the digest is TRUE of the file is the section's <code
 every start. A section provided by an installed package also records the package: which
 distribution declared it, its <code>__version__</code>, and its commit (<code>package_provenance</code>). A
 package whose commit cannot be named -- installed from a wheel, or not at the top of its own
-repository -- refuses the run instead of recording <code>unknown</code>, because two runs on two
-different builds of it would then be one run.</p>
+repository -- is named by its content instead, <code>content:&lt;sha256&gt;</code> over its files
+(<code>package_content_digest</code>), so that two runs on two different builds of it stay two runs.</p>
 
 
     </div>
@@ -10287,6 +10337,27 @@ when the repository's top level IS the folder above the package and the package'
 <code>__init__.py</code> is tracked there. The dirty flag is <code>git status</code> over the package's folder,
 untracked files included, as <code>dirty_sources</code> reads it. A sha rather than a description,
 because a description changes when a tag is added to the same commit.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalelearn.identity.package_content_digest" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">package_content_digest</span><span class="p">(</span><span class="n">package</span><span class="p">)</span></code>
+
+<a href="#royalelearn.identity.package_content_digest" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>sha256 over every file in <code>package</code>'s folder, by relative path and bytes, compiled
+caches left out; or <code>"unknown"</code> for a package with no folder.</p>
+<p>What names a package installed from a wheel, which has no commit: the same files give the
+same name wherever they are installed, and any change to one gives another.</p>
 
 
     </div>

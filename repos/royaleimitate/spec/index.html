@@ -618,6 +618,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/cloning-a-bot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloning a Bot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -629,10 +657,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
             
   
   
@@ -650,8 +678,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3744,7 +3772,8 @@ as before and keeps its <code>run_id</code>. Every other field is always set whe
 <p>A record's <code>digest</code> is of the section with every <code>path</code> and its <code>alarms</code> removed. The section carries
 each file's digest, so the content of every referenced file is in the identity, and moving a folder
 is not a new experiment. A section provided by an installed package also records the package's
-distribution, <code>__version__</code> and commit; a package whose commit cannot be named refuses the run.</p>
+distribution, <code>__version__</code> and commit; a package with no commit to name (installed from a
+wheel) is named <code>content:&lt;sha256&gt;</code> over its files.</p>
 <p>At every start, fresh or resumed, each referenced folder is hashed and compared with the digest the
 config states, and a difference is refused with the path, the stated digest and the digest found.
 Without that check the identity would be only as true as the config's claim about the file.</p>

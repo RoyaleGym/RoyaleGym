@@ -809,6 +809,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#the-commit-of-the-package-providing-these-sections-cannot-be-named" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        the commit of the package providing these sections cannot be named
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-computer-gets-very-slow-or-runs-out-of-memory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1087,6 +1098,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../clash-royale/cloning-a-bot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloning a Bot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -1098,10 +1137,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
             
   
   
@@ -1119,8 +1158,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3922,6 +3961,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#the-commit-of-the-package-providing-these-sections-cannot-be-named" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        the commit of the package providing these sections cannot be named
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-computer-gets-very-slow-or-runs-out-of-memory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4272,6 +4322,17 @@ folder already has a bot in it. Give <code>save_dir</code> a new name, or remove
 <p><code>watch.py</code> couldn't load a bot. The first means training hasn't saved yet: let it run until it
 prints a <code>checkpoint</code> line, or stop it once with Ctrl+C, which saves. The second means the folder
 name in <code>watch.py</code> is wrong: use the same name as <code>save_dir</code> in <code>quickstart.py</code>.</p>
+<h3 id="the-commit-of-the-package-providing-these-sections-cannot-be-named"><code>the commit of the package providing these sections cannot be named</code><a class="headerlink" href="#the-commit-of-the-package-providing-these-sections-cannot-be-named" title="Permanent link">&para;</a></h3>
+<p>You started a bot from a saved one (RoyaleImitate's <code>warm_start</code>) or used its stay-close
+penalty, on RoyaleGym 0.1.3. The trainer writes down the exact code each run used, and in 0.1.3
+it can't do that for RoyaleImitate as <code>pip</code> installed it. The next release fixes this. Until
+then, install RoyaleImitate from its source. In your <code>royale</code> folder, with your virtual
+environment on, run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>git clone --branch v0.2.1 https://github.com/RoyaleGym/RoyaleImitate
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>pip install --no-deps -e RoyaleImitate
+</code></pre></div>
+<p>That needs <a href="https://git-scm.com/downloads">Git</a>. Recording battles, <a href="../clash-royale/cloning-a-bot/">cloning a bot</a>
+and <code>Learner.load_policy</code> work without it.</p>
 <h3 id="the-computer-gets-very-slow-or-runs-out-of-memory">The computer gets very slow, or runs out of memory<a class="headerlink" href="#the-computer-gets-very-slow-or-runs-out-of-memory" title="Permanent link">&para;</a></h3>
 <p>Training uses a lot of memory (RAM): the quickstart's settings can use around 10 GB, and more on
 a computer without a graphics card. Close other big programs. If it still runs out, make it
@@ -4281,7 +4342,7 @@ new <code>save_dir</code>.</p>
 <h2 id="the-graphics-card">The Graphics Card<a class="headerlink" href="#the-graphics-card" title="Permanent link">&para;</a></h2>
 <h3 id="pytorch-cant-see-my-graphics-card">PyTorch can't see my graphics card<a class="headerlink" href="#pytorch-cant-see-my-graphics-card" title="Permanent link">&para;</a></h3>
 <p>The trainer prints:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>No GPU that torch can use was found, so this trains on the CPU, which is much slower. With an NVIDIA card, install torch with CUDA (see Install).
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>No GPU that torch can use was found, so this trains on the CPU, which is much slower. With an NVIDIA card, install torch with CUDA (see Install).
 </code></pre></div>
 <p><strong>On a Mac, this is normal.</strong> A Mac has no NVIDIA card, so it always trains on the processor.
 Don't run the commands below on a Mac.</p>
@@ -4291,8 +4352,8 @@ Don't run the commands below on a Mac.</p>
 <div class="tabbed-block">
 <p>This almost always means the wrong PyTorch got installed. Swap it for the one that uses
 your card:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">-y</span> <span class="n">torch</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">-y</span> <span class="n">torch</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
 </code></pre></div>
 <p>Still not working? Update your NVIDIA driver with the NVIDIA App or from
 <a href="https://www.nvidia.com/drivers">nvidia.com/drivers</a>, then restart your computer.</p>
@@ -4304,15 +4365,15 @@ Ubuntu, run <code>sudo ubuntu-drivers install</code>, then restart.</p>
 </div>
 </div>
 <p>Check that this now prints <code>True</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>python -c "import torch; print(torch.cuda.is_available())"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>python -c "import torch; print(torch.cuda.is_available())"
 </code></pre></div>
 <p>GTX 10-series and older cards don't work with this PyTorch, so on those it trains on the
 processor. After you fix the graphics card, a bot you started on the processor can't carry on:
 start a new one with a new <code>save_dir</code>.</p>
 <h3 id="not-enough-graphics-memory">Not enough graphics memory<a class="headerlink" href="#not-enough-graphics-memory" title="Permanent link">&para;</a></h3>
 <p>You see this when training starts, or it stops with <code>CUDA out of memory</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>one minibatch of 2048 peaked at ... MB of device memory and only ... MB was free
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>torch.OutOfMemoryError: CUDA out of memory.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>one minibatch of 2048 peaked at ... MB of device memory and only ... MB was free
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>torch.OutOfMemoryError: CUDA out of memory.
 </code></pre></div>
 <p>Close games and other programs that use the graphics card. If it still happens, lower
 <code>ppo_minibatch_size</code> in <code>quickstart.py</code>. A starting point: <code>1_024</code> for a card with 8 GB, <code>512</code>
@@ -4332,16 +4393,16 @@ or the viewer isn't installed. Run the install line from step 5 of
 <a href="../install/#5-install-royalegym">Install</a> again.</p>
 <h3 id="module-pygame-has-no-attribute-init"><code>module 'pygame' has no attribute 'init'</code><a class="headerlink" href="#module-pygame-has-no-attribute-init" title="Permanent link">&para;</a></h3>
 <p>You see this when you start the viewer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>AttributeError: module 'pygame' has no attribute 'init'
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>AttributeError: module 'pygame' has no attribute 'init'
 </code></pre></div>
 <p>You removed <code>pygame</code> after updating. The viewer now uses <code>pygame-ce</code>, and the two share one
 folder, so removing <code>pygame</code> took <code>pygame-ce</code>'s files with it. Put them back, with the virtual
 environment on:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pip install --force-reinstall pygame-ce
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>pip install --force-reinstall pygame-ce
 </code></pre></div>
 <h3 id="the-viewer-window-stays-empty">The viewer window stays empty<a class="headerlink" href="#the-viewer-window-stays-empty" title="Permanent link">&para;</a></h3>
 <p>The terminal says:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
 </code></pre></div>
 <p>The viewer is waiting for a training run to watch. Start training in another terminal, with
 <code>viser=True</code> in your <code>Learner(...)</code>. The quickstart has it on already. The battle appears once
@@ -4363,7 +4424,7 @@ other run, or set <code>viser=False</code> in one of them. If you put a <code>Vi
   <code>royaleviser my_bot_battle.msgpack</code>.</li>
 <li>
 <p>Or make a video of it on the server (on Linux, add <code>SDL_VIDEODRIVER=dummy</code> in front):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
 </code></pre></div>
 </li>
 </ul>

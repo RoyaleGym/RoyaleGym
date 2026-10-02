@@ -618,6 +618,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/cloning-a-bot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloning a Bot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -629,10 +657,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
             
   
   
@@ -650,8 +678,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -10745,8 +10773,10 @@ exactly what they were before sections existed. That is tested.</p>
   core fields, in name order. <code>RunConfig</code> itself has no field for any of them.</li>
 <li><strong>The identity.</strong> <code>RunIdentity.extensions</code> has one <code>ExtensionRecord</code> per section the run uses: the
   digest of the section's identity value (files by content digest, thresholds left out), and the
-  providing distribution, its <code>__version__</code> and its commit. A package whose commit cannot be named
-  refuses the run. Its folder is watched for uncommitted edits like the core packages.</li>
+  providing distribution, its <code>__version__</code> and its commit. A package with no commit to name (one
+  installed from a wheel) is named <code>content:&lt;sha256&gt;</code> over its files instead
+  (<code>identity.package_content_digest</code>). Its folder is watched for uncommitted edits like the core
+  packages.</li>
 <li><strong>The hooks.</strong> <code>verify</code> (the files a section names, before preflight, every start), <code>prepare</code>
   (before the rollout buffer exists), <code>loaded</code> (after a resume's checkpoint load), <code>actor_lr_scale</code>
   (19.5), <code>actor_terms</code> (terms added to the actor's loss, section 9's update), <code>alarms</code> and
