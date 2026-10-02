@@ -1,0 +1,87 @@
+{#-
+  The home page (pages/index.md sets `template: home.html`): a full-width banner under the
+  header, then cards that link into the site. The words of the page itself (pages/index.md)
+  go around the cards: what comes before its "<!-- rg:cards -->" line (a hidden "Start Here"
+  heading, so "Skip to content" lands on the cards) goes first, the rest after the packages.
+-#}
+{% extends "main.html" %}
+
+{% set guides = [
+  ("material/sign-direction", "Getting Started", "What RoyaleGym is, what you need, and where to begin.", "introduction/"),
+  ("material/rocket-launch", "Quick Start", "Train your first Clash Royale bot with one file, then watch it play.", "quickstart/"),
+  ("material/tune-variant", "Configuration Objects", "Change what your bot sees, the moves it can make, and what it's rewarded for.", "clash-royale/configuration-objects/"),
+  ("material/book-open-page-variant", "API Reference", "The main classes and functions of royalegym, royalelearn and royaleviser, from their docstrings.", "reference/royalegym/"),
+  ("material/cards-outline", "Cheatsheets", "Card names, game values, and reinforcement learning terms in plain words.", "cheatsheets/game-values/"),
+  ("material/lifebuoy", "It Doesn't Work", "Error messages and problems, and how to fix each one.", "it-doesnt-work/"),
+] %}
+
+{% set packages = [
+  ("material/gamepad-variant-outline", "RoyaleGym", "The battles your bot learns in.", "overview/"),
+  ("material/sword-cross", "RoyaleSim", "The battle engine: elixir, cards, towers.", "resources/royalesim/"),
+  ("material/school-outline", "RoyaleLearn", "The trainer that teaches your bot.", "resources/royalelearn/"),
+  ("material/eye-outline", "RoyaleViser", "The viewer: watch training live, or a battle you saved.", "resources/royaleviser/"),
+  ("material/content-copy", "RoyaleImitate", "Start a new bot from one you trained.", "resources/royaleimitate/"),
+] %}
+
+{% set community = [
+  ("fontawesome/brands/discord", "Discord", "Ask anything, show your bot, see what others are building. Beginner questions welcome.", "https://discord.gg/4D2BS5JBHP"),
+  ("fontawesome/brands/github", "GitHub", "The code for all five packages. Issues and pull requests are open.", "https://github.com/RoyaleGym"),
+  ("simple/kofi", "Ko-fi", "RoyaleGym is free. If it's useful to you, you can buy the project a coffee.", "https://ko-fi.com/jinxthecat"),
+] %}
+
+{% macro card(icon, title, text, href, small=false) -%}
+  {%- set external = href.startswith("http") -%}
+  <a class="rg-card{% if small %} rg-card--small{% endif %}"
+     href="{% if external %}{{ href }}{% else %}{{ href | url }}{% endif %}"
+     {%- if external %} target="_blank" rel="noopener"{% endif %}>
+    <span class="rg-card__head">
+      <span class="rg-card__icon">{% include ".icons/" ~ icon ~ ".svg" %}</span>
+      <span class="rg-card__title">{{ title }}</span>
+    </span>
+    <span class="rg-card__text">{{ text }}</span>
+  </a>
+{%- endmacro %}
+
+{% block tabs %}
+  {{ super() }}
+  <section class="rg-hero" aria-label="RoyaleGym">
+    <span class="rg-hero__shape rg-hero__shape--a"></span>
+    <span class="rg-hero__shape rg-hero__shape--b"></span>
+    <span class="rg-hero__shape rg-hero__shape--c"></span>
+    <div class="rg-hero__inner md-grid">
+      <span class="rg-hero__crown">{% include ".icons/material/crown.svg" %}</span>
+      <h1 class="rg-hero__title">RoyaleGym</h1>
+      <p class="rg-hero__tagline">Train Clash Royale bots with reinforcement learning, on your own computer.</p>
+      <div class="rg-hero__buttons">
+        <a href="{{ 'introduction/' | url }}" class="md-button rg-hero__button rg-hero__button--solid">Get started</a>
+        <a href="{{ 'quickstart/' | url }}" class="md-button rg-hero__button">Quick Start</a>
+        <a href="https://ko-fi.com/jinxthecat" target="_blank" rel="noopener" class="md-button rg-hero__button">
+          <span class="rg-hero__button-icon">{% include ".icons/material/heart.svg" %}</span>Support on Ko-fi
+        </a>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block content %}
+  {% set parts = page.content.split("<!-- rg:cards -->", 1) %}
+  {% if parts | length > 1 %}{{ parts[0] }}{% endif %}
+  <div class="rg-cards">
+    {% for icon, title, text, href in guides %}{{ card(icon, title, text, href) }}{% endfor %}
+  </div>
+
+  <h2 class="rg-section">The five packages</h2>
+  <p class="rg-section__lead">You install one, <code>royalegym[all]</code>, and it brings the other four along.</p>
+  <div class="rg-cards rg-cards--five">
+    {% for icon, title, text, href in packages %}{{ card(icon, title, text, href, true) }}{% endfor %}
+  </div>
+
+  {{ parts[-1] }}
+
+  <h2 class="rg-section">Join in</h2>
+  <div class="rg-cards rg-cards--three">
+    {% for icon, title, text, href in community %}{{ card(icon, title, text, href) }}{% endfor %}
+  </div>
+
+  <p class="rg-footnote">RoyaleGym is a fan project. It is not affiliated with, endorsed or sponsored by Supercell.</p>
+{% endblock %}

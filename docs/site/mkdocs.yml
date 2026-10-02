@@ -11,7 +11,7 @@
 # README is here: collect.py copies each repo's docs/ (read at origin/main in the sibling
 # repos, so the site shows what is published) into pages/repos/ before a build.
 
-site_name: Royale
+site_name: RoyaleGym
 site_description: Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.
 site_url: https://royalegym.github.io/RoyaleGym/
 repo_url: https://github.com/RoyaleGym/RoyaleGym
@@ -23,7 +23,11 @@ site_dir: _build
 
 theme:
   name: material
+  # The home page's banner and cards (overrides/home.html).
+  custom_dir: overrides
   language: en
+  logo: assets/crown.svg
+  favicon: assets/crown.svg
   icon:
     repo: fontawesome/brands/github
   features:
@@ -76,6 +80,10 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
+  # Icons such as :material-rocket-launch: in a page, for the cards.
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   # Snippets are read from the repository root, so a page can include a file such as
   # examples/quickstart.py. A missing file is an error, not an empty box.
   - pymdownx.snippets:
@@ -101,8 +109,9 @@ plugins:
             filters: ["!^_"]
 
 nav:
+  - Home: index.md
   - Getting Started:
-      - Introduction: index.md
+      - Introduction: introduction.md
       - Install: install.md
       - Quick Start: quickstart.md
       - FAQ: faq.md
@@ -111,6 +120,7 @@ nav:
   - Clash Royale:
       - Training an Agent: clash-royale/training-an-agent.md
       - Configuration Objects:
+          - Overview: clash-royale/configuration-objects/index.md
           - Action Parsers: clash-royale/configuration-objects/action-parsers.md
           - Done Conditions: clash-royale/configuration-objects/done-conditions.md
           - Observation Builders: clash-royale/configuration-objects/observation-builders.md
@@ -200,6 +210,16 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/RoyaleGym
       name: The RoyaleGym organisation
+    - icon: simple/kofi
+      link: https://ko-fi.com/jinxthecat
+      name: Support RoyaleGym on Ko-fi
+
+extra_css:
+  - stylesheets/extra.css
+
+# The header's repository box adds up the stars and forks of every public RoyaleGym repository.
+extra_javascript:
+  - javascripts/org-stats.js
 
 not_in_nav: |
   /unverified.md

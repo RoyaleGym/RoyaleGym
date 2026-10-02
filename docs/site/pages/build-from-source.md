@@ -562,5 +562,5 @@ is the reminder to go back and redo Step 3.
 ## Where to go next
 
 [Your first bot](quickstart.md){ .md-button .md-button--primary }
-[Back to Start here](index.md){ .md-button }
+[Back to the Introduction](introduction.md){ .md-button }
 [Ask in the Discord](https://discord.gg/4D2BS5JBHP){ .md-button }
