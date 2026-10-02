@@ -6,6 +6,11 @@ name: fresh-user
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "a release (or pre-release) tag to test instead of the latest release, e.g. a candidate before it is promoted"
+        required: false
+        default: ""
   schedule:
     - cron: '0 8 * * *'
 
@@ -50,8 +55,11 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
-          TAG=$(gh release view -R RoyaleGym/RoyaleGym --json tagName -q .tagName)
+          TAG="$RELEASE_TAG"
+          [ -n "$TAG" ] || TAG=$(gh release view -R RoyaleGym/RoyaleGym --json tagName -q .tagName)
+          echo "testing the install line of $TAG"
           git -C "$GITHUB_WORKSPACE" fetch -q --depth 1 origin "refs/tags/$TAG:refs/tags/$TAG"
           git -C "$GITHUB_WORKSPACE" worktree add -q "$RUNNER_TEMP/released" "$TAG"
           cd "$RUNNER_TEMP"
