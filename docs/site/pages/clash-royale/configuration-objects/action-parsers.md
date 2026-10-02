@@ -80,13 +80,19 @@ while that ability can be used. `make_env(heroes=[...])` turns the buttons on fo
 | Option | What it does |
 |---|---|
 | `TileActionParser(ability_buttons=True)` | Adds the hero and champion ability buttons. |
-| `TileActionParser(buildings="taps_where_the_building_stays")` | Only offers building taps where the building lands on the tile you chose. By default the game moves a building that doesn't fit to the nearest place it does. |
+| `TileActionParser(buildings="taps_where_the_building_stays")` | Only offers building taps where the building lands on the tile you chose. By default the game moves a building that doesn't fit to the nearest place it does. Not for RoyaleLearn: its start-up check refuses it when the deck has a building. |
 | `HalfTileActionParser()` | Half-tile precision: 9217 moves instead of 2305. |
 
 !!! note "Which parsers RoyaleLearn can train"
-    RoyaleLearn's trainer is built for `TileActionParser`'s grid of moves, with or without
-    ability buttons. Any other action parser, including your own, works with the environment
-    and with a trainer you write or bring yourself.
+    RoyaleLearn's trainer is built for `TileActionParser`'s grid of moves, with its default
+    buildings setting, with or without ability buttons. Any other action parser, including
+    your own, works with the environment and with a trainer you write or bring yourself. With
+    another parser in `build_env`, training stops with `spatial planes are (32, 18) tiles,
+    tiles says (64, 36)` or `the observation space has no 'mask_planes' key`: that's this limit.
+
+!!! tip "In your quickstart.py"
+    The parser is the `action_parser = ...` line in `build_env`. Changing it changes the bot's
+    moves, so it needs a new bot: change `save_dir` to a new name too.
 
 ## How They Work
 

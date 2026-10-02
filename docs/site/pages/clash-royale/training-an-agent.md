@@ -56,7 +56,8 @@ field you can read.
 
 ### The environment
 
-Now set up the battle with these rewards mixed in. `CombinedReward` adds several rewards
+Now set up the battle with these rewards mixed in. Save this and the trainer below together in
+one file, `my_bot.py`, next to `rewards.py`. `CombinedReward` adds several rewards
 together, each with a weight. Keep the win itself the biggest part: the others are hints that
 help the bot find its way to a win, and if a hint pays more than winning, the bot will chase
 the hint instead.
@@ -94,8 +95,8 @@ def build_env():
 
 ### The trainer
 
-Then the trainer. It's the quickstart's, except that the bot plays against copies of itself, and
-it streams a battle to the viewer:
+Then the trainer. It's the quickstart's, except that the bot plays against copies of itself, it
+saves to `runs/my_bot`, and it saves the finished bot at the end:
 
 ```py
 if __name__ == "__main__":
@@ -220,9 +221,13 @@ lists every key, `q` quits.
 
 To watch a bot after training, load it from its `save_dir`, play a battle with it, and open the file:
 
+Put this in its own file, such as `watch_my_bot.py`, next to `my_bot.py`:
+
 ```py
 from royalegym import play_battle
 from royalelearn import Learner
+
+from my_bot import build_env
 
 bot = Learner.load_policy("runs/my_bot")
 battle = play_battle(build_env(), blue=bot, red="random", save_to="my_bot_battle.msgpack")

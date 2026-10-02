@@ -36,8 +36,10 @@ reward_fn = CombinedReward([
 Keep winning the biggest part. The smaller rewards are hints that help the bot find its way to
 a win. If a hint is worth more than winning, the bot learns to chase the hint instead.
 
-At the end of each battle, the last step's `info` says how much each part paid over the whole
-battle, as `reward_sum/<name>`. That tells you which part the bot is really earning from.
+While it trains, each line of `metrics.jsonl` in your `save_dir` has `env/reward_terms/<name>`:
+how much each part paid per battle, after its weight. That tells you which part the bot is really
+earning from. (In your own code, the last step's `info` of a battle has the same as
+`reward_sum/<name>`.)
 
 ## How They Work
 
@@ -75,6 +77,11 @@ class TowerDamageDealtReward(RewardFunction):
         after = sum(state.players[foe].tower_hp)
         return (before - after) / sum(state.players[foe].tower_max_hp)
 ```
+
+!!! tip "In your quickstart.py"
+    Paste the class above the line `def build_env():`. Then use it in the `reward_fn` lines, for
+    example by changing `(TowerHPReward(), 0.1),` to `(TowerDamageDealtReward(), 0.1),`. In
+    `ClashParallelEnv` the reward's keyword is `reward_fn=`; in `make_env`, below, it's `reward=`.
 
 Use it like any other reward, on its own or in a `CombinedReward`:
 

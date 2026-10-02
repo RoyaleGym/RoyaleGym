@@ -29,6 +29,8 @@ editor:
     nano quickstart.py
     ```
 
+    In nano, paste with Ctrl+Shift+V, save with Ctrl+S, and leave with Ctrl+X.
+
 Now copy the whole file below (the copy button is in its top right corner), paste it into the
 editor, and save (Ctrl+S, or Cmd+S on a Mac). Because you made it from the terminal, it's
 already in the right folder with the right name.
@@ -42,7 +44,8 @@ and the `reward_fn` lines, and this page shows you how.
 
 !!! tip "Don't double-click it"
     Double-clicking `quickstart.py` runs it in a window that closes straight away. To change
-    it, open it with `notepad quickstart.py` (or your editor) again. To run it, use the
+    it, open it again from the terminal: `notepad quickstart.py` on Windows,
+    `open -e quickstart.py` on a Mac, `nano quickstart.py` on Linux. To run it, use the
     terminal, as below.
 
 ## 2. Run It
@@ -63,8 +66,9 @@ update     2  steps      32,768  battles   37  crowns  +0.43 a battle     56 s
 update     3  steps      49,152  battles   50  crowns  +1.00 a battle     36 s
 ```
 
-That's from an RTX 4070 Ti. Your numbers will be different: they change from run to run, and a
-slower graphics card or processor takes more seconds per update.
+That's from an RTX 4070 Ti on Windows. On a Mac or Linux the folder shows as
+`runs/quickstart`. Your numbers will be different: they change from run to run, and a slower
+graphics card or processor takes more seconds per update.
 
 The first `update` line takes the longest, because it includes starting up. As long as no error
 appeared, it's working. Now and then it also prints a `checkpoint` line: that's it saving its
@@ -78,11 +82,18 @@ progress.
 | `crowns` | Crowns it took minus crowns it lost, per battle. It goes from -3 (it loses every battle 0-3) to +3 (it wins every battle 3-0). A `-` means no battle finished yet. |
 | `s` | How many seconds that update took. |
 
-`crowns` is the number to watch. If it goes up over time, your bot is learning.
+`crowns` is the number to watch. If it goes up over time, your bot is learning. Three things
+to know about it:
+
+- It jumps up and down from line to line, because each line only covers the 30 to 50 battles
+  that just finished. Look at the trend over 20 lines or more.
+- It starts above zero, because the random bot waits 9 moves out of 10.
+- Near +3, your bot beats the random bot 3-0 almost every time.
 
 **Is it using my graphics card?** If it weren't, it would have printed a warning that starts
-with "No GPU that torch can use was found". No warning means it's on the graphics card. On
-Windows you can watch it work in Task Manager > Performance > GPU.
+with "No GPU that torch can use was found". No warning means it's on the graphics card. You can
+watch it work in Task Manager > Performance > GPU on Windows, or with `nvidia-smi` in another
+terminal on Linux. On a Mac you always see the warning, because a Mac has no NVIDIA card.
 
 ## 4. How Long Should I Leave It?
 
@@ -93,13 +104,18 @@ training before they play well.
 In the quickstart, your bot plays a bot that makes random moves. A high `crowns` number means it
 beats that random bot, which is a start but not the same as being good. Once `crowns` stays high,
 your bot has learned most of what the random bot can teach it. Then try `opponent="self"`, so it
-plays against copies of itself instead. Against itself, `crowns` stays near zero, because both
-sides get better together; [watch it play](#5-watch-it-play) to see how it's doing.
+plays against copies of itself instead. That trains a new bot, so also change `save_dir` to a
+new name, such as `runs/selfplay`: in the old folder it refuses to start. Your first bot stays in
+`runs/quickstart`. Against itself, `crowns` stays near zero, because both sides get better
+together; [watch it play](#5-watch-it-play) to see how it's doing.
 
 !!! note "Leaving it running overnight"
     - Keep a laptop plugged in, with the lid open.
-    - Turn off sleep while it trains (on Windows: Settings > System > Power).
+    - Turn off sleep while it trains: Settings > System > Power on Windows, Settings > Power >
+      Automatic Suspend on Ubuntu. On a Mac, start training with
+      `caffeinate -i python quickstart.py` instead, which keeps it awake.
     - Loud fans are normal. It's using the graphics card and processor fully.
+    - Training uses a lot of memory (RAM). Close other big programs.
     - Playing games on the same computer slows training down, and can make it run out of
       graphics memory.
     - If the computer restarts, for example for an update, run `python quickstart.py` again.
@@ -137,17 +153,20 @@ again any time.
 
 ## 6. Stop and Carry On
 
-To stop, click the training terminal and press **Ctrl+C** once. It prints:
+To stop, click the training terminal and press **Ctrl+C** once (Control+C on a Mac too, not
+Cmd+C). It prints:
 
 ```text
 Ctrl-C: stopping after this update, with a checkpoint. Press it again to stop now.
 ```
 
-It finishes the update it's on, saves, and stops. That can take a little while, so wait for the
-`checkpoint` line. Your bot is saved.
+It finishes the update it's on, saves, and stops. Wait for the `checkpoint` line: with a
+graphics card that takes up to a minute, on a computer without one it can take many minutes.
+Your bot is saved.
 
 If you press Ctrl+C a second time, or close the window, it stops at once. You then keep
-everything up to its last `checkpoint` line.
+everything up to its last `checkpoint` line. The first one comes after about 13 update lines,
+so if it stops before that, there's nothing to carry on: delete the folder and start again.
 
 To carry on, run the same command again:
 
@@ -156,22 +175,27 @@ python quickstart.py
 ```
 
 Its first line now ends with `carrying on from` and the checkpoint it loaded. Everything it has
-learned is in the `runs\quickstart` folder. To start again from nothing, delete that folder.
+learned is in the `runs\quickstart` folder. To start again from nothing, delete that folder:
+`Remove-Item -Recurse runs\quickstart` in PowerShell, `rm -r runs/quickstart` on a Mac or Linux.
 
 ## 7. Watch a Whole Battle Later
 
 After you've stopped training, you can make your bot play one battle against the random bot and
 watch the whole thing. Make a second file, `watch.py`, the same way as in step 1
-(`notepad watch.py` on Windows), and paste this into it:
+(`notepad watch.py` on Windows, `touch watch.py` and `open -e watch.py` on a Mac,
+`nano watch.py` on Linux), and paste this into it:
 
 ```py
+import random
+
 from royalegym import play_battle
 from royalelearn import Learner
 
 from quickstart import build_env
 
 bot = Learner.load_policy("runs/quickstart")
-battle = play_battle(build_env(), blue=bot, red="random", save_to="my_bot_battle.msgpack")
+battle = play_battle(build_env(), blue=bot, red="random", seed=random.randrange(1_000_000),
+                     save_to="my_bot_battle.msgpack")
 print("Crowns:", battle.crowns[0], "-", battle.crowns[1])
 ```
 
@@ -183,11 +207,13 @@ royaleviser my_bot_battle.msgpack
 ```
 
 `Learner.load_policy("runs/quickstart")` loads the newest save of your bot. Your bot plays blue,
-at the bottom. Run `watch.py` again for a new battle each time.
+at the bottom. Run `watch.py` again for a new battle each time. If you change `save_dir` in
+`quickstart.py` later, change `runs/quickstart` here to match.
 
 ## 8. Use Your Own Deck
 
-Open `quickstart.py` again (`notepad quickstart.py`) and find this line in `build_env`:
+Open `quickstart.py` again (`notepad quickstart.py`, `open -e quickstart.py` or
+`nano quickstart.py`) and find this line in `build_env`:
 
 ```py
     deck = ["Knight", "Archer", "Giant", "Minions", "Fireball", "Zap", "Cannon", "Musketeer"]
@@ -200,9 +226,11 @@ keep the spaces at the start of the line. For example, Hog 2.6:
     deck = ["HogRider", "Musketeer", "Cannon", "IceGolemite", "IceSpirits", "Skeletons", "Fireball", "Log"]
 ```
 
-Names are written without spaces, and some differ from the game: `IceGolemite` is the Ice Golem,
-`IceSpirits` the Ice Spirit and `Log` The Log. The table of [names that differ](cheatsheets/game-values.md#names-that-differ-from-the-game)
-lists the rest. To search for a name, run this (change `ice` to part of the name you want):
+Names are written without spaces (only `Elixir Collector` keeps its space), and some differ
+from the game: `IceGolemite` is the Ice Golem, `IceSpirits` the Ice Spirit and `Log` The Log. The
+table of [names that differ](cheatsheets/game-values.md#names-that-differ-from-the-game) lists
+the rest. A wrong name stops it with an error that suggests the closest real ones, such as
+`names 'Archers', which this engine's catalogue of 136 cards does not have (close: Archer, ...)`. To search for a name, run this (change `ice` to part of the name you want):
 
 ```
 python -c "from royalegym import RustEngine; print([c.name for c in RustEngine().cards() if 'ice' in c.name.lower()])"
@@ -212,9 +240,9 @@ python -c "from royalegym import RustEngine; print([c.name for c in RustEngine()
 ['IceWizard', 'IceSpirits', 'IceGolemite', 'SuperIceGolemite']
 ```
 
-Then change `save_dir="runs/quickstart"` to a new name, such as `save_dir="runs/hog"`.
-Otherwise it quietly carries on training your old bot with the new deck, instead of starting a
-new one.
+Then change `save_dir="runs/quickstart"` to a new name, such as `save_dir="runs/hog"`, and the
+same in `watch.py`. Otherwise it quietly carries on training your old bot with the new deck,
+instead of starting a new one.
 
 ### Evolutions and heroes
 
@@ -234,7 +262,15 @@ A hero has an ability button, so with a hero (a `2`) also change the action pars
     action_parser = TileActionParser(ability_buttons=True)
 ```
 
-If a card has no evolution or hero in RoyaleGym yet, you get an error that says so.
+So your bot can see which of its cards are evolved, also change the observation line to:
+
+```py
+    obs_builder = SpatialObsBuilder(evolutions=True)
+```
+
+Both of these change what the bot sees or can do, so they need a new bot: use a new `save_dir`.
+If a card has no evolution or hero in RoyaleGym yet, you get an error that says so. The lists of
+cards that have one are in [Game Values](cheatsheets/game-values.md#evolutions-and-heroes).
 
 ### Good to know about decks
 

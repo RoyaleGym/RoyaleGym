@@ -46,8 +46,10 @@ royaleviser battle.msgpack
 ```
 
 `blue` and `red` can each be `"random"`, `"noop"`, any [opponent](opponents.md), or a bot you
-trained (`Learner.load_policy("runs/my_bot")`). `royaleviser runs/` opens the newest saved
-battle in a folder.
+trained (`Learner.load_policy("runs/my_bot")`). To test your own bot on its own deck, pass your
+`build_env()` instead of `make_env()`. `royaleviser battles/` opens the newest saved battle in a
+folder you saved battles to. Don't point it at your `runs` folder: training doesn't save
+battles, so it would open a training log.
 
 ## Keys
 
@@ -76,7 +78,10 @@ royaleviser battle_a.msgpack --compare battle_b.msgpack
 
 ## Watching Without the Trainer
 
-Any environment can stream to the viewer. Hand it a `ViserPublisher`:
+Any environment can stream to the viewer. Hand it a `ViserPublisher`. Only do this in your own
+script that steps one environment, never in a `build_env` you train with `Learner`: the trainer
+builds many environments, and only one can stream at a time. With the trainer, use
+`viser=True` instead.
 
 ```py
 from royalegym import ClashParallelEnv, RustEngine

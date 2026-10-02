@@ -13,10 +13,13 @@ RoyaleLearn picks the opponent by name, with `Learner(..., opponent=...)`:
 | `"noop"` | A bot that never plays a card. |
 | `"self"` | About half its battles against itself, a third against older versions of itself, and the rest against some of the scripted bots below. |
 
+RoyaleLearn trains only against these three. The scripted bots below, and opponents you write,
+are for testing a bot: with `evaluate`, with `play_battle`, or in `ClashGymEnv` with another
+training library.
+
 ## The Scripted Bots
 
-Each of these plays one simple idea. They are useful to test a bot against, and as practice
-partners.
+Each of these plays one simple idea. They are useful to test a bot against.
 
 | Opponent | What it does |
 |---|---|
@@ -90,7 +93,10 @@ The range in brackets is where the real win rate probably lies. With only 20 bat
 wide, so it can't separate the two bots. Play more battles to narrow it.
 
 A bot you trained can play here too. `Learner.load_policy("runs/my_bot")` loads it, and
-`CallableOpponent(lambda obs, mask: bot(obs))` turns it into an opponent.
+`CallableOpponent(lambda obs, mask: bot(obs))` turns it into an opponent. Test it with your own
+`build_env` (`from quickstart import build_env`) in place of `make_env`, so it plays its own
+deck: `make_env()` always deals the starter deck. The [FAQ](../../faq.md#how-do-i-know-how-good-my-bot-is)
+has a whole file that tests your bot against every bot above.
 
 ## A Single-Seat Environment
 

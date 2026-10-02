@@ -27,11 +27,15 @@ RoyaleGym never touches the game, your account or Supercell's servers, so there'
 
 ### What computer do I need?
 
-- Windows 10 or 11, Linux or a Mac, with Python 3.12, 3.13 or 3.14.
+- Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.13 or 3.12.
+  Not Python 3.14 yet: the viewer can't install on it.
 - About 5 GB of free disk space, most of it for PyTorch.
+- 16 GB of memory (RAM) or more. Training with the quickstart's settings can use around 10 GB.
 - To train at a useful speed, an NVIDIA graphics card: a GTX 16-series, an RTX 20-series, or
-  anything newer.
-- A processor with more cores helps too, because the battles run on it.
+  anything newer. GTX 10-series and older cards don't work with the PyTorch it uses.
+- A fast processor helps too, because the battles run on it.
+
+Intel Macs can't install the PyTorch RoyaleGym needs, so RoyaleGym doesn't run on them.
 
 If you have a PC with an NVIDIA card and a Mac, use the PC.
 
@@ -39,8 +43,14 @@ If you have a PC with an NVIDIA card and a Mac, use the PC.
 
 Yes, but training runs on the processor instead, which is far slower. RoyaleGym doesn't use
 Apple's graphics chip, so a Mac always trains on its processor. Everything else (running
-battles, writing rewards, the viewer) works the same. On a laptop, a smaller `n_envs`, such as 8,
-keeps it from using every core.
+battles, writing rewards, the viewer) works the same.
+
+### Can I use Google Colab or a rented GPU?
+
+We haven't tested Colab. A rented Linux machine with an NVIDIA card works like any Linux
+computer: follow [Install](install.md) in its terminal. It has no screen, so watch your bot by
+saving battles with `watch.py` and opening them on your own computer (see
+[No window appears at all](it-doesnt-work.md#no-window-appears-at-all)).
 
 ### Do I need to know Python or machine learning?
 
@@ -57,8 +67,10 @@ Yes. It's open source, under the MIT license.
 ### I ran the quickstart. What am I looking at?
 
 One line each time the bot learns from a batch of battles. The number to watch is `crowns`:
-crowns taken minus crowns lost, per battle. If it goes up over time, your bot is learning. Every
-column is explained in [What You'll See](quickstart.md#3-what-youll-see).
+crowns taken minus crowns lost, per battle. If it goes up over time, your bot is learning. It
+jumps up and down from line to line, so look at the trend over 20 lines or more. It starts above
+zero because the random bot waits 9 moves out of 10, and near +3 your bot beats it 3-0 almost
+every time. Every column is explained in [What You'll See](quickstart.md#3-what-youll-see).
 
 ### How long until my bot is any good?
 
@@ -73,13 +85,15 @@ A window shows one of its battles live. See [Watch It Play](quickstart.md#5-watc
 
 ### How do I stop training and carry on later?
 
-Press **Ctrl+C** once in the training terminal, and wait. It finishes the update it's on, saves,
-and stops. Run the same command again to carry on where it stopped. See
-[Stop and Carry On](quickstart.md#6-stop-and-carry-on).
+Press **Ctrl+C** once in the training terminal (Control+C on a Mac too), and wait. It finishes
+the update it's on, saves, and stops. Run the same command again to carry on where it stopped.
+See [Stop and Carry On](quickstart.md#6-stop-and-carry-on).
 
 ### How do I start over?
 
-Delete the `runs\quickstart` folder, or change `save_dir` in `quickstart.py` to a new name.
+Delete the `runs\quickstart` folder (`Remove-Item -Recurse runs\quickstart` in PowerShell,
+`rm -r runs/quickstart` on a Mac or Linux), or change `save_dir` in `quickstart.py` to a new
+name.
 
 ### Is it OK to leave it running overnight, or for days?
 
@@ -112,27 +126,29 @@ and tower damage, like the quickstart's, pay out much more often.
 
 It found something your reward pays for, and it's doing it as often as it can. Look at what the
 reward pays: a reward for playing cards, for example, teaches it to play cards, any cards,
-anywhere. Change the reward, or let it train against copies of itself (`opponent="self"`), so a
-trick that beats a weak opponent stops working.
+anywhere. Change the reward, or train a new bot against copies of itself (`opponent="self"`, with
+a new `save_dir`), so a trick that beats a weak opponent stops working.
 
 ### Why does `crowns` stay near zero?
 
 If it plays against itself (`opponent="self"`), both sides get better together, so neither wins
 more. That's expected. Watch it play to see whether it's improving. After a few million steps,
-the file `metrics.jsonl` in your `save_dir` also records a rating (`ladder/rating_above_v0`):
-how much stronger it is than its first saved version.
+the file `metrics.jsonl` in your `save_dir` also records a rating, `ladder/rating_above_v0`: how
+much stronger it is than its first saved version, in Elo points. +100 means it wins about 64% of
+its games against that first version.
 
 ### How do I make it use my deck?
 
-Change the `deck = [...]` line in `quickstart.py` to your eight cards. See
-[Use Your Own Deck](quickstart.md#8-use-your-own-deck). Card names have no spaces; the full list
-is in [Game Values](cheatsheets/game-values.md#cards).
+Change the `deck = [...]` line in `quickstart.py` to your eight cards, and use a new `save_dir`
+there and in `watch.py`. See [Use Your Own Deck](quickstart.md#8-use-your-own-deck). Card names
+have no spaces, except `Elixir Collector`; the full list is in
+[Game Values](cheatsheets/game-values.md#cards).
 
 ### Can it use evolutions, heroes and champions?
 
-Most evolutions and hero forms, and every champion. See
-[Evolutions and heroes](quickstart.md#evolutions-and-heroes) to add them to your deck. If one
-isn't in RoyaleGym yet, you get an error that says so.
+Most of them: 42 evolutions, 16 heroes and every champion. The lists are in
+[Game Values](cheatsheets/game-values.md#evolutions-and-heroes), and
+[Evolutions and heroes](quickstart.md#evolutions-and-heroes) shows how to add them to your deck.
 
 ### What level are the cards? Can I pick a tower troop?
 
@@ -162,20 +178,34 @@ the words. You can train a good bot without touching most of them.
 First make sure PyTorch can see your graphics card (see
 [It Doesn't Work](it-doesnt-work.md#pytorch-cant-see-my-graphics-card)).
 
-Then look at your processor. The battles run on it, and they are usually what holds training
-back. Open Task Manager > Performance > CPU (Activity Monitor on a Mac) while it trains. If the
-processor isn't near 100%, raise `n_envs`, the number of battles played at once, in steps (for
-example from 32 to 48, then 64) and watch again. If you raise it too far, training just gets
-slower, or runs out of memory.
+The battles take turns on one processor core, so the processor won't show near 100%, and a
+faster core helps more than more cores. Playing more battles at once (`n_envs`) lets the
+graphics card work on many of them together, which is why the quickstart plays 32. `n_envs` is
+fixed for a run: to try another number, start a new bot with a new `save_dir`.
+
+### Can I see graphs of how it's doing?
+
+Yes, with Weights & Biases, a free website for charts. Make an account at
+[wandb.ai](https://wandb.ai), run `pip install wandb` and then `wandb login` once (with the
+virtual environment on), and set `log_to_wandb=True` in `quickstart.py`.
 
 ## Playing
 
 ### What can I do with my bot once it's trained?
 
 - Watch it play: live while it trains, or [a whole battle later](quickstart.md#7-watch-a-whole-battle-later).
-- Test it against the simple bots that come with RoyaleGym (see the next question).
-- Keep training it, with a new reward or against itself.
+- Test it against the simple bots that come with RoyaleGym (see below).
+- Keep training it with a new reward. Training it against itself starts a new bot in a new
+  `save_dir`.
 - Keep a copy of its folder in `runs`: that's your bot, with everything it has learned.
+
+### How do I share my bot, or a battle?
+
+Send your bot's folder from `runs`. Your friend loads it with `Learner.load_policy("that folder")`
+and plays it with the same deck, as in `watch.py`. They can't carry on training it on their
+computer. To share a battle, send the `.msgpack` file that `watch.py` saves; they open it with
+`royaleviser FILE`. To make a video of it, see
+[No window appears at all](it-doesnt-work.md#no-window-appears-at-all).
 
 ### Can I play against my bot?
 
@@ -183,8 +213,24 @@ Not yet. You can watch it play against other bots, or against itself.
 
 ### How do I know how good my bot is?
 
-Watch it play, and test it against the simple bots that come with RoyaleGym. See
-[Who Is Better?](clash-royale/configuration-objects/opponents.md#who-is-better).
+Watch it play, and test it against the simple bots that come with RoyaleGym. Save this as
+`how_good.py` next to `quickstart.py` and run `python how_good.py`. It takes a few minutes:
+
+```py
+from royalegym import CallableOpponent, evaluate, ladder
+from royalelearn import Learner
+
+from quickstart import build_env
+
+bot = Learner.load_policy("runs/quickstart")
+me = CallableOpponent(lambda obs, mask: bot(obs))
+for name, opponent in ladder():
+    print(evaluate(me, opponent, build_env, games=50, names=("my bot", name)).summary())
+```
+
+Each line says how many battles it won and whether it's clearly better or "too close to call".
+A good bot clearly beats every bot on the list, not just the random one. More about this on
+[Opponents](clash-royale/configuration-objects/opponents.md#who-is-better).
 
 ## The Game
 
@@ -200,13 +246,20 @@ Most cards you can use in ladder battles. The list is in
 
 ### How do I remove everything?
 
-Delete your `royale` folder. That removes RoyaleGym, PyTorch and your bots. If you don't need
-Python any more, uninstall it too (on Windows: Settings > Apps > Installed apps > Python >
-Uninstall).
+First, with the virtual environment on, run `pip cache purge`: `pip` keeps its own copy of
+everything it downloaded, PyTorch included, outside your folder. Then delete your `royale`
+folder. That removes RoyaleGym, PyTorch and your bots. If you don't need Python any more,
+uninstall it too (on Windows: Settings > Apps > Installed apps > Python > Uninstall).
 
 ### What happens when Clash Royale updates?
 
-New cards and balance changes reach RoyaleGym in a new version of the engine. To update, run the
-install line from [Install](install.md#5-install-royalegym) again, with `--upgrade` added right
-after `pip install`. Your code keeps working, but a bot trained on the old
-version may play a little differently on the new one.
+New cards and balance changes reach RoyaleGym in a new version of the engine. To update, find
+the newest version on the [Releases page](https://github.com/RoyaleGym/RoyaleGym/releases), for
+example `v0.1.2`, and run this with that version at the end:
+
+```
+pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.2
+```
+
+It updates the five RoyaleGym packages and leaves your PyTorch alone. Your code keeps working,
+but a bot can't carry on training across an update: start a new one with a new `save_dir`.

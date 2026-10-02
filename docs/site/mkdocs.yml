@@ -82,6 +82,10 @@ markdown_extensions:
       base_path: ["../.."]
       check_paths: true
 
+# Pages copied in by collect.py get an edit link to the repo they came from.
+hooks:
+  - hooks.py
+
 plugins:
   - search
   - mkdocstrings:

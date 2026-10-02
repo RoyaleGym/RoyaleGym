@@ -516,17 +516,19 @@ Read next:
   [`docs/site/pages/`](../docs/site/pages/), and you can build the site yourself. It needs
   RoyaleViser and RoyaleLearn installed too, because its reference pages read their code. From
   the `Royale` folder, run `.venv\Scripts\python -m pip install -e "RoyaleGym[docs]"`. Then
-  `cd RoyaleGym\docs\site` and run `..\..\..\.venv\Scripts\mkdocs serve`. On macOS and Linux
+  `cd RoyaleGym\docs\site`, run `..\..\..\.venv\Scripts\python collect.py --root ..\..\..` (it copies
+  every repo's docs onto the site), then `..\..\..\.venv\Scripts\mkdocs serve`. On macOS and Linux
   those are `.venv/bin/python` and `../../../.venv/bin/mkdocs`. It serves the site at
   `http://127.0.0.1:8000/RoyaleGym/`. It first prints a boxed warning about MkDocs 2.0 from the
   theme's authors. That is a notice, not an error, and the build carries on.
-  [Your first bot](../docs/site/pages/first-bot.md) walks a custom policy from
-  nothing to beating the random opponent, and there are pages on
-  [installing](../docs/site/pages/install.md),
-  [writing a reward](../docs/site/pages/rewards.md),
-  [observations and actions](../docs/site/pages/observations-and-actions.md),
-  [how accurate the engine is](../docs/site/pages/accuracy.md) and
-  [what to do when something breaks](../docs/site/pages/troubleshooting.md).
+  The published site is [royalegym.github.io/RoyaleGym](https://royalegym.github.io/RoyaleGym/): the
+  [Quick Start](https://royalegym.github.io/RoyaleGym/quickstart/) trains a first bot, and there are pages on
+  [installing](https://royalegym.github.io/RoyaleGym/install/),
+  [writing a reward](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/reward-functions/),
+  [observations](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/observation-builders/) and
+  [actions](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/action-parsers/),
+  [how accurate the engine is](https://royalegym.github.io/RoyaleGym/accuracy/) and
+  [what to do when something breaks](https://royalegym.github.io/RoyaleGym/it-doesnt-work/).
 - [`docs/architecture.md`](../docs/architecture.md) for the layers, the engine contract, the
   action space, the module map, and why each convention is there.
 - [`docs/observation-spec.md`](../docs/observation-spec.md) for every channel and every vector

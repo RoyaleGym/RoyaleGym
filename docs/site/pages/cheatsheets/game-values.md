@@ -96,6 +96,7 @@ RoyaleGym writes card names without spaces. Most are the game's names run togeth
 | Guards | `SkeletonWarriors` |
 | Ice Golem | `IceGolemite` |
 | Ice Spirit | `IceSpirits` |
+| Rune Giant | `GiantBuffer` |
 | Lumberjack | `RageBarbarian` |
 | Magic Archer | `EliteArcher` |
 | Mini P.E.K.K.A | `MiniPekka` |
@@ -106,8 +107,18 @@ RoyaleGym writes card names without spaces. Most are the game's names run togeth
 | Skeleton Barrel | `SkeletonBalloon` |
 | Sparky | `ZapMachine` |
 | The Log | `Log` |
+| Void | `DarkMagic` |
 | X-Bow | `Xbow` |
 | Zappies | `MiniSparkys` |
+
+## Evolutions and Heroes
+
+The cards you can play in their evolved form (`1` in `forms`), and in their hero form (`2`),
+on the same engine build as the card list below. Every champion's ability works too.
+
+**Evolutions (42):** `AngryBarbarians`, `Archer`, `AxeMan`, `BabyDragon`, `Barbarians`, `Bats`, `BattleRam`, `BlowdartGoblin`, `Bomber`, `Cannon`, `ElectroDragon`, `Firecracker`, `FirespiritHut`, `Ghost`, `GoblinBarrel`, `GoblinCage`, `GoblinDrill`, `GoblinGiant`, `Hunter`, `IceSpirits`, `InfernoDragon`, `Knight`, `MegaKnight`, `MinionHorde`, `Mortar`, `Musketeer`, `Pekka`, `Princess`, `RageBarbarian`, `RoyalGiant`, `RoyalHogs`, `RoyalRecruits`, `SkeletonArmy`, `SkeletonBalloon`, `Skeletons`, `Snowball`, `Tesla`, `Valkyrie`, `Wallbreakers`, `Witch`, `Wizard`, `Zap`
+
+**Heroes (16):** `Balloon`, `BarbLog`, `Berserker`, `Bowler`, `DarkPrince`, `EliteArcher`, `Giant`, `Goblins`, `IceGolemite`, `Knight`, `MegaMinion`, `MiniPekka`, `Musketeer`, `Tombstone`, `Valkyrie`, `Wizard`
 
 ## Cards
 

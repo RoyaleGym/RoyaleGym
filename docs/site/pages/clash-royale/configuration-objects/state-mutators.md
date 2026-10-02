@@ -60,9 +60,24 @@ itself, `1` its evolution, `2` its hero.
 | `DefaultStateMutator(decks=...)` | From the first second, with the decks you give, or random ones. |
 | `MidGameStateMutator(...)` | Partway through, with random elixir and tower damage. Good for practising endings. |
 | `ScriptedBoardStateMutator(spawns=...)` | With units already on the board, for drills like "defend this push". |
-| `SnapshotStateMutator(snapshots)` | From exact saved moments of earlier battles. |
+| `SnapshotStateMutator(blobs)` | From exact saved moments of earlier battles. |
 | `DeckCurriculumStateMutator(deck, ...)` | With your deck on one or both sides, against a pool of other decks. |
 | `WeightedStateMutator([(mutator, weight), ...])` | From one of several mutators, picked at random by weight each battle. |
+
+For example, to practise endings, start each battle between one and two and a half minutes in,
+with 3 to 10 elixir and the towers at 40 to 100% health (4824 and 3052 are the king's and a
+princess tower's full health):
+
+```py
+    state_mutator = MidGameStateMutator(
+        tick_range=(1200, 3000), elixir_milli_range=(3000, 10000),
+        max_tower_hp=(4824, 3052), tower_hp_percent=(40, 100), decks=[deck, deck],
+    )
+```
+
+That goes in place of the `state_mutator = ...` line in your quickstart's `build_env`, with
+`MidGameStateMutator` added to its imports. The scripted-board and snapshot starts are for
+advanced use; their arguments are in the [API reference](../../reference/royalegym.md).
 
 One difference from RLGym: you don't chain mutators one after another. A mutator describes the
 whole start of a battle, and `WeightedStateMutator` picks between them.

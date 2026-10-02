@@ -47,12 +47,23 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 | `SpatialObsBuilder(card_identity=True)` | Which card each unit came from, as its own `card_ids` grid, and the last card the opponent played. |
 | `SpatialObsBuilder(evolutions=True)` | Which of your cards are evolved, and where evolved units stand. |
 | `SpatialObsBuilder(reveal=Reveal(...))` | Hidden information, such as the opponent's real elixir. For experiments only. |
-| `EntityListObsBuilder()` | A list of units, one row each, instead of a grid. |
+
+`Reveal` comes from `royalegym`. Turn on what you want the bot to see:
+`Reveal(enemy_elixir=True)`, `Reveal(enemy_hand=True)`, and also `enemy_next_card`,
+`enemy_deck` and `enemy_spell_aim`. For example,
+`obs_builder = SpatialObsBuilder(reveal=Reveal(enemy_elixir=True))`.
+
+`EntityListObsBuilder()` gives a list of units, one row each, instead of a grid. RoyaleLearn
+can't train on it.
 
 !!! note "Which builders RoyaleLearn can train"
-    RoyaleLearn's trainer reads `SpatialObsBuilder`'s four keys, with any of its options. A
-    builder of your own works with the environment and with a trainer you write or bring
-    yourself.
+    RoyaleLearn's trainer reads `SpatialObsBuilder`'s four keys, with any of the options in the
+    table. A builder of your own works with the environment and with a trainer you write or
+    bring yourself.
+
+!!! tip "In your quickstart.py"
+    The builder is the `obs_builder = ...` line in `build_env`. Changing what the bot sees
+    needs a new bot: change `save_dir` to a new name too.
 
 ## How They Work
 

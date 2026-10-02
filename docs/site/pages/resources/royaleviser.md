@@ -12,7 +12,10 @@ It opens three kinds of thing:
 |---|---|
 | `royaleviser` | A training run, live. |
 | `royaleviser my_bot_battle.msgpack` | A saved battle. |
-| `royaleviser runs/` | The newest saved battle in a folder. |
+| `royaleviser battles/` | The newest saved battle in a folder of saved battles. |
+
+Training doesn't save battles, so don't point it at your `runs` folder: it would open a
+training log. Save battles with [`watch.py`](../quickstart.md#7-watch-a-whole-battle-later).
 
 It always runs as a separate program. Training never waits for it, and when nobody is
 watching, streaming costs almost nothing.

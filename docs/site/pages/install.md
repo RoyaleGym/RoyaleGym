@@ -3,21 +3,21 @@
 This takes about ten minutes, most of it waiting for downloads. Do the steps in order. After
 each one, check that you see what the page says you'll see before you go on.
 
-**How to run a command:** type it, or paste it, then press Enter. In PowerShell, Ctrl+V or a
-right-click pastes. When a box has several lines, do them one at a time.
+**How to run a command:** type it, or paste it, then press Enter. To paste: Ctrl+V or a
+right-click in PowerShell on Windows, Cmd+V on a Mac, Ctrl+Shift+V in a Linux terminal. When a
+box has several lines, do them one at a time.
 
 If anything goes wrong, look up the message on [It Doesn't Work](it-doesnt-work.md).
 
 ## 1. Install Python
 
-You need Python 3.12, 3.13 or 3.14.
+You need **Python 3.13 or 3.12**. Not 3.14 or newer yet: the viewer can't install on those.
 
 === "Windows"
 
     1. Go to [python.org/downloads/windows](https://www.python.org/downloads/windows/).
-    2. Under **Stable Releases**, find the newest **Python 3.14** (or 3.13 or 3.12) and click
-       **Download Windows installer (64-bit)**. If the page offers a version newer than 3.14,
-       skip it: PyTorch may not support it yet.
+    2. Under **Stable Releases**, find the newest **Python 3.13** (or 3.12) and click
+       **Download Windows installer (64-bit)**. Skip the newer versions above it.
     3. Run the installer. On its first screen, **tick "Add python.exe to PATH"** at the bottom.
        Leave the other box as it is.
     4. Click **Install Now**. When it finishes, you can ignore the "Disable path length limit"
@@ -28,16 +28,25 @@ You need Python 3.12, 3.13 or 3.14.
 
 === "macOS"
 
+    You need a Mac with Apple silicon (M1 or newer). On a Mac with an Intel processor, the
+    PyTorch that RoyaleGym needs no longer installs.
+
     Go to [python.org/downloads/macos](https://www.python.org/downloads/macos/), download the
-    **macOS 64-bit universal2 installer** for Python 3.14 (or 3.13 or 3.12), and run it.
+    **macOS 64-bit universal2 installer** for the newest Python 3.13 (or 3.12), and run it. Skip
+    newer versions.
 
 === "Linux"
 
-    Use your system's package manager, for example on Ubuntu 24.04:
+    Open a terminal (Ctrl+Alt+T on Ubuntu). On Ubuntu 24.04, which comes with Python 3.12, run:
 
     ```bash
+    sudo apt update
     sudo apt install python3 python3-venv python3-pip
     ```
+
+    `sudo` asks for your password, and nothing shows while you type it. That's normal. Older
+    versions of Ubuntu come with an older Python: install Python 3.12 or 3.13 with your package
+    manager first, or upgrade Ubuntu.
 
 ## 2. Open a Terminal
 
@@ -70,13 +79,13 @@ A terminal is the window where you type commands.
 You should see something like:
 
 ```text
-Python 3.14.8
+Python 3.13.16
 ```
 
-If it shows an older version, such as 3.10, you have an older Python too and the terminal found
-that one first. On Windows, use `py -3.14` (or `py -3.13`, `py -3.12`) in place of `python` in
-step 3, for example `py -3.14 -m venv venv`. After that, inside the virtual environment, plain
-`python` is the right one.
+3.12 is fine too. If it shows another version, you have more than one Python and the terminal
+found the wrong one first. Name the version in step 3 instead: `py -3.13 -m venv venv` on
+Windows, `python3.13 -m venv venv` on a Mac or Linux. After that, inside the virtual
+environment, plain `python` is the right one.
 
 ## 3. Make a Folder for Your Bot
 
@@ -128,14 +137,17 @@ clashes with anything else on your computer.
     ```
 
 Your prompt now starts with `(venv)`. That means the virtual environment is on, and anything
-you install goes into it:
+you install goes into it. On Windows it looks like the first line below, on a Mac like the
+second:
 
 ```text
 (venv) PS C:\Users\you\royale>
+(venv) you@your-mac royale %
 ```
 
-Your folder is `C:\Users\<your name>\royale` on Windows, and `royale` in your home folder on a
-Mac or Linux.
+From here on, plain `python` and `pip` work on every system, because the virtual environment
+is on. Your folder is `C:\Users\<your name>\royale` on Windows, and `royale` in your home folder
+on a Mac or Linux.
 
 !!! note "Every time you open a new terminal"
     Run just these two lines. Don't run `mkdir` or the `venv` line again.
@@ -154,7 +166,7 @@ Mac or Linux.
         source venv/bin/activate
         ```
 
-    If your prompt already ends in `royale`, skip the `cd` line. If the prompt doesn't start
+    If your prompt already shows `royale`, skip the `cd` line. If the prompt doesn't start
     with `(venv)`, Python won't find RoyaleGym.
 
 ## 4. Install PyTorch for Your Graphics Card
@@ -174,6 +186,9 @@ PyTorch is the library that runs your bot's brain (a neural network) on the grap
     what PyTorch needs. Just make sure your NVIDIA driver is up to date, for example with the
     NVIDIA App. It works with GTX 16-series and RTX 20-series cards and newer.
 
+    It's a big download, about 3 GB, and `pip` can sit on one line for several minutes while it
+    downloads. That's normal. When it's done, the last line starts with `Successfully installed`.
+
 === "macOS"
 
     Nothing to do here: the next step installs PyTorch for you. Macs don't have NVIDIA cards,
@@ -182,16 +197,10 @@ PyTorch is the library that runs your bot's brain (a neural network) on the grap
 === "Linux"
 
     Nothing to do here: the next step installs a PyTorch that already works with NVIDIA cards.
-    Keep your NVIDIA driver up to date.
+    It needs NVIDIA driver 580 or newer. Check yours with `nvidia-smi`; the version is in the top
+    line. To update it on Ubuntu, run `sudo ubuntu-drivers install`, then restart.
 
-It's a big download, about 3 GB, and `pip` can sit on one line for several minutes while it
-downloads. That's normal. When it's done, the last line starts with:
-
-```text
-Successfully installed
-```
-
-If `pip` also prints a notice that "a new release of pip is available", you can ignore it.
+If `pip` prints a notice that "a new release of pip is available", you can ignore it.
 
 ## 5. Install RoyaleGym
 
@@ -204,8 +213,9 @@ engine, the environments, the trainer, the viewer and the extras. The `--find-li
 `pip` where to download them, because RoyaleGym isn't on PyPI (Python's package store) yet. You
 don't need Git or Rust.
 
-You'll see a lot of `Downloading` and `Installing` lines. It ends with a line that starts with
-`Successfully installed` and lists everything it installed, `royalegym` among them.
+You'll see a lot of `Downloading` and `Installing` lines. On Linux this step also downloads
+PyTorch, about 3 GB, so it can sit on one line for several minutes. It ends with a line that
+starts with `Successfully installed` and lists everything it installed, `royalegym` among them.
 
 ## 6. Check That It Works
 
@@ -223,6 +233,7 @@ The version number may be newer. If it says `graphics card: False` on a computer
 card, see [PyTorch can't see my graphics card](it-doesnt-work.md#pytorch-cant-see-my-graphics-card).
 On a Mac, `False` is expected.
 
-All of this takes about 5 GB of disk space, most of it PyTorch.
+All of this takes about 5 GB of disk space on Windows and Linux, most of it PyTorch, and much
+less on a Mac.
 
 You're ready. Next: the [Quick Start](quickstart.md).
