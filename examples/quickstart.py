@@ -3,7 +3,8 @@
     pip install "royalegym[all]"
     python quickstart.py
 
-It trains on your CPU and prints its progress as it goes. When it stops, it plays one
+It trains on your graphics card (or the CPU, much slower, if torch cannot use one) and
+prints its progress as it goes. When it stops, it plays one
 battle against a bot that makes random moves and saves it, so you can watch:
 
     royaleviser my_bot_battle.msgpack
@@ -25,7 +26,6 @@ if __name__ == "__main__":
     learner = Learner(
         build_env,
         n_envs=4,                     # battles played at once; more is faster on more cores
-        device="cpu",                 # "cuda" if you have a graphics card
         opponent="random",            # who the bot plays: "random", "noop" or "self"
         save_dir="runs/quickstart",   # checkpoints go here; run again to continue
     )

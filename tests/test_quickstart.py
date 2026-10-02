@@ -50,3 +50,11 @@ def test_the_quickstart_trains_saves_and_points_at_a_battle_to_watch(tmp_path):
 def test_the_quickstart_is_one_short_file():
     lines = QUICKSTART.read_text(encoding="utf-8").splitlines()
     assert len(lines) <= 60, f"{len(lines)} lines; the quickstart is meant to fit one screen"
+
+
+def test_the_quickstart_does_not_force_the_cpu():
+    """Users are assumed to have a GPU: the Learner picks it when torch can use one, and
+    falls back to the CPU with a printed line otherwise (CI, the fresh-user test)."""
+    source = QUICKSTART.read_text(encoding="utf-8")
+    assert 'device="cpu"' not in source
+    assert 'device="cuda"' not in source, "with no GPU it would fail, not fall back"
