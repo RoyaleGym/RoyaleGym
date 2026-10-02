@@ -1,5 +1,30 @@
 /* The home page banner and the cards (overrides/home.html), and the icon cards on other pages. */
 
+/* ---------- the brand's colours: royal blue and gold (mkdocs.yml: primary and accent "custom") ---------- */
+
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color: #2346c8;
+  --md-primary-fg-color--light: #4a72f0;
+  --md-primary-fg-color--dark: #1a3394;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffb3;
+}
+/* Gold on white is too faint for a hovered link, so the light scheme hovers in a darker gold (5.0:1). */
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: #9a6400;
+  --md-accent-fg-color--transparent: #9a64001a;
+  --md-accent-bg-color: #ffffff;
+  --md-accent-bg-color--light: #ffffffb3;
+}
+[data-md-color-scheme="slate"][data-md-color-accent="custom"] {
+  --md-accent-fg-color: #f5b92e;
+  --md-accent-fg-color--transparent: #f5b92e1a;
+}
+/* Royal blue links are too dark on the slate ground; a lighter royal reads at 7.0:1. */
+[data-md-color-scheme="slate"][data-md-color-primary="custom"] {
+  --md-typeset-a-color: #8fa6ff;
+}
+
 /* ---------- banner ---------- */
 
 .rg-hero {
@@ -8,8 +33,8 @@
   padding: 3.6rem 0 3.4rem;
   text-align: center;
   color: var(--md-primary-bg-color);
-  /* Darker than the header's teal, so white text on it passes WCAG AA (6.6:1 at its lightest). */
-  background: linear-gradient(160deg, #00695c 0%, #004d40 100%);
+  /* The brand's royal blue; white text on it passes WCAG AA (7.6:1 at its lightest). */
+  background: linear-gradient(160deg, #2346c8 0%, #142a85 100%);
 }
 
 /* Angled panels behind the title, the way RLGym's banner has them. */
@@ -28,11 +53,12 @@
   padding: 0 1rem;
 }
 
-.rg-hero__crown svg {
-  width: 3rem;
-  height: 3rem;
-  fill: #ffd54f;
-  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 25%));
+.rg-hero__mark {
+  display: block;
+  width: 7rem;
+  height: auto;
+  margin: 0 auto 0.4rem;
+  filter: drop-shadow(0 6px 14px rgb(8 14 50 / 45%));
 }
 
 .rg-hero__title {
@@ -75,12 +101,12 @@
 }
 .md-button.rg-hero__button:hover,
 .md-button.rg-hero__button:focus {
-  color: #00695c;
+  color: #1a3394;
   background-color: var(--md-primary-bg-color);
   border-color: var(--md-primary-bg-color);
 }
 .md-button.rg-hero__button--solid {
-  color: #00695c;
+  color: #1a3394;
   background-color: var(--md-primary-bg-color);
   border-color: var(--md-primary-bg-color);
 }
