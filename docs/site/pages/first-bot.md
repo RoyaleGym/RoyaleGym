@@ -37,7 +37,7 @@ learner plugs into. The one piece you are expected to write for training is a re
 
 ## What you need first
 
-The [Install](install.md) page. You need the folder called `Royale` with `RoyaleSim` and
+The [Build from source](build-from-source.md) page. You need the folder called `Royale` with `RoyaleSim` and
 `RoyaleGym` cloned inside it, one virtual environment at the root, and the engine built. The
 viewer section below also wants `RoyaleViser` installed, which is one more `pip install -e` line.
 Part 2 wants `RoyaleLearn` with its torch extra, as the box at the top says.

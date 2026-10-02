@@ -66,7 +66,7 @@ This is the smallest interesting thing the engine does. A Giant is played for Bl
 team 0 and the bottom half of the arena, and then left alone for 24 seconds of game time. Nobody
 tells it where to walk.
 
-You need the install from [Install](../install.md) first, up to and including the engine build.
+You need the install from [Build from source](../build-from-source.md) first, up to and including the engine build.
 
 ```python
 import json, royalesim

@@ -34,9 +34,9 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 WORKFLOW = REPO / ".github" / "workflows" / "suite.yml"
-INSTALL_PAGE = REPO / "docs" / "site" / "pages" / "install.md"
+INSTALL_PAGE = REPO / "docs" / "site" / "pages" / "build-from-source.md"
 
-#: The macOS/Linux install, in order, as docs/site/pages/install.md publishes it. CI runs
+#: The macOS/Linux install, in order, as docs/site/pages/build-from-source.md publishes it. CI runs
 #: ubuntu, so these are the lines a reader on that platform is told to run.
 POSIX_INSTALL = (
     "python -m venv .venv",

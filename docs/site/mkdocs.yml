@@ -88,26 +88,31 @@ plugins:
             filters: ["!^_"]
 
 nav:
-  - Start here: index.md
-  - Install: install.md
-  - Your first bot: first-bot.md
-  - The pieces:
-      - The engine: pieces/engine.md
-      - The environments: pieces/environments.md
-      - The learner: pieces/learner.md
-      - The viewer: pieces/viewer.md
-  - Writing a reward function: rewards.md
-  - What the bot sees and does: observations-and-actions.md
+  - Getting Started:
+      - Introduction: index.md
+      - Install: install.md
+      - Quick Start: quick-start.md
+      - Watch Your Bot: watch-your-bot.md
   - Guides:
       - Rewards: guides/rewards.md
       - Observations and Actions: guides/observations-and-actions.md
       - Custom Decks: guides/custom-decks.md
-  - How accurate is the engine: accuracy.md
   - Troubleshooting: troubleshooting.md
-  - API reference:
+  - API Reference:
       - royalegym: reference/royalegym.md
       - royaleviser: reference/royaleviser.md
       - royalelearn: reference/royalelearn.md
+  - Advanced:
+      - Build from source: build-from-source.md
+      - Your first bot, step by step: first-bot.md
+      - The pieces:
+          - The engine: pieces/engine.md
+          - The environments: pieces/environments.md
+          - The learner: pieces/learner.md
+          - The viewer: pieces/viewer.md
+      - Rewards in depth: rewards.md
+      - Observations and actions in depth: observations-and-actions.md
+      - How accurate is the engine: accuracy.md
 
 extra:
   social:

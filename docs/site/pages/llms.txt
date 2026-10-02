@@ -1,0 +1,43 @@
+# RoyaleGym
+
+> Make a Clash Royale bot in Python. Five packages: RoyaleSim (a deterministic battle engine in
+> Rust with Python bindings), RoyaleGym (Gymnasium and PettingZoo environments: observations,
+> actions with a legality mask, rewards), RoyaleLearn (a PPO self-play trainer), RoyaleViser (a
+> viewer for saved or live battles) and RoyaleImitate (imitation from replays). Install all with
+> `pip install "royalegym[all]"` (Python 3.12+). The engine's battle logic is still being matched
+> to the real game; the Python APIs are meant to stay put.
+
+Each repository also has an AGENTS.md at its root with its layout, build and test commands, and
+the rules its tests enforce.
+
+## Getting Started
+
+- [Introduction](index.md): what the five packages are and how they fit
+- [Install](install.md): the one install line, the extras, a virtual environment
+- [Quick Start](quick-start.md): one file that trains a bot and saves a battle to watch
+- [Watch Your Bot](watch-your-bot.md): open a saved battle or a live training run
+
+## Guides
+
+- [Rewards](guides/rewards.md): write a reward, combine rewards, read the per-term breakdown
+- [Observations and Actions](guides/observations-and-actions.md): the observation dict, the 2305 moves, the mask, ability buttons
+- [Custom Decks](guides/custom-decks.md): decks by name, one per side, evolutions and heroes
+
+## Reference
+
+- [Troubleshooting](troubleshooting.md): known errors and their fixes
+- [royalegym API](reference/royalegym.md)
+- [royalelearn API](reference/royalelearn.md)
+- [royaleviser API](reference/royaleviser.md)
+
+## Advanced
+
+- [Build from source](build-from-source.md): all repositories side by side, building the engine
+- [Your first bot, step by step](first-bot.md)
+- [The engine](pieces/engine.md), [the environments](pieces/environments.md), [the learner](pieces/learner.md), [the viewer](pieces/viewer.md)
+- [Rewards in depth](rewards.md)
+- [Observations and actions in depth](observations-and-actions.md)
+- [How accurate is the engine](accuracy.md)
+- Engine internals, mechanics and the calibration ledger: https://github.com/RoyaleGym/RoyaleSim/tree/main/docs
+- Trainer configuration and design: https://github.com/RoyaleGym/RoyaleLearn/tree/main/docs
+- Viewer formats and internals: https://github.com/RoyaleGym/RoyaleViser/blob/main/docs/internals.md
