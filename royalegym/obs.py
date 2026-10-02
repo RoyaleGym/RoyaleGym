@@ -125,6 +125,7 @@ from .protocol import (
     EMPTY_CARD,
     HAND_SIZE,
     RED,
+    STATUS_EVOLVED,
     TEAMS,
     Arena,
     BattleState,
@@ -141,6 +142,7 @@ from .protocol import (
     card_is_spell,
     default_calibration,
     default_elixir_law,
+    status_of,
     to_own,
 )
 
@@ -197,7 +199,11 @@ class VectorField(NamedTuple):
 
 
 def vector_layout(
-    num_cards: int, reveal: Reveal | None = None, enemy_last_card: bool = False
+    num_cards: int,
+    reveal: Reveal | None = None,
+    enemy_last_card: bool = False,
+    evolutions: bool = False,
+    evolution_progress: bool = False,
 ) -> list[VectorField]:
     """The flat vector, field by field, in order. THE definition of the layout.
 
@@ -211,6 +217,12 @@ def vector_layout(
     existed before it, so turning it on moves no existing fair offset, and before the
     reveal fields, so the fair block stays contiguous. It is fair because anyone
     watching sees what the opponent just played.
+
+    ``evolutions`` (off by default) appends the OWN evolution fields after that, for the
+    same reason: ``own_hand_evolved`` and ``own_next_evolved``, and with
+    ``evolution_progress`` also ``own_hand_evo_progress``. They are fair because the
+    client shows the charge on a player's own cards. The enemy's charge is not shown, so
+    nothing here reads it.
     """
     rev = reveal or Reveal()
     n = num_cards
@@ -272,6 +284,27 @@ def vector_layout(
                 "enemy_last_card", onehot, "last card the enemy played, one-hot [n+1]; n = none yet"
             )
         )
+    if evolution_progress and not evolutions:
+        raise ValueError("evolution_progress needs evolutions=True: it extends those fields")
+    if evolutions:
+        fields.append(
+            VectorField(
+                "own_hand_evolved",
+                HAND_SIZE,
+                "hand slot puts down its evolved form if played now [4]",
+            )
+        )
+        fields.append(
+            VectorField("own_next_evolved", 1, "the next card's next play is its evolved form")
+        )
+    if evolution_progress:
+        fields.append(
+            VectorField(
+                "own_hand_evo_progress",
+                HAND_SIZE,
+                "hand slot's evolution counter: plays / the cycle length, 0 without one [4]",
+            )
+        )
     if rev.enemy_hand:
         fields.append(
             VectorField(
@@ -300,22 +333,32 @@ def vector_layout(
 
 
 def vector_fields(
-    num_cards: int, reveal: Reveal | None = None, enemy_last_card: bool = False
+    num_cards: int,
+    reveal: Reveal | None = None,
+    enemy_last_card: bool = False,
+    evolutions: bool = False,
+    evolution_progress: bool = False,
 ) -> list[tuple[str, int]]:
     """``(description, size)`` per field, in order. The suite checks the sizes add up."""
     return [
         (f"{f.key}: {f.doc}", f.size)
-        for f in vector_layout(num_cards, reveal, enemy_last_card)
+        for f in vector_layout(
+            num_cards, reveal, enemy_last_card, evolutions, evolution_progress
+        )
     ]
 
 
 def vector_offsets(
-    num_cards: int, reveal: Reveal | None = None, enemy_last_card: bool = False
+    num_cards: int,
+    reveal: Reveal | None = None,
+    enemy_last_card: bool = False,
+    evolutions: bool = False,
+    evolution_progress: bool = False,
 ) -> dict[str, slice]:
     """``key -> slice`` into the flat vector, so nothing has to count slots by hand."""
     out: dict[str, slice] = {}
     at = 0
-    for f in vector_layout(num_cards, reveal, enemy_last_card):
+    for f in vector_layout(num_cards, reveal, enemy_last_card, evolutions, evolution_progress):
         out[f.key] = slice(at, at + f.size)
         at += f.size
     return out
@@ -791,6 +834,9 @@ def fair_fields(
     enemy_last_card: bool = False,
     hand_costs: Sequence[int] | None = None,
     own_pending: Sequence[Sequence[int]] = (),
+    evolutions: bool = False,
+    evolution_progress: bool = False,
+    own_evo: Sequence[Sequence[int]] = (),
 ) -> dict[str, np.ndarray]:
     """Every fair vector field but the board's four, by name, from what a player sees.
 
@@ -819,15 +865,22 @@ def fair_fields(
     the client's does. The enemy's waiting commands are never an input: the client shows
     an opponent's play only when it runs, and so does the enemy count.
 
-    Keys are ``FAIR_FIELDS`` in order, then ``enemy_last_card`` when asked for. Each
-    array is float32 and already clipped to [0, 1], as in the vector. They are views of
-    one buffer, laid out in that order.
+    ``own_evo`` is the player's OWN evolution counters (``PlayerState.evo``: [card_id,
+    plays, next play evolved, cycle length] rows, one per evolved deck card), read only
+    with ``evolutions``. The client shows the charge on a player's own cards, so it is
+    fair; the enemy's is not shown, and nothing takes it. ``evolution_progress`` needs
+    the cycle length, the fourth column, and refuses rows without it.
+
+    Keys are ``FAIR_FIELDS`` in order, then ``enemy_last_card`` and the evolution fields
+    when asked for. Each array is float32 and already clipped to [0, 1], as in the
+    vector. They are views of one buffer, laid out in that order.
     """
-    off, width = _fair_slots(len(cards), enemy_last_card)
+    off, width = _fair_slots(len(cards), enemy_last_card, evolutions, evolution_progress)
     buf = np.zeros(width, dtype=np.float32)
     _write_fair(
         buf, off, memory, clock, hand, next_card, own_elixir_milli, cards, max_mana,
         enemy_elixir_milli, enemy_last_card, hand_costs, own_pending,
+        own_evo if evolutions else None, evolution_progress,
     )
     np.clip(buf, 0.0, 1.0, out=buf)
     return {k: buf[s] for k, s in off.items()}
@@ -847,6 +900,8 @@ def _write_fair(
     enemy_last_card: bool,
     hand_costs: Sequence[int] | None = None,
     own_pending: Sequence[Sequence[int]] = (),
+    own_evo: Sequence[Sequence[int]] | None = None,
+    evolution_progress: bool = False,
 ) -> None:
     """Write every fair field but the board's four into ``out`` at ``off``, NOT clipped.
 
@@ -904,19 +959,66 @@ def _write_fair(
         # enemy_possible_hand, so it is derived from tested state, not kept twice.
         last = memory.foe_recent[-1] if memory.foe_recent else EMPTY_CARD
         _put_one(out[off["enemy_last_card"]], last, num_cards)
+    if own_evo is not None:
+        _write_evolutions(out, off, hand, next_card, own_evo, evolution_progress)
+
+
+def _write_evolutions(
+    out: np.ndarray,
+    off: dict[str, slice],
+    hand: Sequence[int],
+    next_card: int,
+    own_evo: Sequence[Sequence[int]],
+    progress: bool,
+) -> None:
+    """The own evolution fields, from the own counters only. Module-level for plants."""
+    rows = {int(r[0]): r for r in own_evo}
+    evolved = out[off["own_hand_evolved"]]
+    for i, c in enumerate(hand):
+        row = rows.get(int(c)) if c != EMPTY_CARD else None
+        evolved[i] = 1.0 if row is not None and int(row[2]) else 0.0
+    row = rows.get(int(next_card)) if next_card != EMPTY_CARD else None
+    out[off["own_next_evolved"]] = 1.0 if row is not None and int(row[2]) else 0.0
+    if not progress:
+        return
+    bar = out[off["own_hand_evo_progress"]]
+    for i, c in enumerate(hand):
+        row = rows.get(int(c)) if c != EMPTY_CARD else None
+        if row is None:
+            bar[i] = 0.0
+            continue
+        if len(row) < 4 or int(row[3]) < 1:
+            raise ValueError(
+                f"evolution_progress needs each evolution counter's cycle length, the fourth "
+                f"column of PlayerState.evo, and this engine's row for card {int(row[0])} is "
+                f"{list(row)}. An engine from before that column cannot drive it; leave "
+                "evolution_progress off, or update the engine."
+            )
+        bar[i] = min(1.0, int(row[1]) / int(row[3]))
 
 
 @lru_cache(maxsize=64)
-def _fair_slots(num_cards: int, enemy_last_card: bool) -> tuple[dict[str, slice], int]:
+def _fair_slots(
+    num_cards: int,
+    enemy_last_card: bool,
+    evolutions: bool = False,
+    evolution_progress: bool = False,
+) -> tuple[dict[str, slice], int]:
     """Where ``fair_fields`` puts each field in its own buffer, and the buffer's width.
 
-    ``FAIR_FIELDS`` in order, then ``enemy_last_card``, packed, at the sizes
-    ``vector_layout`` gives them. Cached and read-only.
+    ``FAIR_FIELDS`` in order, then ``enemy_last_card`` and the evolution fields when
+    asked for, packed, at the sizes ``vector_layout`` gives them. Cached and read-only.
     """
-    size = {f.key: f.size for f in vector_layout(num_cards, None, enemy_last_card)}
+    layout = vector_layout(num_cards, None, enemy_last_card, evolutions, evolution_progress)
+    size = {f.key: f.size for f in layout}
+    extra = [
+        *(("enemy_last_card",) if enemy_last_card else ()),
+        *(("own_hand_evolved", "own_next_evolved") if evolutions else ()),
+        *(("own_hand_evo_progress",) if evolution_progress else ()),
+    ]
     off: dict[str, slice] = {}
     at = 0
-    for key in (*FAIR_FIELDS, *(("enemy_last_card",) if enemy_last_card else ())):
+    for key in (*FAIR_FIELDS, *extra):
         off[key] = slice(at, at + size[key])
         at += size[key]
     return off, at
@@ -924,15 +1026,20 @@ def _fair_slots(num_cards: int, enemy_last_card: bool) -> tuple[dict[str, slice]
 
 @lru_cache(maxsize=64)
 def _vector_slots(
-    num_cards: int, reveal: Reveal, enemy_last_card: bool
+    num_cards: int,
+    reveal: Reveal,
+    enemy_last_card: bool,
+    evolutions: bool = False,
+    evolution_progress: bool = False,
 ) -> tuple[dict[str, slice], int]:
     """``vector_offsets`` and the vector's width, cached and read-only.
 
-    The layout is a function of these three alone, and ``vector_layout`` is the one
+    The layout is a function of these alone, and ``vector_layout`` is the one
     definition of it.
     """
-    off = vector_offsets(num_cards, reveal, enemy_last_card)
-    return off, sum(f.size for f in vector_layout(num_cards, reveal, enemy_last_card))
+    flags = (enemy_last_card, evolutions, evolution_progress)
+    off = vector_offsets(num_cards, reveal, *flags)
+    return off, sum(f.size for f in vector_layout(num_cards, reveal, *flags))
 
 
 def build_vector(
@@ -943,6 +1050,8 @@ def build_vector(
     reveal: Reveal,
     memory: MatchMemory,
     enemy_last_card: bool = False,
+    evolutions: bool = False,
+    evolution_progress: bool = False,
 ) -> np.ndarray:
     """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``.
 
@@ -952,7 +1061,9 @@ def build_vector(
     """
     me, foe = state.players[team], state.players[1 - team]
     num_cards = len(cards)
-    off, width = _vector_slots(num_cards, reveal, enemy_last_card)
+    off, width = _vector_slots(
+        num_cards, reveal, enemy_last_card, evolutions, evolution_progress
+    )
     vec = np.zeros(width, dtype=np.float32)
     # Each own slot priced as the engine prices it (a Mirror: its copy plus one), where the
     # engine states the prices. RoyaleImitate passes the same prices rebuilt from its log
@@ -961,6 +1072,7 @@ def build_vector(
         vec, off, memory, MatchClock.of(state), me.hand, me.next_card, me.elixir_milli,
         cards, max_mana, foe.elixir_milli if reveal.enemy_elixir else None, enemy_last_card,
         me.hand_costs if len(me.hand_costs) == HAND_SIZE else None, me.pending,
+        me.evo if evolutions else None, evolution_progress,
     )
     vec[off["own_tower_hp"]] = [me.tower_hp[s] / max(1, me.tower_max_hp[s]) for s in TowerSlot]
     vec[off["enemy_tower_hp"]] = [
@@ -1134,6 +1246,10 @@ class ObsBuilder(ABC):
     #: Whether the vector carries ``enemy_last_card``. Only SpatialObsBuilder's
     #: ``card_identity`` turns it on; every other builder keeps the shipped vector.
     enemy_last_card: bool = False
+    #: Whether the vector carries the own evolution fields (and their progress), and the
+    #: spatial planes the evolved units. Only SpatialObsBuilder's ``evolutions`` sets them.
+    evolutions: bool = False
+    evolution_progress: bool = False
 
     def __init__(
         self, reveal: Reveal | None = None, calibration: Calibration | None = None
@@ -1216,11 +1332,17 @@ class ObsBuilder(ABC):
 
     def vector_layout(self) -> list[VectorField]:
         """The flat vector's fields, in order, for this builder's ``Reveal``."""
-        return vector_layout(self.num_cards, self.reveal, self.enemy_last_card)
+        return vector_layout(
+            self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
+            self.evolution_progress,
+        )
 
     def vector_offsets(self) -> dict[str, slice]:
         """``key -> slice`` into the flat vector this builder writes."""
-        return vector_offsets(self.num_cards, self.reveal, self.enemy_last_card)
+        return vector_offsets(
+            self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
+            self.evolution_progress,
+        )
 
     @abstractmethod
     def channel_names(self) -> list[str]:
@@ -1282,7 +1404,11 @@ class ObsBuilder(ABC):
         # it was before D2, so anything that wraps or substitutes build_vector with the old
         # six arguments keeps working -- this suite's own plant tests do, and the first
         # version of this line broke two of them by always passing a seventh.
-        extra = {"enemy_last_card": True} if self.enemy_last_card else {}
+        extra: dict[str, bool] = {"enemy_last_card": True} if self.enemy_last_card else {}
+        if self.evolutions:
+            extra["evolutions"] = True
+        if self.evolution_progress:
+            extra["evolution_progress"] = True
         return build_vector(
             state, team, self.cards, self.max_mana, self.reveal, memory, **extra
         )
@@ -1332,10 +1458,23 @@ REVEAL_SPATIAL_CHANNELS: dict[str, tuple[str, str]] = {
 }
 
 
-def spatial_channels(reveal: Reveal | None = None) -> list[tuple[str, str]]:
-    """The spatial channels for a ``Reveal``: the fair ones, then the revealed ones."""
+#: The two planes ``SpatialObsBuilder(evolutions=True)`` adds, after the fair ones and
+#: before any revealed one. Fair: an evolved unit looks different on the board.
+EVOLVED_SPATIAL_CHANNELS: list[tuple[str, str]] = [
+    ("own_evolved", "count of own evolved units (troops and buildings) whose centre is in the tile"),
+    ("enemy_evolved", "count of enemy evolved units whose centre is in the tile"),
+]
+
+
+def spatial_channels(
+    reveal: Reveal | None = None, evolutions: bool = False
+) -> list[tuple[str, str]]:
+    """The spatial channels: the fair ones, the evolved-unit pair when asked for, then the
+    revealed ones. The fair block keeps its offsets either way."""
     rev = reveal or Reveal()
     out = list(FAIR_SPATIAL_CHANNELS)
+    if evolutions:
+        out.extend(EVOLVED_SPATIAL_CHANNELS)
     for field, entry in REVEAL_SPATIAL_CHANNELS.items():
         if getattr(rev, field):
             out.append(entry)
@@ -1428,6 +1567,31 @@ def spell_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
     return out
 
 
+def evolved_channels(entities: Sequence[EntityState], team: int, arena: Arena) -> np.ndarray:
+    """float32 [2, tiles_y, tiles_x], seen by ``team``: own, then enemy, evolved units.
+
+    Counted on the centre tile, as ``entity_channels`` counts troops, from each unit's
+    ``STATUS_EVOLVED`` bit. A hero's unit carries ``STATUS_HERO`` instead and is not
+    counted. An engine that does not report the bits (``status_flags`` -1) is refused:
+    reading "not reported" as "not evolved" would hand a network zeros that look like an
+    answer. Module-level so a test can plant a defect in it.
+    """
+    acc = np.zeros((2, arena.tiles_y, arena.tiles_x), dtype=np.int64)
+    for e in entities:
+        status = status_of(e)  # towers too: an engine that reports the bits reports theirs
+        if status is None:
+            raise ValueError(
+                f"evolutions=True, but this engine does not report which units are evolved "
+                f"(entity uid {e.uid} has no status_flags). Use an engine that reports them, "
+                "such as RustEngine, or leave evolutions off."
+            )
+        if status & STATUS_EVOLVED and e.kind not in TOWER_KINDS:
+            ty, tx = _tile(arena, team, e.x, e.y)
+            acc[0 if e.team == team else 1, ty, tx] += 1
+    out: np.ndarray = acc.astype(np.float32)
+    return out
+
+
 #: ``card_ids`` value for a tile nothing stands on.
 CARD_ID_EMPTY = 0
 #: ``card_ids`` value for a crown tower, the only entity class that carries no card. Kept
@@ -1513,10 +1677,16 @@ class SpatialObsBuilder(ObsBuilder):
         calibration: Calibration | None = None,
         card_identity: bool = False,
         card_names: Sequence[str] | None = None,
+        evolutions: bool = False,
+        evolution_progress: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.card_identity = bool(card_identity)
         self.enemy_last_card = self.card_identity
+        if evolution_progress and not evolutions:
+            raise ValueError("evolution_progress needs evolutions=True: it extends those fields")
+        self.evolutions = bool(evolutions)
+        self.evolution_progress = bool(evolution_progress)
         if card_names is not None and not self.card_identity:
             raise ValueError(
                 "card_names pins the card_ids vocabulary, which only exists with "
@@ -1547,7 +1717,7 @@ class SpatialObsBuilder(ObsBuilder):
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
         a = self.arena
-        self.channels = spatial_channels(self.reveal)
+        self.channels = spatial_channels(self.reveal, self.evolutions)
         self._channel_index = {name: i for i, (name, _) in enumerate(self.channels)}
         self.shape = (len(self.channels), a.tiles_y, a.tiles_x)
         h = a.half
@@ -1614,6 +1784,9 @@ class SpatialObsBuilder(ObsBuilder):
         rows = spell_channels(state, team, self.arena)
         for row, channel in self._spell_map:
             sp[channel] = rows[row]
+        if self.evolutions:
+            at = idx["own_evolved"]
+            sp[at : at + 2] = evolved_channels(state.entities, team, self.arena)
         np.clip(sp, 0.0, SPATIAL_CLIP, out=sp)
         out: dict[str, Any] = {
             "spatial": sp,
@@ -1627,6 +1800,10 @@ class SpatialObsBuilder(ObsBuilder):
     def config(self) -> dict[str, Any]:
         """Constructor state, including the card names the ``card_ids`` ids refer to."""
         out = super().config()
+        if self.evolutions:
+            out["evolutions"] = True
+        if self.evolution_progress:
+            out["evolution_progress"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
