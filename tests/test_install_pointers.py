@@ -299,9 +299,12 @@ def test_every_file_the_readme_links_to_exists() -> None:
     """
     missing = [t for t in readme_links() if not (REPO / t).exists()]
     assert not missing, f"README.md links to files that do not exist: {missing}"
-    # Vacuity: it really is reading links, and the docs and the quickstart are among them.
-    assert any("docs/site/pages" in t for t in readme_links()), readme_links()
+    # Vacuity: it really is reading links, and the quickstart is among them.
     assert "examples/quickstart.py" in readme_links(), readme_links()
+    # The docs are the published site now, not pages in this repo (owner, 2026-10-02:
+    # "the docs link should go to the site instead of another readme").
+    text = README.read_text(encoding="utf-8")
+    assert "](https://royalegym.github.io/RoyaleGym/)" in text, "the README no longer links the docs site"
 
 
 def test_every_image_the_readme_shows_is_described() -> None:

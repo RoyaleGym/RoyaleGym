@@ -1,14 +1,15 @@
 # The documentation site for the whole Royale family, not just this repo.
 #
 #   cd RoyaleGym/docs/site
+#   ..\..\..\.venv\Scripts\python collect.py --root ..\..\..    # every repo's docs into pages/repos/
 #   ..\..\..\.venv\Scripts\python -m mkdocs serve      # http://127.0.0.1:8000, live reload
 #   ..\..\..\.venv\Scripts\python -m mkdocs build      # static HTML into _build/
 #   ..\..\..\.venv\Scripts\python -m mkdocs gh-deploy  # publishes to GitHub Pages
 #
 # It lives in RoyaleGym because RoyaleGym is the front door of the project and the
-# organisation is named after it, so a reader who finds one finds the other. Nothing here
-# imports from the sibling repos at build time; where a page needs the detail, it links to
-# that repo's own docs rather than copying them.
+# organisation is named after it, so a reader who finds one finds the other. Everything past a
+# README is here: collect.py copies each repo's docs/ (read at origin/main in the sibling
+# repos, so the site shows what is published) into pages/repos/ before a build.
 
 site_name: Royale
 site_description: Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.
@@ -134,6 +135,58 @@ nav:
       - The viewer inside: pieces/viewer.md
       - Build from source: build-from-source.md
       - Troubleshooting in depth: troubleshooting.md
+      # Every repo's own docs, copied in by collect.py at build time (pages/repos/ is generated).
+      - RoyaleSim:
+          - Overview: repos/royalesim/README.md
+          - In depth: repos/royalesim/engine.md
+          - Python API: repos/royalesim/api.md
+          - Architecture: repos/royalesim/architecture.md
+          - Mechanics: repos/royalesim/mechanics.md
+          - Game values: repos/royalesim/game-values.md
+          - The calibration ledger: repos/royalesim/calibration.md
+          - Pathfinding: repos/royalesim/pathfinding.md
+          - Pathfinder spec: repos/royalesim/pathfinder-spec.md
+          - Movement measurements: repos/royalesim/movement-measurements.md
+          - Spell spec: repos/royalesim/spell-spec.md
+          - Performance: repos/royalesim/performance.md
+          - Replay parity: repos/royalesim/replay-parity.md
+          - Card coverage queue: repos/royalesim/card-coverage-queue.md
+          - Pictures: repos/royalesim/media/README.md
+          - Contributing: repos/royalesim/contributing.md
+          - Changelog: repos/royalesim/changelog.md
+      - RoyaleGym:
+          - The long guide: repos/royalegym/guide.md
+          - Architecture: repos/royalegym/architecture.md
+          - Observation spec: repos/royalegym/observation-spec.md
+          - Background: repos/royalegym/background.md
+          - Pictures: repos/royalegym/media/README.md
+          - Contributing: repos/royalegym/contributing.md
+          - Changelog: repos/royalegym/changelog.md
+      - RoyaleLearn:
+          - The guide: repos/royalelearn/guide.md
+          - Running a job: repos/royalelearn/running.md
+          - Metrics: repos/royalelearn/metrics.md
+          - Checkpoints: repos/royalelearn/checkpoints.md
+          - The ladder: repos/royalelearn/ladder.md
+          - Determinism: repos/royalelearn/determinism.md
+          - Throughput: repos/royalelearn/throughput.md
+          - Extensions: repos/royalelearn/extensions.md
+          - Design: repos/royalelearn/design.md
+          - The harness spec: repos/royalelearn/harness-spec.md
+          - What it needs from RoyaleGym: repos/royalelearn/royalegym-asks.md
+          - Pictures: repos/royalelearn/media/README.md
+          - Changelog: repos/royalelearn/changelog.md
+      - RoyaleViser:
+          - The guide: repos/royaleviser/guide.md
+          - Internals: repos/royaleviser/internals.md
+          - Pictures: repos/royaleviser/media/README.md
+          - Contributing: repos/royaleviser/contributing.md
+          - Changelog: repos/royaleviser/changelog.md
+      - RoyaleImitate:
+          - The guide: repos/royaleimitate/guide.md
+          - The contract: repos/royaleimitate/spec.md
+          - Public log: repos/royaleimitate/public-log.md
+          - Alarms: repos/royaleimitate/alarms.md
 
 extra:
   social:

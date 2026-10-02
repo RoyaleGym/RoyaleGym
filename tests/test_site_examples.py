@@ -196,7 +196,9 @@ def check_page(page: Path, text: str, engine: str | None, cwd: Path) -> Verdict:
 
 
 def site_pages() -> list[Path]:
-    return sorted(PAGES.rglob("*.md"))
+    """The pages written for the site. pages/repos/ is left out: collect.py copies it in from
+    every repo's docs/ at build time, and each repo checks its own docs."""
+    return sorted(p for p in PAGES.rglob("*.md") if "repos" not in p.relative_to(PAGES).parts[:1])
 
 
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
