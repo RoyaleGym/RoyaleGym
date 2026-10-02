@@ -3,6 +3,11 @@
 In this guide you'll train your first bot, watch it play, and then change its deck and what it
 learns. Install RoyaleGym first: see [Install](install.md).
 
+<!-- known issue, v0.1.0 only: remove when v0.1.1 ships -->
+!!! warning "Right now: Windows only"
+    In this first version (v0.1.0), the quickstart only runs on Windows. On Linux and macOS it
+    installs, but stops with an error as it starts. A fix is coming in the next version.
+
 ## 1. Make the Quickstart File
 
 In your terminal, in the `royale` folder with `(venv)` showing, open a new empty file in a text
