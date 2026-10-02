@@ -4,7 +4,8 @@ In a NEW temporary folder with a NEW venv, no repo checkout on the path, no ROYA
 and a temporary HOME, it:
   P1  creates the venv (the interpreter you pass, else this one's base)
   P2  installs `royalegym[all]` from THIS checkout (--gym PATH, copied by pip, not editable),
-      with royalesim and any sibling not yet on PyPI from WHEELS (--wheels DIR, --find-links)
+      or by name with --by-name (the line a user types), with royalesim and any sibling not yet
+      on PyPI from WHEELS (--wheels DIR or a release page URL, pip --find-links)
   P3  proves isolation: every royale* package imports from the new venv's site-packages,
       nothing from the checkout
   P4  copies examples/quickstart.py the way a user gets it (not imported), sets its size to a
@@ -108,6 +109,11 @@ def clean_env(root: Path, venv: Path) -> dict:
     return env
 
 
+def find_links(where: str) -> str:
+    """A release page URL as it is; a folder as an absolute path."""
+    return where if where.startswith(("http://", "https://")) else str(Path(where).resolve())
+
+
 def base_python() -> str:
     return getattr(sys, "_base_executable", None) or sys.executable
 
@@ -174,7 +180,8 @@ def main() -> int:
     ap.add_argument(
         "--wheels",
         metavar="DIR",
-        help="a folder of wheels (pip --find-links); royalesim must come from here",
+        help="a folder of wheels, or a release page URL (pip --find-links); royalesim must "
+        "come from here",
     )
     ap.add_argument("--python", default=base_python(), help="interpreter that creates the venv")
     ap.add_argument(
@@ -185,6 +192,11 @@ def main() -> int:
     )
     ap.add_argument("--timeout", type=int, default=900, help="seconds the quickstart may take")
     ap.add_argument("--keep", action="store_true", help="keep the temporary folder")
+    ap.add_argument(
+        "--by-name",
+        action="store_true",
+        help='install "royalegym[all]" by name from --wheels, not from the checkout',
+    )
     ap.add_argument("--report", help="write the results as JSON here")
     args = ap.parse_args()
     gym = Path(args.gym).resolve()
@@ -207,14 +219,14 @@ def main() -> int:
         phase("P1 create a venv", "PASS", f"{args.python} -> {py}", time.time() - t)
 
         # P2
-        reqs, notes = [f"{gym}[all]"], []
+        reqs, notes = ["royalegym[all]" if args.by_name else f"{gym}[all]"], []
         if not args.wheels:
             notes.append(
                 "no --wheels: royalesim has no prebuilt wheel source, and a fresh user has no Rust"
             )
         cmd = (
             [py, "-m", "pip", "install"]
-            + (["--find-links", str(Path(args.wheels).resolve())] if args.wheels else [])
+            + (["--find-links", find_links(args.wheels)] if args.wheels else [])
             + reqs
         )
         code, out, secs = run(cmd, env, work, 1800)
