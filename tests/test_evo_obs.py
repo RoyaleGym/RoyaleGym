@@ -31,8 +31,8 @@ from royalegym.obs import (
     spatial_channels,
     vector_offsets,
 )
-from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
 from royalegym.protocol import ElixirLaw, default_calibration
+from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
 
 needs_engine = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
@@ -52,9 +52,7 @@ def test_the_evolution_fields_come_after_every_existing_fair_field():
     """Turning the flag on moves no existing offset, and the fair block stays contiguous."""
     for last in (False, True):
         before = vector_offsets(136, Reveal(enemy_hand=True), enemy_last_card=last)
-        after = vector_offsets(
-            136, Reveal(enemy_hand=True), enemy_last_card=last, evolutions=True
-        )
+        after = vector_offsets(136, Reveal(enemy_hand=True), enemy_last_card=last, evolutions=True)
         fair_end = max(s.stop for k, s in before.items() if k != "enemy_hand_cards")
         assert after["own_hand_evolved"] == slice(fair_end, fair_end + HAND_SIZE)
         assert after["own_next_evolved"] == slice(fair_end + HAND_SIZE, fair_end + HAND_SIZE + 1)
@@ -88,8 +86,16 @@ def _fair(hand, next_card, own_evo, progress=False):
     memory = MatchMemory(len(cards), ElixirLaw.load(default_calibration()))
     memory.bind(cards)
     return fair_fields(
-        memory, MatchClock.at(0), hand, next_card, 5000, cards, 10,
-        evolutions=True, evolution_progress=progress, own_evo=own_evo,
+        memory,
+        MatchClock.at(0),
+        hand,
+        next_card,
+        5000,
+        cards,
+        10,
+        evolutions=True,
+        evolution_progress=progress,
+        own_evo=own_evo,
     )
 
 
@@ -116,9 +122,7 @@ def test_progress_refuses_rows_without_a_cycle_length():
 
 
 def _env(**forms):
-    return make_env(
-        deck=DECK, obs_builder=SpatialObsBuilder(evolutions=True), **forms
-    )
+    return make_env(deck=DECK, obs_builder=SpatialObsBuilder(evolutions=True), **forms)
 
 
 def _cycle(env, plays_wanted, watch, prefer=None):
@@ -182,7 +186,8 @@ def test_evo_musketeer_plays_evolved_on_its_cycle_too():
     seen = _cycles_to_evolved("Musketeer", ["Musketeer"])
     assert 1.0 in seen["plays"]
     k = seen["plays"].index(1.0)
-    assert seen["plays"][:k] == [0.0] * k and k >= 1
+    assert k >= 1
+    assert seen["plays"][:k] == [0.0] * k
     assert max(seen["evolved_on_board"]) >= 1
 
 
@@ -200,7 +205,7 @@ def test_a_hero_is_not_an_evolved_unit():
 def test_the_enemys_counters_are_never_read():
     """Fair: changing the enemy's evo rows changes nothing in Blue's observation."""
     env = _env(evolved=["Skeletons"])
-    obs, _ = env.reset(seed=0)
+    env.reset(seed=0)
     state = env.battle_state
     mask = np.ones(env.action_parser.n_actions, dtype=np.int8)
     b = env.obs_builder
@@ -228,5 +233,6 @@ def test_the_flag_refuses_an_engine_that_does_not_report_evolved_units():
 def test_config_records_the_flags():
     b = SpatialObsBuilder(evolutions=True, evolution_progress=True)
     cfg = b.config()
-    assert cfg["evolutions"] is True and cfg["evolution_progress"] is True
+    assert cfg["evolutions"] is True
+    assert cfg["evolution_progress"] is True
     assert "evolutions" not in SpatialObsBuilder().config()

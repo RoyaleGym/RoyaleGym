@@ -1461,7 +1461,7 @@ REVEAL_SPATIAL_CHANNELS: dict[str, tuple[str, str]] = {
 #: The two planes ``SpatialObsBuilder(evolutions=True)`` adds, after the fair ones and
 #: before any revealed one. Fair: an evolved unit looks different on the board.
 EVOLVED_SPATIAL_CHANNELS: list[tuple[str, str]] = [
-    ("own_evolved", "count of own evolved units (troops and buildings) whose centre is in the tile"),
+    ("own_evolved", "count of own evolved units (troops, buildings) whose centre is in the tile"),
     ("enemy_evolved", "count of enemy evolved units whose centre is in the tile"),
 ]
 
