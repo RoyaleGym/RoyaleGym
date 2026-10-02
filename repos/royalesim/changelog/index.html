@@ -2143,6 +2143,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#013-2026-10-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.3 (2026-10-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#012-2026-10-02" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3266,6 +3277,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#013-2026-10-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.3 (2026-10-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#012-2026-10-02" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3326,6 +3348,15 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="013-2026-10-02">0.1.3 (2026-10-02)<a class="headerlink" href="#013-2026-10-02" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A played card's slot can now stay empty for a moment, as in the game. Each player has one refill timer: a new card
+  enters the hand once every 1 second (0.5 s in double elixir, 0.35 s in triple). Play two cards quickly and the
+  second slot is empty until the timer lets the next card in. An empty slot reads <code>-1</code> in <code>state_json()</code>'s <code>"hand"</code>,
+  and playing it is refused with <code>EMPTY_SLOT</code>.</li>
+<li>Battle logic changes: shots, Skeleton King copies, placement ties, targets of knocked-back and slapped units, death
+  spawns, containers and building scans, as measured in the game.</li>
+</ul>
 <h2 id="012-2026-10-02">0.1.2 (2026-10-02)<a class="headerlink" href="#012-2026-10-02" title="Permanent link">&para;</a></h2>
 <ul>
 <li>No change to installing or calling the engine. Battle logic changes only: the Skeleton King's copies are placed,
