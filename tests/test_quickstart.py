@@ -5,7 +5,8 @@ only change, so the check is on the file the user copies. It must train, save, p
 battle and point at the viewer with a battle that loads.
 
 SKIPS
-    Without the engine, or without a RoyaleLearn that has the one-call Learner. Not a pass.
+    Without the engine. Not a pass. A missing royalelearn.Learner is a failure: the quickstart
+    needs it, and the [learn] extra pins a royalelearn that has it.
 """
 
 from __future__ import annotations
@@ -24,16 +25,7 @@ QUICKSTART = Path(__file__).resolve().parents[1] / "examples" / "quickstart.py"
 BUDGET = ("total_steps=200_000", "total_steps=4_000")
 
 
-def _learner_available() -> bool:
-    try:
-        from royalelearn import Learner  # noqa: F401
-    except ImportError:
-        return False
-    return True
-
-
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
-@pytest.mark.skipif(not _learner_available(), reason="SKIPPED, NOT PASSED: no royalelearn.Learner")
 def test_the_quickstart_trains_saves_and_points_at_a_battle_to_watch(tmp_path):
     source = QUICKSTART.read_text(encoding="utf-8")
     assert source.count(BUDGET[0]) == 1, "the quickstart's training budget line moved"
