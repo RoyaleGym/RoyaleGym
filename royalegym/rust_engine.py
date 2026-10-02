@@ -126,6 +126,20 @@ from .protocol import (
 # heading -- a dead pointer in the one message a reader reads when nothing works.
 INSTALL_SECTION = "Install"
 INSTALL_POINTER = f'the "{INSTALL_SECTION}" section of the RoyaleGym README.md'
+#: The page for building the engine from a RoyaleSim checkout instead of installing it.
+BUILD_PAGE = "docs/site/pages/build-from-source.md"
+
+
+def core_import_message(error: object) -> str:
+    """What a reader is told when the engine is not installed: the pip line first, as the
+    README's Install section shows it, then the page for a source build."""
+    return (
+        f"The battle engine (royalesim) is not installed ({error}). Install it with: "
+        f'pip install "royalegym[sim]" ({INSTALL_POINTER} has the full line). To build it '
+        f"from a RoyaleSim checkout instead, follow {BUILD_PAGE}: the data is extracted "
+        "first, then `maturin develop --release`."
+    )
+
 
 try:  # the extension is optional: the package must import without it
     import royalesim as _core  # type: ignore[import-not-found]  # compiled, no stubs
@@ -135,13 +149,7 @@ except ImportError as _exc:  # pragma: no cover - exercised only on unbuilt tree
     # the moment they most need it to land somewhere. It names THIS repo's README and
     # the heading it really has; tests/test_install_pointers.py checks that the heading exists,
     # because a pointer nothing reads is a pointer that rots quietly.
-    CORE_IMPORT_ERROR: str | None = (
-        f"royalesim is not built ({_exc}); run `maturin develop --release` in the "
-        "sibling RoyaleSim checkout (../RoyaleSim) with the workspace venv active. "
-        "The data has to be extracted BEFORE that build: arena.json is compiled in, "
-        f"and cards.json is read each time an engine is constructed; {INSTALL_POINTER} "
-        "has both steps in order."
-    )
+    CORE_IMPORT_ERROR: str | None = core_import_message(_exc)
 else:
     CORE_IMPORT_ERROR = None
 

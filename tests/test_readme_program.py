@@ -45,7 +45,10 @@ from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
 from royalegym.rust_engine import build_digest as engine_build_digest
 
 REPO = Path(__file__).resolve().parents[1]
-README = REPO / "README.md"
+#: The long guide that was the README until the short README landed. Its complete program,
+#: printed battle and badges are what this file checks; the short README's Try-it is
+#: checked by tests/test_readme_try_it.py.
+README = REPO / "docs" / "guide.md"
 #: BOTH STAMPS ARE READ FROM THE README, not copied into here, and the copies are why.
 #: This file held `RECORDED_BUILD = "d872d792711934c2"` and
 #: `RECORDED_VINTAGE = "retroroyale-2018"` while the page itself said `d6715210f21ca0c3`

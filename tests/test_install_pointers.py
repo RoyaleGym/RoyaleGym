@@ -48,7 +48,7 @@ from pathlib import Path
 
 import pytest
 
-from royalegym.rust_engine import INSTALL_POINTER, INSTALL_SECTION
+from royalegym.rust_engine import BUILD_PAGE, INSTALL_POINTER, INSTALL_SECTION, core_import_message
 
 REPO = Path(__file__).resolve().parents[1]
 README = REPO / "README.md"
@@ -299,11 +299,9 @@ def test_every_file_the_readme_links_to_exists() -> None:
     """
     missing = [t for t in readme_links() if not (REPO / t).exists()]
     assert not missing, f"README.md links to files that do not exist: {missing}"
-    # Vacuity: it really is reading links, and the tutorial is among them.
-    assert any("first-bot" in t for t in readme_links()), (
-        "the README no longer links to the tutorial, which is the longest piece of "
-        "writing in the repository and was unreachable until it did"
-    )
+    # Vacuity: it really is reading links, and the docs and the quickstart are among them.
+    assert any("docs/site/pages" in t for t in readme_links()), readme_links()
+    assert "examples/quickstart.py" in readme_links(), readme_links()
 
 
 def test_every_image_the_readme_shows_is_described() -> None:
@@ -359,17 +357,18 @@ def test_a_fresh_clone_is_told_how_to_generate_the_data(tmp_path, monkeypatch) -
     assert "BEFORE the engine is built" in message
 
 
-def test_the_build_command_in_the_error_matches_the_one_in_the_readme() -> None:
-    """The message tells a reader to run what the README tells them to run.
+def test_the_engine_missing_message_says_how_to_install_it() -> None:
+    """The message gives a pip user the README's install line, and a source builder the page.
 
-    Not the whole line -- the README's is a full Windows-venv invocation and the
-    message is the short form -- but the command and its release flag have to agree,
-    because a reader who runs a debug build gets an engine that works and is slow and
-    nothing tells them which one they have.
+    Before the engine shipped as a wheel this test held the message to the README's
+    ``maturin`` build. A pip user has no RoyaleSim checkout, so that advice sent them to a
+    clone they did not need. The source build still has a page, and the message names it.
     """
-    readme = README.read_text(encoding="utf-8")
-    install = readme.split(f"## {INSTALL_SECTION}", 1)[1]
-    assert "maturin develop --release" in install
-    # And the data step really does come before the build in that section, which is
-    # what the error message now promises is written down there.
-    assert install.index("extract_cards.py") < install.index("maturin develop --release")
+    msg = core_import_message("No module named 'royalesim'")
+    install = README.read_text(encoding="utf-8").split(f"## {INSTALL_SECTION}", 1)[1]
+    assert 'pip install "royalegym[all]"' in install
+    assert 'pip install "royalegym[sim]"' in msg
+    assert BUILD_PAGE in msg
+    page = (REPO / BUILD_PAGE).read_text(encoding="utf-8")
+    assert "maturin develop --release" in page
+    assert "extract_cards.py" in page

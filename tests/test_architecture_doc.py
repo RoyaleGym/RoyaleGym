@@ -93,7 +93,7 @@ def test_the_documented_gate_commands_name_the_scopes_that_are_gated() -> None:
     contributor actually follows, so it is the one to agree with.
     """
     doc = ruff_scope(ARCHITECTURE.read_text(encoding="utf-8"), "docs/architecture.md")
-    readme = ruff_scope((REPO / "README.md").read_text(encoding="utf-8"), "README.md")
+    readme = ruff_scope((REPO / "docs" / "guide.md").read_text(encoding="utf-8"), "docs/guide.md")
     assert doc == readme, (
         f"docs/architecture.md gates ruff on {sorted(doc)} and README.md on "
         f"{sorted(readme)}. Whichever is narrower names code that nobody lints."
