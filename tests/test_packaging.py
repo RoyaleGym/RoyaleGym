@@ -154,3 +154,22 @@ def test_every_public_name_says_what_it_is():
             if (inspect.isclass(getattr(royalegym, n)) or inspect.isfunction(getattr(royalegym, n)))
             and not inspect.getdoc(getattr(royalegym, n))]
     assert bare == [], f"public names with no docstring: {bare}"
+
+
+def test_make_env_deals_evolved_and_hero_forms_by_name():
+    """Special forms by card name, both seats; a hero brings its ability button with it."""
+    from royalegym.rust_engine import core_available
+
+    if not core_available():
+        pytest.skip("SKIPPED, NOT PASSED: the engine is not installed")
+    from royalegym import make_env
+
+    deck = ["Musketeer", "Cannon", "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap"]
+    env = make_env(deck=deck, evolved=["Cannon"], heroes=["Musketeer"])
+    assert env.action_parser.ability_buttons, "a hero deck needs the parser's ability buttons"
+    env.reset(seed=1)
+    for p in env.battle_state.players:
+        assert len(p.abilities) == 1, p.abilities
+        assert len(p.evo) == 1, p.evo
+    with pytest.raises(ValueError, match="Hog"):
+        make_env(deck=deck, evolved=["Hog"])

@@ -1154,6 +1154,8 @@ def make_env(
     reward: RewardFunction | None = None,
     deck: Sequence[str] | Sequence[Sequence[str]] | str = STARTER_DECK,
     engine: str | Engine = "rust",
+    evolved: Sequence[str] = (),
+    heroes: Sequence[str] = (),
     **env_kwargs: Any,
 ) -> ClashParallelEnv:
     """A two-seat battle, ready to train on: the quickest way to an environment.
@@ -1166,6 +1168,10 @@ def make_env(
 
     ``engine``: ``"rust"``, the real engine (``pip install "royalegym[sim]"``); ``"mock"``,
     the pure-Python stand-in that runs anywhere but is not the game; or an engine.
+
+    ``evolved`` and ``heroes``: cards of the deck to play in their evolved or hero form, by
+    name, on both seats. A hero has an ability button, so a deck with one gets the action
+    parser's buttons (``TileActionParser(ability_buttons=True)``) unless you pass a parser.
 
     Anything else goes to ``ClashParallelEnv`` (``decision_ms``, ``obs_builder``,
     ``action_parser``, ``command_delay_ticks``, ...). Both seats are agents ("blue" and
@@ -1197,7 +1203,16 @@ def make_env(
                     f"no card named {', '.join(unknown)} in this engine's catalogue; the names "
                     "are engine.cards()[i].name, e.g. 'Knight', 'MiniPekka', 'Fireball'"
                 )
-            mutator = DefaultStateMutator(decks=[[ids[n] for n in d] for d in pair])
+            special = {n: 1 for n in evolved} | {n: 2 for n in heroes}
+            missing = sorted(n for n in special if not all(n in d for d in pair))
+            if missing:
+                raise ValueError(
+                    f"{', '.join(missing)} must be in the deck to play its evolved or hero form"
+                )
+            forms = [[special.get(n, 0) for n in d] for d in pair] if special else None
+            mutator = DefaultStateMutator(decks=[[ids[n] for n in d] for d in pair], forms=forms)
+            if heroes and "action_parser" not in env_kwargs:
+                env_kwargs["action_parser"] = TileActionParser(ability_buttons=True)
     return ClashParallelEnv(
         built,
         reward_fn=reward if reward is not None else TowerHPReward(),
