@@ -137,10 +137,21 @@ def test_play_battle_plays_a_bot_and_saves_a_battle_the_viewer_can_open(tmp_path
 
 
 def test_the_package_says_its_version():
+    """``__version__`` is the installed distribution's version, so it can only be held to this
+    tree's pyproject when the installed royalegym IS this tree (a fresh install, CI). Run from
+    another checkout of the repo, the metadata belongs to that install."""
+    import json
+    from importlib import metadata
+
     import royalegym
 
     with PYPROJECT.open("rb") as f:
         version = tomllib.load(f)["project"]["version"]
+    direct = metadata.distribution("royalegym").read_text("direct_url.json")
+    url = json.loads(direct).get("url", "") if direct else ""
+    here = PYPROJECT.parent.resolve().as_posix().lower()
+    if url.startswith("file:") and here not in url.lower():
+        pytest.skip(f"SKIPPED, NOT PASSED: royalegym is installed from {url}, not this tree")
     assert royalegym.__version__ == version
 
 

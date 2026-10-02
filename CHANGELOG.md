@@ -4,7 +4,20 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
-## Unreleased
+## 0.1.1 (2026-10-02)
+
+### Fixed
+- `Learner(viser=True)` streams to the viewer on every OS: `ROYALEVISER=1` (or `true`, `on`, `yes`)
+  now means the default address, 127.0.0.1:9870. It was read as port 1, which Linux and macOS refuse
+  and where no viewer looks on Windows.
+- A viewer address that cannot be used says why; only a port already taken is reported as taken.
+- The quickstart trains on macOS: the learner's shared memory names fit macOS's limit
+  (royalelearn 0.4.2 is now required).
+
+### Added
+- `tools/stage_release.py` stages a release page, each package from its newest version tag.
+
+## 0.1.0 (2026-10-02)
 
 ### Added
 - `pip install "royalegym[all]"` installs every piece: the engine, the learner, the viewer and
