@@ -105,8 +105,9 @@ Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes, and i
 each then: Red took Blue's left princess tower at tick 1800 and Blue took Red's left one at tick
 3580. So the match went to overtime, where the first crown wins, and nobody took one before it ran
 out at tick 6000. Level on crowns, a tiebreak decided it: the side whose weakest standing tower has
-less health left loses, and that was Blue (re-run 2026-09-28 on engine build `bb6797d83bdf3031` with
-the 15.535 card table).
+less health left loses, and that was Blue: 796 against Red's 2240 (re-run 2026-10-02 on engine
+build `1cb11c66cdd25ced` and engine build `ca780d18ba66da8b`, RoyaleSim 0.1.1 and 0.1.2, with the
+15.535 card table; the tower ticks are the same on both).
 
 One env step is half a second of game time, which is 10 ticks. That battle was 600 steps, all five
 minutes of it, so each player made 600 decisions. It takes under a second of real time.
@@ -157,7 +158,8 @@ steps 600  reward 1.048  terminated True
 ```
 
 Only the wait is legal on the first step, because a match refuses every deploy for its opening
-seconds. Play opens at step 9, and from then on this hand has 1318 legal moves.
+seconds. Play opens after 9 steps, four and a half seconds in, and this hand then has 1318 legal
+moves.
 
 Blue won. 600 steps is 6,000 ticks, the three minutes of normal time and the two of overtime:
 each side took one princess tower in normal time, nobody scored in overtime, and Blue won the
@@ -168,8 +170,9 @@ Swap `me.act(...)` for your own policy and that loop is a training loop with the
 out. Run it twice and you get the same numbers, because the seed fixes everything.
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
-treat them as "this ran", not as constants. These were run on 2026-09-29 on engine build
-`49419e725439f608` with the 15.535 card table.
+treat them as "this ran", not as constants. These were run on 2026-10-02 on engine build
+`1cb11c66cdd25ced` and engine build `ca780d18ba66da8b`, with the 15.535 card table, and both give
+the same numbers.
 
 ## The legality mask, which is the part people like
 
