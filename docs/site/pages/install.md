@@ -195,17 +195,14 @@ If `pip` also prints a notice that "a new release of pip is available", you can 
 
 ## 5. Install RoyaleGym
 
-!!! warning "Before release: the address below is a placeholder"
-    RoyaleGym isn't on PyPI (Python's package store) yet, so `pip` needs `--find-links` and the
-    address of the release files. `RELEASES_URL` gets replaced by that address when the first
-    release is out. Until then this step can't be done as written.
-
 ```
-pip install "royalegym[all]" --find-links RELEASES_URL
+pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.0
 ```
 
-Keep the quotes. `[all]` means "with every part": the engine, the trainer, the viewer and the
-extras.
+Copy the whole line with the copy button, quotes included. `[all]` means "with every part": the
+engine, the environments, the trainer, the viewer and the extras. The `--find-links` part tells
+`pip` where to download them, because RoyaleGym isn't on PyPI (Python's package store) yet. You
+don't need Git or Rust.
 
 You'll see a lot of `Downloading` and `Installing` lines. It ends with a line that starts with
 `Successfully installed` and lists everything it installed, `royalegym` among them.

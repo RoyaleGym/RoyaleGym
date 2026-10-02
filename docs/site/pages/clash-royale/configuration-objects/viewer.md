@@ -6,7 +6,7 @@ never slows training down, and when nobody is watching it costs almost nothing.
 
 ![A battle shown in the viewer](../../media/whole-battle.gif){ width="100%" }
 
-It comes with `pip install "royalegym[all]"` (or `"royalegym[viser]"`) and adds one command,
+It comes with the [install line](../../install.md#5-install-royalegym) and adds one command,
 `royaleviser`.
 
 ## Watch Training Live

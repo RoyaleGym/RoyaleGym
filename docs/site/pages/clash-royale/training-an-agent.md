@@ -6,11 +6,8 @@ play. Along the way it explains what the trainer is doing and what its numbers m
 
 ## A Better Agent
 
-First, make sure everything is installed, including the viewer:
-
-```
-pip install "royalegym[all]"
-```
+If you followed [Install](../install.md), you have everything this page uses, the viewer
+included.
 
 ### Your own rewards
 

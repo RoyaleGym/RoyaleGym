@@ -206,6 +206,7 @@ Uninstall).
 
 ### What happens when Clash Royale updates?
 
-New cards and balance changes reach RoyaleGym in a new version of the engine. Update with
-`pip install --upgrade "royalegym[all]"`. Your code keeps working, but a bot trained on the old
+New cards and balance changes reach RoyaleGym in a new version of the engine. To update, run the
+install line from [Install](install.md#5-install-royalegym) again, with `--upgrade` added right
+after `pip install`. Your code keeps working, but a bot trained on the old
 version may play a little differently on the new one.

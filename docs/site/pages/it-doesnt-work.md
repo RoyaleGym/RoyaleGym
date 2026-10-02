@@ -43,7 +43,8 @@ scripts that are on your own computer. Then run `.\venv\Scripts\Activate.ps1` ag
 
 ### `zsh: no matches found: royalegym[all]`
 
-You left out the quotes. Type it with them: `pip install "royalegym[all]"`.
+You left out the quotes. Copy the install line from [Install](install.md#5-install-royalegym)
+whole, quotes included.
 
 ### `requires a different Python`
 
@@ -65,13 +66,13 @@ step 4.
 
 ### `Could not find a version that satisfies the requirement royalegym`
 
-`pip` can't find RoyaleGym. It isn't on PyPI yet, so the install line needs `--find-links` and
-the address of the release files: see step 5 of [Install](install.md#5-install-royalegym).
-If you typed `RELEASES_URL` literally, that's a placeholder, not an address.
+`pip` can't find RoyaleGym. It isn't on PyPI yet, so `pip install "royalegym[all]"` on its own
+doesn't work: the line needs its `--find-links` part. Copy the whole install line from step 5 of
+[Install](install.md#5-install-royalegym) with its copy button.
 
 ### `pip` is not recognized
 
-Use `python -m pip` instead of `pip`, for example `python -m pip install "royalegym[all]"`.
+Put `python -m` in front of `pip`: `python -m pip install ...` works the same as `pip install ...`.
 
 ## When You Run Something
 
@@ -146,11 +147,8 @@ Format > Make Plain Text before you save.
 
 ### `The battle engine (royalesim) is not installed`
 
-The engine wasn't installed with RoyaleGym. Install it:
-
-```
-pip install "royalegym[all]"
-```
+The engine wasn't installed with RoyaleGym. Run the install line from step 5 of
+[Install](install.md#5-install-royalegym) again.
 
 ### `no card named ...`
 
@@ -239,7 +237,8 @@ holds training back. Close other heavy programs while you train.
 ### `royaleviser` is not recognized
 
 The virtual environment isn't on (see [No module named 'royalegym'](#no-module-named-royalegym)),
-or the viewer isn't installed. Install it with `pip install "royalegym[all]"`.
+or the viewer isn't installed. Run the install line from step 5 of
+[Install](install.md#5-install-royalegym) again.
 
 ### The viewer window stays empty
 
