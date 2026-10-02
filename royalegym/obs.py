@@ -626,9 +626,27 @@ class MatchMemory:
         self.show_own_hand(me.hand, me.next_card)
 
     def show_own_hand(self, hand: Sequence[int], next_card: int) -> None:
-        """The player's own hand and next card, which the player always sees."""
+        """The player's own hand and next card, which the player always sees.
+
+        ``own_cycle`` is the queue of the player's cards OUTSIDE the hand, next card first: a
+        play appends its card (``advance``) and a card arriving in the hand pops the head
+        (here). The client refills one empty slot per period, so a played card's slot can hold
+        EMPTY_CARD for a while. Through that window the queue holds one card more, and
+        positions 6-8 stay what they are. With an instant refill the two happen in the same
+        step and the queue keeps four cards, as it always did.
+        """
+        arrived = [c for c in hand if c != EMPTY_CARD and c not in self.own_hand]
+        for _ in arrived:
+            if self.own_cycle:
+                self.own_cycle.pop(0)
+        if self.own_cycle:
+            self.own_cycle[0] = next_card
+        else:
+            self.own_cycle = [next_card]
+        short = (DECK_SIZE - HAND_SIZE) - len(self.own_cycle)
+        if short > 0:
+            self.own_cycle += [EMPTY_CARD] * short
         self.own_hand = list(hand)
-        self.own_cycle[0] = next_card
         self._note_own_cards()
 
     def advance(
@@ -674,7 +692,9 @@ class MatchMemory:
         self.foe_fine, _ = self._bar(self.foe_fine, foe_plays, foe_presses, 1, *clock)
         self.leak_fine += leaked
         for _, card in sorted(own_plays, key=lambda p: p[0]):
-            self.own_cycle = [*self.own_cycle[1:], card]
+            # To the back of the queue; the head leaves when the next card arrives in the hand
+            # (show_own_hand), which may be some ticks later.
+            self.own_cycle.append(card)
             self.own_last_card = card
             self.own_last_play_tick = tick
         for _, card in sorted(foe_plays, key=lambda p: p[0]):
@@ -754,7 +774,8 @@ class MatchMemory:
         cards they played are exactly the four behind their hand, and everything
         else is possible. "Everything else" is the whole catalogue until eight
         distinct cards have been seen, at which point the deck is known and the
-        answer narrows to it.
+        answer narrows to it. While a played card's slot waits for its refill, the
+        card about to arrive is counted possible a step early: still a superset.
         """
         known = int(self.foe_seen.sum())
         out = self.foe_seen.copy() if known >= DECK_SIZE else np.ones(self.num_cards, dtype=bool)
@@ -933,7 +954,7 @@ def _write_fair(
     if waiting:
         out[off["own_hand_affordable"]] *= 1.0 - flags
     cycle = out[off["own_cycle_6_8"]].reshape(DECK_SIZE - HAND_SIZE - 1, onehot)
-    for i, card in enumerate(memory.own_cycle[1:]):
+    for i, card in enumerate(memory.own_cycle[1 : DECK_SIZE - HAND_SIZE]):
         cycle[i, num_cards if card == EMPTY_CARD else card] = 1
     reg_left = max(0, clock.regular_ticks - clock.tick) / max(1, clock.regular_ticks)
     ot_left = 0.0
