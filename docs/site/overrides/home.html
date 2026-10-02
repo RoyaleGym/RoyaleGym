@@ -15,12 +15,13 @@
   ("material/lifebuoy", "It Doesn't Work", "Error messages and problems, and how to fix each one.", "it-doesnt-work/"),
 ] %}
 
+{#- Each package's own mark (owner, 2026-10-02): one crown shield and gold outline, its own colours and glyph. -#}
 {% set packages = [
-  ("material/gamepad-variant-outline", "RoyaleGym", "The battles your bot learns in.", "overview/"),
-  ("material/sword-cross", "RoyaleSim", "The battle engine: elixir, cards, towers.", "resources/royalesim/"),
-  ("material/school-outline", "RoyaleLearn", "The trainer that teaches your bot.", "resources/royalelearn/"),
-  ("material/eye-outline", "RoyaleViser", "The viewer: watch training live, or a battle you saved.", "resources/royaleviser/"),
-  ("material/content-copy", "RoyaleImitate", "Start a new bot from one you trained.", "resources/royaleimitate/"),
+  ("assets/royalegym-mark.png", "RoyaleGym", "The battles your bot learns in.", "overview/"),
+  ("assets/royalesim-mark.png", "RoyaleSim", "The battle engine: elixir, cards, towers.", "resources/royalesim/"),
+  ("assets/royalelearn-mark.png", "RoyaleLearn", "The trainer that teaches your bot.", "resources/royalelearn/"),
+  ("assets/royaleviser-mark.png", "RoyaleViser", "The viewer: watch training live, or a battle you saved.", "resources/royaleviser/"),
+  ("assets/royaleimitate-mark.png", "RoyaleImitate", "Start a new bot from one you trained.", "resources/royaleimitate/"),
 ] %}
 
 {% set community = [
@@ -29,13 +30,16 @@
   ("simple/kofi", "Ko-fi", "RoyaleGym is free. If it's useful to you, you can buy the project a coffee.", "https://ko-fi.com/jinxthecat"),
 ] %}
 
+{#- An icon is a Material icon's name, or a package's mark (a .png in assets/), shown above the title. -#}
 {% macro card(icon, title, text, href, small=false) -%}
   {%- set external = href.startswith("http") -%}
-  <a class="rg-card{% if small %} rg-card--small{% endif %}"
+  {%- set mark = icon.endswith(".png") -%}
+  <a class="rg-card{% if small %} rg-card--small{% endif %}{% if mark %} rg-card--package{% endif %}"
      href="{% if external %}{{ href }}{% else %}{{ href | url }}{% endif %}"
      {%- if external %} target="_blank" rel="noopener"{% endif %}>
+    {% if mark %}<img class="rg-card__mark" src="{{ icon | url }}" alt="" width="256" height="256" loading="lazy">{% endif %}
     <span class="rg-card__head">
-      <span class="rg-card__icon">{% include ".icons/" ~ icon ~ ".svg" %}</span>
+      {% if not mark %}<span class="rg-card__icon">{% include ".icons/" ~ icon ~ ".svg" %}</span>{% endif %}
       <span class="rg-card__title">{{ title }}</span>
     </span>
     <span class="rg-card__text">{{ text }}</span>
