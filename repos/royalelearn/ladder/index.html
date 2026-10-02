@@ -1,0 +1,4226 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.">
+      
+      
+      
+        <link rel="canonical" href="https://royalegym.github.io/RoyaleGym/repos/royalelearn/ladder/">
+      
+      
+        <link rel="prev" href="../checkpoints/">
+      
+      
+        <link rel="next" href="../determinism/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>The ladder - Royale</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-ladder-how-the-bot-is-measured-against-past-versions-of-itself" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Royale" class="md-header__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Royale
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The ladder
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Follow my system"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Follow my system" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Royale" class="md-nav__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Royale
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../it-doesnt-work/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    It Doesn't Work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Fits Together
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clash Royale
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clash Royale
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/training-an-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training an Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Objects
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configuration Objects
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/action-parsers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Action Parsers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/done-conditions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Done Conditions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/observation-builders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation Builders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/opponents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Opponents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/reward-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reward Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/state-mutators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Mutators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Viewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cheatsheets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cheatsheets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cheatsheets/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game Values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cheatsheets/rl-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Terms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Additional Resources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Additional Resources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royaleimitate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royalegym/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalegym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalelearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royaleviser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../accuracy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How accurate is the engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The engine inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The environments inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/learner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The learner inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The viewer inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../build-from-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build from source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting in depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleSim
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/mechanics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mechanics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The calibration ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/pathfinding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/pathfinder-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinder spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/movement-measurements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Movement measurements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/spell-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spell spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/replay-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/card-coverage-queue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Card coverage queue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleGym
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The long guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/observation-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleLearn
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a job
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checkpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checkpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ladder
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ladder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-you-cannot-judge-the-bot-by-its-reward" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why you cannot judge the bot by its reward
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pieces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The pieces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-frozen-pool-and-why-old-versions-are-kept" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The frozen pool, and why old versions are kept
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The frozen pool, and why old versions are kept">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-the-pool-with-a-policy-you-already-have" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Starting the pool with a policy you already have
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#training-one-deck-against-a-field-of-others" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training one deck against a field of others
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#who-the-bot-plays-in-a-given-battle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who the bot plays in a given battle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Who the bot plays in a given battle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-opponents-are-weighted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How opponents are weighted
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-two-scripted-anchors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The two scripted anchors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-gate-what-a-new-snapshot-has-to-clear-to-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The gate: what a new snapshot has to clear to join
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The gate: what a new snapshot has to clear to join">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-the-battles-are-counted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the battles are counted
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-rating-and-what-it-is-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rating, and what it is not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-the-ladder-rows-in-your-metrics-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the ladder rows in your metrics file
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rows-you-should-not-trust-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rows you should not trust today
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-has-actually-been-run-and-what-has-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What has actually been run, and what has not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to go next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../determinism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Determinism
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../throughput/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Throughput
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harness-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The harness spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../royalegym-asks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What it needs from RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleViser
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/internals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleImitate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/public-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/alarms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alarms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-you-cannot-judge-the-bot-by-its-reward" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why you cannot judge the bot by its reward
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pieces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The pieces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-frozen-pool-and-why-old-versions-are-kept" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The frozen pool, and why old versions are kept
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The frozen pool, and why old versions are kept">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-the-pool-with-a-policy-you-already-have" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Starting the pool with a policy you already have
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#training-one-deck-against-a-field-of-others" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training one deck against a field of others
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#who-the-bot-plays-in-a-given-battle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who the bot plays in a given battle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Who the bot plays in a given battle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-opponents-are-weighted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How opponents are weighted
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-two-scripted-anchors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The two scripted anchors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-gate-what-a-new-snapshot-has-to-clear-to-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The gate: what a new snapshot has to clear to join
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The gate: what a new snapshot has to clear to join">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-the-battles-are-counted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the battles are counted
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-rating-and-what-it-is-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rating, and what it is not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-the-ladder-rows-in-your-metrics-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the ladder rows in your metrics file
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rows-you-should-not-trust-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rows you should not trust today
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-has-actually-been-run-and-what-has-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What has actually been run, and what has not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to go next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/RoyaleGym/RoyaleGym/edit/main/docs/site/pages/repos/royalelearn/ladder.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="the-ladder-how-the-bot-is-measured-against-past-versions-of-itself">The ladder: how the bot is measured against past versions of itself<a class="headerlink" href="#the-ladder-how-the-bot-is-measured-against-past-versions-of-itself" title="Permanent link">&para;</a></h1>
+<p>You get one honest answer out of this page: whether today's bot is actually better than
+last hour's bot, and how much of that answer you should believe.</p>
+<p>Everything here lives under <code>royalelearn/ladder/</code>. You do not have to configure any of it
+to start a run. You do have to read it before you trust a number.</p>
+<p>The deep version is <a href="../harness-spec/"><code>docs/harness-spec.md</code></a> section 11, and the reasoning
+behind the whole harness is in <a href="../design/"><code>docs/design.md</code></a>. This page is the short one.</p>
+<h2 id="why-you-cannot-judge-the-bot-by-its-reward">Why you cannot judge the bot by its reward<a class="headerlink" href="#why-you-cannot-judge-the-bot-by-its-reward" title="Permanent link">&para;</a></h2>
+<p>Your reward function is a small piece of Python that scores what just happened in a battle.
+The training loop tries to make the reward go up. So the reward going up tells you the loop
+is working. It does not tell you the bot is good.</p>
+<p>Two reasons, and both bite in practice.</p>
+<p><strong>The reward is zero sum.</strong> The bot plays itself. Both seats of a battle are in the same
+batch of training data. Every shipped reward gives one seat exactly what it takes from the
+other, so the average reward across the batch is zero by construction and stays zero forever.
+It is a flat line no matter how good or bad the bot gets. The comment in
+<code>royalelearn/metrics/records.py</code> around line 170 explains why two numbers are published per
+reward term instead of one, for exactly this reason.</p>
+<p><strong>The opponent moves.</strong> Even with a reward that was not zero sum, the bot's win rate in
+training is a win rate against itself. A bot that gets worse in a way that its own copy
+cannot punish still wins half its battles. Half is what self-play always reports, at every
+skill level, including none.</p>
+<p>So the only way to ask "is it better" is to make it play something that does not move. That
+is what the ladder is.</p>
+<h2 id="the-pieces">The pieces<a class="headerlink" href="#the-pieces" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ladder/snapshots.py</code></td>
+<td>The archive of frozen copies of the bot, on disk</td>
+</tr>
+<tr>
+<td><code>ladder/pool.py</code></td>
+<td>Who is in the ladder, who the champion is</td>
+</tr>
+<tr>
+<td><code>ladder/matchmaker.py</code></td>
+<td>Who each battle plays</td>
+</tr>
+<tr>
+<td><code>ladder/evaluate.py</code></td>
+<td>Playing a measured set of battles between two of them</td>
+</tr>
+<tr>
+<td><code>ladder/gate.py</code></td>
+<td>Whether a new copy is allowed to join</td>
+</tr>
+<tr>
+<td><code>ladder/rating.py</code></td>
+<td>Turning a pile of results into a number per player</td>
+</tr>
+<tr>
+<td><code>ladder/eviction.py</code></td>
+<td>Which copies the matchmaker stops drawing, to keep it cheap</td>
+</tr>
+<tr>
+<td><code>ladder/results.py</code></td>
+<td>The append-only log of every measured battle</td>
+</tr>
+</tbody>
+</table>
+<p>In your run folder they write to <code>ladder/games.jsonl</code>, <code>ladder/gates/*.json</code>,
+<code>ladder/ratings/*.json</code> and <code>ladder/eval_seeds.json</code>.</p>
+<h2 id="the-frozen-pool-and-why-old-versions-are-kept">The frozen pool, and why old versions are kept<a class="headerlink" href="#the-frozen-pool-and-why-old-versions-are-kept" title="Permanent link">&para;</a></h2>
+<p>A <strong>snapshot</strong> is a frozen copy of the bot's decision-making network, saved to disk and never
+trained again. The <strong>pool</strong> is the set of snapshots the bot still plays against.</p>
+<p>The code takes a snapshot at a fixed cadence measured in game steps, not in training
+iterations. <code>royalelearn/coordinator.py</code> does this in <code>_maybe_gate</code>. The shipped values are
+in <code>examples/configs/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th><code>candidate_every_env_steps</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>laptop.json</code></td>
+<td>4,000,000</td>
+</tr>
+<tr>
+<td><code>workstation.json</code></td>
+<td>2,000,000</td>
+</tr>
+<tr>
+<td><code>smoke.json</code></td>
+<td>32</td>
+</tr>
+</tbody>
+</table>
+<p>Steps rather than iterations, because an iteration changes size when you change the batch
+size or the number of workers, and then a cadence in iterations quietly means something else.</p>
+<p>Old snapshots are kept rather than replaced for one reason. A bot that only ever plays its
+most recent self forgets how to beat the things it already beat. It drifts into a corner of
+the game where its recent ancestors are weak, wins there, and loses to something it crushed
+an hour ago. Keeping the weak old versions in the pool is what stops that.</p>
+<p>Snapshots are kept forever in the archive. What is bounded is how many the matchmaker draws
+from, because that draw runs in Python once per battle. <code>pool_working_size</code> in
+<code>royalelearn/config.py</code> defaults to 48. When the sampler grows past that,
+<code>ladder/eviction.py</code> drops members, and it does not drop the oldest. It keeps a spread across
+the rating range, plus the two scripted anchors, the run's very first snapshot, every
+snapshot that was ever champion, and every seed snapshot (next section). Dropping the oldest
+would throw away exactly the weak opponents the pool exists to preserve. Evicted snapshots
+leave the sampler but stay in the archive and in the result log, so their results still count
+toward everyone's rating.</p>
+<h3 id="starting-the-pool-with-a-policy-you-already-have">Starting the pool with a policy you already have<a class="headerlink" href="#starting-the-pool-with-a-policy-you-already-have" title="Permanent link">&para;</a></h3>
+<p><code>ladder.seed_snapshots</code> puts frozen policies in the pool before the first battle. Each one
+joins as <code>seed:&lt;name&gt;</code>, is drawn like any other member, and is never evicted. It is not the
+run's first snapshot, so <code>rating_above_v0</code> still measures from the run's own start.</p>
+<p>A seed is a folder holding <code>actor.safetensors</code> and <code>spec.json</code>. That is what a run writes
+under <code>runs/&lt;run&gt;/snapshots/&lt;digest&gt;/</code>, and what a RoyaleImitate actor artifact holds. The
+config pins the weights by their sha256, so the same folder holding other weights is a
+different run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">"seed_snapshots"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"frozen"</span><span class="p">,</span><span class="w"> </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"runs/&lt;old-run&gt;/snapshots/&lt;digest&gt;"</span><span class="p">,</span><span class="w"> </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;64 hex&gt;"</span><span class="p">}</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">]</span>
+</code></pre></div>
+<p>To get the digest:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())"</span><span class="w"> </span>runs/&lt;old-run&gt;/snapshots/&lt;digest&gt;/actor.safetensors
+</code></pre></div>
+<p>The run refuses to start if the digest does not match, and prints the one it found. It also
+refuses a policy built for a different network or observation, and names each field that
+differs. The run copies the weights into its own <code>snapshots/</code> folder, so a resume does not
+need the original folder.</p>
+<p>To train against one fixed opponent and nothing else: one seed, <code>mix</code> set to <code>[0, 1, 0]</code>, and
+<code>candidate_every_env_steps</code> and <code>floor_admit_every_env_steps</code> set past the run's end, so the gate
+never adds anything. <code>tests/test_seed_snapshots.py</code> checks that every pool battle of such a run
+meets the seed.</p>
+<p>A seed can also carry a <code>weight</code>, which multiplies how often it is drawn (default 1). With two
+seeds weighted 2 and 3 and <code>pfsp_weighting</code> set to <code>"uniform"</code>, the pool meets them 40% and 60%
+of the time. Every other pool member keeps a weight of 1.</p>
+<h3 id="training-one-deck-against-a-field-of-others">Training one deck against a field of others<a class="headerlink" href="#training-one-deck-against-a-field-of-others" title="Permanent link">&para;</a></h3>
+<p><code>ladder.seat_decks</code> trains one deck, and only that deck, against the decks it will meet:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">"seat_decks"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">"deck"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"Giant"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Musketeer"</span><span class="p">,</span><span class="w"> </span><span class="s2">"MiniPekka"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Archer"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fireball"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Zap"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Goblins"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Minions"</span><span class="p">],</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">"field"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s2">"Knight"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Valkyrie"</span><span class="p">,</span><span class="w"> </span><span class="s2">"HogRider"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Cannon"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Log"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Skeletons"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Arrows"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Musketeer"</span><span class="p">]]</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">}</span>
+</code></pre></div>
+<p>It sets the decks each battle deals, from the battle's role:</p>
+<ul>
+<li>A mirror battle deals <code>deck</code> to both seats. The learner plays both, so both seats train <code>deck</code>.</li>
+<li>A pool or scripted battle deals <code>deck</code> to the learner's seat and a deck from <code>field</code> to the
+  other. A frozen snapshot, a seed or a scripted opponent plays that seat, and its rows are not
+  trained on. So the learner meets a fixed player of the field deck, never a copy of itself that
+  is learning it.</li>
+</ul>
+<p><code>field</code> is drawn uniformly; list a deck twice to weight it, or leave <code>field</code> out for random decks.
+In a pool or scripted battle the learner's seat is fixed per battle, blue in even battles and red in
+odd ones, so the seats stay balanced. <code>mix</code> still decides how many battles are mirror battles. With
+<code>seed_snapshots</code> and a pool share, the field seat can be one policy you already have, and
+<code>opponent_mode</code> sets how that player picks its moves: it samples by default, and <code>"gtau:&lt;x&gt;"</code> plays
+only when its chance of playing is above <code>x</code>, then its most likely card at that card's most likely
+tile. Without <code>seat_decks</code>, battles deal whatever the environment's own state mutator deals.
+<code>tests/test_seat_decks.py</code> checks the deal and the seats.</p>
+<h2 id="who-the-bot-plays-in-a-given-battle">Who the bot plays in a given battle<a class="headerlink" href="#who-the-bot-plays-in-a-given-battle" title="Permanent link">&para;</a></h2>
+<p>Every battle draws its opponent from a three-way mixture. <code>LadderConfig.mix</code> in
+<code>royalelearn/config.py</code> defaults to <code>(0.50, 0.35, 0.15)</code>, and all three shipped configs use
+it unchanged:</p>
+<ul>
+<li><strong>50% mirror.</strong> The bot plays its live self. Both seats are trainable, which is where most
+  of the training data comes from.</li>
+<li><strong>35% pool.</strong> The bot plays one frozen snapshot.</li>
+<li><strong>15% scripted.</strong> The bot plays one hard-coded opponent from <code>scripted_opponents</code>. By
+  default that is one of the two anchors below.</li>
+</ul>
+<p>Before the first snapshot exists there is nothing in the pool, so a pool draw falls back to
+scripted (<code>matchmaker.py</code>, in <code>assign</code>). That keeps the number of trainable rows per battle
+exactly what the mixture says it is, which the loop checks every iteration.</p>
+<p><code>LadderConfig.scripted_opponents</code> picks the hard-coded opponents your bot trains against. With
+the default, the scripted share only meets the two anchors: one never plays a card and the other
+plays a random legal card on one decision in ten. Set it to, for example,
+<code>["scripted:push", "scripted:defend", "scripted:patient"]</code> and each scripted battle draws one of
+those, uniformly, every episode. So does a pool battle until the first snapshot exists. <code>push</code>
+plays a card as soon as one is playable, as far up the board as the rules allow. <code>patient</code> does
+the same once three of its cards are playable. The list changes training only: the anchors the
+gate and the rating use do not change. A name that is not a scripted opponent, a name listed
+twice, or an empty list while the mixture has pool or scripted battles is refused when the
+config loads.</p>
+<p>At most <code>max_resident_opponents</code> snapshots are loaded on the GPU at once. That defaults to
+<strong>2</strong>. Those two are redrawn only when the pool changes, never in the middle of an iteration.</p>
+<h3 id="how-opponents-are-weighted">How opponents are weighted<a class="headerlink" href="#how-opponents-are-weighted" title="Permanent link">&para;</a></h3>
+<p>The config asks for <strong>PFSP</strong> weighting. PFSP means "prioritised fictitious self-play", and in
+plain words it means picking opponents that still beat you rather than picking uniformly at
+random, because those are the ones there is something to learn from. <code>pfsp_weighting</code>
+defaults to <code>"hard"</code>.</p>
+<p>The weight of an opponent depends on how well the <em>live</em> bot is predicted to score against it.
+The live bot has no fitted rating of its own, because it is never measured under its own name
+(see the broken rows section below). So its newest snapshot stands in for it: the last copy of
+the bot that a gate admitted. That copy can be up to one snapshot cadence behind the live bot.</p>
+<p>Until 2026-09-27 nothing stood in. Every prediction was 0.5, and every run drew its opponents
+uniformly. Before the first snapshot has been rated, the draw is still uniform. Each metrics row
+says which happened: <code>ladder/pfsp_effective</code> is 1 when the draw used a rating and 0 when it fell
+back to uniform, and <code>ladder/pfsp_learner_step</code> is the env step of the snapshot that stood in.</p>
+<p>You can see the weighting in one command. The last argument is the stand-in's rating:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python -c "from royalelearn.config import LadderConfig; from royalelearn.api.ladder import RatingTable; from royalelearn.ladder.matchmaker import MixMatchmaker; m=MixMatchmaker(1,LadderConfig()); t=RatingTable(rating={'snap:v0':0.0,'snap:v1':200.0,'snap:v2':400.0,'snap:v3':-200.0},se={},anchor='scripted:noop',draw_nu=None,n_games={},transitivity_residual=0.0,converged=True,iterations=3); print(m.weights(('snap:v0','snap:v1','snap:v2','snap:v3'),t,'hard',t.rating['snap:v0']))"
+</code></pre></div>
+<p>Measured 2026-09-27, that prints <code>[0.16686453 0.31982403 0.43632903 0.0769824 ]</code>: the
+strongest snapshot, <code>snap:v2</code>, is drawn most. Leave off the last argument and it prints
+<code>[0.25 0.25 0.25 0.25]</code>, the uniform fallback.</p>
+<h2 id="the-two-scripted-anchors">The two scripted anchors<a class="headerlink" href="#the-two-scripted-anchors" title="Permanent link">&para;</a></h2>
+<p>An <strong>anchor</strong> is an opponent whose strength never changes. They matter because everything
+else in the ladder is improving, so a rating measured only against other snapshots is a
+rating on a scale that is itself sliding. <code>royalelearn/rollout/scripted.py</code> ships six scripted
+opponents. These two are the anchors:</p>
+<ul>
+<li><strong><code>scripted:noop</code></strong> does nothing at all. It never plays a card.</li>
+<li><strong><code>scripted:random_legal</code></strong> plays a legal random move, but only 10% of the time. The other
+  90% it does nothing. <code>RANDOM_LEGAL_NOOP_PROB = 0.9</code> in that file. Uniform over every legal
+  move would play a card the instant one was affordable, which is a strange thing to train
+  against.</li>
+</ul>
+<p>They exist before the first snapshot does, so the rating scale has a fixed point from the
+first battle. <code>scripted:noop</code> is pinned at rating 0 and every other number is relative to it.</p>
+<p>They are deliberately weak. If your bot is not beating <code>scripted:noop</code> comfortably, nothing
+else on this page is worth reading yet.</p>
+<h2 id="the-gate-what-a-new-snapshot-has-to-clear-to-join">The gate: what a new snapshot has to clear to join<a class="headerlink" href="#the-gate-what-a-new-snapshot-has-to-clear-to-join" title="Permanent link">&para;</a></h2>
+<p>The <strong>champion</strong> is the current best snapshot. A <strong>candidate</strong> is the fresh snapshot just
+taken. The <strong>gate</strong> is the test that decides whether the candidate joins the pool and whether
+it takes the champion's place. It is in <code>ladder/gate.py</code>, class <code>WilsonGate</code>.</p>
+<p>Three conditions. Defaults from <code>GateConfig</code> in <code>royalelearn/config.py</code>.</p>
+<p><strong>1. It beats the champion.</strong> 1,000 battles against the champion. A <strong>score rate</strong> is wins
+plus half the draws, over battles played. The gate does not use the raw score rate. It uses
+the bottom of a 95% confidence interval around it, which is the lowest score rate still
+consistent with what was observed. That bottom has to reach 0.52. Check the threshold
+yourself:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python -c "from royalelearn.ladder.rating import wilson_interval, elo_of_score; [print(p, round(wilson_interval(p,1000)[0],5)) for p in (0.550,0.551,0.552)]; print('elo at 0.552:', round(elo_of_score(0.552),1))"
+</code></pre></div>
+<p>Measured 2026-09-22: an observed 55.0% does not clear it, 55.1% does, and 55.2% is about
+36 Elo of improvement. A threshold at 0.50 would admit anything merely not worse, and the
+pool would fill with sideways moves.</p>
+<p><strong>2. No regression against the anchors.</strong> 200 battles against each anchor. The candidate has
+to score within 2 percentage points of what the champion scores against the same anchor.
+This catches the bot that found a blind spot its recent ancestors share, wins by exploiting
+it, and has quietly forgotten how to play.</p>
+<p><strong>3. No collapse against the wider pool.</strong> 100 battles against each of 8 snapshots chosen to
+span the rating range. The candidate's average score has to reach what the fitted model
+predicts the champion would score against those same 8, less one standard error.</p>
+<p>Early in a run the pool may hold nothing besides the champion and the two anchors. Then there is
+nothing to sample, and the gate records condition 3 as skipped, with that reason. The verdict
+rests on conditions 1 and 2, so a candidate that passes both is admitted and becomes champion.
+Until the fix of 2026-09-24 (<code>9468b86</code>) the same case was recorded as a pass with <code>n</code> of 0.</p>
+<p>That is 1,000 + 400 + 800 = <strong>2,200 battles per gate</strong> at most. A gate stops as soon as its
+outcome is settled and records the conditions it did not play as skipped: when condition 1 fails
+the gate costs 1,000 battles, and when condition 2 fails it costs 1,400 (<code>ladder/gate.py</code>).</p>
+<p>The first gate of a run can cost more. The run's first snapshot joins the pool without a gate, so
+as champion it has no record against the anchors. When condition 2 needs that record, the
+champion plays each anchor itself, 200 battles on the same seeds, and later gates read the result
+instead of playing it again.</p>
+<p>The verdict is not a single yes or no:</p>
+<table>
+<thead>
+<tr>
+<th>Conditions 1 and 2</th>
+<th>Condition 3</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pass</td>
+<td>pass</td>
+<td>Admitted to the pool, and becomes champion</td>
+</tr>
+<tr>
+<td>pass</td>
+<td>fail</td>
+<td>Admitted to the pool, flagged <code>cycle</code>, does <strong>not</strong> become champion</td>
+</tr>
+<tr>
+<td>fail</td>
+<td>anything</td>
+<td>Discarded, never retried</td>
+</tr>
+</tbody>
+</table>
+<p>The middle row is the interesting one. A candidate that beats the champion but falls apart
+against the rest of the pool has found a rock-paper-scissors loop, not an improvement. It is
+a useful opponent to keep, and <code>ladder/eviction.py</code> protects flagged snapshots when it prunes,
+because they are the ones a single rating number describes worst.</p>
+<p>A failed candidate is thrown away and not retried. Consecutive failures are a signal, not an
+error: the <code>gate_starved</code> alarm fires at 5 in a row (<code>AlarmConfig.gate_failures</code>). Separately,
+<code>floor_admit_every_env_steps</code> (50,000,000 in all three configs) admits a snapshot
+unconditionally if nothing has passed in that long, so a plateau cannot starve the pool of
+fresh opponents. A floor admission never promotes.</p>
+<p>Every decision is written to <code>ladder/gates/&lt;candidate&gt;.json</code> with the numbers behind it. A
+real one, trimmed, from a smoke-sized run on 2026-09-22:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span><span class="nt">"candidate"</span><span class="p">:</span><span class="s2">"snap:v2"</span><span class="p">,</span><span class="nt">"champion"</span><span class="p">:</span><span class="s2">"snap:v0"</span><span class="p">,</span><span class="nt">"admit"</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">"conditions"</span><span class="p">:{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">"beats_champion"</span><span class="p">:{</span><span class="nt">"passed"</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">"n"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">"observed"</span><span class="p">:</span><span class="mf">0.5</span><span class="p">,</span><span class="nt">"bound"</span><span class="p">:</span><span class="mf">0.0945</span><span class="p">,</span><span class="nt">"reference"</span><span class="p">:</span><span class="mf">0.52</span><span class="p">},</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">"anchors:scripted:noop"</span><span class="p">:{</span><span class="nt">"passed"</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span><span class="nt">"n"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">"observed"</span><span class="p">:</span><span class="mf">1.0</span><span class="p">,</span><span class="nt">"bound"</span><span class="p">:</span><span class="mf">0.6119</span><span class="p">},</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">"anchors:scripted:random_legal"</span><span class="p">:{</span><span class="nt">"passed"</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">"n"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">"observed"</span><span class="p">:</span><span class="mf">0.0</span><span class="p">,</span><span class="nt">"bound"</span><span class="p">:</span><span class="mf">0.1498</span><span class="p">}}}</span>
+</code></pre></div>
+<p>That file predates the early stop. Today a gate whose first condition fails plays nothing more,
+so its file carries <code>beats_champion</code> and records the anchors and the pool as skipped.</p>
+<p>You can re-run a gate from stored snapshots without touching the training run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python -m royalelearn gate --run runs/&lt;your-run&gt; --candidate snap:v3
+</code></pre></div>
+<h3 id="how-the-battles-are-counted">How the battles are counted<a class="headerlink" href="#how-the-battles-are-counted" title="Permanent link">&para;</a></h3>
+<p>Evaluation battles are kept separate from training battles on purpose
+(<code>ladder/evaluate.py</code>). They record no training data. They use a full match with no step cap,
+because a cut-short match is scored on crowns nobody has taken yet and almost every game comes
+out a draw. And they use a set of seeds drawn once at the start of the run and reused forever,
+so every player is measured on the same starting positions.</p>
+<p>Each pairing plays each seed <strong>twice, with the sides swapped</strong>. Blue and red are not symmetric,
+so playing both sides removes the side advantage exactly instead of averaging over it. The
+unit of measurement is the seed, not the battle, which is why <code>champion_games: 1000</code> means 500
+seeds and <code>eval_seed_count</code> defaults to 500. <code>ladder/paired_rho</code> in your metrics file says how
+correlated a seed's two sides were, which is how much of a battle the starting position decided
+rather than the two players.</p>
+<h2 id="the-rating-and-what-it-is-not">The rating, and what it is not<a class="headerlink" href="#the-rating-and-what-it-is-not" title="Permanent link">&para;</a></h2>
+<p>Two different numbers in the metrics file, and they are not interchangeable.</p>
+<p><strong><code>ladder/elo_readout</code></strong> is the dashboard figure. Elo is the chess-style rating where a
+higher number means stronger and a 400-point gap means roughly a 10-to-1 favourite. This one
+updates live as training battles finish, starting from 1200 (<code>EloReadout</code> in
+<code>ladder/rating.py</code>, <code>k_factor = 32</code>). It depends on the order the results arrive in, which
+under parallel workers is not reproducible. It is for watching. No decision reads it. It is
+fed by training games, so it moves with <code>scripted_opponents</code>: two runs with different lists do
+not compare on it.</p>
+<p><strong>The fitted rating</strong> is the real one. It refits from scratch over the entire stored result
+log every <code>refit_every_iterations</code> iterations, which defaults to 10. Same games in, same
+numbers out, in any order, on any machine. It is a Bradley-Terry-Davidson fit, which means it
+finds the one rating per player that best explains all the recorded wins, losses and draws at
+once, with draws modelled explicitly rather than counted as half a win.</p>
+<p>You can run it yourself on any finished run. It only reads the log, so it needs no GPU and no
+environment:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python -m royalelearn rate --run runs/&lt;your-run&gt;
+</code></pre></div>
+<p>Real output, 2026-09-22, from a 10-iteration smoke-sized run with 24 evaluation battles in
+total:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>member                              rating      se           95% interval   games
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>scripted:random_legal                493.4   177.7   [   145.2,    841.6]       8
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>snap:v3                              303.9   180.8   [   -50.5,    658.3]       6
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>snap:v4                              303.9   180.8   [   -50.5,    658.3]       6
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>snap:v1                              167.0   170.0   [  -166.2,    500.1]       6
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>snap:v2                              167.0   170.0   [  -166.2,    500.1]       6
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>snap:v0                              129.6   160.2   [  -184.4,    443.7]       8
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>scripted:noop                          0.0     0.0   [     0.0,      0.0]       8
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>anchor scripted:noop at 0; transitivity residual 0.0000
+</code></pre></div>
+<p>Read that table as a warning, not as a result. The intervals are roughly 700 Elo wide,
+because each player has 6 or 8 battles behind it. The <code>random_legal</code> anchor sitting on top is
+noise. This is what the output looks like when there is not nearly enough evidence, and it is
+the shape you will see from any short run.</p>
+<p><strong>What the rating means:</strong> one player is stronger than another <em>inside this pool, under this
+deck protocol, on these seeds</em>.</p>
+<p><strong>What it does not mean:</strong> anything about real players, any in-game trophy count, or any
+ladder rank. There is no bridge in this repository between these numbers and a human
+opponent. A run that climbs 400 Elo has climbed 400 Elo against its own history. That is
+genuine progress and it is also the only claim the number supports.</p>
+<p><strong>When even the within-pool reading breaks:</strong> <code>ladder/transitivity_residual</code> is the share of
+well-measured pairs that a single number per player fails to explain. It is near zero on a
+population where strength is a straight line. It gets large when A beats B beats C beats A,
+which one number per player cannot describe at all. The <code>transitivity</code> alarm fires above
+0.10 (<code>AlarmConfig.transitivity_residual</code>). Above that, treat the whole rating column as
+unreliable rather than as a slightly noisy truth.</p>
+<h2 id="reading-the-ladder-rows-in-your-metrics-file">Reading the ladder rows in your metrics file<a class="headerlink" href="#reading-the-ladder-rows-in-your-metrics-file" title="Permanent link">&para;</a></h2>
+<p>Every iteration writes one flat row to <code>runs/&lt;your-run&gt;/metrics.jsonl</code>. To see just the
+ladder part of the last row:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python -c "import json,sys; rows=[json.loads(l) for l in open(sys.argv[1],encoding='utf-8') if l.strip()]; print(json.dumps({k:v for k,v in rows[-1].items() if k.startswith('ladder/')},indent=1))" runs/&lt;your-run&gt;/metrics.jsonl
+</code></pre></div>
+<p>The rows that are worth your attention, built in <code>royalelearn/metrics/records.py</code>,
+<code>ladder_fields</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>What it tells you</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ladder/champion_id</code></td>
+<td>Which snapshot the next candidate must beat</td>
+</tr>
+<tr>
+<td><code>ladder/pool_size</code></td>
+<td>Everything in the archive, including the 2 anchors</td>
+</tr>
+<tr>
+<td><code>ladder/sampler_size</code></td>
+<td>Snapshots the matchmaker can actually draw. Anchors are not counted here</td>
+</tr>
+<tr>
+<td><code>ladder/gate_attempts</code>, <code>ladder/gate_passes</code></td>
+<td>How many gates ran, how many admitted</td>
+</tr>
+<tr>
+<td><code>ladder/consecutive_gate_failures</code></td>
+<td>The plateau signal. 5 trips the <code>gate_starved</code> alarm</td>
+</tr>
+<tr>
+<td><code>ladder/gate_failed_condition</code></td>
+<td>Which of the three conditions failed, or <code>none</code></td>
+</tr>
+<tr>
+<td><code>ladder/gate_observed_rate</code></td>
+<td>The candidate's raw score rate against the champion. Appears once a gate decision carries its champion condition</td>
+</tr>
+<tr>
+<td><code>ladder/gate_lower_bound</code></td>
+<td>The bottom of its interval, which is what the gate compares to 0.52. Same condition as the row above</td>
+</tr>
+<tr>
+<td><code>ladder/rating/&lt;member&gt;</code></td>
+<td>One pool member's fitted rating, only after the first refit</td>
+</tr>
+<tr>
+<td><code>ladder/rating_ci95_lo/&lt;member&gt;</code> and <code>..._hi/&lt;member&gt;</code></td>
+<td>That rating's interval. A wide one means you do not know yet</td>
+</tr>
+<tr>
+<td><code>ladder/transitivity_residual</code></td>
+<td>Above 0.10, stop trusting the rating column. Appears once a rating fit exists</td>
+</tr>
+<tr>
+<td><code>ladder/paired_rho</code></td>
+<td>How much the starting position decides, rather than the players, in the last gate's champion comparison. Appears once a gate has played the champion and the correlation is defined. Runs before 2026-09-24's fix wrote 0.0 in every row, so ignore it there</td>
+</tr>
+<tr>
+<td><code>ladder/draw_rate_eval</code></td>
+<td>Draw rate in evaluation battles</td>
+</tr>
+<tr>
+<td><code>ladder/gate_seconds_frac</code></td>
+<td>Share of this run's wall clock spent gating rather than training, so far. On every row, and 0 until the first gate. Absent only after resuming a checkpoint written before runs recorded the gate total</td>
+</tr>
+<tr>
+<td><code>ladder/elo_readout</code></td>
+<td>The live dashboard Elo. Never a decision. Appears once a training game has been scored this run</td>
+</tr>
+</tbody>
+</table>
+<p>A row that is missing a key is not a bug. The harness uses absence to say "nothing to report"
+rather than publishing a zero that reads like a measurement. So do not read the first rows of a
+run and conclude the ladder is broken: most of the table above only starts once a gate has run or
+a rating has been fitted, which takes a while. <code>royalelearn/metrics/schema.py</code> lists every key
+that may be absent in <code>CONDITIONAL</code>, each with the condition that makes it appear. Print them for
+yourself:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python -c "from royalelearn.metrics import schema; [print(k, '-&gt;', v) for k, v in schema.CONDITIONAL.items()]"
+</code></pre></div>
+<h2 id="rows-you-should-not-trust-today">Rows you should not trust today<a class="headerlink" href="#rows-you-should-not-trust-today" title="Permanent link">&para;</a></h2>
+<p>Three of the ladder numbers do not mean what their names say. All three come from the same
+root cause: <strong>the live bot is never measured under its own name.</strong> Every evaluation battle is
+a snapshot against something else, because the gate hands snapshot ids to the evaluator. So
+the id <code>learner</code> never appears in the evaluation results, and anything looked up under that
+id comes back empty.</p>
+<p><strong><code>ladder/score_vs_noop</code> and <code>ladder/score_vs_random_legal</code> appear on probe iterations, and
+nowhere else.</strong> Until commit <code>72c1215</code> on 2026-09-22 they were published as 0.5 in every row,
+which was indistinguishable from a genuine even contest; then they were omitted, because the
+pair they asked about had no games and never could. Measured 2026-09-22 across the metrics rows
+in <code>runs/</code>: 127 rows written before that fix carry a flat 0.5. If you are reading an older run's
+file, ignore those two columns entirely.</p>
+<p>The decision that was open is now taken. Set <code>ladder.probe_every_iterations</code> and every
+<code>ladder.probe_every_iterations</code> iterations the run plays the LIVE bot against each rung in
+<code>ladder.probe_opponents</code> and publishes, for each of them:</p>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ladder/score_vs/{rung}</code></td>
+<td>the live bot's score against that rung, 1.0 for a win</td>
+</tr>
+<tr>
+<td><code>ladder/score_vs_n/{rung}</code></td>
+<td>how many SEEDS it was measured over, each played from both sides</td>
+</tr>
+<tr>
+<td><code>ladder/score_vs_ci95_lo/{rung}</code>, <code>..._hi/{rung}</code></td>
+<td>the interval around it</td>
+</tr>
+</tbody>
+</table>
+<p><code>ladder/score_vs_noop</code> and <code>ladder/score_vs_random_legal</code> are the same numbers under their old
+names, for the two rungs that have always been the anchors. It is off by default, because it
+costs battles nobody was paying for: at the shipped 40 battles a rung it is under 4% of one
+gate. Read the interval before the score. At 20 seeds the instrument's own repeat spread against
+<code>scripted:random_legal</code> is about 18 points with the policy unchanged, so a smaller move than that
+is the instrument. <code>scripted:noop</code> does not act, so it does not have that noise.</p>
+<p><strong><code>ladder/rating_above_v0</code> was minus the first snapshot's rating, and is now absent instead.</strong>
+It is meant to be the live bot's rating above the run's first snapshot. The live bot has no
+fitted rating, because every evaluation game is a snapshot against something, so the lookup
+returned a default of 0.0 and the row published <code>0 - rating[v0]</code>. On one run that read -93.9,
+-146.2, -191.7 and -129.6, which looks exactly like a bot falling behind its own opening
+snapshot and is nothing of the kind. Since 2026-09-22 the key is published only when the fit
+holds both sides (<code>royalelearn/metrics/records.py</code>, the guard above
+<code>fields["ladder/rating_above_v0"]</code>), so it is simply absent until the live bot is evaluated
+under its own id. If you are reading a run's file from before that, ignore the column. To see
+the old shape for yourself:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python -c "import json,glob; [print(r.get('ladder/rating_above_v0'), r['ladder/rating/snap:v0']) for p in glob.glob('runs/*/metrics.jsonl') for r in map(json.loads, open(p,encoding='utf-8')) if 'ladder/rating/snap:v0' in r]"
+</code></pre></div>
+<p>Read <code>ladder/rating/&lt;member&gt;</code> directly instead. Those columns are correct.</p>
+<p><strong><code>ladder/eval_games_total</code> was structurally zero and has just been fixed.</strong> It used to read a
+counter that nothing ever incremented, because the only caller of the counting method hard
+codes the training label. The same commit changed it to count the evaluation log directly. It
+is still 0 in every metrics row on disk, including runs made after the fix, but that is now
+the truthful answer: those runs never played an evaluation battle. Count the log yourself:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python -c "import json,sys; print(sum(1 for l in open(sys.argv[1],encoding='utf-8') if l.strip() and json.loads(l)['kind']=='eval'))" runs/&lt;your-run&gt;/ladder/games.jsonl
+</code></pre></div>
+<h2 id="what-has-actually-been-run-and-what-has-not">What has actually been run, and what has not<a class="headerlink" href="#what-has-actually-been-run-and-what-has-not" title="Permanent link">&para;</a></h2>
+<p>This matters more than any of the above.</p>
+<p><strong>The shipped gate has only just been run.</strong> Measured 2026-09-22: of the 50 run folders under
+<code>runs/</code> with a metrics file, 24 ran at least one gate, and every one used <code>champion_games: 2</code>, which
+is the smoke setting. After that, a run used the same 1,000-battle gate that <code>laptop.json</code> and
+<code>workstation.json</code> ship. Reading its first real gate showed that conditions 2 and 3 could not fail
+there: the champion had no record against the anchors, and the pool held nothing to sample. Both
+were fixed on 2026-09-24. No numbers from a real gate are written up on this page yet.</p>
+<p><strong>The ladder has never had more than a handful of members.</strong> On 2026-09-22 the largest pool in
+any run on disk was 3, which is 2 anchors plus 1 snapshot. Eviction, the stratified sample in
+condition 3, and the anti-forgetting argument for keeping old snapshots are all untested at the
+pool sizes they were designed for.</p>
+<p><strong>What a gate costs is measured per battle, not per gate.</strong> On 2026-09-23 one evaluation battle
+took 8.02 s network against network and 0.195 s scripted against scripted on this laptop, the
+median of three full matches (<code>EVAL_BATTLE_SECONDS</code> in <code>ladder/gate.py</code>). So a full 2,200-battle
+gate is hours, and preflight prints a gate's battles and hours at that rate before a run starts
+(<code>rollout/preflight.py</code>). <code>ladder/gate_seconds_frac</code> tells you what gating is costing a run, and
+the schema flags it above 0.1.</p>
+<p>What is measured, on a 4-core laptop with an RTX 3050 4 GB and 7.8 GB of RAM shared with six
+other jobs, on 2026-09-22: in a diagnostic run at 2 workers by 24 battles and 8,192 timesteps
+per iteration with minibatch 256, an iteration took 30 to 35 seconds. About 25 seconds of that
+was the learning update and 5 to 8 seconds was collecting battles, with the update taking 71
+to 83% of every iteration across 7 iterations. That geometry is not the laptop profile, which
+uses 3 workers by 32 battles and 32,768 timesteps. It does say that on this machine training
+time is GPU time rather than simulator time.</p>
+<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The dense version of all of this: <a href="../harness-spec/"><code>docs/harness-spec.md</code></a>, section 11.</li>
+<li>Why the harness is shaped this way: <a href="../design/"><code>docs/design.md</code></a>.</li>
+<li>A single head-to-head between two members, outside the training loop:
+  <code>python -m royalelearn eval --run runs/&lt;your-run&gt; --a snap:v3 --b snap:v0 --seeds 50</code></li>
+<li>The raw evidence behind every rating: <code>runs/&lt;your-run&gt;/ladder/games.jsonl</code>, one JSON line
+  per battle.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../checkpoints/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Checkpoints">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Checkpoints
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../determinism/" class="md-footer__link md-footer__link--next" aria-label="Next: Determinism">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Determinism
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://discord.gg/4D2BS5JBHP" target="_blank" rel="noopener" title="The project Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://github.com/RoyaleGym" target="_blank" rel="noopener" title="The RoyaleGym organisation" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

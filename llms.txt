@@ -1,0 +1,61 @@
+# RoyaleGym
+
+> Train Clash Royale bots with reinforcement learning, in Python. Five packages, split the way
+> RLGym splits Rocket League: RoyaleSim (the battle engine, Rust with Python bindings; RocketSim's
+> role), RoyaleGym (the environment, built from configuration objects with RLGym v2's names:
+> StateMutator, ObsBuilder, ActionParser, RewardFunction, termination and truncation
+> DoneConditions), RoyaleLearn (the PPO trainer; RLGym-PPO's role), RoyaleViser (the viewer;
+> RLViser's role) and RoyaleImitate (warm start from a trained bot, and a penalty that keeps a
+> new bot near it). Install everything with `pip install "royalegym[all]"` (Python 3.12+); on
+> Windows install CUDA PyTorch first. Training assumes an NVIDIA GPU. The engine's battle logic
+> is still being matched to the real game; the Python APIs are meant to stay put.
+
+Each repository also has an AGENTS.md at its root with its layout, build and test commands, and
+the rules its tests enforce.
+
+## Getting Started
+
+- [Introduction](index.md): what the five packages are, installation and the extras
+- [Overview](overview.md): the configuration objects, the two seats, what happens in one step
+- [Quick Start Guide](quickstart.md): one file, build_env() plus Learner(...), that trains a bot
+
+## Clash Royale
+
+- [Training an Agent](clash-royale/training-an-agent.md): custom rewards, every trainer setting, self-play, decks, watching, wandb
+- [Action Parsers](clash-royale/configuration-objects/action-parsers.md): the 2305 moves, the action mask, ability buttons, writing one
+- [Done Conditions](clash-royale/configuration-objects/done-conditions.md): termination vs truncation, the shipped ones, writing one
+- [Observation Builders](clash-royale/configuration-objects/observation-builders.md): the spatial observation, fair information, writing one
+- [Opponents](clash-royale/configuration-objects/opponents.md): scripted bots, evaluate(), ClashGymEnv
+- [Reward Functions](clash-royale/configuration-objects/reward-functions.md): the shipped rewards, CombinedReward, writing one
+- [State Mutators](clash-royale/configuration-objects/state-mutators.md): decks by name, evolutions and heroes, mid-game starts, writing one
+- [Viewer](clash-royale/configuration-objects/viewer.md): watch training live, save and open a battle, keys
+
+## Cheatsheets
+
+- [Game Values](cheatsheets/game-values.md): arena, ticks, elixir rates, towers, codes, the action formula, the card list
+- [Reinforcement Learning Terms](cheatsheets/rl-terms.md): plain-language definitions
+
+## Additional Resources
+
+- [RoyaleSim](resources/royalesim.md): the engine, determinism, driving it directly
+- [RoyaleLearn](resources/royalelearn.md): every Learner setting with its default, checkpoints, using a trained bot
+- [RoyaleViser](resources/royaleviser.md): the viewer
+- [RoyaleImitate](resources/royaleimitate.md): warm start and stay-close training
+- [FAQ](faq.md): install, GPU, training, deck and viewer errors
+- [royalegym API](reference/royalegym.md)
+- [royalelearn API](reference/royalelearn.md)
+- [royaleviser API](reference/royaleviser.md)
+
+## Advanced
+
+- [How accurate is the engine](accuracy.md)
+- [The engine inside](pieces/engine.md), [the environments inside](pieces/environments.md), [the learner inside](pieces/learner.md), [the viewer inside](pieces/viewer.md)
+- [Build from source](build-from-source.md): all repositories side by side, building the engine
+- [Troubleshooting in depth](troubleshooting.md)
+## Every repo's own docs (copied onto the site at build time)
+
+- RoyaleSim: [overview](repos/royalesim/README.md), [in depth](repos/royalesim/engine.md), [Python API](repos/royalesim/api.md), [architecture](repos/royalesim/architecture.md), [mechanics](repos/royalesim/mechanics.md), [game values](repos/royalesim/game-values.md), [calibration ledger](repos/royalesim/calibration.md), [pathfinding](repos/royalesim/pathfinding.md), [pathfinder spec](repos/royalesim/pathfinder-spec.md), [movement measurements](repos/royalesim/movement-measurements.md), [spell spec](repos/royalesim/spell-spec.md), [performance](repos/royalesim/performance.md), [replay parity](repos/royalesim/replay-parity.md), [card coverage queue](repos/royalesim/card-coverage-queue.md), [contributing](repos/royalesim/contributing.md), [changelog](repos/royalesim/changelog.md)
+- RoyaleGym: [the long guide](repos/royalegym/guide.md), [architecture](repos/royalegym/architecture.md), [observation spec](repos/royalegym/observation-spec.md), [background](repos/royalegym/background.md), [contributing](repos/royalegym/contributing.md), [changelog](repos/royalegym/changelog.md)
+- RoyaleLearn: [guide](repos/royalelearn/guide.md), [running a job](repos/royalelearn/running.md), [metrics](repos/royalelearn/metrics.md), [checkpoints](repos/royalelearn/checkpoints.md), [the ladder](repos/royalelearn/ladder.md), [determinism](repos/royalelearn/determinism.md), [throughput](repos/royalelearn/throughput.md), [extensions](repos/royalelearn/extensions.md), [design](repos/royalelearn/design.md), [harness spec](repos/royalelearn/harness-spec.md), [changelog](repos/royalelearn/changelog.md)
+- RoyaleViser: [guide](repos/royaleviser/guide.md), [internals](repos/royaleviser/internals.md), [contributing](repos/royaleviser/contributing.md), [changelog](repos/royaleviser/changelog.md)
+- RoyaleImitate: [guide](repos/royaleimitate/guide.md), [the contract](repos/royaleimitate/spec.md), [public log](repos/royaleimitate/public-log.md), [alarms](repos/royaleimitate/alarms.md)

@@ -1,0 +1,4845 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.">
+      
+      
+      
+        <link rel="canonical" href="https://royalegym.github.io/RoyaleGym/cheatsheets/game-values/">
+      
+      
+        <link rel="prev" href="../../clash-royale/configuration-objects/viewer/">
+      
+      
+        <link rel="next" href="../rl-terms/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Game Values - Royale</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#game-values" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Royale" class="md-header__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Royale
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Game Values
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Follow my system"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Follow my system" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Royale" class="md-nav__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Royale
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../it-doesnt-work/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    It Doesn't Work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Fits Together
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clash Royale
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clash Royale
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clash-royale/training-an-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training an Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Objects
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configuration Objects
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clash-royale/configuration-objects/action-parsers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Action Parsers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clash-royale/configuration-objects/done-conditions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Done Conditions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clash-royale/configuration-objects/observation-builders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation Builders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clash-royale/configuration-objects/opponents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Opponents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clash-royale/configuration-objects/reward-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reward Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clash-royale/configuration-objects/state-mutators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Mutators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clash-royale/configuration-objects/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Viewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cheatsheets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cheatsheets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game Values
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game Values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#arena" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arena
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elixir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elixir
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#towers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Towers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#winning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Winning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#names-that-differ-from-the-game" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Names That Differ From the Game
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cards
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rl-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Terms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Additional Resources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Additional Resources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/royaleimitate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/royalegym/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalegym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalelearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royaleviser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../accuracy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How accurate is the engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pieces/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The engine inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pieces/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The environments inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pieces/learner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The learner inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pieces/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The viewer inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../build-from-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build from source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting in depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleSim
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/mechanics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mechanics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The calibration ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/pathfinding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/pathfinder-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinder spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/movement-measurements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Movement measurements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/spell-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spell spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/replay-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/card-coverage-queue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Card coverage queue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalesim/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleGym
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalegym/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The long guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalegym/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalegym/observation-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalegym/background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalegym/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalegym/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalegym/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleLearn
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a job
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/checkpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checkpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/ladder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ladder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/determinism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Determinism
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/throughput/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Throughput
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/harness-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The harness spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/royalegym-asks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What it needs from RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royalelearn/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleViser
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleviser/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleviser/internals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleviser/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleviser/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleviser/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleImitate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleimitate/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleimitate/spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleimitate/public-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repos/royaleimitate/alarms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alarms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#arena" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arena
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elixir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elixir
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#towers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Towers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#winning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Winning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#names-that-differ-from-the-game" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Names That Differ From the Game
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cards
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/RoyaleGym/RoyaleGym/edit/main/docs/site/pages/cheatsheets/game-values.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="game-values">Game Values<a class="headerlink" href="#game-values" title="Permanent link">&para;</a></h1>
+<p>The numbers you'll want while writing rewards, observations and done conditions. They are the
+engine's values, which follow the game's.</p>
+<h2 id="arena">Arena<a class="headerlink" href="#arena" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Size</td>
+<td>18 x 32 tiles</td>
+<td>18 tiles wide, 32 long. Each side owns 15 rows; the river takes the 2 in the middle.</td>
+</tr>
+<tr>
+<td>Tile size</td>
+<td>18,000 units</td>
+<td>Positions in <code>state.entities</code> are in these units: <code>x</code> from 0 to 324,000, <code>y</code> from 0 to 576,000.</td>
+</tr>
+<tr>
+<td>Blue's side</td>
+<td><code>y</code> below the river</td>
+<td>Blue's king tower is at the bottom. Each seat's observation is turned so its own king is at the bottom.</td>
+</tr>
+<tr>
+<td>Bridges</td>
+<td>2</td>
+<td>One in each lane. Most ground troops can cross the river only on a bridge.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="time">Time<a class="headerlink" href="#time" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tick</td>
+<td>50 ms</td>
+<td>The engine's step. 20 ticks make a second. <code>state.tick</code> counts them from the start.</td>
+</tr>
+<tr>
+<td>Decision</td>
+<td>500 ms</td>
+<td>One environment step, by default (<code>decision_ms</code>). That's 10 ticks.</td>
+</tr>
+<tr>
+<td>Regular time</td>
+<td>3 minutes</td>
+<td>3,600 ticks, or 360 decisions.</td>
+</tr>
+<tr>
+<td>Overtime</td>
+<td>up to 2 minutes</td>
+<td>Only if the crowns are level after regular time. The first crown wins.</td>
+</tr>
+<tr>
+<td>Opening wait</td>
+<td>4.5 seconds</td>
+<td>Nobody can play a card in the first 90 ticks.</td>
+</tr>
+<tr>
+<td>Longest battle</td>
+<td>5 minutes</td>
+<td>6,000 ticks, or 600 decisions.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="elixir">Elixir<a class="headerlink" href="#elixir" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Starting elixir</td>
+<td>6</td>
+<td>Each side's elixir when the battle begins.</td>
+</tr>
+<tr>
+<td>Most elixir</td>
+<td>10</td>
+<td>Elixir stops growing at 10. Sitting there wastes it.</td>
+</tr>
+<tr>
+<td>Normal rate</td>
+<td>1 every 2.8 s</td>
+<td>The first two minutes.</td>
+</tr>
+<tr>
+<td>Double elixir</td>
+<td>1 every 1.4 s</td>
+<td>The last minute of regular time, and the first minute of overtime.</td>
+</tr>
+<tr>
+<td>Triple elixir</td>
+<td>1 every 0.93 s</td>
+<td>The last minute of overtime.</td>
+</tr>
+<tr>
+<td>In the state</td>
+<td>thousandths</td>
+<td><code>state.players[team].elixir_milli</code>: 10 elixir is <code>10_000</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="towers">Towers<a class="headerlink" href="#towers" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>King tower</td>
+<td>4,824 hitpoints</td>
+<td>In the middle at the back. It starts asleep, and wakes when it is hit or a princess tower falls. Destroying it wins the battle and takes all three crowns.</td>
+</tr>
+<tr>
+<td>Princess towers</td>
+<td>3,052 hitpoints</td>
+<td>One in front of each lane. Destroying one takes a crown.</td>
+</tr>
+<tr>
+<td>Order</td>
+<td>king, left, right</td>
+<td>The order of <code>tower_hp</code> and <code>tower_max_hp</code>, each from its owner's side.</td>
+</tr>
+</tbody>
+</table>
+<p>Every card and tower is at level 11, the tournament standard.</p>
+<h2 id="winning">Winning<a class="headerlink" href="#winning" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Way</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Three crowns</td>
+<td>Destroy the king tower, and the battle ends at once.</td>
+</tr>
+<tr>
+<td>More crowns</td>
+<td>When regular time ends, the side with more crowns wins.</td>
+</tr>
+<tr>
+<td>First crown in overtime</td>
+<td>In overtime, the next crown wins.</td>
+</tr>
+<tr>
+<td>Tiebreak</td>
+<td>If the crowns are still level when overtime ends, the side whose weakest tower has more health left wins. If those are equal too, it's a draw.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="codes">Codes<a class="headerlink" href="#codes" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Seats (<code>team</code>)</td>
+<td><code>0</code> Blue, <code>1</code> Red</td>
+</tr>
+<tr>
+<td>Agents</td>
+<td><code>"blue"</code>, <code>"red"</code></td>
+</tr>
+<tr>
+<td><code>state.winner</code></td>
+<td><code>-1</code> not over, <code>0</code> Blue, <code>1</code> Red, <code>2</code> draw</td>
+</tr>
+<tr>
+<td><code>EntityKind</code></td>
+<td><code>0</code> troop, <code>1</code> building, <code>2</code> king tower, <code>3</code> princess tower</td>
+</tr>
+<tr>
+<td><code>TowerSlot</code></td>
+<td><code>0</code> king, <code>1</code> left, <code>2</code> right</td>
+</tr>
+<tr>
+<td>A play's <code>status</code></td>
+<td><code>0</code> accepted; anything else means the game refused it</td>
+</tr>
+</tbody>
+</table>
+<h2 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Move</th>
+<th>Number</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wait</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td>Play hand slot <code>s</code> (0 to 3) on tile (<code>x</code>, <code>y</code>)</td>
+<td><code>1 + s * 576 + y * 18 + x</code></td>
+</tr>
+<tr>
+<td>Press ability button <code>k</code> (with <code>ability_buttons=True</code>)</td>
+<td><code>2305 + k</code></td>
+</tr>
+</tbody>
+</table>
+<p>Tiles are counted from the acting seat's own side. See <a href="../../clash-royale/configuration-objects/action-parsers/">Action Parsers</a>.</p>
+<h2 id="names-that-differ-from-the-game">Names That Differ From the Game<a class="headerlink" href="#names-that-differ-from-the-game" title="Permanent link">&para;</a></h2>
+<p>RoyaleGym writes card names without spaces. Most are the game's names run together
+(<code>HogRider</code>, <code>MiniPekka</code>, <code>GoblinBarrel</code>), but these are different:</p>
+<table>
+<thead>
+<tr>
+<th>In the game</th>
+<th>In RoyaleGym</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Archers</td>
+<td><code>Archer</code></td>
+</tr>
+<tr>
+<td>Barbarian Barrel</td>
+<td><code>BarbLog</code></td>
+</tr>
+<tr>
+<td>Bandit</td>
+<td><code>Assassin</code></td>
+</tr>
+<tr>
+<td>Cannon Cart</td>
+<td><code>MovingCannon</code></td>
+</tr>
+<tr>
+<td>Dart Goblin</td>
+<td><code>BlowdartGoblin</code></td>
+</tr>
+<tr>
+<td>Elite Barbarians</td>
+<td><code>AngryBarbarians</code></td>
+</tr>
+<tr>
+<td>Elixir Collector</td>
+<td><code>Elixir Collector</code> (this one keeps its space)</td>
+</tr>
+<tr>
+<td>Executioner</td>
+<td><code>AxeMan</code></td>
+</tr>
+<tr>
+<td>Fire Spirit</td>
+<td><code>FireSpirits</code></td>
+</tr>
+<tr>
+<td>Flying Machine</td>
+<td><code>DartBarrell</code></td>
+</tr>
+<tr>
+<td>Furnace</td>
+<td><code>FirespiritHut</code></td>
+</tr>
+<tr>
+<td>Giant Snowball</td>
+<td><code>Snowball</code></td>
+</tr>
+<tr>
+<td>Guards</td>
+<td><code>SkeletonWarriors</code></td>
+</tr>
+<tr>
+<td>Ice Golem</td>
+<td><code>IceGolemite</code></td>
+</tr>
+<tr>
+<td>Ice Spirit</td>
+<td><code>IceSpirits</code></td>
+</tr>
+<tr>
+<td>Lumberjack</td>
+<td><code>RageBarbarian</code></td>
+</tr>
+<tr>
+<td>Magic Archer</td>
+<td><code>EliteArcher</code></td>
+</tr>
+<tr>
+<td>Mini P.E.K.K.A</td>
+<td><code>MiniPekka</code></td>
+</tr>
+<tr>
+<td>Mother Witch</td>
+<td><code>WitchMother</code></td>
+</tr>
+<tr>
+<td>Night Witch</td>
+<td><code>DarkWitch</code></td>
+</tr>
+<tr>
+<td>P.E.K.K.A</td>
+<td><code>Pekka</code></td>
+</tr>
+<tr>
+<td>Royal Ghost</td>
+<td><code>Ghost</code></td>
+</tr>
+<tr>
+<td>Skeleton Barrel</td>
+<td><code>SkeletonBalloon</code></td>
+</tr>
+<tr>
+<td>Sparky</td>
+<td><code>ZapMachine</code></td>
+</tr>
+<tr>
+<td>The Log</td>
+<td><code>Log</code></td>
+</tr>
+<tr>
+<td>X-Bow</td>
+<td><code>Xbow</code></td>
+</tr>
+<tr>
+<td>Zappies</td>
+<td><code>MiniSparkys</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="cards">Cards<a class="headerlink" href="#cards" title="Permanent link">&para;</a></h2>
+<p>The engine's card list, as it stands on engine build <code>1cb11c66cdd25ced</code>, by the names
+RoyaleGym uses. Hitpoints are for one unit at level 11. A few names in the list are special
+versions used in game events. To get the list for the engine you have installed:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">RustEngine</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">cards</span> <span class="o">=</span> <span class="n">RustEngine</span><span class="p">()</span><span class="o">.</span><span class="n">cards</span><span class="p">()</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cards</span><span class="p">))</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nb">print</span><span class="p">([</span><span class="n">card</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">card</span> <span class="ow">in</span> <span class="n">cards</span><span class="p">[:</span><span class="mi">3</span><span class="p">]])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>136
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>['Knight', 'Archer', 'Goblins']
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Card</th>
+<th>Elixir</th>
+<th>Type</th>
+<th>Units</th>
+<th>Hitpoints</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AngryBarbarians</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>2</td>
+<td>1341</td>
+</tr>
+<tr>
+<td><code>Archer</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>2</td>
+<td>304</td>
+</tr>
+<tr>
+<td><code>ArcherQueen</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1000</td>
+</tr>
+<tr>
+<td><code>Assassin</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>906</td>
+</tr>
+<tr>
+<td><code>AxeMan</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1280</td>
+</tr>
+<tr>
+<td><code>BabyDragon</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1152</td>
+</tr>
+<tr>
+<td><code>Balloon</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1676</td>
+</tr>
+<tr>
+<td><code>Barbarians</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>5</td>
+<td>716</td>
+</tr>
+<tr>
+<td><code>Bats</code></td>
+<td>2</td>
+<td>Troop</td>
+<td>5</td>
+<td>81</td>
+</tr>
+<tr>
+<td><code>BattleHealer</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1920</td>
+</tr>
+<tr>
+<td><code>BattleRam</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>967</td>
+</tr>
+<tr>
+<td><code>Berserker</code></td>
+<td>2</td>
+<td>Troop</td>
+<td>1</td>
+<td>896</td>
+</tr>
+<tr>
+<td><code>BlowdartGoblin</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>261</td>
+</tr>
+<tr>
+<td><code>Bomber</code></td>
+<td>2</td>
+<td>Troop</td>
+<td>1</td>
+<td>304</td>
+</tr>
+<tr>
+<td><code>BossBandit</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>1</td>
+<td>2624</td>
+</tr>
+<tr>
+<td><code>Bowler</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>2081</td>
+</tr>
+<tr>
+<td><code>DarkPrince</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1200</td>
+</tr>
+<tr>
+<td><code>DarkWitch</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>906</td>
+</tr>
+<tr>
+<td><code>DartBarrell</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>614</td>
+</tr>
+<tr>
+<td><code>ElectroDragon</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1049</td>
+</tr>
+<tr>
+<td><code>ElectroGiant</code></td>
+<td>7</td>
+<td>Troop</td>
+<td>1</td>
+<td>3952</td>
+</tr>
+<tr>
+<td><code>ElectroSpirit</code></td>
+<td>1</td>
+<td>Troop</td>
+<td>1</td>
+<td>217</td>
+</tr>
+<tr>
+<td><code>ElectroWizard</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>714</td>
+</tr>
+<tr>
+<td><code>EliteArcher</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>529</td>
+</tr>
+<tr>
+<td><code>ElixirGolem</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>1569</td>
+</tr>
+<tr>
+<td><code>Firecracker</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>304</td>
+</tr>
+<tr>
+<td><code>FirespiritHut</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>727</td>
+</tr>
+<tr>
+<td><code>FireSpirits</code></td>
+<td>1</td>
+<td>Troop</td>
+<td>1</td>
+<td>215</td>
+</tr>
+<tr>
+<td><code>Fisherman</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>870</td>
+</tr>
+<tr>
+<td><code>Ghost</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>1210</td>
+</tr>
+<tr>
+<td><code>Giant</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>3968</td>
+</tr>
+<tr>
+<td><code>GiantBuffer</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>2816</td>
+</tr>
+<tr>
+<td><code>GiantSkeleton</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>1</td>
+<td>3361</td>
+</tr>
+<tr>
+<td><code>GoblinDemolisher</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1300</td>
+</tr>
+<tr>
+<td><code>GoblinGang</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>3</td>
+<td>202</td>
+</tr>
+<tr>
+<td><code>GoblinGiant</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>1</td>
+<td>3110</td>
+</tr>
+<tr>
+<td><code>GoblinMachine</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>2265</td>
+</tr>
+<tr>
+<td><code>Goblins</code></td>
+<td>2</td>
+<td>Troop</td>
+<td>4</td>
+<td>202</td>
+</tr>
+<tr>
+<td><code>Goblinstein</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>2385</td>
+</tr>
+<tr>
+<td><code>GoldenKnight</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1799</td>
+</tr>
+<tr>
+<td><code>Golem</code></td>
+<td>8</td>
+<td>Troop</td>
+<td>1</td>
+<td>5120</td>
+</tr>
+<tr>
+<td><code>HogRider</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1697</td>
+</tr>
+<tr>
+<td><code>Hunter</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>885</td>
+</tr>
+<tr>
+<td><code>IceGolemite</code></td>
+<td>2</td>
+<td>Troop</td>
+<td>1</td>
+<td>1228</td>
+</tr>
+<tr>
+<td><code>IceSpirits</code></td>
+<td>1</td>
+<td>Troop</td>
+<td>1</td>
+<td>215</td>
+</tr>
+<tr>
+<td><code>IceWizard</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>688</td>
+</tr>
+<tr>
+<td><code>InfernoDragon</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1295</td>
+</tr>
+<tr>
+<td><code>Knight</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>1766</td>
+</tr>
+<tr>
+<td><code>LavaHound</code></td>
+<td>7</td>
+<td>Troop</td>
+<td>1</td>
+<td>3581</td>
+</tr>
+<tr>
+<td><code>LittlePrince</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>698</td>
+</tr>
+<tr>
+<td><code>MegaKnight</code></td>
+<td>7</td>
+<td>Troop</td>
+<td>1</td>
+<td>3993</td>
+</tr>
+<tr>
+<td><code>MegaMinion</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>837</td>
+</tr>
+<tr>
+<td><code>MergeMaiden</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>1</td>
+<td>1121</td>
+</tr>
+<tr>
+<td><code>MergeMaiden_Mounted</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>1</td>
+<td>1121</td>
+</tr>
+<tr>
+<td><code>MergeMaiden_Normal</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>1121</td>
+</tr>
+<tr>
+<td><code>MightyMiner</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>2250</td>
+</tr>
+<tr>
+<td><code>Miner</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>1210</td>
+</tr>
+<tr>
+<td><code>MinionGiant</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1817</td>
+</tr>
+<tr>
+<td><code>MinionHorde</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>6</td>
+<td>230</td>
+</tr>
+<tr>
+<td><code>Minions</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>3</td>
+<td>230</td>
+</tr>
+<tr>
+<td><code>MiniPekka</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1390</td>
+</tr>
+<tr>
+<td><code>MiniSparkys</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>3</td>
+<td>529</td>
+</tr>
+<tr>
+<td><code>Monk</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>2214</td>
+</tr>
+<tr>
+<td><code>MovingCannon</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1809</td>
+</tr>
+<tr>
+<td><code>Musketeer</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>721</td>
+</tr>
+<tr>
+<td><code>Pekka</code></td>
+<td>7</td>
+<td>Troop</td>
+<td>1</td>
+<td>3760</td>
+</tr>
+<tr>
+<td><code>Phoenix</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1052</td>
+</tr>
+<tr>
+<td><code>Prince</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1920</td>
+</tr>
+<tr>
+<td><code>PrinceBuff</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>2304</td>
+</tr>
+<tr>
+<td><code>Princess</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>261</td>
+</tr>
+<tr>
+<td><code>RageBarbarian</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1282</td>
+</tr>
+<tr>
+<td><code>RamRider</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1766</td>
+</tr>
+<tr>
+<td><code>Rascals</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1832</td>
+</tr>
+<tr>
+<td><code>Ronin</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1779</td>
+</tr>
+<tr>
+<td><code>RoyalGiant</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>1</td>
+<td>3164</td>
+</tr>
+<tr>
+<td><code>RoyalHogs</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>4</td>
+<td>837</td>
+</tr>
+<tr>
+<td><code>RoyalRecruits</code></td>
+<td>7</td>
+<td>Troop</td>
+<td>6</td>
+<td>547</td>
+</tr>
+<tr>
+<td><code>RoyalRecruits_Chess</code></td>
+<td>7</td>
+<td>Troop</td>
+<td>8</td>
+<td>532</td>
+</tr>
+<tr>
+<td><code>SkeletonArmy</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>15</td>
+<td>81</td>
+</tr>
+<tr>
+<td><code>SkeletonBalloon</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>1</td>
+<td>532</td>
+</tr>
+<tr>
+<td><code>SkeletonDragons</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>2</td>
+<td>560</td>
+</tr>
+<tr>
+<td><code>SkeletonKing</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>2298</td>
+</tr>
+<tr>
+<td><code>Skeletons</code></td>
+<td>1</td>
+<td>Troop</td>
+<td>3</td>
+<td>81</td>
+</tr>
+<tr>
+<td><code>SkeletonWarriors</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>3</td>
+<td>81</td>
+</tr>
+<tr>
+<td><code>SkeletonWarriors_SpookyChess</code></td>
+<td>7</td>
+<td>Troop</td>
+<td>8</td>
+<td>81</td>
+</tr>
+<tr>
+<td><code>SpearGoblins</code></td>
+<td>2</td>
+<td>Troop</td>
+<td>3</td>
+<td>133</td>
+</tr>
+<tr>
+<td><code>SuperArcher</code></td>
+<td>3</td>
+<td>Troop</td>
+<td>2</td>
+<td>701</td>
+</tr>
+<tr>
+<td><code>SuperHogRiderTerry</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>2300</td>
+</tr>
+<tr>
+<td><code>SuperIceGolemite</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>3630</td>
+</tr>
+<tr>
+<td><code>SuperKnight</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>2030</td>
+</tr>
+<tr>
+<td><code>SuspiciousBush</code></td>
+<td>2</td>
+<td>Troop</td>
+<td>1</td>
+<td>81</td>
+</tr>
+<tr>
+<td><code>ThreeMusketeers</code></td>
+<td>9</td>
+<td>Troop</td>
+<td>3</td>
+<td>883</td>
+</tr>
+<tr>
+<td><code>TriWizards</code></td>
+<td>7</td>
+<td>Troop</td>
+<td>1</td>
+<td>755</td>
+</tr>
+<tr>
+<td><code>Valkyrie</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>1907</td>
+</tr>
+<tr>
+<td><code>Wallbreakers</code></td>
+<td>2</td>
+<td>Troop</td>
+<td>2</td>
+<td>330</td>
+</tr>
+<tr>
+<td><code>Witch</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>839</td>
+</tr>
+<tr>
+<td><code>WitchMother</code></td>
+<td>4</td>
+<td>Troop</td>
+<td>1</td>
+<td>529</td>
+</tr>
+<tr>
+<td><code>Wizard</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>755</td>
+</tr>
+<tr>
+<td><code>ZapMachine</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>1</td>
+<td>1451</td>
+</tr>
+<tr>
+<td><code>BarbarianHut</code></td>
+<td>6</td>
+<td>Building</td>
+<td>1</td>
+<td>1164</td>
+</tr>
+<tr>
+<td><code>BarbarianLauncher</code></td>
+<td>5</td>
+<td>Building</td>
+<td>1</td>
+<td>1472</td>
+</tr>
+<tr>
+<td><code>BombTower</code></td>
+<td>4</td>
+<td>Building</td>
+<td>1</td>
+<td>1356</td>
+</tr>
+<tr>
+<td><code>Cannon</code></td>
+<td>3</td>
+<td>Building</td>
+<td>1</td>
+<td>824</td>
+</tr>
+<tr>
+<td><code>Elixir Collector</code></td>
+<td>6</td>
+<td>Building</td>
+<td>1</td>
+<td>1070</td>
+</tr>
+<tr>
+<td><code>GoblinCage</code></td>
+<td>4</td>
+<td>Building</td>
+<td>1</td>
+<td>780</td>
+</tr>
+<tr>
+<td><code>GoblinDrill</code></td>
+<td>4</td>
+<td>Building</td>
+<td>1</td>
+<td>2560</td>
+</tr>
+<tr>
+<td><code>GoblinHut</code></td>
+<td>4</td>
+<td>Building</td>
+<td>1</td>
+<td>1180</td>
+</tr>
+<tr>
+<td><code>GoblinPartyHut</code></td>
+<td>5</td>
+<td>Building</td>
+<td>1</td>
+<td>1180</td>
+</tr>
+<tr>
+<td><code>InfernoTower</code></td>
+<td>5</td>
+<td>Building</td>
+<td>1</td>
+<td>1748</td>
+</tr>
+<tr>
+<td><code>Mortar</code></td>
+<td>4</td>
+<td>Building</td>
+<td>1</td>
+<td>1369</td>
+</tr>
+<tr>
+<td><code>Tesla</code></td>
+<td>4</td>
+<td>Building</td>
+<td>1</td>
+<td>1182</td>
+</tr>
+<tr>
+<td><code>Tombstone</code></td>
+<td>3</td>
+<td>Building</td>
+<td>1</td>
+<td>529</td>
+</tr>
+<tr>
+<td><code>Xbow</code></td>
+<td>6</td>
+<td>Building</td>
+<td>1</td>
+<td>1600</td>
+</tr>
+<tr>
+<td><code>Arrows</code></td>
+<td>3</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>BarbLog</code></td>
+<td>2</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Clone</code></td>
+<td>3</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>DarkMagic</code></td>
+<td>5</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Earthquake</code></td>
+<td>3</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Fireball</code></td>
+<td>4</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Freeze</code></td>
+<td>4</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>GoblinBarrel</code></td>
+<td>3</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>GoblinCurse</code></td>
+<td>2</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Graveyard</code></td>
+<td>5</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Heal</code></td>
+<td>1</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Lightning</code></td>
+<td>6</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Log</code></td>
+<td>2</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Mirror</code></td>
+<td>1 + the copied card</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Poison</code></td>
+<td>4</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Rage</code></td>
+<td>2</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Rocket</code></td>
+<td>6</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>RoyalDelivery</code></td>
+<td>3</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Snowball</code></td>
+<td>2</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Tornado</code></td>
+<td>3</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Vines</code></td>
+<td>3</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>WarmSpell</code></td>
+<td>1</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>Zap</code></td>
+<td>2</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../clash-royale/configuration-objects/viewer/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Viewer">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Viewer
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../rl-terms/" class="md-footer__link md-footer__link--next" aria-label="Next: Reinforcement Learning Terms">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Reinforcement Learning Terms
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://discord.gg/4D2BS5JBHP" target="_blank" rel="noopener" title="The project Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://github.com/RoyaleGym" target="_blank" rel="noopener" title="The RoyaleGym organisation" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

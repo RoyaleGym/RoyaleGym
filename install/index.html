@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Train a Clash Royale bot. A fast battle engine, the environments to train in, and the viewer to watch it.">
+        <meta name="description" content="Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.">
       
       
       
@@ -16,7 +16,7 @@
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../first-bot/">
+        <link rel="next" href="../quickstart/">
       
       
         
@@ -271,6 +271,60 @@
       
   
   
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
@@ -281,7 +335,7 @@
   <span class="md-ellipsis">
     
   
-    Start here
+    Introduction
   
 
     
@@ -293,9 +347,10 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
     
@@ -361,10 +416,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-you-need-first" class="md-nav__link">
+  <a href="#1-install-python" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What you need first
+        1. Install Python
       
     </span>
   </a>
@@ -372,10 +427,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-much-of-this-page-has-actually-been-run" class="md-nav__link">
+  <a href="#2-open-a-terminal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How much of this page has actually been run
+        2. Open a Terminal
       
     </span>
   </a>
@@ -383,10 +438,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-the-folder-the-clones-and-the-virtual-environment" class="md-nav__link">
+  <a href="#3-make-a-folder-for-your-bot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: the folder, the clones and the virtual environment
+        3. Make a Folder for Your Bot
       
     </span>
   </a>
@@ -394,60 +449,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-generate-the-card-and-arena-data" class="md-nav__link">
+  <a href="#4-install-pytorch-for-your-graphics-card" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: generate the card and arena data
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 2: generate the card and arena data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-vintage-2018-and-why-it-is-not-optional" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why --vintage 2018, and why it is not optional
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-extract_cardspy-runs-twice" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why extract_cards.py runs twice
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-order-matters-extract-first-build-second" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The order matters: extract first, build second
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-3-build-the-engine" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: build the engine
+        4. Install PyTorch for Your Graphics Card
       
     </span>
   </a>
@@ -455,10 +460,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-install-the-python-packages" class="md-nav__link">
+  <a href="#5-install-royalegym" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: install the Python packages
+        5. Install RoyaleGym
       
     </span>
   </a>
@@ -466,93 +471,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#if-the-build-will-not-work" class="md-nav__link">
+  <a href="#6-check-that-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        If the build will not work
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#did-it-work" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Did it work?
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Did it work?">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-engine-imports" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The engine imports
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#watch-a-battle-and-check-five-things-about-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Watch a battle and check five things about it
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-engines-own-python-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The engine's own Python tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-fast-is-it-on-your-machine" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How fast is it on your machine
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#and-the-whole-environment-suite-if-you-want-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        And the whole environment suite, if you want it
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-go-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to go next
+        6. Check That It Works
       
     </span>
   </a>
@@ -566,22 +488,23 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="../first-bot/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Your first bot
+    Quick Start
   
 
     
@@ -590,6 +513,553 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../it-doesnt-work/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    It Doesn't Work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Fits Together
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clash Royale
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clash Royale
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clash-royale/training-an-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training an Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Objects
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configuration Objects
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clash-royale/configuration-objects/action-parsers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Action Parsers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clash-royale/configuration-objects/done-conditions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Done Conditions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clash-royale/configuration-objects/observation-builders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation Builders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clash-royale/configuration-objects/opponents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Opponents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clash-royale/configuration-objects/reward-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reward Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clash-royale/configuration-objects/state-mutators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Mutators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clash-royale/configuration-objects/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Viewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cheatsheets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cheatsheets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cheatsheets/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game Values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cheatsheets/rl-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Terms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -624,7 +1094,7 @@
   <span class="md-ellipsis">
     
   
-    The pieces
+    Additional Resources
   
 
     
@@ -640,7 +1110,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    The pieces
+    Additional Resources
   
 
           </label>
@@ -653,14 +1123,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pieces/engine/" class="md-nav__link">
+      <a href="../resources/royalesim/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    The engine
+    RoyaleSim
   
 
     
@@ -681,14 +1151,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pieces/environments/" class="md-nav__link">
+      <a href="../resources/royalelearn/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    The environments
+    RoyaleLearn
   
 
     
@@ -709,14 +1179,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pieces/learner/" class="md-nav__link">
+      <a href="../resources/royaleviser/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    The learner
+    RoyaleViser
   
 
     
@@ -737,14 +1207,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pieces/viewer/" class="md-nav__link">
+      <a href="../resources/royaleimitate/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    The viewer
+    RoyaleImitate
   
 
     
@@ -758,152 +1228,34 @@
 
               
             
-          </ul>
-        </nav>
-      
-    </li>
+              
+                
   
-
+  
+  
+  
     
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rewards/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
     
-  
-    Writing a reward function
-  
-
     
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
     
       
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../observations-and-actions/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    What the bot sees and does
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../accuracy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    How accurate is the engine
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../troubleshooting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Troubleshooting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
     
     
-    
-    
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    API reference
+    API Reference
   
 
     
@@ -914,12 +1266,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    API reference
+    API Reference
   
 
           </label>
@@ -940,34 +1292,6 @@
     
   
     royalegym
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reference/royaleviser/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    royaleviser
   
 
     
@@ -1009,6 +1333,1870 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royaleviser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accuracy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How accurate is the engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pieces/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The engine inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pieces/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The environments inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pieces/learner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The learner inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pieces/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The viewer inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../build-from-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build from source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting in depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleSim
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/mechanics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mechanics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The calibration ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/pathfinding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/pathfinder-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinder spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/movement-measurements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Movement measurements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/spell-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spell spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/replay-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/card-coverage-queue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Card coverage queue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalesim/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleGym
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalegym/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The long guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalegym/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalegym/observation-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalegym/background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalegym/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalegym/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalegym/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleLearn
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a job
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/checkpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checkpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/ladder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ladder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/determinism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Determinism
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/throughput/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Throughput
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/harness-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The harness spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/royalegym-asks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What it needs from RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royalelearn/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleViser
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleviser/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleviser/internals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleviser/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleviser/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleviser/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleImitate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleimitate/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleimitate/spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleimitate/public-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repos/royaleimitate/alarms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alarms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1043,10 +3231,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-you-need-first" class="md-nav__link">
+  <a href="#1-install-python" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What you need first
+        1. Install Python
       
     </span>
   </a>
@@ -1054,10 +3242,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-much-of-this-page-has-actually-been-run" class="md-nav__link">
+  <a href="#2-open-a-terminal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How much of this page has actually been run
+        2. Open a Terminal
       
     </span>
   </a>
@@ -1065,10 +3253,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-the-folder-the-clones-and-the-virtual-environment" class="md-nav__link">
+  <a href="#3-make-a-folder-for-your-bot" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: the folder, the clones and the virtual environment
+        3. Make a Folder for Your Bot
       
     </span>
   </a>
@@ -1076,60 +3264,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-generate-the-card-and-arena-data" class="md-nav__link">
+  <a href="#4-install-pytorch-for-your-graphics-card" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: generate the card and arena data
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 2: generate the card and arena data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-vintage-2018-and-why-it-is-not-optional" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why --vintage 2018, and why it is not optional
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-extract_cardspy-runs-twice" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why extract_cards.py runs twice
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-order-matters-extract-first-build-second" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The order matters: extract first, build second
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-3-build-the-engine" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: build the engine
+        4. Install PyTorch for Your Graphics Card
       
     </span>
   </a>
@@ -1137,10 +3275,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-install-the-python-packages" class="md-nav__link">
+  <a href="#5-install-royalegym" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: install the Python packages
+        5. Install RoyaleGym
       
     </span>
   </a>
@@ -1148,93 +3286,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#if-the-build-will-not-work" class="md-nav__link">
+  <a href="#6-check-that-it-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        If the build will not work
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#did-it-work" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Did it work?
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Did it work?">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-engine-imports" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The engine imports
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#watch-a-battle-and-check-five-things-about-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Watch a battle and check five things about it
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-engines-own-python-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The engine's own Python tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#how-fast-is-it-on-your-machine" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How fast is it on your machine
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#and-the-whole-environment-suite-if-you-want-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        And the whole environment suite, if you want it
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-go-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to go next
+        6. Check That It Works
       
     </span>
   </a>
@@ -1267,360 +3322,181 @@
 
 
 <h1 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h1>
-<p align="center">
-  <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
-  <img alt="Rust 1.80+" src="https://img.shields.io/badge/rust-1.80+-DEA584?style=flat-square&logo=rust&logoColor=white">
-  <img alt="Python half: run from clean clones" src="https://img.shields.io/badge/python%20half-run%20from%20clean%20clones-2ea043?style=flat-square">
-  <img alt="Release build: unmeasured" src="https://img.shields.io/badge/release%20build-unmeasured-orange?style=flat-square">
-  <img alt="Tested on Windows" src="https://img.shields.io/badge/commands%20tested%20on-Windows-0078D4?style=flat-square">
-</p>
-
-<p>At the end of this page you have four repositories side by side in one folder, one Python virtual
-environment shared by all of them, and a compiled engine you can run battles in. Then you have a
-short list of commands to check that it worked, with the output you should see.</p>
-<h2 id="what-you-need-first">What you need first<a class="headerlink" href="#what-you-need-first" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Python 3.12.</strong> Older versions are not supported.</li>
-<li><strong>Rust 1.80 or newer, with cargo.</strong> Get it from <a href="https://rustup.rs">rustup.rs</a>. This is only
-  needed to build the engine. If you cannot get Rust working, read
-  <a href="#if-the-build-will-not-work">If the build will not work</a> at the bottom. You can still start.</li>
-<li><strong>git.</strong></li>
-</ul>
-<h2 id="how-much-of-this-page-has-actually-been-run">How much of this page has actually been run<a class="headerlink" href="#how-much-of-this-page-has-actually-been-run" title="Permanent link">&para;</a></h2>
-<p>This matters more than it sounds, so it is near the top rather than in a footnote.</p>
-<div class="admonition success">
-<p class="admonition-title">The Python half was run from clean clones, and it works</p>
-<p>Somebody cloned all four repositories fresh into an empty directory, with no build leftovers
-and no files that git ignores, and ran the recipe below: the clones, the virtual environment,
-the four extract commands and the <code>pip install -e</code> lines. RoyaleGym's test suite then passed
-there, 342 passed and 6 skipped in 56 seconds.</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">The release build has never been run from a clean clone</p>
-<p><code>maturin develop --release</code> is the one step nobody has done end to end from a fresh clone.
-A <strong>debug</strong> build was done in that clean clone, and it took <strong>36 seconds</strong> on a machine with
-about <strong>1.5 GB of memory free</strong>. That is the only build measurement that exists.</p>
-<p>How long the <strong>release</strong> build takes, how much memory it needs, and whether
-<code>import royalesim</code> works immediately afterwards with no further step, are all unmeasured.
-If you run it, the <a href="https://discord.gg/4D2BS5JBHP">Discord</a> would like the numbers.</p>
-</div>
-<p>Everything below that has not been run carries a box saying so.</p>
-<h2 id="step-1-the-folder-the-clones-and-the-virtual-environment">Step 1: the folder, the clones and the virtual environment<a class="headerlink" href="#step-1-the-folder-the-clones-and-the-virtual-environment" title="Permanent link">&para;</a></h2>
-<p>Make one folder called <code>Royale</code>, put all four repositories inside it, and make one virtual
-environment at the top. The repositories find each other by sitting next to each other, so the
-layout is not optional.</p>
-<div class="admonition warning">
-<p class="admonition-title">UNVERIFIED: every macOS and Linux tab on this page</p>
-<p>Nobody has run this from a clean install yet. Every command that was verified was run on
-Windows. The macOS and Linux tabs are the same commands with <code>.venv/bin</code> in place of
-<code>.venv\Scripts</code> and forward slashes in the paths, but nobody has typed them.</p>
-</div>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">macOS and Linux</label></div>
+<p>This takes about ten minutes, most of it waiting for downloads. Do the steps in order. After
+each one, check that you see what the page says you'll see before you go on.</p>
+<p><strong>How to run a command:</strong> type it, or paste it, then press Enter. In PowerShell, Ctrl+V or a
+right-click pastes. When a box has several lines, do them one at a time.</p>
+<p>If anything goes wrong, look up the message on <a href="../it-doesnt-work/">It Doesn't Work</a>.</p>
+<h2 id="1-install-python">1. Install Python<a class="headerlink" href="#1-install-python" title="Permanent link">&para;</a></h2>
+<p>You need Python 3.12, 3.13 or 3.14.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">macOS</label><label for="__tabbed_1_3">Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdir Royale &amp;&amp; cd Royale
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>git clone https://github.com/RoyaleGym/RoyaleSim.git
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>git clone https://github.com/RoyaleGym/RoyaleGym.git
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>git clone https://github.com/RoyaleGym/RoyaleViser.git
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>git clone https://github.com/RoyaleGym/RoyaleLearn.git
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>python -m venv .venv
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>.venv\Scripts\python -m pip install maturin pytest hypothesis ruff
-</code></pre></div>
+<ol>
+<li>Go to <a href="https://www.python.org/downloads/windows/">python.org/downloads/windows</a>.</li>
+<li>Under <strong>Stable Releases</strong>, find the newest <strong>Python 3.14</strong> (or 3.13 or 3.12) and click
+   <strong>Download Windows installer (64-bit)</strong>. If the page offers a version newer than 3.14,
+   skip it: PyTorch may not support it yet.</li>
+<li>Run the installer. On its first screen, <strong>tick "Add python.exe to PATH"</strong> at the bottom.
+   Leave the other box as it is.</li>
+<li>Click <strong>Install Now</strong>. When it finishes, you can ignore the "Disable path length limit"
+   button and click <strong>Close</strong>.</li>
+</ol>
+<p>Missed the PATH box? Uninstall Python (Settings &gt; Apps &gt; Installed apps &gt; Python &gt;
+Uninstall) and run the installer again.</p>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>mkdir Royale &amp;&amp; cd Royale
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git clone https://github.com/RoyaleGym/RoyaleSim.git
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>git clone https://github.com/RoyaleGym/RoyaleGym.git
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>git clone https://github.com/RoyaleGym/RoyaleViser.git
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>git clone https://github.com/RoyaleGym/RoyaleLearn.git
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>python -m venv .venv
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>.venv/bin/python -m pip install maturin pytest hypothesis ruff
+<p>Go to <a href="https://www.python.org/downloads/macos/">python.org/downloads/macos</a>, download the
+<strong>macOS 64-bit universal2 installer</strong> for Python 3.14 (or 3.13 or 3.12), and run it.</p>
+</div>
+<div class="tabbed-block">
+<p>Use your system's package manager, for example on Ubuntu 24.04:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>python3-venv<span class="w"> </span>python3-pip
 </code></pre></div>
 </div>
 </div>
 </div>
-<p>You should end up with this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Royale/
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    .venv/
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    RoyaleSim/
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    RoyaleGym/
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    RoyaleViser/
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    RoyaleLearn/
-</code></pre></div>
-<p>The rest of this page writes the Python as <code>.venv\Scripts\python</code>, from inside one of those four
-folders, so it reads <code>..\.venv\Scripts\python</code>.</p>
-<h2 id="step-2-generate-the-card-and-arena-data">Step 2: generate the card and arena data<a class="headerlink" href="#step-2-generate-the-card-and-arena-data" title="Permanent link">&para;</a></h2>
-<p>A fresh clone has no card table and no arena. Neither <code>data/derived/</code> nor the folders under
-<code>data/raw/cr-*/</code> are in the repository. You generate them, and the engine will not build without
-them.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Windows</label><label for="__tabbed_2_2">macOS and Linux</label></div>
+<h2 id="2-open-a-terminal">2. Open a Terminal<a class="headerlink" href="#2-open-a-terminal" title="Permanent link">&para;</a></h2>
+<p>A terminal is the window where you type commands.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Windows</label><label for="__tabbed_2_2">macOS</label><label for="__tabbed_2_3">Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cd RoyaleSim
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>..\.venv\Scripts\python tools\extract_arena.py
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>..\.venv\Scripts\python tools\extract_cards.py --vintage 2018
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>..\.venv\Scripts\python tools\extract_cards.py --vintage 2018 --out data\derived\cards.json
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>..\.venv\Scripts\python tools\extract_globals.py
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>cd ..
+<p>Press the Windows key, type <code>PowerShell</code>, and press Enter. Then check Python:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">python</span> <span class="p">-</span><span class="n">-version</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cd RoyaleSim
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>../.venv/bin/python tools/extract_arena.py
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>../.venv/bin/python tools/extract_cards.py --vintage 2018
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>../.venv/bin/python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>../.venv/bin/python tools/extract_globals.py
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>cd ..
+<p>Press Cmd+Space, type <code>Terminal</code>, and press Enter. Then check Python:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3<span class="w"> </span>--version
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Open your terminal app. Then check Python:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python3<span class="w"> </span>--version
 </code></pre></div>
 </div>
 </div>
 </div>
-<p>That writes <code>RoyaleSim/data/derived/</code>, which is the arena, the card table and the game's global
-constants.</p>
-<h3 id="why-vintage-2018-and-why-it-is-not-optional">Why <code>--vintage 2018</code>, and why it is not optional<a class="headerlink" href="#why-vintage-2018-and-why-it-is-not-optional" title="Permanent link">&para;</a></h3>
-<p><code>extract_cards.py</code> defaults to a newer card table that is built from a client asset pack the
-project is not allowed to redistribute. A public clone does not have that pack, so the command
-with no flag fails. This is the real message you get:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>missing .../data/raw/cr-15.535.29/csv_logic: decode the 15.535.29 assets first
+<p>You should see something like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Python 3.14.8
 </code></pre></div>
-<p>That is not a broken install. It is the tool telling you it needs files that are not there and
-will not be there. <code>--vintage 2018</code> builds the card table from the 2018 files instead, and those
-<strong>are</strong> in the repository, 24 tracked files, along with the calibration data. So the 2018 path is
-self contained and it is the one that works for everybody.</p>
-<h3 id="why-extract_cardspy-runs-twice">Why <code>extract_cards.py</code> runs twice<a class="headerlink" href="#why-extract_cardspy-runs-twice" title="Permanent link">&para;</a></h3>
-<p>The two runs build the same card table and write it to two different names, because two different
-things read it by name.</p>
-<table>
-<thead>
-<tr>
-<th>The run</th>
-<th>Writes</th>
-<th>Read by</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--vintage 2018</code></td>
-<td><code>data/derived/cards-2018.json</code></td>
-<td>one of the engine's own Rust tests, which loads it by that exact filename</td>
-</tr>
-<tr>
-<td><code>--vintage 2018 --out data\derived\cards.json</code></td>
-<td><code>data/derived/cards.json</code></td>
-<td>the engine itself, every time it starts</td>
-</tr>
-</tbody>
-</table>
-<p>Leave either one out and something later goes looking for a file that is not there.</p>
-<h3 id="the-order-matters-extract-first-build-second">The order matters: extract first, build second<a class="headerlink" href="#the-order-matters-extract-first-build-second" title="Permanent link">&para;</a></h3>
-<div class="admonition danger">
-<p class="admonition-title">The card table is fixed when the engine is built, not when it runs</p>
-<p>Pointing the <code>ROYALESIM_DATA_DIR</code> environment variable at a different data folder afterwards
-does <strong>not</strong> change the card table a compiled engine holds. This was tried. An engine built
-elsewhere, pointed at a 2018 only checkout, still reported the other card table.</p>
-<p>So: extract, then build. And if you ever regenerate the data, build again. Otherwise you get
-an engine quietly disagreeing with the files next to it, and card counts that change for no
-visible reason.</p>
-</div>
-<p>RoyaleGym helps you here. <code>RustEngine()</code> refuses an engine build that is older than the data files
-on disk, rather than running with a mismatch.</p>
-<h2 id="step-3-build-the-engine">Step 3: build the engine<a class="headerlink" href="#step-3-build-the-engine" title="Permanent link">&para;</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">UNVERIFIED</p>
-<p>Nobody has run this from a clean install yet. Only a debug build has been done from a clean
-clone, and that took 36 seconds on a machine with about 1.5 GB of memory free. The release
-build's time and memory are unmeasured, and so is whether <code>import royalesim</code> works
-immediately after it with no further step.</p>
-</div>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Windows</label><label for="__tabbed_3_2">macOS and Linux</label></div>
+<p>If it shows an older version, such as 3.10, you have an older Python too and the terminal found
+that one first. On Windows, use <code>py -3.14</code> (or <code>py -3.13</code>, <code>py -3.12</code>) in place of <code>python</code> in
+step 3, for example <code>py -3.14 -m venv venv</code>. After that, inside the virtual environment, plain
+<code>python</code> is the right one.</p>
+<h2 id="3-make-a-folder-for-your-bot">3. Make a Folder for Your Bot<a class="headerlink" href="#3-make-a-folder-for-your-bot" title="Permanent link">&para;</a></h2>
+<p>This makes a folder called <code>royale</code> and a <strong>virtual environment</strong> inside it. A virtual
+environment is a private copy of Python just for this project, so nothing you install here
+clashes with anything else on your computer.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Windows</label><label for="__tabbed_3_2">macOS</label><label for="__tabbed_3_3">Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>cd RoyaleSim
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>..\.venv\Scripts\maturin develop --release
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>cd ..
+<p>First, allow PowerShell to turn on virtual environments. Run this once, and type <code>Y</code> if it
+asks:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">Set-ExecutionPolicy</span> <span class="n">-Scope</span> <span class="n">CurrentUser</span> <span class="n">-ExecutionPolicy</span> <span class="n">RemoteSigned</span>
+</code></pre></div>
+<p>It only changes a setting for your own account, and it doesn't need an admin password.
+It lets PowerShell run scripts that are on your own computer, like the one that turns the
+virtual environment on. Without it, you get a red "running scripts is disabled" error.</p>
+<p>Then make the folder and the virtual environment:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">mkdir</span> <span class="n">royale</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">cd </span><span class="n">royale</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="n">venv</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">.\</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">Activate</span><span class="p">.</span><span class="n">ps1</span>
+</code></pre></div>
+<p><code>mkdir</code> prints a small table, and the <code>venv</code> line prints nothing for a few seconds. That's
+normal.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>mkdir<span class="w"> </span>royale
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">cd</span><span class="w"> </span>royale
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>cd RoyaleSim
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>../.venv/bin/maturin develop --release
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>cd ..
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>mkdir<span class="w"> </span>royale
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">cd</span><span class="w"> </span>royale
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
 </code></pre></div>
 </div>
 </div>
 </div>
-<p>This compiles the Rust engine and installs it into the shared virtual environment as a Python
-module called <code>royalesim</code>. It is a first build of a Rust project, so expect it to take a while
-and to use a good chunk of memory. If your machine is short on memory, drop <code>--release</code> and take
-a slower engine for now. The debug build is the one that has actually been done from a clean
-clone.</p>
-<div class="admonition warning">
-<p class="admonition-title">One hazard if you keep more than one checkout</p>
-<p><code>maturin develop</code> installs the engine <strong>into the virtual environment you run it from</strong>. If two
-checkouts share one virtual environment, building from the second one swaps the engine out
-from under the first. The symptom is nasty: card counts change mid session and nothing tells
-you why.</p>
-<p>For a second checkout, build a wheel instead and install it somewhere of its own:</p>
+<p>Your prompt now starts with <code>(venv)</code>. That means the virtual environment is on, and anything
+you install goes into it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>(venv) PS C:\Users\you\royale&gt;
+</code></pre></div>
+<p>Your folder is <code>C:\Users\&lt;your name&gt;\royale</code> on Windows, and <code>royale</code> in your home folder on a
+Mac or Linux.</p>
+<div class="admonition note">
+<p class="admonition-title">Every time you open a new terminal</p>
+<p>Run just these two lines. Don't run <code>mkdir</code> or the <code>venv</code> line again.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Windows</label><label for="__tabbed_4_2">macOS and Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cd RoyaleSim
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>..\.venv\Scripts\maturin build --release
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>cd ..
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd </span><span class="n">royale</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="p">.\</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">Activate</span><span class="p">.</span><span class="n">ps1</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>cd RoyaleSim
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>../.venv/bin/maturin build --release
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>cd ..
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>royale
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
 </code></pre></div>
 </div>
 </div>
 </div>
-<p>Then <code>pip install</code> the wheel it produces into a throwaway virtual environment. One engine per
-environment, always.</p>
+<p>If your prompt already ends in <code>royale</code>, skip the <code>cd</code> line. If the prompt doesn't start
+with <code>(venv)</code>, Python won't find RoyaleGym.</p>
 </div>
-<h2 id="step-4-install-the-python-packages">Step 4: install the Python packages<a class="headerlink" href="#step-4-install-the-python-packages" title="Permanent link">&para;</a></h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Windows</label><label for="__tabbed_5_2">macOS and Linux</label></div>
+<h2 id="4-install-pytorch-for-your-graphics-card">4. Install PyTorch for Your Graphics Card<a class="headerlink" href="#4-install-pytorch-for-your-graphics-card" title="Permanent link">&para;</a></h2>
+<p>PyTorch is the library that runs your bot's brain (a neural network) on the graphics card.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:3"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><input id="__tabbed_5_3" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Windows</label><label for="__tabbed_5_2">macOS</label><label for="__tabbed_5_3">Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>.venv\Scripts\python -m pip install -e RoyaleGym
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>.venv\Scripts\python -m pip install -e RoyaleViser
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>.venv\Scripts\python -m pip install -e RoyaleLearn
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>.venv\Scripts\python -m pip install -e "RoyaleLearn[torch]"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
 </code></pre></div>
+<p>Don't skip this. On Windows, plain <code>pip install torch</code> gets a version that can't use your
+graphics card.</p>
+<p>You <strong>don't</strong> need to install CUDA or anything else from NVIDIA. This one command brings
+what PyTorch needs. Just make sure your NVIDIA driver is up to date, for example with the
+NVIDIA App. It works with GTX 16-series and RTX 20-series cards and newer.</p>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>.venv/bin/python -m pip install -e RoyaleGym
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>.venv/bin/python -m pip install -e RoyaleViser
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>.venv/bin/python -m pip install -e RoyaleLearn
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>.venv/bin/python -m pip install -e "RoyaleLearn[torch]"
-</code></pre></div>
-</div>
-</div>
-</div>
-<p>You can stop after the RoyaleGym line. RoyaleViser is the viewer and it is optional, though it is
-small and it needs no engine build of its own. RoyaleLearn is the training harness. It trains,
-and it needs the torch extra, which is a large download. Leave it until you want it.</p>
-<h2 id="if-the-build-will-not-work">If the build will not work<a class="headerlink" href="#if-the-build-will-not-work" title="Permanent link">&para;</a></h2>
-<p>You can still start. <code>royalegym</code> imports fine without the compiled engine.</p>
-<p><code>RustEngine()</code> then raises an <code>ImportError</code> whose message names the build command you need to run,
-so you are not left guessing. And <code>MockEngine</code>, a plain Python stand in, runs the whole API in the
-meantime. This program needs Step 2 and Step 4, and does not need Step 3:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClashParallelEnv</span><span class="p">,</span> <span class="n">MockEngine</span><span class="p">,</span> <span class="n">RandomLegalOpponent</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">engine</span> <span class="o">=</span> <span class="n">MockEngine</span><span class="p">()</span>                       <span class="c1"># no compiled engine needed</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()),</span> <span class="s2">"cards in the stand-in"</span><span class="p">)</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="n">env</span> <span class="o">=</span> <span class="n">ClashParallelEnv</span><span class="p">(</span><span class="n">engine</span><span class="o">=</span><span class="n">engine</span><span class="p">)</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="n">obs</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="n">rng</span><span class="p">,</span> <span class="n">policy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">RandomLegalOpponent</span><span class="p">(</span><span class="n">noop_prob</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>
-<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="k">while</span> <span class="n">env</span><span class="o">.</span><span class="n">agents</span><span class="p">:</span>
-<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>    <span class="n">actions</span> <span class="o">=</span> <span class="p">{</span><span class="n">a</span><span class="p">:</span> <span class="n">policy</span><span class="o">.</span><span class="n">act</span><span class="p">(</span><span class="n">obs</span><span class="p">[</span><span class="n">a</span><span class="p">],</span> <span class="n">obs</span><span class="p">[</span><span class="n">a</span><span class="p">][</span><span class="s2">"action_mask"</span><span class="p">],</span> <span class="n">rng</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">agents</span><span class="p">}</span>
-<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">actions</span><span class="p">)</span>
-<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>
-<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="n">s</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">battle_state</span>
-<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"winner </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">winner</span><span class="si">}</span><span class="s2">  crowns </span><span class="si">{</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">crowns</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">s</span><span class="o">.</span><span class="n">players</span><span class="p">]</span><span class="si">}</span><span class="s2">  tick </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">tick</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>16 cards in the stand-in
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>winner 0  crowns [3, 1]  tick 4255
-</code></pre></div>
-<p>Player 0 took all three towers, which ends a match instantly, and tick 4255 is past the three
-minute mark, so that one went into overtime.</p>
-<p>Be clear about what you are using, though. <code>MockEngine</code> is a stand in, not a second simulator. It
-carries 16 cards rather than the full catalogue, spells resolve instantly, there are no stuns or
-knockbacks, and cards run at their base level. It is there so you can write and debug your code.
-It is not there to train against.</p>
-<h2 id="did-it-work">Did it work?<a class="headerlink" href="#did-it-work" title="Permanent link">&para;</a></h2>
-<p>Four checks, from easiest to slowest. Each output below is what these commands actually printed.</p>
-<h3 id="the-engine-imports">The engine imports<a class="headerlink" href="#the-engine-imports" title="Permanent link">&para;</a></h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Windows</label><label for="__tabbed_6_2">macOS and Linux</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>cd RoyaleSim
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>..\.venv\Scripts\python -c "import royalesim; print('engine imported, one arena tile is', royalesim.SUBTILE, 'subtiles')"
-</code></pre></div>
+<p>Nothing to do here: the next step installs PyTorch for you. Macs don't have NVIDIA cards,
+and RoyaleGym doesn't use Apple's graphics chip, so training runs on the processor.</p>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>cd RoyaleSim
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>../.venv/bin/python -c "import royalesim; print('engine imported, one arena tile is', royalesim.SUBTILE, 'subtiles')"
-</code></pre></div>
+<p>Nothing to do here: the next step installs a PyTorch that already works with NVIDIA cards.
+Keep your NVIDIA driver up to date.</p>
 </div>
 </div>
 </div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>engine imported, one arena tile is 18000 subtiles
+<p>It's a big download, about 3 GB, and <code>pip</code> can sit on one line for several minutes while it
+downloads. That's normal. When it's done, the last line starts with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Successfully installed
 </code></pre></div>
-<p>If that prints, Step 3 worked. A subtile is the engine's unit of position, and there are 18000 of
-them to one arena tile, which is why positions come back as large whole numbers.</p>
-<h3 id="watch-a-battle-and-check-five-things-about-it">Watch a battle and check five things about it<a class="headerlink" href="#watch-a-battle-and-check-five-things-about-it" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>cd RoyaleSim
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>..\.venv\Scripts\python tools\watch_battle.py
+<p>If <code>pip</code> also prints a notice that "a new release of pip is available", you can ignore it.</p>
+<h2 id="5-install-royalegym">5. Install RoyaleGym<a class="headerlink" href="#5-install-royalegym" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.1
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>winner: RED
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>crowns: [2, 3]
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>final_tick: 2968
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>troops: 46
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>[OK ] determinism: re-simulated hash-for-hash on a fresh engine
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>[OK ] vacuity: 2969 frames (floor 50); blue accepted 18 deploys; red accepted 17 deploys; ...
-<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>[OK ] arena: trace grid == data/derived/arena.json (64x36 half-cells)
-<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>[OK ] dry: 74 of 27489 ground entity positions on water (the live game allows it; bound 5 %)
-<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>[OK ] render: battle.html, 1841257 bytes, 2969 frames, self-contained
-<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>EVERY GATE GREEN.
+<p>Copy the whole line with the copy button, quotes included. <code>[all]</code> means "with every part": the
+engine, the environments, the trainer, the viewer and the extras. The <code>--find-links</code> part tells
+<code>pip</code> where to download them, because RoyaleGym isn't on PyPI (Python's package store) yet. You
+don't need Git or Rust.</p>
+<p>You'll see a lot of <code>Downloading</code> and <code>Installing</code> lines. It ends with a line that starts with
+<code>Successfully installed</code> and lists everything it installed, <code>royalegym</code> among them.</p>
+<h2 id="6-check-that-it-works">6. Check That It Works<a class="headerlink" href="#6-check-that-it-works" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>python -c "import royalegym, torch; print('RoyaleGym', royalegym.__version__, '| graphics card:', torch.cuda.is_available())"
 </code></pre></div>
-<p>That took about two seconds: a whole match and five checks on it.</p>
-<p><strong>Do not expect the winner and the counts to match.</strong> The tool deals each side a random deck out
-of the card table your clone built, so a <code>--vintage 2018</code> install plays a different battle from
-the one above, which used the 15.535 table. <code>--seed</code> defaults to 1, so the same checkout does
-repeat the same battle, and <code>--seed 7</code> gives you another.</p>
-<p><strong>The five <code>[OK ]</code> lines are the part that should be green on any install.</strong> That is what to
-check. In order: the battle replayed on a fresh engine and every board
-hash came back identical, both sides actually deployed and fought rather than standing still, the
-arena the battle was played on matches the arena file, ground units stayed out of the water, and
-the HTML page it wrote holds every frame and needs nothing else to open.</p>
-<p>Add <code>--seed 7 --open</code> to fix the battle and open that page in your browser. You can scrub through
-it tick by tick.</p>
-<h3 id="the-engines-own-python-tests">The engine's own Python tests<a class="headerlink" href="#the-engines-own-python-tests" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>cd RoyaleSim
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>..\.venv\Scripts\python -m pytest -q
+<p>You should see:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>RoyaleGym 0.1.1 | graphics card: True
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>108 passed in 134.27s (0:02:14)
-</code></pre></div>
-<p>Give this one a couple of minutes.</p>
-<h3 id="how-fast-is-it-on-your-machine">How fast is it on your machine<a class="headerlink" href="#how-fast-is-it-on-your-machine" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>cd RoyaleGym
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>..\.venv\Scripts\python -m pytest -q tests/test_rust_engine.py -k throughput -s
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>[throughput] env.step/s  rust 957 (9 live)  mock 608 (10 live)  at 10 ticks/step | engine ticks/s incl. state+mask per 20 ticks: rust 20219  mock 11126
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>1 passed, 77 deselected in 1.66s
-</code></pre></div>
-<p>Read that as: 957 env steps per second, which is 957 decisions per player per second, with the
-Rust engine. That run had five other jobs going on the machine.</p>
-<p>Your number will be different, and the spread is much wider than you would expect. The same
-command on this one laptop has printed anywhere from about 350 to about 960 env steps per
-second on the same day, depending on what else was running. Do not read anything into the
-figure itself. The thing to check is that the line prints at all and that <code>rust</code> is not
-dramatically below <code>mock</code>, which would mean you are running a debug build.</p>
-<p>The last figure is worth knowing about. 20219 engine ticks per second is also roughly 20,219
-battles per hour for one process, and that is exact arithmetic rather than a coincidence: a three
-minute battle is 3600 ticks and an hour is 3600 seconds.</p>
-<p>The gap between the two numbers is Python, not the engine. Python builds both players'
-observations and their lists of legal moves on every single step. That is a known open item in
-RoyaleGym, not a mystery.</p>
-<h3 id="and-the-whole-environment-suite-if-you-want-it">And the whole environment suite, if you want it<a class="headerlink" href="#and-the-whole-environment-suite-if-you-want-it" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>cd RoyaleGym
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>..\.venv\Scripts\python -m pytest -q
-</code></pre></div>
-<p>On the clean clones this printed <strong>342 passed, 6 skipped, in 56 s</strong>. Six skips is normal and a
-skip is not a failure. If you built the engine, the two Rust backed test files on their own were
-<strong>96 passed in 148 s</strong> on that clean clone, on the debug build.</p>
-<p>Without the engine built, the Rust backed tests skip instead of failing. An engine build that is
-older than the data files fails them instead of skipping, which is the reminder to go back and
-redo Step 3.</p>
-<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
-<p><a class="md-button md-button--primary" href="../first-bot/">Your first bot</a>
-<a class="md-button" href="../">Back to Start here</a>
-<a class="md-button" href="https://discord.gg/4D2BS5JBHP">Ask in the Discord</a></p>
+<p>The version number may be newer. If it says <code>graphics card: False</code> on a computer with an NVIDIA
+card, see <a href="../it-doesnt-work/#pytorch-cant-see-my-graphics-card">PyTorch can't see my graphics card</a>.
+On a Mac, <code>False</code> is expected.</p>
+<p>All of this takes about 5 GB of disk space, most of it PyTorch.</p>
+<p>You're ready. Next: the <a href="../quickstart/">Quick Start</a>.</p>
 
 
 
@@ -1656,7 +3532,7 @@ redo Step 3.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Start here">
+          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Introduction">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1666,20 +3542,20 @@ redo Step 3.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Start here
+                Introduction
               </div>
             </div>
           </a>
         
         
           
-          <a href="../first-bot/" class="md-footer__link md-footer__link--next" aria-label="Next: Your first bot">
+          <a href="../quickstart/" class="md-footer__link md-footer__link--next" aria-label="Next: Quick Start">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Your first bot
+                Quick Start
               </div>
             </div>
             <div class="md-footer__button md-icon">

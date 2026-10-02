@@ -1,0 +1,4367 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.">
+      
+      
+      
+        <link rel="canonical" href="https://royalegym.github.io/RoyaleGym/repos/royalelearn/running/">
+      
+      
+        <link rel="prev" href="../guide/">
+      
+      
+        <link rel="next" href="../metrics/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Running a job - Royale</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#runningmd-running-a-job-and-what-to-do-when-something-looks-wrong" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Royale" class="md-header__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Royale
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Running a job
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Follow my system"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Follow my system" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Royale" class="md-nav__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Royale
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../it-doesnt-work/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    It Doesn't Work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Fits Together
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clash Royale
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clash Royale
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/training-an-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training an Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Objects
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configuration Objects
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/action-parsers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Action Parsers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/done-conditions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Done Conditions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/observation-builders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation Builders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/opponents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Opponents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/reward-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reward Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/state-mutators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Mutators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Viewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cheatsheets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cheatsheets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cheatsheets/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game Values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cheatsheets/rl-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Terms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Additional Resources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Additional Resources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royaleimitate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royalegym/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalegym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalelearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royaleviser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../accuracy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How accurate is the engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The engine inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The environments inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/learner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The learner inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The viewer inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../build-from-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build from source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting in depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleSim
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/mechanics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mechanics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The calibration ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/pathfinding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/pathfinder-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinder spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/movement-measurements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Movement measurements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/spell-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spell spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/replay-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/card-coverage-queue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Card coverage queue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleGym
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The long guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/observation-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleLearn
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a job
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a job
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-starting-a-run-and-what-the-first-minute-looks-like" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Starting a run, and what the first minute looks like
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-the-console-shows-while-it-runs-and-where-the-numbers-are-written" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What the console shows while it runs, and where the numbers are written
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-alarms-one-group-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The alarms, one group at a time
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The alarms, one group at a time">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-something-is-broken-six-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Something is broken (six alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-the-machine-is-the-problem-four-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 The machine is the problem (four alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-the-update-is-going-wrong-four-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 The update is going wrong (four alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-the-bots-behaviour-is-going-wrong-eight-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 The bot's behaviour is going wrong (eight alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-the-ladder-is-not-telling-you-anything-two-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 The ladder is not telling you anything (two alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-the-freeze-two-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 The freeze (two alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-sharing-one-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Sharing one machine
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Sharing one machine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-the-viewers-ports-are-fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 The viewer's ports are fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-a-killed-run-can-leave-workers-behind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 A killed run can leave workers behind
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-minibatch-and-vram-lesson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. The minibatch and VRAM lesson
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-stopping-resuming-and-what-survives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Stopping, resuming, and what survives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-this-page-deliberately-does-not-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What this page deliberately does not claim
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checkpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checkpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ladder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ladder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../determinism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Determinism
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../throughput/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Throughput
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harness-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The harness spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../royalegym-asks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What it needs from RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleViser
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/internals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleImitate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/public-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/alarms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alarms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-starting-a-run-and-what-the-first-minute-looks-like" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Starting a run, and what the first minute looks like
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-the-console-shows-while-it-runs-and-where-the-numbers-are-written" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What the console shows while it runs, and where the numbers are written
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-alarms-one-group-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The alarms, one group at a time
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The alarms, one group at a time">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-something-is-broken-six-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Something is broken (six alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-the-machine-is-the-problem-four-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 The machine is the problem (four alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-the-update-is-going-wrong-four-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 The update is going wrong (four alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-the-bots-behaviour-is-going-wrong-eight-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 The bot's behaviour is going wrong (eight alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-the-ladder-is-not-telling-you-anything-two-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 The ladder is not telling you anything (two alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-the-freeze-two-alarms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 The freeze (two alarms)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-sharing-one-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Sharing one machine
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Sharing one machine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-the-viewers-ports-are-fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 The viewer's ports are fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-a-killed-run-can-leave-workers-behind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 A killed run can leave workers behind
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-minibatch-and-vram-lesson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. The minibatch and VRAM lesson
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-stopping-resuming-and-what-survives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Stopping, resuming, and what survives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-this-page-deliberately-does-not-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What this page deliberately does not claim
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/RoyaleGym/RoyaleGym/edit/main/docs/site/pages/repos/royalelearn/running.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="runningmd-running-a-job-and-what-to-do-when-something-looks-wrong">running.md: running a job, and what to do when something looks wrong<a class="headerlink" href="#runningmd-running-a-job-and-what-to-do-when-something-looks-wrong" title="Permanent link">&para;</a></h1>
+<p>This page is for the person sitting in front of a run. It covers starting one, reading what
+scrolls past, the 24 alarms every run has and what to do about each, the two ways a shared machine
+eats an afternoon, and the one memory setting that is worth understanding before you touch it.</p>
+<p>Every command block on this page is written for Windows PowerShell, the shell that opens by
+default on Windows 10 and 11, which is why the paths use backslashes. On macOS or Linux the same
+commands work with forward slashes and <code>.venv/bin/python</code> in place of <code>.venv\Scripts\python</code>.</p>
+<p>It is not the specification. <a href="../harness-spec/">harness-spec.md</a> is the dense version.
+<a href="../metrics/">metrics.md</a> describes every number in a row. <a href="../checkpoints/">checkpoints.md</a>
+covers saving and resuming. <a href="../throughput/">throughput.md</a> covers how fast it goes. Every claim
+here was checked against the code on 2026-09-22 (the <code>ratio_invariant</code> and <code>illegal_actions</code>
+paragraphs on 2026-09-27) and names the file it came from. Where the code
+and the spec disagree, the code wins.</p>
+<p><strong>What has not been shown.</strong> A run completes its loop. Nobody has trained a good bot with this
+harness yet. So this page tells you what each number <em>would</em> mean, and you should not read any of
+them as a result.</p>
+<p>A few words used throughout:</p>
+<ul>
+<li><strong>Iteration.</strong> One lap: collect a pile of battles, then learn from them. One row of numbers
+  per lap.</li>
+<li><strong>Timestep.</strong> One decision by one bot in one battle.</li>
+<li><strong>The update.</strong> The part of an iteration where the network changes. The long quiet part.</li>
+<li><strong>Alarm.</strong> A yes-or-no question asked about one row of numbers. 24 of them, in
+  <code>royalelearn/metrics/alarms.py</code>.</li>
+<li><strong>Patience.</strong> How many iterations in a row the answer must be yes before the alarm speaks.</li>
+</ul>
+<hr />
+<h2 id="1-starting-a-run-and-what-the-first-minute-looks-like">1. Starting a run, and what the first minute looks like<a class="headerlink" href="#1-starting-a-run-and-what-the-first-minute-looks-like" title="Permanent link">&para;</a></h2>
+<p><strong>What you do.</strong> Two commands, in this order:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python -m royalelearn doctor  --config examples\configs\laptop.json
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python -m royalelearn train   --config examples\configs\laptop.json
+</code></pre></div>
+<p><code>doctor</code> runs the start-up gates on their own and exits. It takes seconds to a minute and
+catches most first-run failures without spawning a worker or allocating a buffer
+(<code>royalelearn/cli.py</code>, <code>_doctor</code>). Run it first. It is free.</p>
+<p><code>train</code> takes <code>--config</code> (required), and optionally <code>--run-name</code>, <code>--until-timesteps</code>,
+<code>--inline</code> (one process, no worker farm, useful for debugging), <code>--device cuda|cpu</code> and
+<code>--allow-dirty</code> (below) (<code>cli.py</code>, <code>build_parser</code>). Everything a run writes lands in
+<code>runs/&lt;run_name&gt;-&lt;run_id&gt;/</code> (<code>coordinator.py</code>, <code>run_directory</code>).</p>
+<p><strong>What happens before any battle is played.</strong> <code>LearningCoordinator.__enter__</code>
+(<code>coordinator.py</code>, around line 855) runs a fixed order: determinism tier, seed torch, resolve the
+device, preflight, build the network, VRAM gate, compute the run identity, create the run
+directory, then the buffer, the worker farm, the ladder and the metrics sinks. Nothing is
+collected until all of that has passed.</p>
+<p><strong>What refuses a run before it starts.</strong> Each of these raises and the process exits with code
+2, because every one of them is a <code>RoyaleLearnError</code> and <code>cli.main</code> turns those into one line
+rather than a traceback (<code>errors.py</code>, <code>cli.py</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Refusal</th>
+<th>Where</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Inconsistent config</td>
+<td><code>config.validate</code></td>
+<td>A number contradicts another one, a component in the <code>env</code> block is given a setting it does not take, a shaping weight is not a finite number of zero or more, or a section an installed package provides is malformed. A top-level key that is not RoyaleLearn's own and that no installed package provides as a section is refused by name, null or not. The message names every problem at once, not just the first. <code>ppo.batch_size</code> not being a multiple of <code>ppo.minibatch_size</code> is the common one.</td>
+</tr>
+<tr>
+<td>Stale engine build</td>
+<td><code>preflight._construct</code></td>
+<td>One environment is constructed first. A calibration or build mismatch dies here rather than at cycle 0, and the message names the fix: <code>maturin develop --release, in the RoyaleSim checkout</code> (<code>preflight.REBUILD_COMMAND</code>).</td>
+</tr>
+<tr>
+<td>Mask disagreement</td>
+<td><code>preflight._mask_disagreement_gate</code></td>
+<td>For both teams, the action mask and the engine are asked about every action at one moment: the one the start-up sample's play reaches. Only the cards in hand then are checked, so it can pass while the mask is wrong for another card. A bot trained against a wrong mask is worthless, so this refuses rather than warns. Off with <code>doctor.run_mask_disagreement_gate = false</code>.</td>
+</tr>
+<tr>
+<td>No legal no-op</td>
+<td><code>preflight._noop_gate</code></td>
+<td>Checked on 1000 sampled states and on a finished battle. A state with no legal action is a distribution over nothing, and what that produces is a NaN in the first backward pass.</td>
+</tr>
+<tr>
+<td>Action layout mismatch</td>
+<td><code>preflight._action_layout_gate</code></td>
+<td>The head writes a logit per (hand slot, tile); the environment reads an integer. A transposition between them is a bot that plays a different card in a different place from the one it learned. Exhaustive over every non-no-op action.</td>
+</tr>
+<tr>
+<td>Memory projection over budget</td>
+<td><code>preflight.run_preflight</code></td>
+<td>The run projects more resident memory than <code>doctor.ram_budget_mb</code>, 6,500 MB by default (<code>config.DoctorConfig</code>). Lower <code>rollout.workers</code>, <code>rollout.games_per_worker</code> or <code>ppo.timesteps_per_iteration</code>.</td>
+</tr>
+<tr>
+<td>One minibatch will not fit</td>
+<td><code>coordinator._vram_gate</code></td>
+<td>Section 5. This is the one that matters most on a small card.</td>
+</tr>
+<tr>
+<td>A worker did not come up</td>
+<td><code>rollout/farm.py</code>, <code>_await_report</code></td>
+<td>The child's traceback is printed after <code>rollout worker N did not come up:</code>.</td>
+</tr>
+<tr>
+<td>Identity drift, on resume</td>
+<td><code>coordinator._load</code></td>
+<td>The checkpoint was made by a different run. It names every differing field. <code>--allow-identity-drift</code> overrides it.</td>
+</tr>
+<tr>
+<td>A run is already in that folder</td>
+<td><code>coordinator._refuse_an_occupied_run_dir</code></td>
+<td>The same config on the same code always gets the same <code>runs/&lt;run_name&gt;-&lt;run_id&gt;/</code>. A fresh start refuses that folder once it holds metric rows or checkpoints, before writing anything. <code>resume</code> the run that is there, or give the new one another <code>--run-name</code>. There is no flag to overwrite it.</td>
+</tr>
+<tr>
+<td>Uncommitted code</td>
+<td><code>cli.refuse_dirty_sources</code></td>
+<td><code>train</code> refuses when the royalelearn, royalegym or royaleviser package, the engine's data, the config file, or a package your own components come from has uncommitted or untracked files. <code>resume</code> and <code>verify-resume</code> check the same, apart from the config file. <code>--allow-dirty</code> runs anyway.</td>
+</tr>
+<tr>
+<td>A worker on another engine build</td>
+<td><code>rollout/farm.py</code>, <code>check_worker_binaries</code></td>
+<td>Every worker reports the compiled engine file it loaded, and it must be the one the run's identity names. At start this means the engine changed while the run was starting. A worker restarted after a rebuild is refused the same way, so do not rebuild RoyaleSim under a running job.</td>
+</tr>
+<tr>
+<td>A file a section names is not the one the config names</td>
+<td>each section's <code>verify</code>, called by <code>coordinator._enter</code> before preflight</td>
+<td>A section that reads files names each by path and digest (RoyaleImitate's <code>warm_start.init</code> and <code>imitation.references</code>, say). At every start, fresh or resumed, each folder is hashed again, and one whose content has changed is refused before preflight runs. The package that provides the section has a command that prints a folder's digest.</td>
+</tr>
+</tbody>
+</table>
+<p>One thing is a warning and not a refusal: if the projection exceeds what is free on the machine
+<em>right now</em>, preflight says so and continues (<code>preflight.run_preflight</code>, around line 204). The
+reasoning is in the code: something else on the machine may well stop before the run needs the
+memory, and refusing over a neighbour who is busy for a minute is the more expensive mistake.</p>
+<p><strong>Why refusing early is a kindness.</strong> A useful run is many hours. Every gate above catches a
+fault that would otherwise show up as a run that appears to work and produces nothing, which you
+would discover much later and would then have to bisect. The alternative to a refusal at second
+five is not success; it is the same failure, expensive and hard to attribute.</p>
+<p><strong>What the first minute actually looks like.</strong> Preflight prints a labelled block: engine and card
+count, decision timing, the codec table, hand field offsets, the three gate results, the engine
+build digests, the memory ledger, the geometry, the credit horizon, the viewer line, and finally
+<code>run id</code>. Then the run directory is created and collection starts.</p>
+<p><strong>The first round is the slow one.</strong> Workers are spawning and nothing is warm. Measured on the
+maintainer's laptop, 2026-09-22 (README): first rounds of 46, 79 and 179 seconds, a spread of
+3.9x, against later rounds of 12.6, 13 and 19 seconds, a spread of 1.5x. Wait for the second
+round before you believe any timing. A complete iteration on that machine was measured at 518
+and 544 seconds, so about nine minutes idle.</p>
+<hr />
+<h2 id="2-what-the-console-shows-while-it-runs-and-where-the-numbers-are-written">2. What the console shows while it runs, and where the numbers are written<a class="headerlink" href="#2-what-the-console-shows-while-it-runs-and-where-the-numbers-are-written" title="Permanent link">&para;</a></h2>
+<p><strong>What you get:</strong> three kinds of line, so that a long silence always has a label on it.</p>
+<ol>
+<li><code>collected     228 cycles, 32832 timesteps in 46.0s (951 env steps/s); updating</code>, from
+   <code>coordinator._say_collected</code>. It exists because the update that follows is minutes of
+   silence, and a silent run is indistinguishable from a stopped one. The code notes that two
+   runs on this project were killed by the person watching for exactly that reason.</li>
+<li><code>updating      epoch 1/3, 32832 samples, 0s in</code>, one line per epoch, from <code>learn/ppo.py</code>
+   around line 375. Same purpose, and it lets you size the phase from outside.</li>
+<li>The per-iteration block, printed by <code>ConsoleSink</code> in <code>metrics/sinks.py</code>. About 145 numbers,
+   grouped by the part of the key before the slash, in the schema's own order.</li>
+</ol>
+<p>Alarm lines appear as <code>alarm [warn] &lt;name&gt;: &lt;key&gt;=&lt;value&gt; -- &lt;meaning&gt;</code> (<code>metrics/alarms.py</code>,
+<code>AlarmSet.evaluate</code>). Checkpoints print <code>checkpoint    &lt;path&gt;</code>, bundles print
+<code>bundle        &lt;path&gt;</code>.</p>
+<p><strong>Where the numbers are written.</strong> Everything goes to <code>runs/&lt;run_name&gt;-&lt;run_id&gt;/</code>:
+<code>metrics.jsonl</code> (one JSON object per iteration, flushed every row, safe to tail),
+<code>episodes.jsonl</code> (one record per finished battle, gzipped in place after 200 iterations),
+<code>alarms.jsonl</code> (only written when an alarm fires, so an untroubled run has no such file),
+plus <code>config.json</code>, <code>identity.json</code>, <code>checkpoints/</code>, <code>snapshots/</code>, <code>ladder/</code>, <code>artifacts/</code> and
+<code>bundles/</code>. The names are in <code>metrics/sinks.py</code> and <code>metrics/bundle.py</code>.</p>
+<p><strong>Read <a href="../metrics/">metrics.md</a> for what each number means</strong>, which handful are worth watching,
+and which rows are empty or unreliable today. It is not repeated here.</p>
+<p><strong>Controlling a running job.</strong> Write a single letter into <code>runs/&lt;...&gt;/control</code>
+(<code>coordinator._Control</code>, around line 713):</p>
+<ul>
+<li><code>c</code> write a checkpoint now,</li>
+<li><code>q</code> write a checkpoint and stop,</li>
+<li><code>p</code> pause until you write another letter.</li>
+</ul>
+<p>The letter is read once per round and then the file is deleted. Ctrl-C is turned into <code>q</code>, so
+an interrupt is a checkpoint rather than a lost afternoon.</p>
+<hr />
+<h2 id="3-the-alarms-one-group-at-a-time">3. The alarms, one group at a time<a class="headerlink" href="#3-the-alarms-one-group-at-a-time" title="Permanent link">&para;</a></h2>
+<p>Every run has the same 24. A run can have more: section 3.6 lists the two a freeze adds, and a
+package that adds a config section documents its own (<a href="../extensions/">extensions.md</a>). You can
+print the 24 without starting a run (on macOS and Linux the interpreter is <code>../.venv/bin/python</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>../.venv/Scripts/python -c "
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>from royalelearn.metrics.alarms import default_alarms
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>from royalelearn.config import AlarmConfig
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>for a in default_alarms(AlarmConfig()):
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    print(f'{a.severity:5} patience={a.patience:&lt;3} {a.name}')
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>"
+</code></pre></div>
+<p>Three rules govern all of them, from <code>metrics/alarms.py</code>:</p>
+<ul>
+<li><strong><code>warn</code></strong> (17 alarms) prints a line and appends to <code>alarms.jsonl</code>. The run continues.</li>
+<li><strong><code>halt</code></strong> (7 alarms) does that, then writes a checkpoint and a diagnostic bundle into
+  <code>bundles/&lt;iteration&gt;/</code>, then stops the run with exit code 2.</li>
+<li><strong>A missing key never fires.</strong> An iteration in which no battle finished carries no <code>env/</code>
+  numbers at all, and an alarm that read that absence as a zero would stop a healthy run.</li>
+</ul>
+<p>Thresholds live in the <code>alarms</code> block of your config (<code>config.AlarmConfig</code>). Any alarm can be
+made louder, quieter or turned off by name through <code>patience_overrides</code>, <code>severity_overrides</code> and
+<code>disabled</code>. Changing them cannot change any number the run produces, which is why they are left
+out of the run identity. Patience restarts from zero on a resume, which is the honest reading:
+the iterations that would have tripped an alarm were not observed by this process.</p>
+<h3 id="31-something-is-broken-six-alarms">3.1 Something is broken (six alarms)<a class="headerlink" href="#31-something-is-broken-six-alarms" title="Permanent link">&para;</a></h3>
+<p>These say a piece of the harness is not doing what it claims. None of them is a tuning problem
+and none is fixed by changing a hyperparameter. Four of the six stop the run.</p>
+<table>
+<thead>
+<tr>
+<th>Alarm</th>
+<th>Reads</th>
+<th>Fires when</th>
+<th>Severity, patience</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>illegal_actions</code></td>
+<td><code>env/illegal_action_rate</code></td>
+<td>above 0.0</td>
+<td>halt, 1</td>
+</tr>
+<tr>
+<td><code>ratio_invariant</code></td>
+<td><code>ppo/ratio_max_abs_dev</code></td>
+<td>above <code>alarms.ratio_invariant_multiple</code> (5.0) times <code>ppo.ratio_atol</code></td>
+<td>halt, 1</td>
+</tr>
+<tr>
+<td><code>nonfinite</code></td>
+<td><code>health/nan_guard_trips</code></td>
+<td>above 0</td>
+<td>halt, 1</td>
+</tr>
+<tr>
+<td><code>buffer_overflow</code></td>
+<td><code>health/buffer_fill_frac</code></td>
+<td>above <code>max(1.0, alarms.buffer_fill_frac)</code></td>
+<td>halt, 1</td>
+</tr>
+<tr>
+<td><code>elixir_count_inexact</code></td>
+<td><code>env/elixir_count_exact_frac</code></td>
+<td>below 0.99</td>
+<td>warn, 3</td>
+</tr>
+<tr>
+<td><code>seat_bias</code></td>
+<td><code>env/win_rate_by_seat_ci95_lo/_hi</code></td>
+<td>the interval clears 0.45 or 0.55</td>
+<td>warn, 3</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>illegal_actions</code>.</strong> The engine refused a command the mask allowed. Under a correct mask this
+is exactly zero, so any positive value is a bug in the mask, in the action encoding, or in an
+unmasked policy. A refused command also stops the iteration with <code>DeployRefused</code>, so any gap
+in the mask can stop a run, and a random deck, which deals the most cards, is the likeliest to
+find one. Do not retune anything. Read the bundle, then re-run
+<code>python -m royalelearn doctor</code>, which exercises the mask and layout gates.</p>
+<p><strong><code>ratio_invariant</code>.</strong> At the first minibatch of the first epoch the stored log-probabilities
+must be the ones the current weights produce on the stored bytes, so the ratio must be 1 to
+tolerance. It is the cheapest detector there is for a mask, codec or weight-version drift.
+Shipped tolerances are 1e-4 for float32 and 2e-2 for bfloat16 (<code>config.PPOConfig.ratio_atol</code>), so
+the alarm fires above 5e-4 or 0.1 depending on your run's precision. The metric is measured on
+every iteration, and the alarm reads it every time. The hard assertion inside the update runs only
+on some iterations (the first <code>ppo.debug_assert_iterations</code>, 10, then every
+<code>ppo.check_ratio_invariant_every</code>, 50). Do nothing about learning rates: this is a
+code or version mismatch, and the bundle carries the outliers.</p>
+<p><strong><code>nonfinite</code>.</strong> A loss, a gradient or a logit was not finite. Usually an entirely masked
+distribution, a bad reward, or a learning rate high enough to blow up in one step. Check the
+reward function first if you wrote your own.</p>
+<p><strong><code>buffer_overflow</code>.</strong> A rectangle cannot be more than full: every cell is written exactly once
+by the worker that owns it. Above one, a cycle was published twice or the geometry moved under
+the buffer, and the rows of that iteration are not the rows they say they are. The configured
+threshold (0.98) is a floor on the bound rather than the bound itself, so lowering it can only
+make the alarm stricter. A rollout bug, not a setting.</p>
+<p><strong><code>elixir_count_inexact</code>.</strong> The observation's opponent-elixir slot is documented as exact, and on
+some episodes it was an estimate. A value near zero and a value just under one are different
+stories, so check the engine build first: the digests are in the run's <code>identity.json</code> and in the
+<code>engine build</code> line preflight prints. It warns because a slightly imperfect count is worth
+knowing about and not worth losing hours over.</p>
+<p><strong><code>seat_bias</code>.</strong> The 95% interval around win rate by seat has cleared the 0.45 to 0.55 band.
+Causes, in order of likelihood: an unseeded reset, a reward asymmetry, an observation mirror bug.
+A few points can legitimately be the engine's own seat asymmetry, which is why this warns.</p>
+<h3 id="32-the-machine-is-the-problem-four-alarms">3.2 The machine is the problem (four alarms)<a class="headerlink" href="#32-the-machine-is-the-problem-four-alarms" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Alarm</th>
+<th>Reads</th>
+<th>Fires when</th>
+<th>Severity, patience</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>worker_failures</code></td>
+<td><code>health/worker_restarts</code></td>
+<td>the counter rose this iteration</td>
+<td>warn, 1</td>
+</tr>
+<tr>
+<td><code>worker_failures_persistent</code></td>
+<td><code>health/worker_restarts</code></td>
+<td>it rose on three iterations in a row</td>
+<td>halt, 3</td>
+</tr>
+<tr>
+<td><code>vram_spilling</code></td>
+<td><code>time/update</code>, <code>health/vram_driver_free_mb</code>, <code>ppo/actor_frozen</code> if present</td>
+<td>update at least 2x this run's best for the same actor state while the driver reports under 128 MB free</td>
+<td>warn, 3</td>
+</tr>
+<tr>
+<td><code>capacity_ratio</code></td>
+<td><code>throughput/rollout_capacity_ratio</code></td>
+<td>below <code>alarms.capacity_ratio</code> (1.5)</td>
+<td>warn, 3</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>worker_failures</code>.</strong> One rollout worker was restarted. The counter is cumulative over the run,
+so this alarm watches that it <em>moved</em>, not its level (<code>RoseAlarm</code> in <code>alarms.py</code>). One restart is
+survivable: the dead worker's slots arrive marked invalid, the round continues without them, and
+the iteration ends with fewer transitions. On a laptop the usual cause is memory pressure. Check
+what else is running.</p>
+<p><strong><code>worker_failures_persistent</code>.</strong> Workers have failed on three consecutive iterations. No longer
+transient, so it halts. Separately, <code>rollout.max_restarts_per_worker</code> (3) raises if one worker
+keeps dying. Read the failure message printed at the time: it names the worker, the cycle, the
+kind and the shard, and says what share of the iteration's rows went with it.</p>
+<p><strong><code>vram_spilling</code>.</strong> Section 5 is about this one. In short: the update has gone at least twice as
+slow as this run's own best while the driver says the card is full, three iterations running.
+Iterations with the actor frozen are much cheaper, so they keep a best of their own. Otherwise
+every update after a warm start's unfreeze would read as a spill.</p>
+<p><strong><code>capacity_ratio</code>.</strong> Rollout capacity divided by update capacity. The design invariant is that
+the harness is never the bottleneck, at least 2 on every shipped profile. Below 1.5 says the data
+supply is becoming the limit rather than the learner. Add workers or battles per worker if you
+have the memory and the cores. See <a href="../throughput/">throughput.md</a>.</p>
+<h3 id="33-the-update-is-going-wrong-four-alarms">3.3 The update is going wrong (four alarms)<a class="headerlink" href="#33-the-update-is-going-wrong-four-alarms" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Alarm</th>
+<th>Reads</th>
+<th>Fires when</th>
+<th>Severity, patience</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clip_pinned</code></td>
+<td><code>ppo/clip_fraction</code></td>
+<td>above <code>alarms.clip_fraction</code> (0.5)</td>
+<td>halt, 3</td>
+</tr>
+<tr>
+<td><code>kl_high</code></td>
+<td><code>ppo/kl</code></td>
+<td>above <code>alarms.kl_high</code> (0.05)</td>
+<td>warn, 3</td>
+</tr>
+<tr>
+<td><code>kl_dead</code></td>
+<td><code>ppo/kl</code></td>
+<td>below <code>alarms.kl_dead</code> (1e-5)</td>
+<td>warn, 10</td>
+</tr>
+<tr>
+<td><code>ev_negative</code></td>
+<td><code>ppo/explained_variance</code></td>
+<td>below <code>alarms.explained_variance</code> (0.0)</td>
+<td>warn, 50</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>clip_pinned</code>.</strong> More than half the samples hit the clip, three iterations running. Pinned near
+1.0 is the signature of a rollout-versus-update mask disagreement, or of a learning rate far too
+high. Check the mask first: that explanation is a bug, the other is a setting. It halts because
+training otherwise runs on happily while producing nothing usable.</p>
+<p><strong><code>kl_high</code>.</strong> The policy moved further in one update than the band allows. The learning-rate
+backoff (<code>ppo.lr_backoff</code>, threshold 0.02) should already be acting, so read this as a prompt to
+check <code>ppo/lr_backoff_events</code>. If it persists, raise <code>ppo.batch_size</code>.</p>
+<p><strong><code>kl_dead</code>.</strong> Ten iterations with essentially no movement at all. Dead entropy, a learning rate
+too low, or a frozen head. Check <code>ppo/entropy</code> and the learning rate first.</p>
+<p><strong><code>ev_negative</code>.</strong> The critic explains none of the return. Patience is 50 because a critic being
+bad early is completely normal, and the alarm is about a plateau rather than a start. This is
+the most likely explanation of a run that has stopped changing. Nothing on this project has
+established a healthy value here yet, so treat a firing as a prompt to investigate rather than
+as a verdict.</p>
+<h3 id="34-the-bots-behaviour-is-going-wrong-eight-alarms">3.4 The bot's behaviour is going wrong (eight alarms)<a class="headerlink" href="#34-the-bots-behaviour-is-going-wrong-eight-alarms" title="Permanent link">&para;</a></h3>
+<p>These are about what the policy is actually doing in battles. Seven warn; one stops the run.</p>
+<table>
+<thead>
+<tr>
+<th>Alarm</th>
+<th>Reads</th>
+<th>Fires when</th>
+<th>Severity, patience</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>noop_collapse</code></td>
+<td><code>policy/cards_per_match</code></td>
+<td>below <code>alarms.cards_per_match_warn</code> (8.0)</td>
+<td>warn, 5</td>
+</tr>
+<tr>
+<td><code>noop_collapse_severe</code></td>
+<td><code>policy/cards_per_match</code></td>
+<td>below <code>alarms.cards_per_match_halt</code> (3.0)</td>
+<td>halt, 5</td>
+</tr>
+<tr>
+<td><code>noop_entropy_floor</code></td>
+<td><code>ppo/noop_entropy</code></td>
+<td>below <code>alarms.noop_entropy_floor</code> (0.02)</td>
+<td>warn, 5</td>
+</tr>
+<tr>
+<td><code>tile_spam</code></td>
+<td><code>policy/tile_top1_share</code></td>
+<td>above <code>alarms.tile_top1_share</code> (0.25)</td>
+<td>warn, 5</td>
+</tr>
+<tr>
+<td><code>artefact_exploit</code></td>
+<td><code>policy/card_tile_top10_share</code></td>
+<td>above <code>alarms.card_tile_top10_share</code> (0.5)</td>
+<td>warn, 5</td>
+</tr>
+<tr>
+<td><code>draw_equilibrium</code></td>
+<td><code>env/draw_rate</code>, <code>env/episode_steps_at_cap_frac</code></td>
+<td>draws above 0.5 <strong>and</strong> episodes ending at the cap above 0.8</td>
+<td>warn, 5</td>
+</tr>
+<tr>
+<td><code>reward_clipped</code></td>
+<td><code>ppo/reward_clip_frac</code></td>
+<td>any reward was clipped this iteration</td>
+<td>warn, 1</td>
+</tr>
+<tr>
+<td><code>shaping_dominates</code></td>
+<td><code>env/reward_shaping_abs</code>, <code>env/reward_terminal_abs</code></td>
+<td>the shaping terms' per-episode sums exceed the terminal term's: a term has stopped telescoping</td>
+<td>warn, 5</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>noop_collapse</code> and <code>noop_collapse_severe</code>.</strong> Cards played per finished battle, not the no-op
+rate, is the collapse metric. A healthy policy is about 94% no-op simply because most ticks you
+cannot afford anything, so the no-op rate is a bad instrument; about 22 cards a match is the
+healthy figure the schema records. Under 8 warns. Under 3 means the policy has stopped playing
+cards at all, and that halts. The usual lever is <code>ppo.ent_coef_noop</code>, a warm-start bonus that
+anneals to zero by design, and the alarms deliberately outlive the schedule.</p>
+<p><strong><code>noop_entropy_floor</code>.</strong> The leading indicator of the above, and it keeps watching after
+<code>ent_coef_noop</code> has annealed away, which is when it matters most. It measures the binary
+entropy of play-against-wait over only the rows where the mask offered more than the no-op,
+because a decision the elixir bar cannot afford has zero entropy by construction. Seeing this
+before <code>noop_collapse</code> is the normal order.</p>
+<p><strong><code>tile_spam</code>.</strong> A quarter of every card played is going on one tile. That is either a
+degenerate policy or an engine quirk being exploited.</p>
+<p><strong><code>artefact_exploit</code>.</strong> Half of all plays are in the ten most-played (card, tile) pairs. A real
+meta is not that concentrated, so this is probably an artefact of the simulator rather than a
+strategy. This is the only warn-severity alarm that writes a diagnostic bundle anyway
+(<code>dump_bundle=True</code> in <code>alarms.py</code>), because the bundle carries a trace you can watch.</p>
+<p><strong><code>draw_equilibrium</code>.</strong> The turtle equilibrium: nobody attacks, and the step limit ends every
+game. It needs both conditions, which is what distinguishes it from a run that happens to be
+drawing. Usually a reward shaping problem: there is no gradient pushing anyone to commit.</p>
+<p><strong><code>reward_clipped</code>.</strong> A reward hit <code>advantage.reward_clip</code> this iteration. That matters more
+than the size of the number suggests. Potential shaping leaves the best policy unchanged only
+while every step's reward reaches the return intact, and a clipped step is one where it does not.
+If the step that was cut was the one carrying the win, a win is worth less than a win. Raise
+<code>advantage.reward_clip</code>, or lower the shaping weights you raised.</p>
+<p><strong><code>shaping_dominates</code>.</strong> One of your shaping terms has stopped telescoping. Under a potential
+reward each term's per-episode sum is small by construction, whatever its weight: the steps cancel.
+A sum that climbs towards the terminal term means something in the reward is not a difference of a
+potential, for example a term that pays on the final step or reads something other than the state.
+Changing a weight will not fix it; find the term. To see how loud each term actually is, read
+<code>env/reward_terms_step_abs/&lt;term&gt;</code> beside <code>env/reward_terms_step_abs/terminal</code>. Note from <a href="../metrics/">metrics.md</a> that <code>env/reward_terminal_abs</code>
+read 0.0 in every row on disk before a fix on 2026-09-22, so on older runs this alarm could not
+fire for a reason that had nothing to do with the policy.</p>
+<h3 id="35-the-ladder-is-not-telling-you-anything-two-alarms">3.5 The ladder is not telling you anything (two alarms)<a class="headerlink" href="#35-the-ladder-is-not-telling-you-anything-two-alarms" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Alarm</th>
+<th>Reads</th>
+<th>Fires when</th>
+<th>Severity, patience</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>transitivity</code></td>
+<td><code>ladder/transitivity_residual</code></td>
+<td>above <code>alarms.transitivity_residual</code> (0.10)</td>
+<td>warn, 3</td>
+</tr>
+<tr>
+<td><code>gate_starved</code></td>
+<td><code>ladder/consecutive_gate_failures</code></td>
+<td>at or above <code>alarms.gate_failures</code> (5)</td>
+<td>warn, 1</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>transitivity</code>.</strong> One number per player fails to explain the result log. In plain words the
+rating is lying: A beats B, B beats C, C beats A, and no single scalar can describe that. Any
+rating you read while this is firing is not measuring what you think it is.</p>
+<p><strong><code>gate_starved</code>.</strong> Five gates failed in a row, so no new snapshot has joined the pool. This is
+the plateau signal stated as an event rather than as a curve. It is a warning because a plateau
+is information, not a fault. See <a href="../ladder/">ladder.md</a>.</p>
+<h3 id="36-the-freeze-two-alarms">3.6 The freeze (two alarms)<a class="headerlink" href="#36-the-freeze-two-alarms" title="Permanent link">&para;</a></h3>
+<p>These exist only on a run whose config has a section that schedules the actor's learning-rate
+scale -- a run that holds its bot still at first while the critic catches up. The section brings
+them, with their thresholds (RoyaleImitate's <code>warm_start</code> is one; its other alarms are in its own
+docs). Section 19.5 of <a href="../harness-spec/">harness-spec.md</a> describes the freeze. Both warn and
+neither stops the run, because a run stopped early would drop out of any comparison it is part of.</p>
+<table>
+<thead>
+<tr>
+<th>Alarm</th>
+<th>Reads</th>
+<th>Fires when</th>
+<th>Severity, patience</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>actor_handoff</code></td>
+<td><code>ppo/kl</code>, <code>ppo/clip_fraction</code>, <code>ppo/iterations_since_unfreeze</code></td>
+<td>in the first <code>handoff_window</code> (20) iterations after a frozen actor starts to move, KL above 0.05 or clip fraction above 0.3</td>
+<td>warn, 1</td>
+</tr>
+<tr>
+<td><code>critic_unready</code></td>
+<td><code>ppo/ev_at_unfreeze</code></td>
+<td>the critic's explained variance when the actor was unfrozen, below 0.3</td>
+<td>warn, 1</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>actor_handoff</code>.</strong> The first iterations after the freeze moved the policy fast. The
+learning-rate backoff acts on its own; this says why it acted.</p>
+<p><strong><code>critic_unready</code>.</strong> The critic was trained on the frozen policy's battles and still
+explained little of the return when the actor was let go, so the first policy updates run on a
+poor baseline. A longer freeze is the usual answer.</p>
+<p><code>kl_dead</code> cannot fire on a frozen iteration. Its key, <code>ppo/kl</code>, is left out of a frozen row
+rather than written as 0.0, because nothing was measured.</p>
+<hr />
+<h2 id="4-sharing-one-machine">4. Sharing one machine<a class="headerlink" href="#4-sharing-one-machine" title="Permanent link">&para;</a></h2>
+<p>This is where real time gets lost, and neither hazard announces itself clearly.</p>
+<h3 id="41-the-viewers-ports-are-fixed">4.1 The viewer's ports are fixed<a class="headerlink" href="#41-the-viewers-ports-are-fixed" title="Permanent link">&para;</a></h3>
+<p>RoyaleViser uses two fixed UDP ports on 127.0.0.1: <strong>9870</strong> for battle frames
+(<code>STREAM_PORT</code> in <code>RoyaleViser/royaleviser/sources.py</code>) and <strong>9871</strong> for the learner's status
+panel (<code>STREAM_LEARNING_PORT</code>, defined as the frame port plus one). The learner side pins the
+same constants in <code>RoyaleLearn/royalelearn/metrics/viser_sink.py</code> (<code>VISER_PORT = 9870</code>,
+<code>VISER_LEARNING_PORT_OFFSET = 1</code>). Nothing sets <code>SO_REUSEADDR</code> anywhere, so a second bind to
+either port fails.</p>
+<p>Two consequences, and they behave differently.</p>
+<p><strong>Frames, port 9870.</strong> Only bound when <code>ROYALEVISER</code> is set in the environment, and only by one
+vec env in the run (<code>coordinator._build_source</code>, <code>rollout/inline.py</code> around line 1439: worker 0,
+shard 0, battle 0). A second run that also sets <code>ROYALEVISER</code> cannot bind it, the environment
+raises at construction (<code>rollout/envspec.py</code>, <code>build_vec</code>), and the farm reports
+<code>rollout worker 0 did not come up:</code> with the traceback. Loud, and it refuses to start. That is
+the good case.</p>
+<p><strong>Status, port 9871.</strong> This one is bound by <strong>every</strong> run, whether or not you asked for a
+viewer, because the <code>viser</code> sink is in the default sink list (<code>config.MetricsConfig</code>) and
+<code>ViserSink.open</code> binds unconditionally through <code>learning_endpoint()</code>, which falls back to
+127.0.0.1:9871 when <code>ROYALEVISER</code> is unset. The second run to start prints one line:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>the learning status port 127.0.0.1:9871 is not available (...); this run publishes no
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>learning panel until it frees, which it retries every 10s. Another training run is the
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>usual holder, and a run that was killed rather than asked to stop can still be holding it.
+</code></pre></div>
+<p><strong>How you spot it.</strong> That line, in the first second of the run, and then nothing. It prints
+once, not every retry (<code>viser_sink._bind</code>, the <code>first</code> flag). If the port later frees, the run
+prints <code>the learning status port ... is free; panel live</code> and the panel starts working. So
+scroll back to the start of the log before concluding the panel is broken.</p>
+<p><strong>The silent case.</strong> If run A holds 9871 and run B holds 9870, the viewer draws run B's battle
+under run A's learning panel. RoyaleViser has machinery for exactly this: <code>render.py</code> around
+line 1058 compares the run name carried in the frame against the run name in the status and
+draws a <code>frames X / learner Y</code> warning. But that check needs <strong>both</strong> names, and the frame's
+name comes from the <code>ROYALEVISER_RUN</code> environment variable (<code>RoyaleGym/royalegym/viser.py</code>,
+<code>from_env</code>), which RoyaleLearn never sets. So today the frame name is empty, the warning is
+suppressed, and the two runs look like one. If you are going to run two jobs with a viewer
+attached, set <code>ROYALEVISER_RUN</code> yourself to something distinct.</p>
+<p><strong>What to do.</strong> Run one training job per machine when you want the viewer. If you need two, give
+the second one a different <code>ROYALEVISER</code> host:port, which moves both ports together, and point
+the viewer at whichever you mean.</p>
+<h3 id="42-a-killed-run-can-leave-workers-behind">4.2 A killed run can leave workers behind<a class="headerlink" href="#42-a-killed-run-can-leave-workers-behind" title="Permanent link">&para;</a></h3>
+<p>Workers are spawned processes named <code>royalelearn-worker-&lt;index&gt;</code> (<code>rollout/farm.py</code>, <code>_spawn</code>),
+started with the <code>spawn</code> method on every platform and marked <code>daemon=True</code>. Three things
+normally clean them up:</p>
+<ul>
+<li>the coordinator's <code>close()</code>, called from <code>__exit__</code> and from <code>learn</code>'s <code>finally</code>;</li>
+<li><code>ProcessRolloutSource.close</code>, additionally registered with <code>atexit</code> (<code>farm.py</code> around line
+  118), which sends each shard a close command, joins, terminates, then kills;</li>
+<li>the worker's own parent check. Each worker calls <code>multiprocessing.parent_process().is_alive()</code>
+  every <code>PARENT_CHECK_S</code>, 2.0 seconds (<code>rollout/worker.py</code>), and exits when the answer is no.
+  The comment there names the exact harm: a worker that outlives its parent holds a viewer port
+  and a share of the memory, which makes the <em>next</em> run more likely to lose a worker to memory
+  pressure and harder to attribute when it does.</li>
+</ul>
+<p>So an orphan should clear within a couple of seconds. It does not always, because the parent
+check only runs between rounds, and a worker inside a long engine step is not looking.</p>
+<p><strong>How you spot it.</strong> Three signs, in the order you will meet them:</p>
+<ol>
+<li>The new run says the learning status port is not available, and nothing else is obviously
+   running.</li>
+<li><code>python -m royalelearn doctor</code> reports far less free memory than the machine should have.</li>
+<li><code>Get-Process python</code> on Windows, or <code>ps aux | grep python</code> on macOS and Linux, lists more
+   interpreters than your current jobs need.
+   Workers are Python processes; the process name does not carry the worker name, so count
+   rather than look for a label.</li>
+</ol>
+<p><strong>What to do.</strong> End the leftover <code>python</code> processes yourself before starting the next run. One
+related symptom: shared-memory segments can outlive their process too. The farm handles that by
+taking the next free name rather than attaching to somebody else's memory, and raises after 16
+stale segments, which it documents as a symptom rather than a case to handle (<code>farm.py</code>,
+<code>_build_worker</code>).</p>
+<hr />
+<h2 id="5-the-minibatch-and-vram-lesson">5. The minibatch and VRAM lesson<a class="headerlink" href="#5-the-minibatch-and-vram-lesson" title="Permanent link">&para;</a></h2>
+<p>This is the most expensive thing learned on this project, and it is worth the four paragraphs.</p>
+<p><strong>What happened.</strong> <code>ppo.minibatch_size</code> was 512, chosen as the largest value that fits a 4 GB
+card. It does not fit. Measured 2026-09-22 on that card (<code>config.DoctorConfig</code>,
+<code>config.PPOConfig</code> and <code>metrics/alarms.py</code> all record it): minibatch 512 reserved <strong>4,243 MB of
+a 4,294 MB card</strong> and the update took <strong>180 to 233 seconds</strong>, against <strong>47 to 49 seconds</strong> at
+256. That is about 4.5 times slower. It did not fail. Windows does not refuse an oversubscribed
+allocation, it backs it with host memory over PCIe and reports success, so the allocation is
+served, the counters look ordinary, and the run is several times slower for the rest of its
+life with nothing saying why.</p>
+<p>For scale: machine contention alone moved the same update by 1.4 to 1.7 on that laptop, so a
+factor of two sits between ordinary contention and a spill. That gap is what makes the alarm
+below possible.</p>
+<p><strong>What is shipped.</strong> <code>ppo.minibatch_size = 256</code> is the laptop default (<code>config.PPOConfig</code>), and
+it held 48 seconds within 2.3%. The larger profiles set their own: 2,048 on <code>workstation</code>, 8,192
+on <code>many_core</code>. The cliff belongs to the footprint against the card, not to the number itself.
+Minibatch size is a pure memory knob: gradients accumulate weighted by n over <code>batch_size</code> with
+one optimizer step per batch, and a test proves the accumulated gradient equals the full-batch
+one. Changing it changes what the run costs, not what it computes.</p>
+<p><strong>What the gate does today.</strong> <code>coordinator._vram_gate</code> (around line 1230) does not project. At
+start-up it runs one real forward and backward pass at your actual <code>ppo.minibatch_size</code>, on
+zeros with the no-op column set legal (<code>_probe_backward</code>), and reads <code>max_memory_reserved()</code>.
+If that peak plus <code>doctor.vram_headroom_mb</code> (256 by default) exceeds what the driver reported
+free <em>before</em> the probe, the run is refused with a message that states the measured peak, the
+free memory, why the platform would not have failed on its own, and the next legal minibatch
+size. "Next legal" is computed, not suggested: it must divide <code>ppo.batch_size</code>, and at the
+shipped <code>batch_size</code> of 4,096 there is no divisor between 256 and 512, so the advice has exactly
+one answer (<code>_next_legal_minibatch</code>). Set <code>doctor.vram_headroom_mb = 0</code> to skip the gate.</p>
+<p>The gate is compared against what the driver says is <strong>free</strong>, not against the card's capacity,
+and that choice is load-bearing: a cap on total capacity would have passed the 512
+configuration, since 4,243 is under 4,294, and it spilled anyway on the other processes' share.</p>
+<p><strong>What the alarm catches that the gate cannot.</strong> The gate guards one instant. Another process
+taking memory at hour three produces the same silent slowdown, later. <code>vram_spilling</code>
+(<code>metrics/alarms.py</code>, <code>SpillAlarm</code>) watches the harm and uses the memory reading as evidence
+that the harm is this one: the update at least 2.0 times this run's own best (a frozen actor's
+iterations keep their own) while the driver
+reports under 128 MB free, for 3 consecutive iterations. The best is a running minimum, so a
+slow iteration cannot raise the bar it is judged against and the first iteration's warm-up
+cannot lower it.</p>
+<p>The class docstring records why the obvious version was thrown away. The first attempt compared
+free memory plus what this process already held against the startup peak. Tested on the card, a
+second process took 2 GB and left 35 MB free for five iterations, and the alarm stayed silent by
+645 MB, because an outsider can only consume the free part, so that sum bottoms out at what this
+process holds, which the gate already guaranteed is enough. It was least sensitive in exactly the
+case its own text named. Worth remembering if you write your own check.</p>
+<p>It warns rather than halting, deliberately: preflight can afford to refuse because nothing is
+lost at second five, and a nine-hour run cannot.</p>
+<hr />
+<h2 id="6-stopping-resuming-and-what-survives">6. Stopping, resuming, and what survives<a class="headerlink" href="#6-stopping-resuming-and-what-survives" title="Permanent link">&para;</a></h2>
+<p><strong>Stopping.</strong> Write <code>q</code> to <code>runs/&lt;...&gt;/control</code>, or press Ctrl-C, which the coordinator turns
+into <code>q</code>. Either way the run writes a checkpoint on the way out. A crash or an alarm halt also
+attempts an emergency checkpoint, and it <em>refuses</em> to make one while the learner in memory is
+one no metric row describes, which is the window from the update's first change until the row
+reporting it is written (<code>coordinator._emergency</code>, <code>_emergency_refusal</code>). When it refuses it
+tells you which existing checkpoint to resume from instead.</p>
+<p><strong>Resuming.</strong> <code>python -m royalelearn resume --run runs\royalelearn-&lt;id&gt;</code>. With no <code>--checkpoint</code>
+it takes the newest from the run index and prints which one it chose. A checkpoint whose identity
+does not match is refused, with every differing field named; <code>--allow-identity-drift</code> overrides
+that. Resume also refuses while code the run executes has uncommitted changes, your own reward
+package included; <code>--allow-dirty</code> overrides that. A checkpoint written by an older version, from
+before runs recorded the engine file and your own code, prints a <code>not checked on resume:</code> line
+for each and carries on.</p>
+<p><strong>What survives, what does not.</strong> Read <a href="../checkpoints/">checkpoints.md</a>. It covers what is in the
+file, how big it is, how often one is written, how to tell a resume is really continuing rather
+than quietly restarting, and its own list of rough edges. The one thing worth repeating here: a
+battle that was half played when the file was written is not finished, and the next battle starts
+in its place.</p>
+<hr />
+<h2 id="7-what-this-page-deliberately-does-not-claim">7. What this page deliberately does not claim<a class="headerlink" href="#7-what-this-page-deliberately-does-not-claim" title="Permanent link">&para;</a></h2>
+<p>No number here is offered as a result. The alarms describe conditions worth looking at, and what
+each metric <em>would</em> mean about a run that was working. Treat any rating or explained-variance
+figure you see as an instrument reading, not as evidence about a bot.</p>
+<p><strong>Read next:</strong> <a href="../metrics/">metrics.md</a> for the numbers, <a href="../checkpoints/">checkpoints.md</a> for
+saving and resuming, <a href="../throughput/">throughput.md</a> for speed and contention,
+<a href="../ladder/">ladder.md</a> for the pool and the gate, and <a href="../harness-spec/">harness-spec.md</a> for all
+of it in detail.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../guide/" class="md-footer__link md-footer__link--prev" aria-label="Previous: The guide">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                The guide
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../metrics/" class="md-footer__link md-footer__link--next" aria-label="Next: Metrics">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Metrics
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://discord.gg/4D2BS5JBHP" target="_blank" rel="noopener" title="The project Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://github.com/RoyaleGym" target="_blank" rel="noopener" title="The RoyaleGym organisation" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

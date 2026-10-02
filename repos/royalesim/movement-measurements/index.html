@@ -1,0 +1,5542 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.">
+      
+      
+      
+        <link rel="canonical" href="https://royalegym.github.io/RoyaleGym/repos/royalesim/movement-measurements/">
+      
+      
+        <link rel="prev" href="../pathfinder-spec/">
+      
+      
+        <link rel="next" href="../spell-spec/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Movement measurements - Royale</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#movement-and-pathfinding-the-offline-measurements" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Royale" class="md-header__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Royale
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Movement measurements
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Follow my system"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Follow my system" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Royale" class="md-nav__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Royale
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../it-doesnt-work/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    It Doesn't Work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Fits Together
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clash Royale
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clash Royale
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/training-an-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training an Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Objects
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configuration Objects
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/action-parsers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Action Parsers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/done-conditions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Done Conditions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/observation-builders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation Builders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/opponents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Opponents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/reward-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reward Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/state-mutators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Mutators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Viewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cheatsheets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cheatsheets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cheatsheets/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game Values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cheatsheets/rl-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Terms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Additional Resources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Additional Resources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royaleimitate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royalegym/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalegym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalelearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royaleviser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../accuracy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How accurate is the engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The engine inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The environments inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/learner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The learner inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The viewer inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../build-from-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build from source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting in depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleSim
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mechanics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mechanics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The calibration ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pathfinding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pathfinder-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinder spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Movement measurements
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Movement measurements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Provenance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-corpus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The corpus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-how-it-was-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. How it was measured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-frame-time-and-movement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Frame, time and movement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Frame, time and movement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-the-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 The frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-tick-length-50-ms-one-position-write-per-tick" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Tick length: 50 ms, one position write per tick
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-the-speed-column-is-millitiles-per-tick" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 The Speed column is millitiles per tick
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-the-position-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 The position update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-the-heading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 The heading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-there-is-no-ease-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 There is no ease-in
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#47-the-giantgolem-anomaly-and-how-much-of-it-is-actually-solved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.7 The Giant/Golem anomaly, and how much of it is actually solved
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#48-the-stomp-pause-schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.8 The stomp pause schedule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#49-where-the-movement-laws-stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.9 Where the movement laws stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#410-avoidance_offset-is-a-bounded-walk-not-a-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.10 avoidance_offset is a bounded walk, not a decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#411-deploy-timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.11 Deploy timing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-path-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. The path representation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. The path representation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-encoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Encoding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-ordering-and-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Ordering and shape
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-node-consumption-a-1000-unit-standoff-tested-after-the-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Node consumption: a 1000-unit standoff, tested after the move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-the-two-direction-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 The two direction fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-path_node_consumed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 path_node_consumed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-the-pathfinder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. The pathfinder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. The pathfinder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-grid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Grid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Costs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-the-diagonal-weight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 The diagonal weight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-building-occlusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Building occlusion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-the-goal-cell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 The goal cell
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-replan-cadence-event-driven-no-timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 Replan cadence: event-driven, no timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#67-timing-of-the-first-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.7 Timing of the first path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#68-what-we-still-cannot-reproduce-the-node-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.8 What we still cannot reproduce: the node sequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#69-path_nodes-is-a-post-tick-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.9 path_nodes is a post-tick snapshot
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-survived-what-did-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What survived, what did not
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. What survived, what did not">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#survived-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Survived unchanged
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refuted-or-materially-corrected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refuted or materially corrected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-corpus-pitfall-worth-keeping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A corpus pitfall worth keeping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Open questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-using-this-in-the-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Using this in the engine
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-reproducing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Reproducing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spell-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spell spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../replay-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../card-coverage-queue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Card coverage queue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleGym
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The long guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/observation-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalegym/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleLearn
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a job
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/checkpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checkpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/ladder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ladder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/determinism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Determinism
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/throughput/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Throughput
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/harness-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The harness spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/royalegym-asks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What it needs from RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleViser
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/internals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleImitate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/public-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/alarms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alarms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Provenance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-corpus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The corpus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-how-it-was-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. How it was measured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-frame-time-and-movement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Frame, time and movement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Frame, time and movement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-the-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 The frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-tick-length-50-ms-one-position-write-per-tick" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Tick length: 50 ms, one position write per tick
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-the-speed-column-is-millitiles-per-tick" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 The Speed column is millitiles per tick
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-the-position-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 The position update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-the-heading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 The heading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-there-is-no-ease-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 There is no ease-in
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#47-the-giantgolem-anomaly-and-how-much-of-it-is-actually-solved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.7 The Giant/Golem anomaly, and how much of it is actually solved
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#48-the-stomp-pause-schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.8 The stomp pause schedule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#49-where-the-movement-laws-stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.9 Where the movement laws stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#410-avoidance_offset-is-a-bounded-walk-not-a-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.10 avoidance_offset is a bounded walk, not a decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#411-deploy-timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.11 Deploy timing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-path-representation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. The path representation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. The path representation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-encoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Encoding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-ordering-and-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Ordering and shape
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-node-consumption-a-1000-unit-standoff-tested-after-the-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Node consumption: a 1000-unit standoff, tested after the move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-the-two-direction-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 The two direction fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-path_node_consumed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 path_node_consumed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-the-pathfinder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. The pathfinder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. The pathfinder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-grid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Grid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Costs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-the-diagonal-weight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 The diagonal weight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-building-occlusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Building occlusion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-the-goal-cell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 The goal cell
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-replan-cadence-event-driven-no-timer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 Replan cadence: event-driven, no timer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#67-timing-of-the-first-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.7 Timing of the first path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#68-what-we-still-cannot-reproduce-the-node-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.8 What we still cannot reproduce: the node sequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#69-path_nodes-is-a-post-tick-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.9 path_nodes is a post-tick snapshot
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-survived-what-did-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What survived, what did not
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. What survived, what did not">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#survived-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Survived unchanged
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refuted-or-materially-corrected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refuted or materially corrected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-corpus-pitfall-worth-keeping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A corpus pitfall worth keeping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Open questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-using-this-in-the-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Using this in the engine
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-reproducing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Reproducing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/RoyaleGym/RoyaleGym/edit/main/docs/site/pages/repos/royalesim/movement-measurements.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="movement-and-pathfinding-the-offline-measurements">Movement and pathfinding: the offline measurements<a class="headerlink" href="#movement-and-pathfinding-the-offline-measurements" title="Permanent link">&para;</a></h1>
+<p>This page is for contributors who need the evidence behind the movement and pathfinding rules. It
+shows how the 2026 Clash Royale engine moves ground troops and plans their paths, measured on
+recorded traces of the real client (Clash Royale 15.535.29). It is the primary source behind the
+<code>pathfinding.*</code>, <code>time.*</code> and <code>movement.*</code> entries of <code>data/calibration.json</code>, and behind
+<code>pathfinder-spec.md</code>, which turns these measurements into an implementation contract.</p>
+<p>The traces carry one frame per 50 ms tick of a real battle. No number below comes from a
+community engine or from an argument. Where a claim is <em>not</em> measured (and several of the ones
+that get repeated loudest are not), it says so.</p>
+<p>The model the engine selects today was measured on a later client version, 16.402, and is in
+<code>pathfinding.md</code>. It supersedes the search and the contact law described here. The frame, the
+units, the movement laws and the path representation are unchanged between the two.</p>
+<h2 id="1-provenance">1. Provenance<a class="headerlink" href="#1-provenance" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Client</td>
+<td>Clash Royale 15.535.29</td>
+</tr>
+<tr>
+<td>Corpus</td>
+<td>recorded traces of client 15.535.29, one frame per tick, under <code>data/oracle-native/</code> (not distributed)</td>
+</tr>
+<tr>
+<td>Step</td>
+<td>0.05 s per tick, one recorded frame per tick</td>
+</tr>
+</tbody>
+</table>
+<p>The traces carry one frame per 50 ms tick and no wall-clock time. Every experiment starts a
+fresh battle and deploys after tick 100 (the game rejects a deploy before roughly tick 100).</p>
+<h2 id="2-the-corpus">2. The corpus<a class="headerlink" href="#2-the-corpus" title="Permanent link">&para;</a></h2>
+<p>145 traces under <code>data/oracle-native/</code>, plus one orientation trace. Counting one unit per trace
+undercounts. Enumerating <strong>every <code>(side, generation_key)</code> pair</strong> yields <strong>150 units</strong>. The
+difference matters, because the extra units are exactly the ones that break the tidy laws.</p>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th style="text-align: right;">Files</th>
+<th style="text-align: right;">Units</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>walk/</code></td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">8</td>
+<td>One card each at own-tile (3.5, 8.5), empty board, 500 ticks. <code>Skeletons</code> holds <strong>three</strong> units, not one</td>
+</tr>
+<tr>
+<td><code>lane_sweep_Knight/</code></td>
+<td style="text-align: right;">128</td>
+<td style="text-align: right;">128</td>
+<td>A Knight at the centre of every second legal tile, 320 ticks</td>
+</tr>
+<tr>
+<td><code>building_Giant/</code></td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">6</td>
+<td>Giant at (3.5, 3.5) with a friendly Cannon at (3.5+dx, 9.5), dx ∈ {−2,−1,0,+1,+2} plus control</td>
+</tr>
+<tr>
+<td><code>repath_Giant/</code></td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td>Giant at (3.5, 5.5); friendly Cannon dropped at (3.5+dx, 11.5) after 60 ticks</td>
+</tr>
+<tr>
+<td><code>meet/</code></td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">6</td>
+<td>Two mobile units. The only side-1 units and the only moving targets in the corpus</td>
+</tr>
+<tr>
+<td><code>orient/</code></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">none</td>
+<td>Tower layout and deploy-legality probe grids</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The deploy command is clamped to the deployer's own half</strong>, so the 128 lane-sweep files
+contain only <strong>64 distinct experiments</strong>: every <code>cNN_rRR</code> with <code>RR &gt;= 14</code> lands at
+y = 14500, and nine files share the start (2499, 14500). Duplicates produce byte-identical
+paths, so no conclusion changes. But any "128/128" or "140/140" figure is roughly twice
+its true sample size. Figures below are stated over units or over first-paths, not files.</p>
+<h2 id="3-how-it-was-measured">3. How it was measured<a class="headerlink" href="#3-how-it-was-measured" title="Permanent link">&para;</a></h2>
+<p>Four independent analyses cover timing and the speed law, node encoding and consumption,
+occlusion geometry and cost, and the full A* fit. Each one was re-measured from scratch by an
+independently written implementation. That rewrite covered the loaders, decoders, integer
+arithmetic and Dijkstra as well, so that a shared bug could not hide in all four. The analysis is
+read-only and reads this repo's <code>data/oracle-native/</code> and <code>data/raw/</code> (<code>ROYALESIM_DATA_DIR</code>
+overrides).</p>
+<p>Every number in sections 4-7 below comes from that final re-measurement unless it is attributed
+to one of the four analyses; section 10 lists what it covers.</p>
+<h2 id="4-frame-time-and-movement">4. Frame, time and movement<a class="headerlink" href="#4-frame-time-and-movement" title="Permanent link">&para;</a></h2>
+<h3 id="41-the-frame">4.1 The frame<a class="headerlink" href="#41-the-frame" title="Permanent link">&para;</a></h3>
+<p>Native coordinates are integer arena units, <strong>1000 per tile</strong>, x ∈ [0, 18000),
+y ∈ [0, 32000). This comes from the recorded trace itself, not inferred: the trace header puts the
+side-0 king at (9000, 3000) and the princess towers at (3500, 6500) and (14500, 6500),
+and the orientation trace's probe grids declare width 18, height 32, cell size 1000.
+Side 1 is the exact 180° rotation.</p>
+<h3 id="42-tick-length-50-ms-one-position-write-per-tick">4.2 Tick length: 50 ms, one position write per tick<a class="headerlink" href="#42-tick-length-50-ms-one-position-write-per-tick" title="Permanent link">&para;</a></h3>
+<p>The traces carry one frame per 50 ms, which alone cannot rule out finer internal
+sub-steps. The discriminator is position truncation, and it is decisive. Modelling <em>n</em>
+independently truncated sub-steps per tick, re-aiming at the waypoint from each
+intermediate position and fitting the per-sub-step speed <strong>freely</strong> over 1..400:</p>
+<table>
+<thead>
+<tr>
+<th>Sub-steps per tick</th>
+<th>Surviving speeds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>n = 1</td>
+<td>exactly one per card (60, 52, 54, 90, 90, 120)</td>
+</tr>
+<tr>
+<td>n = 2..5</td>
+<td><strong>none, for any card</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Independently: <code>DeployTime / 50</code> equals <code>first_move_tick − first_seen_tick</code> for 149 of
+150 units (the exception is a recording-window artefact: that trace's first recorded
+frame is already tick 114). Tower-damage gaps are whole ticks at 50 ms for every card
+with a <code>HitSpeed</code> in the corpus (Knight 1200 → 24, MiniPekka/HogRider 1600 → 32, Giant
+1500 → 30, Golem 2500 → 50).</p>
+<p><code>TICK_MS = 50</code>. The position update runs once per 50 ms.</p>
+<p><strong>A note on the ledger's counter-argument.</strong> <code>time.TICK_MS</code>'s <code>disagreement.60_TPS_16.67ms</code>
+says PhoenixNoRespawn's <code>DeployTime = 733 ms</code> "is 44 ticks at 60Hz (733.33) but 14.66 at
+20Hz". 733 / 16.667 = 43.98, not 44. The argument needs 733.33 and the shipped value is
+733. Scanning every millisecond duration in <code>csv_logic/characters/*.toml</code>, only 7 values
+are not multiples of 50, and one of them (Lightning <code>HitSpeed = 460</code>) is a whole number
+of ticks at <em>none</em> of 50, 33.3 or 16.67 ms. "Shipped durations are whole ticks" is void
+as an argument in either direction. Strike that disagreement entry rather than leave it
+standing beside a measured value.</p>
+<h3 id="43-the-speed-column-is-millitiles-per-tick">4.3 The Speed column is millitiles per tick<a class="headerlink" href="#43-the-speed-column-is-millitiles-per-tick" title="Permanent link">&para;</a></h3>
+<p>Fitting an integer <code>S</code> such that every moving tick satisfies
+<code>step = (trunc(S·dir_x/256), trunc(S·dir_y/256))</code>, with <code>S</code> free over 1..5000 and no card
+table, leaves exactly one survivor per card. Every unit of a given card fits the same <code>S</code>:</p>
+<table>
+<thead>
+<tr>
+<th>card_id</th>
+<th>Card</th>
+<th style="text-align: right;">Units</th>
+<th style="text-align: right;"><code>S</code> (units/tick)</th>
+<th style="text-align: right;">TOML <code>Speed</code></th>
+<th>Step law holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>26000000</td>
+<td>Knight</td>
+<td style="text-align: right;">131</td>
+<td style="text-align: right;">60</td>
+<td style="text-align: right;">60</td>
+<td>26101 / 26575 = 98.22 %</td>
+</tr>
+<tr>
+<td>26000003</td>
+<td>Giant</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">45</td>
+<td>3238 / 3732 = 86.76 %</td>
+</tr>
+<tr>
+<td>26000009</td>
+<td>Golem</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">54</td>
+<td style="text-align: right;">45</td>
+<td>270 / 270 = 100 %</td>
+</tr>
+<tr>
+<td>26000010</td>
+<td><strong>Skeletons</strong></td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">90</td>
+<td style="text-align: right;">90</td>
+<td>260 / 367 = 70.84 %</td>
+</tr>
+<tr>
+<td>26000018</td>
+<td><strong>MiniPekka</strong></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">90</td>
+<td style="text-align: right;">90</td>
+<td>165 / 165 = 100 %</td>
+</tr>
+<tr>
+<td>26000021</td>
+<td>HogRider</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">120</td>
+<td>229 / 250 = 91.60 %</td>
+</tr>
+</tbody>
+</table>
+<p>So one <code>Speed</code> unit is one native unit per 50 ms tick. That is, tiles/s = <code>Speed</code>/50. At
+18000 subtiles per tile the multiplier is exactly <strong>18</strong>. The competing "Speed is
+tiles/minute" reading is the one that gives 15, and it predicts a Knight at 1.00 tiles/s
+against the measured 1.20. That is a flat 20 % error on every unit in the game.</p>
+<p>The scale check is genuine, not circular: in steady state the heading is never
+axis-aligned (the unit is steering back onto its column), so <code>S</code> is pinned by the exact
+integer step. A direction-free cross-check agrees. The modal pure-y displacement on
+ticks with <code>dx = 0</code> is (0, 60), (0, 90), (0, 120), (0, 52), (0, 54) for the respective cards.</p>
+<p><strong>Scope.</strong> This is the <em>unbuffed base</em> speed at level 11. <code>csv_logic</code> is full of
+<code>SpeedMultiplier</code> keys (rage, ice wizard, snowball, prince buff, hero forms) and nothing
+here measures how they round. Separately, the traces show that the level multiplier
+exists and does not touch Speed: measured tower damage per hit runs 2.556–2.559× the
+level-11 TOML <code>Damage</code> for all six cards, while measured <code>S</code> equals TOML <code>Speed</code> exactly
+for every non-stomp card.</p>
+<h3 id="44-the-position-update">4.4 The position update<a class="headerlink" href="#44-the-position-update" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>x += trunc_toward_zero(S * movement_direction_x / 256)     # per axis, independently
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>y += trunc_toward_zero(S * movement_direction_y / 256)
+</code></pre></div>
+<p>The sub-unit remainder is <strong>discarded every tick</strong>. There is no fractional accumulator:
+integrating this rule alone from the first moving tick reproduces the final position
+exactly for every isolated unit over 106–308 ticks, with zero drift.</p>
+<p>Truncation toward zero, not floor, and not round. This is load-bearing and discriminating:
+<code>dir_x &lt; 0</code> on every moving tick of every walk unit, and floor differs from truncation on
+the x axis on every one of those ~1000 ticks. Floor matches 0 ticks; round matches 17–43
+per card; ceil matches 201/240 (Knight). In Rust, <code>i32 / i32</code> is already correct and
+<code>div_euclid</code> is wrong.</p>
+<h3 id="45-the-heading">4.5 The heading<a class="headerlink" href="#45-the-heading" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>d   = centre(path_nodes[-1] at tick t-1) - position(t-1)
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>L   = isqrt(d.x*d.x + d.y*d.y)                    # integer square root, floored
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>dir = (trunc(d.x*256 / L), trunc(d.y*256 / L))    # integer divide, toward zero
+</code></pre></div>
+<p>Computed from the <strong>pre-move</strong> position toward the node current at the start of the tick.
+Post-move as the origin scores 85–264 matches per card against 106–307 for pre-move.</p>
+<p>The floored length is what matters, not the choice of integer-sqrt routine:
+<code>floor(math.sqrt(L2))</code> and <code>math.isqrt(L2)</code> score identically, while dividing by the
+<em>unfloored</em> length matches 14–42 ticks per card and <code>ceil(sqrt)</code> 14–41. Over 1258 walk
+ticks: floored-sqrt with truncating divide 1258/1258; nearest-integer sqrt 1179;
+sqrt-after-scaling-by-256 191; ceil 173; a +1 sqrt 76.</p>
+<p>The 256 is a normalisation, not a clamp. Because each axis truncates independently,
+<code>|dir|</code> legitimately ranges over 254.678..256.236. The rounded magnitudes are {255, 256}
+and 257 never appears. Do not renormalise.</p>
+<p>Worked example, Knight tick 121: <code>pos_120 = (3499, 8500)</code>, node 654 → cell (col 6,
+row 18) → centre (3250, 9250), <code>d = (−249, 750)</code>, <code>isqrt(624501) = 790</code>,
+<code>(−249·256)//790 = −80</code>, <code>(750·256)//790 = 243</code> → observed <code>movement_direction = (−80, 243)</code>.</p>
+<p>Heading is <strong>stateless</strong>: a pure function of position and current node, recomputed from
+scratch each tick. It snaps: 71.57° in a single tick on a spawn tick. There is no
+turn-rate limit <em>that binds</em>: no sample anywhere exceeds 71.57°, so a hypothetical cap
+above ~72°/tick would be invisible here. Implement it stateless; do not add inertia.</p>
+<h3 id="46-there-is-no-ease-in">4.6 There is no ease-in<a class="headerlink" href="#46-there-is-no-ease-in" title="Permanent link">&para;</a></h3>
+<p>The apparent ramp over the first ~40 moving ticks (Knight |step| 58.82 → 60.00) is
+entirely per-axis truncation of an off-axis heading while the unit steers onto its column.
+The fitted <code>S</code> already reproduces the <em>first</em> moving tick exactly. No acceleration term,
+no partial first step.</p>
+<h3 id="47-the-giantgolem-anomaly-and-how-much-of-it-is-actually-solved">4.7 The Giant/Golem anomaly, and how much of it is actually solved<a class="headerlink" href="#47-the-giantgolem-anomaly-and-how-much-of-it-is-actually-solved" title="Permanent link">&para;</a></h3>
+<p>Giant and Golem both carry <code>Speed = 45</code> yet measure 52 and 54. Both are among the five
+shipped cards with <code>StopMovementAfterMS</code>, and both visibly freeze in the traces. The
+proposed rule:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>S = floor(Speed * (StopMovementAfterMS + WaitMS) / StopMovementAfterMS)
+</code></pre></div>
+<p>Giant: <code>floor(45·740/640) = 52</code>. Golem: <code>floor(45·1200/1000) = 54</code>. Both correct.</p>
+<p><strong>But this is a two-point fit and it is not uniquely identified.</strong> The Golem's exact
+value is 54.00000, so it discriminates no rounding mode at all. Only the Giant's 52.03125
+separates floor/trunc (52) from ceil (53). Two algebraically distinct rivals agree on
+every card Supercell ships:</p>
+<table>
+<thead>
+<tr>
+<th>Rival</th>
+<th style="text-align: right;">Giant</th>
+<th style="text-align: right;">Golem</th>
+<th style="text-align: right;">GoblinGiant</th>
+<th style="text-align: right;">RoyalGiant</th>
+<th style="text-align: right;">IceGolemite</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>floor(Speed·(Stop+Wait)/Stop)</code></td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">54</td>
+<td style="text-align: right;">69</td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">52</td>
+</tr>
+<tr>
+<td><code>Speed + floor(Speed·Wait/Stop)</code></td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">54</td>
+<td style="text-align: right;">69</td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">52</td>
+</tr>
+<tr>
+<td><code>Speed + Mass − 11</code></td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">54</td>
+<td style="text-align: right;">not given</td>
+<td style="text-align: right;">not given</td>
+<td style="text-align: right;">not given</td>
+</tr>
+</tbody>
+</table>
+<p>The real evidence for the duty-cycle reading is not the arithmetic. It is that the <em>same</em>
+<code>Stop</code>/<code>Wait</code> numbers independently predict the observed pause cadence. That coupling is
+what should be cited. The rounding mode stays undetermined; <code>IceGolemite</code> (Speed 45,
+470/80 → 52.66) is the one shipped card that would separate floor (52) from round (53),
+and it has no trace.</p>
+<h3 id="48-the-stomp-pause-schedule">4.8 The stomp pause schedule<a class="headerlink" href="#48-the-stomp-pause-schedule" title="Permanent link">&para;</a></h3>
+<p>With <code>k = 0</code> on the unit's first moving tick and never reset, the unit is stationary iff</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>((k + 1) * TICK_MS) mod (StopMovementAfterMS + WaitMS) &gt; StopMovementAfterMS
+</code></pre></div>
+<p>Both free choices are pinned, not asserted. Strict <code>&gt;</code> beats <code>&gt;=</code> (Giant 308/308 vs
+304/308; Golem 306/306 vs 294/306; the Golem discriminates because <code>Stop = 1000</code> lands
+exactly on the 50 ms grid), and <code>(k+1)</code> beats <code>k</code> (Giant 268/308, Golem 282/306). Every
+phase offset 0..T/50 was brute-forced; only offset 0 fits.</p>
+<p>Observed: Giant 12 moving ticks, 2 stopped, then 13/2 repeating with a 1-tick stop every
+fifth cycle (74 ticks = 5 × 740 ms). Golem 20 moving, 3 stopped, then 21/3 on a 24-tick
+period. Holds 100 % on 7 of the 8 unobstructed Giant traces.</p>
+<p>Two corrections to figures that were circulating: the Giant's duty cycle is <strong>9 stop ticks
+per 74</strong>, duty 0.8784, long-run mean <strong>45.68</strong> units/tick against an observed 45.79. So
+the Giant <em>overshoots</em> <code>Speed = 45</code> by about 1.5 %, in the same direction as the Golem
+(47.25 model, 47.53 observed). The earlier "duty 0.8649 → 44.97, undershoots" figure is
+wrong. The 50 ms grid samples the pause window coarsely; the engine must reproduce <code>S</code>
+and the schedule, not the average.</p>
+<p><strong>The pause is not an absolute freeze.</strong> In <code>meet/Giant_vs_Giant_seed15</code> the side-0 Giant
+moves on 2 ticks the schedule marks as pauses (t281 and t296) while being jostled. The
+schedule must gate the unit's own locomotion, not the position write, so that separation
+and pushback still displace it during a freeze.</p>
+<h3 id="49-where-the-movement-laws-stop">4.9 Where the movement laws stop<a class="headerlink" href="#49-where-the-movement-laws-stop" title="Permanent link">&para;</a></h3>
+<p>The old domain statement, "the step law fails iff <code>avoidance_offset != 0</code>", is <strong>false</strong>.
+This is the most consequential correction in the whole pass.</p>
+<p>Every step-law failure in the corpus is one of three regimes, and <strong>two of them set no
+flag at all</strong>:</p>
+<p>Case counts are from the offline trace corpus of client 15.535.29 described at the top of
+this page.</p>
+<table>
+<thead>
+<tr>
+<th>Regime</th>
+<th><code>behavior_state</code></th>
+<th>Flags</th>
+<th style="text-align: right;">Cases</th>
+<th>Signature</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Avoidance</td>
+<td>1</td>
+<td><code>avoidance_offset != 0</code></td>
+<td style="text-align: right;">~940</td>
+<td>heading deflected, |step| within ±2.3 % of <code>S</code></td>
+</tr>
+<tr>
+<td>Crowd separation</td>
+<td>1</td>
+<td><strong>none</strong></td>
+<td style="text-align: right;">137</td>
+<td>|step| ≈ <code>S</code>, lateral residual 15–28 units ⟂ to <code>movement_direction</code></td>
+</tr>
+<tr>
+<td>Combat pushback</td>
+<td>2</td>
+<td><strong>none</strong></td>
+<td style="text-align: right;">36</td>
+<td>displacement 0.06–2.5 × <code>S</code>, can point <em>opposite</em> to <code>movement_direction</code></td>
+</tr>
+<tr>
+<td>(one further case at <code>behavior_state</code> 4)</td>
+<td>4</td>
+<td>none</td>
+<td style="text-align: right;">1</td>
+<td>not given</td>
+</tr>
+</tbody>
+</table>
+<p>No field in the corpus records the contact impulse, so any push must be inferred from the
+residual (observed step minus predicted step).</p>
+<p>Concrete witnesses. <code>walk/Skeletons_x3.5_y8.5_seed2.jsonl.gz</code> contains <strong>three</strong> skeletons, and
+a loader that latches the first non-tower entity sees only one of them. Skeletons #1 and #2 fail the step law on 54/137
+and 53/123 of their moving ticks and <strong>no integer <code>S</code> in 1..400 fits either</strong>. For example, #1 at
+t193 steps (−23, 88) where the law predicts (4, 89), a pure lateral push of (−27, −1)
+while |step| stays 87–92 for <code>S = 90</code>. In <code>meet/Knight_vs_HogRider_seed15</code> t204–t221 the
+Knight is pushed at up to 46 units/tick in the direction opposite to its own
+<code>movement_direction</code>. In <code>meet/Giant_vs_Giant_seed15</code> ticks 289–301, both Giants in
+<code>behavior_state</code> 1 with every flag clear, the separation is 1465–1501 units, exactly
+2 × <code>CollisionRadius</code> 750.</p>
+<p>The honest domain is: <strong>the movement laws hold for a unit that is not in contact with
+another unit.</strong> That is a narrower and more useful statement than the flag test, and it
+hands the collision work a dataset that was not obviously there.</p>
+<h3 id="410-avoidance_offset-is-a-bounded-walk-not-a-decay">4.10 <code>avoidance_offset</code> is a bounded walk, not a decay<a class="headerlink" href="#410-avoidance_offset-is-a-bounded-walk-not-a-decay" title="Permanent link">&para;</a></h3>
+<p>Corpus-wide, <code>avoidance_offset</code> changes by only ±10 and ±190. Onsets are always 0 → ±190
+(23 negative, 13 positive; 36 runs total). But <strong>only 20 of 36 runs shrink monotonically</strong>:
+runs are 19 to 67 ticks long (median 21) against the 19 a pure decay implies, and 16 runs
+ramp back <em>up</em> by 10/tick before coming down. For example, <code>lane_sweep_Knight/c02_r02</code> goes
+−190, −180, … −20, −30, −40, … −70, −60, −50, … −10.</p>
+<p>It is a ±10-per-tick walk bounded at ±190, not a decay. "Set to ±190, decremented by 10
+per tick toward 0" must not be written into the ledger. The deflection it applies is also
+not a simple rotation: the ratio of heading error to <code>|avoidance_offset|</code> ranges 0.327 to
+0.387, non-linearly. What the offset <em>does</em> is unmeasured.</p>
+<p>Avoidance also perturbs speed slightly, contradicting "the unit still moves at exactly <code>S</code>":
+truncation toward zero can only shorten a step and <code>|dir| &lt;= 256.24</code>, so <code>|step| &lt;= 60.06</code>
+for <code>S = 60</code>. The measured maximum on avoidance ticks is 61.39, and 255 of 437 lane-sweep
+avoidance ticks exceed that ceiling. The magnitude histogram is {59: 60, 60: 276, 61: 101},
+roughly ±2.3 %.</p>
+<h3 id="411-deploy-timing">4.11 Deploy timing<a class="headerlink" href="#411-deploy-timing" title="Permanent link">&para;</a></h3>
+<p>A unit first appears on the tick <strong>after</strong> the accepted deploy command. <code>behavior_state</code>
+is 4 (deploying) for <code>DeployTime/50 − 1</code> ticks, flips to 1 on the tick <em>before</em> the first
+move, and</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>first_move_tick = first_seen_tick + DeployTime / TICK_MS
+</code></pre></div>
+<p>149 of 150 units. <code>LoadTime</code> (600–1500 ms across these cards) does not gate movement; it
+gates the first attack.</p>
+<p>The spawn tick, not the command tick, is the anchor. The Golem's command is accepted at
+tick 113 rather than 100 because it waits on elixir (the header's <code>resource_before</code> shows
+elixir 8 against <code>card_cost</code> 8, versus elixir 7 / cost 3 for the Knight). It spawns at
+114, targets, paths and moves at 174. A rule written against the deploy tick fits the
+other five cards perfectly and is 14 ticks wrong on the Golem.</p>
+<h2 id="5-the-path-representation">5. The path representation<a class="headerlink" href="#5-the-path-representation" title="Permanent link">&para;</a></h2>
+<h3 id="51-encoding">5.1 Encoding<a class="headerlink" href="#51-encoding" title="Permanent link">&para;</a></h3>
+<p><code>path_nodes</code> are half-tile cell indices on a <strong>36 × 64</strong> grid of 500-unit cells:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>col = v % 36        row = v // 36        centre = (col*500 + 250, row*500 + 250)
+</code></pre></div>
+<p>The decode is pinned by an exact integer identity, not by a plausibility score.
+<code>path_segment_direction</code> equals the 256-scaled direction from the unit to the last
+element's cell centre on <strong>3781 / 3781</strong> segment-assignment ticks. Sweeping the offset,
+a 10-unit shift in either axis collapses the match to 2–3 % (x) or 74 % (y); grid widths
+18/32/34/35/37/38/64/72 all score ≤ 0.08 % while 36 scores 100 %. A brute-force sweep of
+every width 8..128 in both row-major and column-major, scored by trajectory distance,
+puts width-36 row-major at mean 120.6 units against 4613.3 for the runner-up.</p>
+<p>(An earlier decoder score based on point-to-polyline distance is nearly blind to the row
+offset. Every walker moves almost due +y, so a 500-unit row shift costs almost nothing.
+Record the segment-direction identity as the evidence, not that score.)</p>
+<p>Nodes are <strong>absolute arena cells, not per-side</strong>. Side-1 walkers decode in the same grid:
+mean trajectory distance 118.4 and 141.1 units, against 10238 and 11484 for a
+180°-rotated decode.</p>
+<h3 id="52-ordering-and-shape">5.2 Ordering and shape<a class="headerlink" href="#52-ordering-and-shape" title="Permanent link">&para;</a></h3>
+<p>The list is stored <strong>goal-first</strong>; the next waypoint is the <strong>last</strong> element, popped from
+the tail. Over ~486 000 adjacent pairs in the corpus, <strong>zero</strong> are not 8-neighbours. It
+is a contiguous cell chain with no smoothing or string-pulling.</p>
+<p>Paths are weakly monotone toward the goal: no recorded path in the corpus contains both a
+forward and a backward row step. (The 6334 apparent "southward" steps are all side-1
+walkers, whose goal is at low y.) They are <em>not</em> column-monotone: 1339 purely horizontal
+steps occur, e.g. (2,15) → (3,15) and (10,29) → (9,29).</p>
+<p>The recorded path is <strong>not anchored at the unit's cell</strong>: the first recorded node sits
+at Chebyshev distance 2 from the unit's cell in 113 of 128 lane-sweep traces and distance
+1 in the other 15. That distance is a <em>consequence</em> of the consumption rule (5.3), not a
+rule of its own. A "drop the first two cells" rule gets the Giant wrong, because both
+<code>repath_Giant</code> first paths drop only one.</p>
+<p>Longest list observed: <strong>46</strong> nodes. The trace schema caps at 115 and no experiment here
+comes close, so whether the engine truncates is untested.</p>
+<h3 id="53-node-consumption-a-1000-unit-standoff-tested-after-the-move">5.3 Node consumption: a 1000-unit standoff, tested after the move<a class="headerlink" href="#53-node-consumption-a-1000-unit-standoff-tested-after-the-move" title="Permanent link">&para;</a></h3>
+<p>The often-repeated description of this mechanism is "the unit reaches the node". The unit
+does not. Measuring, for every consecutive tick pair with a structurally stable list,
+the distance from the <strong>post-move</strong> position to the tail node's cell centre:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">min</th>
+<th style="text-align: right;">max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ordinary drops (list still non-empty)</td>
+<td style="text-align: right;">3731</td>
+<td style="text-align: right;">637.2</td>
+<td style="text-align: right;"><strong>1074.1</strong></td>
+</tr>
+<tr>
+<td>Terminal drops (list becomes empty)</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">774.1</td>
+<td style="text-align: right;">1436.1</td>
+</tr>
+<tr>
+<td>Keeps</td>
+<td style="text-align: right;">27 824</td>
+<td style="text-align: right;"><strong>1000.6</strong></td>
+<td style="text-align: right;">not given</td>
+</tr>
+</tbody>
+</table>
+<p><strong>No single Euclidean threshold exists</strong>. The drop maximum (1074.1) exceeds the keep
+minimum (1000.6). What <em>is</em> exact is one-sided:</p>
+<table>
+<thead>
+<tr>
+<th>Predicate</th>
+<th style="text-align: right;">Missed drops</th>
+<th style="text-align: right;">False drops</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>post-move Euclid ≤ 1000</strong></td>
+<td style="text-align: right;"><strong>148</strong></td>
+<td style="text-align: right;"><strong>0</strong></td>
+</tr>
+<tr>
+<td>post-move Euclid ≤ 1003</td>
+<td style="text-align: right;">66</td>
+<td style="text-align: right;">41</td>
+</tr>
+<tr>
+<td>post-move Euclid ≤ 1001</td>
+<td style="text-align: right;">121</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td>pre-move Euclid − <code>S</code> ≤ 1000</td>
+<td style="text-align: right;">133</td>
+<td style="text-align: right;">83</td>
+</tr>
+<tr>
+<td>post-move Chebyshev ≤ 1000</td>
+<td style="text-align: right;">23</td>
+<td style="text-align: right;">1988</td>
+</tr>
+<tr>
+<td>post-move Manhattan ≤ 1000</td>
+<td style="text-align: right;">2525</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>integer squared ≤ 10⁶</td>
+<td style="text-align: right;">148</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p><code>dist &lt;= 1000</code> from the post-move position <strong>never fires early</strong> across 27 824 keep-ticks,
+and fires late on 148 of 3731 drops (4.0 %), by at most 74 units. 60 of the 148 carry
+<code>avoidance_offset != 0</code>; the 88 with no flag span 1000.0–1030.4. The threshold is
+card-independent (best per-card fits: Knight 1003, Giant 1003, Golem 1001, HogRider 996,
+Skeletons 993). It is one tile, not a function of <code>CollisionRadius</code> or <code>Speed</code>.</p>
+<p><strong>At most one node per tick.</strong> Zero of 3851 tail-drop ticks dropped more than one.</p>
+<p>The rival "integer remaining-distance counter decremented by the speed" model is
+measurably <em>worse</em>, not better: it gets the wrong pop tick on 518 of 3550 segments with a
+systematic error histogram {−2: 148, −1: 102, +1: 102, +6: 91, +7: 15}, against 271 for
+live Euclid. The earlier reading that the overshoot favours the counter is backwards.</p>
+<p><strong>The goal node is never walked onto.</strong> It is dropped on the tick the unit enters
+<code>behavior_state</code> 2, still 1046.7–1436.1 units from the goal cell centre. Across 116
+terminal pops, every one has <code>behavior_state != 2</code> on the previous tick and 2 on the pop
+tick, and none was within the 1000 standoff. The census of <code>(behavior_state, has_path,
+has_target)</code> has exactly four cells over 46 304 ticks: (1, T, T) walking, (2, F, T)
+attacking with the path cleared, (4, F, F) deploying, (1, F, F) the single transition tick.
+So the path clear and the state change are the same event.</p>
+<p>Because the unit turns a full tile before each node, <strong>corners are cut</strong>: closest approach
+to a corner node averages 152.9 units and reaches 395.5. That falls out of the 1000-unit
+standoff plus per-tick re-aim; it needs no separate rule.</p>
+<h3 id="54-the-two-direction-fields">5.4 The two direction fields<a class="headerlink" href="#54-the-two-direction-fields" title="Permanent link">&para;</a></h3>
+<p><code>movement_direction</code> is the live bearing: <code>norm256(centre(node_{t−1}) − pos_{t−1})</code>, i.e.
+the heading of the step that produced frame <em>t</em>. It matches on 29 717 / 29 996 live-path
+ticks (99.07 %), against 70.54 % for aim-from-current-position, 52.71 % for the frozen
+segment, and <strong>0.56 %</strong> for "the quantised step actually taken".</p>
+<p>An independent check that does not fit one derived quantity to another: the angle between
+<code>(pos_t − pos_{t−1})</code> and the <code>movement_direction</code> recorded at tick <em>t</em> is under 1° on
+30 267 / 31 359 moving ticks (median 0.529°), against 27 154 for the value at <em>t−1</em>.</p>
+<p><code>path_segment_direction</code> is <strong>sticky</strong>: it changes only on ticks with
+<code>path_node_consumed == 1</code>, and then equals <code>norm256(next_node_centre − post-move position)</code>.
+Zero exceptions on the walk traces. It is the segment heading frozen at acquisition and is
+otherwise unused.</p>
+<p><code>entity.x2 / y2</code> is exactly the previous tick's <code>(x, y)</code>, <strong>49 333 / 49 333</strong>, no
+exceptions. That makes the heading law checkable inside a single frame, and gives a
+trace-diff harness a free per-tick anchor.</p>
+<h3 id="55-path_node_consumed">5.5 <code>path_node_consumed</code><a class="headerlink" href="#55-path_node_consumed" title="Permanent link">&para;</a></h3>
+<p>Not a one-tick latch. The census over all 150 units:</p>
+<table>
+<thead>
+<tr>
+<th><code>has_path</code></th>
+<th><code>path_node_consumed</code></th>
+<th style="text-align: right;">Ticks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>False</td>
+<td>1</td>
+<td style="text-align: right;">17 624</td>
+</tr>
+<tr>
+<td>True</td>
+<td>1</td>
+<td style="text-align: right;">4 031</td>
+</tr>
+<tr>
+<td>True</td>
+<td>0</td>
+<td style="text-align: right;">27 828</td>
+</tr>
+<tr>
+<td>False</td>
+<td>0</td>
+<td style="text-align: right;"><strong>0</strong></td>
+</tr>
+</tbody>
+</table>
+<p>It sits high for the whole deploy phase and the whole attacking phase: 4004 runs of 1s,
+373 of them longer than one tick, the longest <strong>257 ticks</strong>. The reading that fits every
+tick is:</p>
+<blockquote>
+<p><code>path_node_consumed == 1</code> iff there is no segment currently being walked; i.e. the path
+is empty, <strong>or</strong> the segment was (re)assigned this tick.</p>
+</blockquote>
+<p>The circulating rule "a recompute that leaves the last node unchanged must NOT set it" is
+inverted by the data: such recomputes split 95 with the flag set against 2 clear. Two of
+the four supposed exceptions are path <em>creations</em> (<code>repath_Giant/row11.5_dx±</code> at tick 121,
+previous list empty), where the rule cannot even apply. Every other creation in the
+corpus carries 1.</p>
+<h2 id="6-the-pathfinder">6. The pathfinder<a class="headerlink" href="#6-the-pathfinder" title="Permanent link">&para;</a></h2>
+<h3 id="61-grid">6.1 Grid<a class="headerlink" href="#61-grid" title="Permanent link">&para;</a></h3>
+<p>The 2026 tilemap (<code>data/raw/cr-15.535.29/tilemaps/tilemap.csv</code>) parses to 64 rows × 36
+columns, histogram <code>{0: 1386, 1: 309, 2: 309, 16: 104, 17: 36, 18: 36, 32: 112, 128: 8,
+257: 1, 258: 1, 512: 2}</code>. It is bit-identical to the 2018 data behind
+<code>data/derived/arena.json</code> except 12 cells that only <em>gain</em> marker bits: 256 at the two
+bridge centres (7,32) and (28,32), 512 at the arena centre (17,41) and (18,41), and 128 on
+eight cells. Adding 256 to the road set changes nothing, so the 2026-only bits are not
+pathfinding costs. Alignment is forced by geometry, not assumed. Two things fix it: the
+bit-16 block spans cols 15–20 × rows 3–8, centred exactly on the side-0 king at
+(9000, 3000), and water occupies rows 30–33 with non-water columns 5–8 and 27–30 at the
+bridges.</p>
+<p>The cost grid is invariant under 180° rotation and under independent vertical and
+horizontal flips (0 mismatching cells), so a row- or column-orientation error when parsing
+is harmless for pathfinding. It would matter, though, if the lane bit 1-vs-2 distinction
+ever becomes load-bearing.</p>
+<h3 id="62-costs">6.2 Costs<a class="headerlink" href="#62-costs" title="Permanent link">&para;</a></h3>
+<p>Scored as "is the recorded path exactly cost-minimal between its own
+endpoints", over all <strong>150 first-paths</strong> including the <code>meet/</code> traces and side-1 units,
+with a Dijkstra written independently of the analysis scripts:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th style="text-align: right;">Suboptimal</th>
+<th style="text-align: right;">Infeasible</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>road 5 / plain 8 / water blocked / bit-16 blocked / diag √2</strong></td>
+<td style="text-align: right;"><strong>0</strong></td>
+<td style="text-align: right;"><strong>0</strong></td>
+</tr>
+<tr>
+<td>flat 8 everywhere (no road discount)</td>
+<td style="text-align: right;">96</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>road 4 / plain 8</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>road 6 / plain 8</td>
+<td style="text-align: right;">96</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>road 5 / plain 7</td>
+<td style="text-align: right;">96</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>road 5 / plain 9</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>water traversable at cost 7</td>
+<td style="text-align: right;">25</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>water at cost 50</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>bit-16 at cost 50 instead of blocked</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>no occluders at all</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p>"Road" is the tilemap lane bits 1 or 2. <code>PATHFINDING_ROAD_COST</code> and
+<code>PATHFINDING_MATCHINGROAD_COST</code> are both 5 in the live globals, so nothing here can
+distinguish a unit's own lane from the other one.</p>
+<p><strong>Water is effectively impassable to ground units.</strong> <code>PATHFINDING_WATER_COST = 7</code> is in
+the shipped globals but modelling it that way makes 25 first-paths strictly dearer than
+the optimum. The recorded units refused water shortcuts it would have taken. Cost 50 and a hard
+block are indistinguishable here, as are cost 50 and a hard block for bit-16 terrain and
+for buildings: no recorded path ever needed to cross one.</p>
+<h3 id="63-the-diagonal-weight">6.3 The diagonal weight<a class="headerlink" href="#63-the-diagonal-weight" title="Permanent link">&para;</a></h3>
+<p>A diagonal step costs <strong>√2 × the entered cell's cost</strong>. Sweeping the multiplier over all
+150 first-paths:</p>
+<table>
+<thead>
+<tr>
+<th>Multiplier</th>
+<th style="text-align: right;">Suboptimal paths</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0 (diagonal = straight)</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td>1.2</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td><strong>1.4142</strong></td>
+<td style="text-align: right;"><strong>0</strong></td>
+</tr>
+<tr>
+<td>1.5</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>2.0</td>
+<td style="text-align: right;">96</td>
+</tr>
+</tbody>
+</table>
+<p>In exact rational arithmetic the zero-failure window is [1.38, 1.48], which contains √2.
+(Float rounding at 1e-6 produces a spurious 116/128 failure for √2. Use <code>Fraction</code> if
+you re-check this.) The witnesses that kill the uniform diagonal are
+<code>lane_sweep_Knight/c00_r06</code>, <code>c08_r04</code> and <code>c10_r06</code>, each of which pays one or two extra
+steps to keep its diagonals scarce.</p>
+<p>This matters beyond pedantry: with a uniform diagonal, <code>road 5 / plain 8</code> and a flat cost
+8 classify every path identically, so the road discount is <em>unidentifiable</em>. Fix the
+diagonal and flat-8 fails 96 paths. The cost model is a <strong>joint</strong> fit. The road discount,
+the √2 diagonal and the occlusion set are each load-bearing for the others, and no
+per-axis sensitivity table is meaningful outside the winner.</p>
+<h3 id="64-building-occlusion">6.4 Building occlusion<a class="headerlink" href="#64-building-occlusion" title="Permanent link">&para;</a></h3>
+<p>A building blocks every half-tile cell overlapping the <strong>axis-aligned, half-open</strong> box
+<code>[cx − R, cx + R) × [cy − R, cy + R)</code> with <code>R</code> = its <code>CollisionRadius</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>cols (cx - R)//500 .. (cx + R - 1)//500
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>rows (cy - R)//500 .. (cy + R - 1)//500
+</code></pre></div>
+<p>Per-axis, never Euclidean. Scored over all 3776 recorded path lists, the per-axis square
+gives 0 suboptimal / 0 infeasible, while circle-overlap at <code>R</code> gives 45 / 216,
+circle-overlap at <code>R + 250</code> gives 27 / 246, and cell-centre-within-Euclid gives 23 / 0.</p>
+<p>Radius brackets, from the first-path optimality and blocked-but-used tests:</p>
+<table>
+<thead>
+<tr>
+<th>Occluder</th>
+<th style="text-align: right;">Shipped <code>CollisionRadius</code></th>
+<th>Measured bracket</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cannon</td>
+<td style="text-align: right;">600</td>
+<td><strong>(500, 1000]</strong></td>
+<td>R ≤ 500 → 2 suboptimal; R ≥ 1005 → 18 blocked-but-used</td>
+</tr>
+<tr>
+<td>Princess tower</td>
+<td style="text-align: right;">1000</td>
+<td><strong>(500, 1000]</strong></td>
+<td>R ≤ 500 → 11 suboptimal; R ≥ 1100 → 155 blocked-but-used</td>
+</tr>
+<tr>
+<td>King tower</td>
+<td style="text-align: right;">1400</td>
+<td><strong>unmeasured</strong></td>
+<td>R = 0 scores identically to R = 1400 (0/0); only R ≥ 2000 fails</td>
+</tr>
+</tbody>
+</table>
+<p>The 500-unit cell quantum is why the brackets are wide: for a building on a tile centre,
+every R in (500, 1000] blocks the same cells. <code>R = CollisionRadius</code> is therefore
+<em>consistent with</em> the data and corroborated by three different shipped radii producing the
+three observed footprints under one unfitted rule. It is not independently measured to
+scale with <code>CollisionRadius</code>.</p>
+<p><strong>Half-open, not closed.</strong> A closed box blocks 57 cells the recorded paths use. The
+discriminator is the <em>tower</em>, not the Cannon: for all five Cannon positions the half-open
+and closed boxes are identical (none of <code>x ± 600</code>, <code>y ± 600</code> is a multiple of 500), while
+the towers' radii 1000 and 1400 are exact multiples of the cell size.</p>
+<p><strong>No mover radius, no clearance pad: the term is exactly zero.</strong> A pad of even <strong>1
+native unit</strong> blocks 155 cells the recorded paths use, because <code>cx − R = 2500</code> lands
+exactly on a cell boundary for the princess towers and the Giant's control path runs up
+column 4 at rows 11–16. Cannon 600 + Giant 750 = 1350 would block the very column the
+<code>cannon_dx+0.0</code> detour takes. The Cannon alone brackets the pad to [0, 400]; including the
+towers pins it at 0.</p>
+<p><strong>The deployer's own towers must occlude</strong>: without any occluders, 12 first-paths are
+strictly dearer than the optimum.</p>
+<p><strong><code>FRIENDLYONLY_OCCLUSIONS</code> is not measured here.</strong> Adding the enemy towers as occluders
+scores identically to friendly-only (0 suboptimal, 0 infeasible, 0 blocked-but-used),
+because no interior cell of any first path lies inside an enemy tower box. The argument
+that "goal cells sit inside the enemy box, so enemy towers cannot occlude" is answered
+equally by the goal-cell exemption below. The globals say <code>TRUE</code>; the traces are silent.</p>
+<p><strong>The goal cell is exempt from occlusion.</strong> Four of 150 first-path goal cells lie inside a
+tower box: (6, 49) for MiniPekka and Skeletons, (7, 49) for Skeletons. Across all
+recorded lists 81 paths end inside an occlusion box, always as the final cell and never
+as an interior one. A planner that refuses occluded cells without exempting the goal finds
+no path at all for the short-reach cards.</p>
+<h3 id="65-the-goal-cell">6.5 The goal cell<a class="headerlink" href="#65-the-goal-cell" title="Permanent link">&para;</a></h3>
+<p>The returned list ends at the first cell on the path whose <strong>centre</strong> is within
+<code>Range + CollisionRadius</code> of the <strong>target's centre point</strong>, not its footprint, and not the
+sum of both collision radii.</p>
+<p>Verified as a two-sided condition (goal in reach <em>and</em> its predecessor out of reach) on
+<strong>150 / 150</strong> first paths, including the <code>meet/</code> traces with moving targets and side-1
+units. Rivals: "Range only" 1/140, "Range + both radii" 0/140, "to the footprint edge"
+0/140.</p>
+<p>The observed stop cells from the identical deploy tile (3.5, 8.5), all approaching the
+enemy left princess tower at (3500, 25500):</p>
+<table>
+<thead>
+<tr>
+<th>Card</th>
+<th style="text-align: right;">Range</th>
+<th style="text-align: right;">CollisionRadius</th>
+<th style="text-align: right;">Reach</th>
+<th>Goal cell</th>
+<th style="text-align: right;">Distance to target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Giant</td>
+<td style="text-align: right;">1200</td>
+<td style="text-align: right;">750</td>
+<td style="text-align: right;">1950</td>
+<td>(6, 47)</td>
+<td style="text-align: right;">1767.8</td>
+</tr>
+<tr>
+<td>Knight</td>
+<td style="text-align: right;">1200</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">1700</td>
+<td>(6, 48)</td>
+<td style="text-align: right;">1274.8</td>
+</tr>
+<tr>
+<td>Golem</td>
+<td style="text-align: right;">750</td>
+<td style="text-align: right;">750</td>
+<td style="text-align: right;">1500</td>
+<td>(6, 48)</td>
+<td style="text-align: right;">1274.8</td>
+</tr>
+<tr>
+<td>HogRider</td>
+<td style="text-align: right;">800</td>
+<td style="text-align: right;">600</td>
+<td style="text-align: right;">1400</td>
+<td>(6, 48)</td>
+<td style="text-align: right;">1274.8</td>
+</tr>
+<tr>
+<td>MiniPekka</td>
+<td style="text-align: right;">800</td>
+<td style="text-align: right;">450</td>
+<td style="text-align: right;">1250</td>
+<td>(6, 49)</td>
+<td style="text-align: right;">790.6</td>
+</tr>
+<tr>
+<td>Skeletons</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">1000</td>
+<td>(6, 49)</td>
+<td style="text-align: right;">790.6</td>
+</tr>
+</tbody>
+</table>
+<p>Two caveats that belong with the rule:</p>
+<ol>
+<li><strong>The constant is pinned only to about ±75 units.</strong> A constant offset <code>k</code> added to
+   <code>Range + CollisionRadius</code> fits every one of the 150 first paths for any
+   <code>k ∈ [−125.2, +24.8)</code>. Zero is inside that window; so are several other values.</li>
+<li><strong>The rule is necessary, not determinative.</strong> It is a condition on the recorded path's last
+   node, not a predictor of which cell the search will stop at. Between 12 and 52 cells per
+   sample satisfy it (median 32). The recorded goal cell is not the <em>cheapest</em>
+   reachable in-reach cell in 114 of 140 samples, with no cost ties among them. Handing an
+   A* the recorded goal cell raises exact-sequence reproduction from 22/140 to 43/140.
+   The goal cell is an output of the expansion order, not an independent rule.</li>
+</ol>
+<p>For a target that is <em>below</em> the unit, the sign flips: the standoff is on the approach
+side. In <code>meet/Knight_vs_HogRider</code> ticks 250–273 the Knight's target sits below it and the
+goal row is <code>cell_centre_y + reach</code>. An unconditional minus puts the goal on the far side
+of the target.</p>
+<p>The goal <em>column</em> is the unit's own column clamped into the target's collision box. The
+half-width is only bracketed to <strong>(500, 1000]</strong> by the traces (750, 900 and 1000 score
+identically at 98.96 % per-tick). 1000 is corroborated by <code>csv_logic/buildings.csv</code>
+column 91, which gives <code>CollisionRadius</code> 1000 on every PrincessTower variant and 1400 on
+KingTower. Read it per target; do not hard-code 1000.</p>
+<h3 id="66-replan-cadence-event-driven-no-timer">6.6 Replan cadence: event-driven, no timer<a class="headerlink" href="#66-replan-cadence-event-driven-no-timer" title="Permanent link">&para;</a></h3>
+<p>Across 150 units and 31 859 path ticks there are <strong>150 structural recomputes</strong>, 0.47 per
+100 path ticks, evenly spread across families (walk 0.00, lane_sweep 0.46, building_Giant
+0.57, repath_Giant 1.03, meet 0.69). Every one is explained by exactly two triggers, and
+the rule was tested as a <em>prediction</em>, not a post-hoc label:</p>
+<p><strong>Trigger 1: the goal cell moves.</strong> 137 / 137 predicted goal-column flips are followed by
+a replan, with <strong>0</strong> predicted flips that produce none and <strong>0</strong> replans without a
+predicted flip other than the two building drops. Lag histogram {1 tick: 128, 2 ticks: 9},
+mean 1.07. The flips happen as the unit crosses x = 3000, 3500, 4000, 14000, 15000 and the
+column clamp moves. The goal <em>row</em> never moves in any of the 139 recomputes.</p>
+<p>The trigger is not specific to the unit's own motion: in <code>meet/Knight_vs_HogRider</code> a Knight
+chasing a moving HogRider recomputes at ticks 169, 172, 176, 180, 185, 189, gaps of
+3,4,4,4,5. That looks periodic until you classify them, and all six are goal-cell moves
+driven by the target's motion.</p>
+<p><strong>Trigger 2: a friendly building comes into existence.</strong> Lag <strong>0 ticks from the entity</strong>,
++1 from the accepted command. In both <code>repath_Giant</code> traces the command is accepted at
+tick 160, the Cannon entity first appears in a frame at tick 161, and the Giant's path is
+already replanned in that same frame. An engine that waits a tick would be wrong.</p>
+<p>The two <code>repath_Giant</code> ticks are the strongest occlusion witness in the corpus and are easy to
+miss: a filter that looks for the node list <em>growing</em> skips tick 161
+(35 → 35 nodes) and picks up ticks 389 and 290 instead. By that point the Giant has
+walked past the Cannon and both paths are dead-straight single columns that any model
+reproduces. At tick 161 the two traces diverge in exactly the right way: with the Cannon at
+(3500, 11500) (box cols 5–8, rows 21–24) the route detours to column 4 for those rows. With
+it at (2500, 11500) (box cols 3–6) the route swings out to column 7. Each path avoids its
+own box and violates the other's.</p>
+<p>The replan is <strong>whole-route</strong>, not a spliced local bypass: in the <code>building_Giant</code> traces
+the detour appears in the <em>first</em> path the unit is ever recorded with, ten rows (5 tiles) ahead of
+it. In <code>repath_Giant/row11.5_dx+0.0</code> the replan changes rows 42–46, far beyond the
+obstacle. Which side it takes falls out of the cost, not a handedness constant. The two
+informative offsets go opposite ways (dx+0 left at 210.28 vs 217.36; dx−1 right at 202.43
+vs 232.54), reproduced at a second y by the <code>repath_Giant</code> pair. Note that in both cases
+the cheaper side is also the least-lateral-deviation side, so the traces do not separate
+those two hypotheses. Only the <em>negative</em> claim (not a fixed handedness) is established.</p>
+<p><strong>Friendly troops trigger nothing.</strong> In <code>meet/Knight_then_Giant_behind</code> a Giant walking
+directly behind a friendly Knight has 2 structural path changes in 316 path ticks. Troops
+are handled by <code>avoidance_offset</code>, not by the path grid.</p>
+<p><strong>The caveat that cannot be removed.</strong> A recompute returning an identical list is invisible:
+8 of 94 tail-surviving recomputes leave <code>path_segment_direction</code> frozen <em>and</em>
+<code>path_node_consumed</code> clear, so a same-result replan leaves no fingerprint at all.
+<code>PATHFINDING_SAMEPATH_EPSILON = 3</code> may be suppressing near-identical results. "No periodic
+replan" is a statement about <em>observable</em> path changes.</p>
+<h3 id="67-timing-of-the-first-path">6.7 Timing of the first path<a class="headerlink" href="#67-timing-of-the-first-path" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>first_path_tick = spawn_tick + DeployTime / TICK_MS
+</code></pre></div>
+<p>Target acquisition, the first path and the first step all land on that same tick: 149/150
+units, with zero ticks anywhere in the corpus holding a non-empty path and a null target.
+The path is computed from the unit's <strong>pre-move</strong> position: the first surviving node is at
+Chebyshev distance 2 from the pre-move cell on 140/140 lane-sweep and walk units, but
+distance 1 from the post-move cell on 15 of them.</p>
+<p>The path is not created once and then only shortened. In <code>meet/Knight_vs_HogRider</code> the
+Knight's path is emptied and re-created four more times (ticks 250, 271, 273, 313) while it
+holds a target throughout, as it drops in and out of the attacking state. The gate is
+"never build a path while <code>target</code> is None", not "build the path once at acquisition".</p>
+<h3 id="68-what-we-still-cannot-reproduce-the-node-sequence">6.8 What we still cannot reproduce: the node sequence<a class="headerlink" href="#68-what-we-still-cannot-reproduce-the-node-sequence" title="Permanent link">&para;</a></h3>
+<p>The cost model is right: the recorded path is exactly cost-minimal on <strong>150 / 150</strong>
+first-paths. But the exact node <em>sequence</em> is not reproduced. The best configurable A<em>
+reaches </em><em>22 / 140</em><em> exact matches (43/140 when handed the recorded goal cell). Once
+the corpus is deduplicated to 76 distinct experiments the ceiling is </em><em>13 / 76</em>*, of which
+6 are the walk traces (one start, one straight column) and 6 are a single lane-sweep
+column.</p>
+<p>The search space already explored: 5 heuristics × 5 queue tie-breaks × 8 neighbour orders
+× relax-on-<code>&lt;</code> vs <code>&lt;=</code>, forward and backward, goal as a reach test on pop and as a fixed
+cell with truncation (400 configurations). Plus 640 more with open lists ordered by cell
+index ascending/descending, by <code>g</code> ascending/descending, and h-then-index (plausible shapes
+for a <code>REFRESH_OPENNODES</code> linked or array open list rather than a binary heap). The ceiling
+does not move.</p>
+<p>Where the optimum is ambiguous the recorded path takes the orthogonal successor on 1568 of 1672
+steps (93.8 %), counted over the offline trace corpus of client 15.535.29. But an <code>ortho_first</code> neighbour order still scores 22/140, so this is a
+description of the output, not the rule. With the √2 diagonal, exact ties are rare, which
+means the residual error is not a classic tie-break at all. Something structural is
+missing: most likely the real open-list discipline, or a post-processing step.</p>
+<p>A typical failure: <code>c00_r08</code> agrees for 16 nodes, then the recorded path moves from column 6 to
+column 5 at row 35 while the model stays on column 6. The switch row varies with the start
+cell for the same goal (row 35, 36, 37, 44, 48 for starts c00, c02, c04, c08, c06), the
+signature of an expansion-order artefact.</p>
+<h3 id="69-path_nodes-is-a-post-tick-snapshot">6.9 <code>path_nodes</code> is a post-tick snapshot<a class="headerlink" href="#69-path_nodes-is-a-post-tick-snapshot" title="Permanent link">&para;</a></h3>
+<p>142 ticks in the corpus have a <code>movement_direction</code> that the heading law does not explain
+from the recorded node list. <strong>All 142 carry <code>path_node_consumed == 1</code></strong>, and 140 of them
+are explained exactly by a cell <strong>1–2 rows nearer</strong> in the same column:</p>
+<table>
+<thead>
+<tr>
+<th>Explaining offset from the recorded tail</th>
+<th style="text-align: right;">Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(dcol 0, drow −1)</td>
+<td style="text-align: right;">85</td>
+</tr>
+<tr>
+<td>(dcol 0, drow −2)</td>
+<td style="text-align: right;">50</td>
+</tr>
+<tr>
+<td>(dcol −1, drow −1)</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td>(dcol +1, drow −1)</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td>unexplained</td>
+<td style="text-align: right;">2</td>
+</tr>
+</tbody>
+</table>
+<p>The list also <em>grew</em> across 47 of those ticks. The mechanism, verified tick by tick on
+<code>lane_sweep_Knight/c08_r12</code> t226–t228: the unit repaths at the start of the tick and the new
+path inserts one or two extra half-tile nodes below the old waypoint. The unit aims at the
+nearest one and consumes it <strong>within the same tick</strong>, so that node appears in neither the
+<code>t−1</code> nor the <code>t</code> frame. At t227, <code>dir = (−173, 188) = norm256((3750, 16750) − (3998,
+16481))</code> exactly, and (3750, 16750) is cell 1195, absent from both lists.</p>
+<p>Two consequences. First, the heading law is <strong>100 %</strong>, not 99.54 %, and there is no
+bridge or <code>KS_POS_TO_TARGET</code> exception to chase. These ticks cluster on the river rows
+only because that is where the bridge approach forces a repath. Second, and more
+importantly for anyone fitting a pathfinder: <strong>the recorded <code>path_nodes</code> is a post-tick
+snapshot, a repath can insert nodes that never appear in any frame, and the effective
+consumption count in a tick can exceed the one visible in the lists.</strong> Any pathfinder
+fitted to the recorded node lists is missing those insertions. (The step law holds on all
+142 of these ticks, so movement is untouched; the defect is purely "which node was
+current".)</p>
+<p>A large single-tick heading swing is sometimes attributed to proximity:
+"31.57° with the unit 113.4 units from the node centre". The measurement's own output says
+1293.0 units for that sample, at which a 60-unit step can rotate the bearing by at most
+2.66°. The proximity story is arithmetically impossible. The cause is the mid-tick repath
+above. Across all 128 lane-sweep traces, <strong>0 of 127</strong> heading changes greater than 10° with
+a genuinely unchanged target node are consistent with the heading law at both ticks.</p>
+<h2 id="7-what-survived-what-did-not">7. What survived, what did not<a class="headerlink" href="#7-what-survived-what-did-not" title="Permanent link">&para;</a></h2>
+<p>Each analysis was re-measured from scratch by an independently written implementation (loaders,
+decoders, integer arithmetic and Dijkstra rewritten), so that a shared bug could not hide in all
+four. The verdicts below are from that re-measurement, over all 150 units.</p>
+<h3 id="survived-unchanged">Survived unchanged<a class="headerlink" href="#survived-unchanged" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>Strength</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TICK_MS = 50</code>, one position write per tick</td>
+<td>Free-sub-speed fit: no integer speed survives at n = 2..5</td>
+</tr>
+<tr>
+<td><code>SPEED_TO_SUBTILES_PER_TICK = 18</code> (Speed is millitiles/tick)</td>
+<td>Unique integer fit per card over 1..5000; direction-free cross-check agrees</td>
+</tr>
+<tr>
+<td>Position update: per-axis <code>trunc(S·dir/256)</code>, remainder discarded</td>
+<td>Zero drift over 106–308 ticks; floor 0/1000, round 17–43</td>
+</tr>
+<tr>
+<td>Heading: <code>norm256(node_centre − pre-move pos)</code> with floored integer length</td>
+<td>100 % once mid-tick repath insertions are accounted for</td>
+</tr>
+<tr>
+<td>No ease-in, no acceleration, no partial first step</td>
+<td>Fitted <code>S</code> reproduces the first moving tick exactly</td>
+</tr>
+<tr>
+<td>Heading is stateless; no turn-rate limit binds</td>
+<td>Stateless model reproduces 1242/1242 walk ticks</td>
+</tr>
+<tr>
+<td>Half-tile 36 × 64 node encoding, goal-first, popped from the tail</td>
+<td>3781/3781 exact segment-direction identity</td>
+</tr>
+<tr>
+<td><code>path_segment_direction</code> is sticky, frozen at assignment from the post-move position</td>
+<td>Zero exceptions on walk traces</td>
+</tr>
+<tr>
+<td>Cost model road 5 / plain 8, water blocked, 8-connected</td>
+<td>0/150 suboptimal; flat-8 96, water@7 25</td>
+</tr>
+<tr>
+<td>Occlusion = half-open AABB at <code>CollisionRadius</code>, per-axis</td>
+<td>0/3776; closed box 57 blocked-but-used</td>
+</tr>
+<tr>
+<td>Goal truncation at <code>Range + CollisionRadius</code> to the target <em>centre</em></td>
+<td>150/150 including moving targets and side 1</td>
+</tr>
+<tr>
+<td>Replan is event-driven: goal cell moves, or a friendly building spawns</td>
+<td>137/137 predicted flips, 0 over-predictions</td>
+</tr>
+<tr>
+<td>Whole-route replan, not a local splice</td>
+<td>Detour in the first recorded path, 5 tiles ahead</td>
+</tr>
+<tr>
+<td><code>first_move = first_seen + DeployTime/TICK_MS</code></td>
+<td>149/150 units</td>
+</tr>
+</tbody>
+</table>
+<h3 id="refuted-or-materially-corrected">Refuted or materially corrected<a class="headerlink" href="#refuted-or-materially-corrected" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Claim as stated</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"The step law fails <strong>iff</strong> <code>avoidance_offset != 0</code>"</td>
+<td><strong>Refuted.</strong> 174 failures with every flag clear: 137 crowd separation (state 1), 36 combat pushback (state 2), 1 at state 4. Nothing in the corpus records the push</td>
+</tr>
+<tr>
+<td>"During avoidance the unit still moves at exactly <code>S</code>"</td>
+<td><strong>Refuted.</strong> |step| reaches 61.39 for <code>S = 60</code>, above the 60.06 truncation ceiling; ±2.3 %</td>
+</tr>
+<tr>
+<td>"<code>avoidance_offset</code> is set to ±190 and decays by 10/tick"</td>
+<td><strong>Refuted.</strong> A ±10 walk bounded at ±190; 16 of 36 runs ramp back up; runs reach 67 ticks</td>
+</tr>
+<tr>
+<td>"The model reproduces <strong>every walk trace</strong> bit-exactly"</td>
+<td><strong>Refuted on coverage.</strong> 6 files, 7 units: two of the three Skeletons fit <em>no</em> integer <code>S</code></td>
+</tr>
+<tr>
+<td>"<code>path_node_consumed</code> is a one-tick latch; an unchanged-tail recompute does not set it"</td>
+<td><strong>Refuted.</strong> Runs up to 257 ticks; unchanged-tail recomputes split 95 set / 2 clear</td>
+</tr>
+<tr>
+<td>"The diagonal cost is not settled by these traces"</td>
+<td><strong>Refuted.</strong> It is settled: √2, window [1.38, 1.48]; uniform diagonal fails 3 paths</td>
+</tr>
+<tr>
+<td>"Occlusion is inflated by the walker's own <code>CollisionRadius</code>"</td>
+<td><strong>Refuted.</strong> A pad of 1 unit blocks 155 used cells</td>
+</tr>
+<tr>
+<td>"Reaction to a new friendly building is 1 tick / 50 ms"</td>
+<td><strong>Corrected.</strong> 0 ticks from the entity existing; tick 160 is the command, 161 is the spawn <em>and</em> the replan</td>
+</tr>
+<tr>
+<td>"Path computed at <code>deploy_tick + DeployTime/50</code>"</td>
+<td><strong>Corrected.</strong> <code>spawn_tick + DeployTime/TICK_MS</code>; the Golem's elixir wait makes the two differ by 14 ticks</td>
+</tr>
+<tr>
+<td>"The first two path cells are always consumed immediately"</td>
+<td><strong>Corrected.</strong> A consequence of the 1000-unit standoff; both <code>repath_Giant</code> first paths drop only one</td>
+</tr>
+<tr>
+<td>"Node consumption is an integer remaining-distance counter"</td>
+<td><strong>Refuted.</strong> Wrong pop tick on 518/3550 segments vs 271 for live Euclid</td>
+</tr>
+<tr>
+<td>"The princess tower's 2×2 footprint is a new tower-specific rule"</td>
+<td><strong>Corrected.</strong> It is the ordinary rule at the shipped <code>CollisionRadius</code> 1000</td>
+</tr>
+<tr>
+<td>"The king tower's 3×3 footprint is measured"</td>
+<td><strong>Refuted.</strong> <code>R_king = 0</code> scores identically to 1400; no trace goes near a king</td>
+</tr>
+<tr>
+<td>"Enemy buildings demonstrably do not occlude"</td>
+<td><strong>Not established.</strong> Indistinguishable from friendly-only once the goal cell is exempt</td>
+</tr>
+<tr>
+<td>"The goal rule alone explains every observed goal cell"</td>
+<td><strong>Overstated.</strong> Necessary, not determinative: the goal cell is an output of the expansion order</td>
+</tr>
+<tr>
+<td>"The detour side is the cheaper side (5 offsets)"</td>
+<td><strong>Overstated.</strong> Only 2 of 5 offsets involve a detour at all, and in both the cost and least-deviation hypotheses agree</td>
+</tr>
+<tr>
+<td>"Giant duty 0.8649 → 44.97 units/tick, undershoots Speed 45"</td>
+<td><strong>Wrong arithmetic.</strong> 9 stop ticks per 74, duty 0.8784, mean 45.68. It overshoots</td>
+</tr>
+<tr>
+<td>"The stomp schedule is exact"</td>
+<td><strong>Scoped.</strong> Exact for an unobstructed path-follower; a jostled Giant moves on 2 scheduled pause ticks</td>
+</tr>
+<tr>
+<td>"The stomp formula is solved (high confidence)"</td>
+<td><strong>Scoped.</strong> Two algebraically distinct rivals agree on every shipped card; rounding mode undetermined</td>
+</tr>
+<tr>
+<td>"117 heading failures are a river/bridge exception"</td>
+<td><strong>Resolved.</strong> All 142 are mid-tick repath insertions; the heading law is 100 %</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a-corpus-pitfall-worth-keeping">A corpus pitfall worth keeping<a class="headerlink" href="#a-corpus-pitfall-worth-keeping" title="Permanent link">&para;</a></h3>
+<p>The convenient loader latches the first non-tower entity of one side and follows only that one.
+It hides 107 step-law failures inside the <code>walk/Skeletons</code> trace, makes every opposing-side unit
+invisible, and skips the <code>meet/</code> directory entirely. Those are the only traces with two mobile
+units, a moving target, or a side-1 walker. Enumerate <code>(side, generation_key)</code> pairs instead. It
+is fifteen lines.</p>
+<h2 id="8-open-questions">8. Open questions<a class="headerlink" href="#8-open-questions" title="Permanent link">&para;</a></h2>
+<p>Open as of this corpus. Items 1 and 2 have since been settled on client 16.402 (the expansion
+order is reproduced outright and the contact law is measured), and items 5, 6, 9 and 10 were
+settled by the same captures. <code>pathfinding.md</code> carries all of them. The rest are open, and the
+experiment each one needs is named.</p>
+<ol>
+<li><strong>The tie-break / expansion order.</strong> 13/76 distinct experiments is the ceiling of a
+   1040-configuration search over the offline trace corpus of client 15.535.29. The 100 %
+   below is the target of a proposed experiment, not a result. This is the single thing standing between the measured cost
+   model and bit-exact path reproduction. Best next experiment: traces with a <em>unique</em>
+   optimal path everywhere (pepper the lane with friendly Cannons so no ties exist) to
+   confirm the cost model to 100 %, and traces with exactly one two-way tie to read the
+   tie-break off directly.</li>
+<li><strong>The collision / separation law.</strong> Two contact regimes break the movement law and
+   neither sets a flag, and no field records the push, so it must be fitted from the
+   residual. The data already exists and
+   nobody has used it: <code>walk/Skeletons</code> units #1 and #2 (crowd separation, 107 clean
+   samples) and all three <code>meet/</code> traces (pushback, 36 samples plus 11 in state 1 at
+   exactly 2 × <code>CollisionRadius</code>).</li>
+<li><strong>What <code>avoidance_offset</code> actually does.</strong> The magnitude is roughly preserved, the
+   offset walks ±10 within ±190, but the applied deflection fits no constant rotation
+   scale (observed ratio 0.327–0.387, non-linear). What <em>sets</em> it to ±190, and what
+   selects the sign, is unknown.</li>
+<li><strong>The residual 4 % of node pops</strong> that fire up to 74 units late. 60 of 148 carry
+   avoidance; 88 carry nothing. Likely the same fixed-point arithmetic that produces the
+   Giant/Golem 52/54 mapping. A live capture carrying the mover's state fields would
+   settle it faster than another trace.</li>
+<li><strong>Occluded cells: hard block or <code>PATHFINDING_BUILDING_COST = 50</code>?</strong> Indistinguishable
+   here because no recorded path ever needed to cross one. Same for bit-16 terrain and for
+   water (50 vs impassable). Settle with a corridor where going <em>through</em> is cheaper than
+   going around.</li>
+<li><strong><code>FRIENDLYONLY_OCCLUSIONS</code>.</strong> The globals say TRUE; the traces cannot tell. Needs a
+   ground unit routed past an <em>enemy</em> building that is not its target.</li>
+<li><strong>The goal rule's free parameters.</strong> The reach constant is pinned only to ±75 units; the
+   column clamp half-width only to (500, 1000]; the row rule rests on six data points, one
+   per card, all from one start and one approach direction. The cheapest discriminating
+   experiment is a Skeletons (Range 500, radius 500) in a lane 750 units off the tower
+   centre, where the per-axis model says row 49 and a 2-D in-range model says row 50. A
+   side-on or from-above approach would settle the axis question at the same time.</li>
+<li><strong>Rule A vs rule H for occlusion.</strong> "Square of half-width <code>CollisionRadius</code>" and "the
+   building's own tile grown by half a tile" predict identical cells here, because every
+   occluder in the corpus sits on a tile centre. Place a building at a half-tile x offset
+   (x = 3000 or 4000), or one with a different radius (Tesla, Bomb Tower 600, Barbarian
+   Hut), and re-run the six-offset sweep.</li>
+<li><strong>The stomp rounding mode.</strong> One <code>IceGolemite</code> trace (predicts 52 under floor, 53 under
+   round) and one <code>GoblinGiant</code> trace (predicts 69, testing the formula outside Speed 45).</li>
+<li><strong><code>SpeedMultiplier</code>.</strong> Completely unmeasured in this corpus. One rage trace would calibrate
+    the buff path. Measured since on the 16.402 corpus (<code>movement.BUFF_SPEED_RULE</code>;
+    <code>pathfinding.md</code>).</li>
+<li><strong>Does building <em>removal</em> trigger the same 0-tick replan?</strong> The Cannon's <code>LifeTime</code> is
+    30 000 ms and the traces end before expiry.</li>
+<li><strong><code>PROJECTILE_SPEED_TO_SUBTILES_PER_TICK</code>.</strong> No projectile flies in these traces. The
+    troop side measuring Speed/50 is weak supporting evidence for 18 on projectiles too,
+    given the 2023 frame test that measured ×1.2 for both a Musketeer projectile and a
+    Giant. But it is not measured.</li>
+<li><strong>Path length cap.</strong> The schema allows 115; the longest route these deploys can produce
+    is 46. No experiment in the corpus can reach the cap.</li>
+</ol>
+<h2 id="9-using-this-in-the-engine">9. Using this in the engine<a class="headerlink" href="#9-using-this-in-the-engine" title="Permanent link">&para;</a></h2>
+<p>The implementation contract derived from these measurements (grid, costs, heuristic, occlusion,
+goal, per-tick update order, node consumption, replan triggers and the verification gates) is in
+<code>pathfinder-spec.md</code>. Section 10 of that file maps each rule onto the ledger key that carries
+it.</p>
+<p>The regression gates these measurements support, in increasing strictness:</p>
+<ol>
+<li>All 150 recorded first-paths are exactly cost-minimal on the engine's own grid.</li>
+<li>The movement laws reproduce every <em>isolated</em> unit bit-exactly from its first moving
+   tick (walk: 239, 307, 305, 164, 121, 106 ticks; zero drift; identical final positions).</li>
+<li>The node-consumption predicate never fires early across the 27 824 keep-ticks.</li>
+<li>Goal truncation holds two-sided on all 150 first-paths.</li>
+<li>Exact node sequences: out of reach for this model (13/76), gated on the 16.402 arm instead
+   (<code>pathfinding.md</code>).</li>
+</ol>
+<h2 id="10-reproducing">10. Reproducing<a class="headerlink" href="#10-reproducing" title="Permanent link">&para;</a></h2>
+<p>These figures were measured over the offline corpus, which is not distributed, so the run itself
+is not reproducible from a clone. What it covered, section by section:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>Node consumption: pre-move vs post-move, threshold sweeps, rival predicates</td>
+</tr>
+<tr>
+<td>B</td>
+<td>Step and heading laws over all 150 units; the 142 heading anomalies and their explaining cells</td>
+</tr>
+<tr>
+<td>B2</td>
+<td>Free per-unit speed fit with no card table</td>
+</tr>
+<tr>
+<td>C</td>
+<td><code>x2/y2</code>, <code>avoidance_offset</code> deltas and runs, <code>path_node_consumed</code> census</td>
+</tr>
+<tr>
+<td>D</td>
+<td>First path / first target / first move timing</td>
+</tr>
+<tr>
+<td>E</td>
+<td>Diagonal weight sweep in exact rational arithmetic</td>
+</tr>
+<tr>
+<td>F</td>
+<td>Cost-axis discrimination at √2</td>
+</tr>
+<tr>
+<td>G, G2</td>
+<td>Occlusion radius brackets, box shape, mover pad, goal exemption, enemy occlusion</td>
+</tr>
+<tr>
+<td>H</td>
+<td>Goal truncation rule and its admissible constant window</td>
+</tr>
+</tbody>
+</table>
+<p>The rules these sections support are gated inside this repo by <code>tests/oracle2026.rs</code> and
+<code>tools/oracle_diff.py</code>, which a reader can run against any trace in the recorded-trace format.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../pathfinder-spec/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Pathfinder spec">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Pathfinder spec
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../spell-spec/" class="md-footer__link md-footer__link--next" aria-label="Next: Spell spec">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Spell spec
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://discord.gg/4D2BS5JBHP" target="_blank" rel="noopener" title="The project Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://github.com/RoyaleGym" target="_blank" rel="noopener" title="The RoyaleGym organisation" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

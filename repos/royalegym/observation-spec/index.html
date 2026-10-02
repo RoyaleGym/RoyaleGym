@@ -1,0 +1,4520 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.">
+      
+      
+      
+        <link rel="canonical" href="https://royalegym.github.io/RoyaleGym/repos/royalegym/observation-spec/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../background/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Observation spec - Royale</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#observation-spec" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Royale" class="md-header__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Royale
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Observation spec
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Follow my system"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Follow my system" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Royale" class="md-nav__button md-logo" aria-label="Royale" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Royale
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RoyaleGym/RoyaleGym" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RoyaleGym
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../it-doesnt-work/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    It Doesn't Work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Fits Together
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clash Royale
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Clash Royale
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/training-an-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training an Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Objects
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configuration Objects
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/action-parsers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Action Parsers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/done-conditions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Done Conditions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/observation-builders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation Builders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/opponents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Opponents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/reward-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reward Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/state-mutators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Mutators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/configuration-objects/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Viewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cheatsheets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cheatsheets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cheatsheets/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game Values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cheatsheets/rl-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning Terms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Additional Resources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Additional Resources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../resources/royaleimitate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royalegym/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalegym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royalelearn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royalelearn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/royaleviser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    royaleviser
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../accuracy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How accurate is the engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The engine inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The environments inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/learner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The learner inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pieces/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The viewer inside
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../build-from-source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build from source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting in depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleSim
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleSim
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In depth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/mechanics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mechanics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/game-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Game values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The calibration ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/pathfinding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/pathfinder-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pathfinder spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/movement-measurements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Movement measurements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/spell-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spell spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/replay-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/card-coverage-queue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Card coverage queue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalesim/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleGym
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The long guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation spec
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observation spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-fair-reveal-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The fair / reveal split
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-spatialobsbuilder-spatial-float32-c-32-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. SpatialObsBuilder: spatial, float32 [C, 32, 18]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. SpatialObsBuilder: spatial, float32 [C, 32, 18]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-deliberately-not-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is deliberately not here
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#an-open-question-stun-is-nearly-invisible-at-500-ms-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An open question: stun is nearly invisible at 500 ms decisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-mask_planes-int8-4-32-18-both-builders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. mask_planes, int8 [4, 32, 18], both builders
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3b-card_ids-uint8-2-32-18-spatialobsbuilder-only-behind-a-flag-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3b. card_ids, uint8 [2, 32, 18], SpatialObsBuilder only (behind a flag, default off)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3c-queued-positional-channels-not-built-and-frozen-until-trains-run-ends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3c. Queued: positional channels (NOT built, and frozen until train's run ends)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-the-flat-vector-float32-12n-43-fair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. The flat vector, float32 [12n + 43] (fair)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. The flat vector, float32 [12n + 43] (fair)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#12n-43-not-12n-36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12n + 43, not 12n + 36
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-counted-enemy-elixir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The counted enemy elixir
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-cycle-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The cycle features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-builder-is-stateful" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The builder is stateful
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-same-fields-without-an-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The same fields without an engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-entitylistobsbuilder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. EntityListObsBuilder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-ground-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Ground truth
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleLearn
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleLearn
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running a job
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/checkpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checkpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/ladder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The ladder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/determinism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Determinism
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/throughput/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Throughput
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/harness-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The harness spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/royalegym-asks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What it needs from RoyaleGym
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royalelearn/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleViser
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleViser
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/internals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pictures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleviser/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RoyaleImitate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RoyaleImitate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/public-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../royaleimitate/alarms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alarms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-fair-reveal-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The fair / reveal split
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-spatialobsbuilder-spatial-float32-c-32-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. SpatialObsBuilder: spatial, float32 [C, 32, 18]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. SpatialObsBuilder: spatial, float32 [C, 32, 18]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-deliberately-not-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is deliberately not here
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#an-open-question-stun-is-nearly-invisible-at-500-ms-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An open question: stun is nearly invisible at 500 ms decisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-mask_planes-int8-4-32-18-both-builders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. mask_planes, int8 [4, 32, 18], both builders
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3b-card_ids-uint8-2-32-18-spatialobsbuilder-only-behind-a-flag-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3b. card_ids, uint8 [2, 32, 18], SpatialObsBuilder only (behind a flag, default off)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3c-queued-positional-channels-not-built-and-frozen-until-trains-run-ends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3c. Queued: positional channels (NOT built, and frozen until train's run ends)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-the-flat-vector-float32-12n-43-fair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. The flat vector, float32 [12n + 43] (fair)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. The flat vector, float32 [12n + 43] (fair)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#12n-43-not-12n-36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12n + 43, not 12n + 36
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-counted-enemy-elixir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The counted enemy elixir
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-cycle-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The cycle features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-builder-is-stateful" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The builder is stateful
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-same-fields-without-an-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The same fields without an engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-entitylistobsbuilder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. EntityListObsBuilder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-ground-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Ground truth
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/RoyaleGym/RoyaleGym/edit/main/docs/site/pages/repos/royalegym/observation-spec.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="observation-spec">Observation spec<a class="headerlink" href="#observation-spec" title="Permanent link">&para;</a></h1>
+<p>This page is for contributors writing or reading observation code. It lists every
+channel and every vector slot a <code>royalegym</code> observation builder writes, the range each
+one takes, and whether it is <strong>fair</strong> (something a person watching the match could
+write down) or a <strong>reveal</strong>, read out of the half of the state a player cannot see.</p>
+<p>The code is <code>royalegym/obs.py</code>. This file is the reference. <code>vector_layout()</code>,
+<code>vector_offsets()</code>, <code>spatial_channels()</code> and <code>ObsBuilder.channel_names()</code> are the same
+thing in a form a program can read, and the test suite asserts the two agree.</p>
+<p>Throughout, <strong>n</strong> is the number of cards in the engine's catalogue
+(<code>len(engine.cards())</code>). Everything is in the <strong>acting seat's own frame</strong>: Red's board
+is rotated 180°, Red's towers are "own". A mirrored battle gives the other seat a
+bit-identical observation, which is why one policy can play both seats.</p>
+<hr />
+<h2 id="1-the-fair-reveal-split">1. The fair / reveal split<a class="headerlink" href="#1-the-fair-reveal-split" title="Permanent link">&para;</a></h2>
+<p>A builder takes a <code>Reveal</code>, a frozen dataclass whose five fields all default to
+<code>False</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">Reveal</span><span class="p">,</span> <span class="n">SpatialObsBuilder</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">SpatialObsBuilder</span><span class="p">()</span>                                   <span class="c1"># fair</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">SpatialObsBuilder</span><span class="p">(</span><span class="n">reveal</span><span class="o">=</span><span class="n">Reveal</span><span class="p">(</span><span class="n">enemy_hand</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>     <span class="c1"># cheating, and says so: 4(n+1) more slots</span>
+</code></pre></div>
+<p><strong>An enabled field adds channels or slots; it is never present-but-zero.</strong> A fair
+observation and a cheating one do not have the same width, so a checkpoint cannot
+quietly be trained with one and evaluated with the other. Fair fields come first and
+keep their indices, so turning a reveal on never moves a fair feature.
+<code>ClashParallelEnv.config()</code> records the <code>Reveal</code> for the checkpoint.</p>
+<table>
+<thead>
+<tr>
+<th><code>Reveal</code> field</th>
+<th>what it opens</th>
+<th>cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enemy_elixir</code></td>
+<td>the opponent's bar, read from the state</td>
+<td><strong>no new slot</strong>: it swaps the source of the slot that already holds the count (§4)</td>
+</tr>
+<tr>
+<td><code>enemy_hand</code></td>
+<td>the opponent's four hand slots</td>
+<td>+4(n+1) vector slots</td>
+</tr>
+<tr>
+<td><code>enemy_next_card</code></td>
+<td>the opponent's cycle position 5</td>
+<td>+(n+1) vector slots</td>
+</tr>
+<tr>
+<td><code>enemy_deck</code></td>
+<td>as much of the opponent's deck as the state holds</td>
+<td>+n vector slots</td>
+</tr>
+<tr>
+<td><code>enemy_spell_aim</code></td>
+<td>where the opponent's live spells will land</td>
+<td>+1 spatial channel; +2 appended columns on every entity-list <code>spells</code> row</td>
+</tr>
+</tbody>
+</table>
+<p><code>own_spell_aim</code> is <strong>not</strong> gated. The player chose where to throw their own spell.</p>
+<hr />
+<h2 id="2-spatialobsbuilder-spatial-float32-c-32-18">2. <code>SpatialObsBuilder</code>: <code>spatial</code>, float32 <code>[C, 32, 18]</code><a class="headerlink" href="#2-spatialobsbuilder-spatial-float32-c-32-18" title="Permanent link">&para;</a></h2>
+<p>C = 20 fair, +1 with <code>Reveal.enemy_spell_aim</code>. Entities are rasterised into the tile
+containing their centre in the own frame. Every plane is clipped to <code>[0, 64]</code>
+(<code>SPATIAL_CLIP</code>).</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>channel</th>
+<th>range</th>
+<th>meaning</th>
+<th>fair?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>own_ground_troops</code></td>
+<td>0..64</td>
+<td>count of own non-flying troops in the tile</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>own_air_troops</code></td>
+<td>0..64</td>
+<td>count of own flying troops</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>own_buildings</code></td>
+<td>0..64</td>
+<td>count of own <strong>buildings</strong> (crown towers excluded)</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>own_towers</code></td>
+<td>0..64</td>
+<td>count of own crown towers by centre</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>own_hp</code></td>
+<td>0..64</td>
+<td>sum of own entity hp / 1000</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>enemy_ground_troops</code></td>
+<td>0..64</td>
+<td>as 0, for the opponent</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>enemy_air_troops</code></td>
+<td>0..64</td>
+<td>as 1</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>enemy_buildings</code></td>
+<td>0..64</td>
+<td>as 2</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>enemy_towers</code></td>
+<td>0..64</td>
+<td>as 3</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>enemy_hp</code></td>
+<td>0..64</td>
+<td>as 4</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>own_deploying</code></td>
+<td>0..64</td>
+<td>own entities still inside their deploy timer</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>enemy_deploying</code></td>
+<td>0..64</td>
+<td>as 10</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>water</code></td>
+<td>0..1</td>
+<td>fraction of the tile's four half-cells that are water (static)</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>no_deploy</code></td>
+<td>0..1</td>
+<td>fraction flagged no-deploy (static)</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>enemy_troop_zone</code></td>
+<td>0 or 1</td>
+<td>where the OPPONENT could put a troop right now</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>own_spells</code></td>
+<td>0..64</td>
+<td>own live spell objects by current centre</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>enemy_spells</code></td>
+<td>0..64</td>
+<td>the opponent's live spell objects by current centre</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>own_spell_aim</code></td>
+<td>0..64</td>
+<td>own live spells by aim point (landing point; a Log's roll end)</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>18</td>
+<td><code>own_stunned</code></td>
+<td>0..64</td>
+<td>own entities with <code>stun_ticks &gt; 0</code></td>
+<td>fair</td>
+</tr>
+<tr>
+<td>19</td>
+<td><code>enemy_stunned</code></td>
+<td>0..64</td>
+<td>as 18</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>20</td>
+<td><code>enemy_spell_aim</code></td>
+<td>0..64</td>
+<td>the opponent's live spells by aim point</td>
+<td><strong>reveal</strong></td>
+</tr>
+</tbody>
+</table>
+<p>One known gap in the "fair" column: a unit invisible to its enemy, such as a Royal Ghost, is
+still shown to the enemy seat. It is counted in <code>enemy_ground_troops</code> (5) and <code>enemy_hp</code> (9)
+where it stands, and the entity-list builder writes it a full row. No builder reads a unit's
+status flags. Hiding or marking such a unit waits on a measurement of what a player sees in the
+real game. It is not fixed.</p>
+<p>Channels 0–11 are integer sums converted to float32 exactly once, so no plane can
+depend on the engine's entity list order (see <code>obs.py</code>, NO FLOAT MAY DEPEND ON ENTITY
+LIST ORDER).</p>
+<p><code>ObsBuilder.spatial_layout()</code> returns <code>(name, is_static)</code> per plane. <strong>Static</strong> means a
+function of the arena alone (<code>water</code> and <code>no_deploy</code>, and nothing else), so a consumer
+that stores observations can hold those two once instead of once per transition. Read
+the declaration rather than deciding by sampling. <code>own_towers</code> and <code>enemy_towers</code> are
+constant on any sample in which no tower falls, because a crown tower never moves. A
+consumer that concluded "static" from that would never see a tower destroyed. A test
+asserts exactly that.</p>
+<h3 id="what-is-deliberately-not-here">What is deliberately not here<a class="headerlink" href="#what-is-deliberately-not-here" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>own_troop_zone</code> and <code>own_building_zone</code> were deleted. The action space is
+  <code>Discrete(2305)</code> = no-op + 4 hand slots × 18 × 32 tiles, so the <strong>mask already
+  states per-slot, per-tile legality exactly</strong>. The zones were a coarser restatement
+  of it. They cost two of the three <code>PlacementOracle.point_grid</code> calls the
+  observation made per seat per step. Measured: 6.66 → 2.66 <code>point_grid</code> calls per
+  <code>env.step</code> (both seats). The measurement alternated the two trees three times in one session, because the absolute numbers move by a third with machine load while the comparison does not. The suite's own throughput report went 766 -&gt; 953 <code>env.step</code>/s on the Rust engine and 475 -&gt; 580 on <code>MockEngine</code> (medians of three rounds).</li>
+<li><code>enemy_troop_zone</code> stays. It is about the opponent's options and is in no mask.</li>
+<li>A knockback channel. Under <code>knockback.DURATION_MS = 0</code> the push is instant and the
+  timer reads 0 between ticks, so the plane would be a constant zero no coverage
+  guard could check. <code>knockback_ticks</code> survives as a per-entity feature.</li>
+</ul>
+<h3 id="an-open-question-stun-is-nearly-invisible-at-500-ms-decisions">An open question: stun is nearly invisible at 500 ms decisions<a class="headerlink" href="#an-open-question-stun-is-nearly-invisible-at-500-ms-decisions" title="Permanent link">&para;</a></h3>
+<p>A Zap's stun is 10 ticks and a decision is 10 ticks. Measured on the Rust engine: a
+Zap cast at tick k of a decision leaves <code>stun_ticks</code> = k at the <strong>one</strong> observation
+that follows (1, 4, 6, 10 for k = 0, 3, 5, 9) and 0 at every observation after. So
+<code>own_stunned</code> / <code>enemy_stunned</code> fire for at most one step per Zap, and the entity
+row's <code>stun_ticks / 100</code> reads 0.01 to 0.10 for that one step.</p>
+<p>The features stay as "is stunned <strong>now</strong>". That is what the engine reports, and it is
+what the seat-flip and cell-by-cell tests can check exactly. "Was stunned since the
+last observation" is the feature a policy could actually use, but it is a different
+thing: it depends on the decision rate and not only on the state. Recorded here rather
+than changed quietly.</p>
+<h2 id="3-mask_planes-int8-4-32-18-both-builders">3. <code>mask_planes</code>, int8 <code>[4, 32, 18]</code>, both builders<a class="headerlink" href="#3-mask_planes-int8-4-32-18-both-builders" title="Permanent link">&para;</a></h2>
+<p>The flat <code>action_mask</code> with index 0 (the no-op) removed, reshaped. The action space
+is laid out as <code>1 + slot * ny * nx + y * nx + x</code>, so this is a <strong>view</strong>, not a
+recomputation: <code>mask_planes[slot, y, x] == action_mask[encode(slot, x, y)]</code>.</p>
+<p><code>action_mask</code>, int8 <code>[2305]</code>, is still there for the policy head. The info dict no
+longer repeats it. <code>ClashParallelEnv.state()</code> leaves out both. Legality is not
+state, and a centralised critic does not need 2 304 duplicated numbers per seat.</p>
+<p>A parser whose action space is not a grid returns <code>None</code> from <code>mask_plane_shape()</code> and
+the key is simply absent.</p>
+<hr />
+<h2 id="3b-card_ids-uint8-2-32-18-spatialobsbuilder-only-behind-a-flag-default-off">3b. <code>card_ids</code>, uint8 <code>[2, 32, 18]</code>, <code>SpatialObsBuilder</code> only (behind a flag, default off)<a class="headerlink" href="#3b-card_ids-uint8-2-32-18-spatialobsbuilder-only-behind-a-flag-default-off" title="Permanent link">&para;</a></h2>
+<p>AGREED WITH learn BEFORE IT IS WIRED, because their stem does an embedding lookup on these
+and most of the ways to get it wrong fail silently rather than loudly.</p>
+<p><code>spatial</code> cannot tell a Giant from a Knight standing on the same tile: it carries no
+per-unit card identity. That is a ceiling on play quality and it is invisible in any
+throughput comparison, which is why D2 was nearly decided on the wrong axis. These planes
+close it without a new trunk.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>key</td>
+<td><code>card_ids</code>, its OWN key, not a slice of <code>spatial</code></td>
+</tr>
+<tr>
+<td>shape</td>
+<td><code>[2, 32, 18]</code> — plane 0 own, plane 1 enemy, in the seat's own frame</td>
+</tr>
+<tr>
+<td>dtype</td>
+<td><code>uint8</code>, declared <code>Box(0, vocab - 1, dtype=np.uint8)</code></td>
+</tr>
+<tr>
+<td>vocab</td>
+<td><code>num_cards + 2</code>, from the LOADED card table: one index per card, plus empty ground and crown towers</td>
+</tr>
+<tr>
+<td>switch</td>
+<td><code>SpatialObsBuilder(card_identity=True)</code>, shipped 2026-09-24; OFF by default</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why its own key and not a channel of <code>spatial</code>.</strong> <code>spatial</code> is declared
+<code>Box(0.0, SPATIAL_CLIP, float32)</code>, and a learner's codec picks exact-versus-scaled-half
+storage from the declared bounds. A card id inside a float box is stored as a scaled half,
+comes back as 6.997 instead of 7, and <code>.long()</code> reads card 6. Nothing fails; the policy
+learns from a catalogue that is subtly wrong. <code>mask_planes</code> is already a separate
+integer-valued key, so this follows a path the codec has met.</p>
+<p><strong>The vocabulary.</strong></p>
+<table>
+<thead>
+<tr>
+<th>index</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>empty tile</td>
+</tr>
+<tr>
+<td>1</td>
+<td>a crown tower, which is not a card</td>
+</tr>
+<tr>
+<td>2 + <code>card_id</code></td>
+<td>a unit of that card</td>
+</tr>
+</tbody>
+</table>
+<p>Index 0 is reserved so that "nothing here" and "the first card in the catalogue" are not
+the same number. Crown towers get index 1 for exactly the same reason one step along: they
+are the only entity class carrying no card (<code>card_id == EMPTY_CARD == -1</code>), and leaving
+their tiles at 0 would make 0 mean both "empty ground" and "a tower stands here". It also
+carries real information rather than a constant, because a destroyed tower's tile becomes
+genuinely empty. Units a spell releases are NOT in this class; the engine reports them
+under the releasing spell's catalogue id, so they are ordinary cards.</p>
+<p><strong>The vocabulary size is not a constant.</strong> It is a fact about the table the engine loaded.
+This paragraph said "100 cards on the 15.535 table" until 2026-09-24, when the engine loaded
+101 -- the census moves as cards become loadable, which is the paragraph's own point made at
+its own expense. It is published as the <code>card_ids</code> Box's upper bound, so a network sizes
+<code>nn.Embedding(observation_space["card_ids"].high.max() + 1, C)</code> at construction. That also
+puts it in RoyaleLearn's <code>EnvSpec</code> with no separate channel: <code>rollout/envspec.py</code> records
+every observation key's shape, dtype, low and high from the observation space itself. A
+literal would be wrong on the next census, and an embedding sized by guessing truncates
+silently.</p>
+<p><strong>Catalogue ids are POSITIONAL, and that is the trap this ships with a guard against.</strong>
+Making one more card loadable renumbers every later id, so an embedding table indexed by
+those ids would have the same checkpoint reading a different game afterwards with nothing
+failing. So the planes ship with an explicit <code>card_names</code> list recorded in the run
+identity: a renumber is then a REFUSAL rather than a quiet reinterpretation. If the
+vocabulary ever exceeds 255, construction refuses and names the storage decision instead of
+widening the dtype silently.</p>
+<p><strong>Ties are broken by lowest <code>uid</code>, and this is not cosmetic.</strong> <code>BattleState.entities</code> is
+NOT in uid order — a live battle gives <code>[0, 2, 4, 1, 3, 5]</code> — so "whichever comes first"
+would make the plane a function of iteration order, and two runs of one seed could differ.
+<code>uid</code> is unique for a whole battle and never reused.</p>
+<p><strong>Spells in flight do not appear here</strong>, and that is structural rather than a choice:
+<code>BattleState.spells</code> is a separate list from <code>entities</code>, so a live spell has no entity and
+no tile. This matches the same object being invisible to a learner's committed-elixir
+accounting, which is the one outcome that creates no new discrepancy between the two.</p>
+<p><strong>Default OFF until train's policy-head arm has run.</strong> Flipping an observation shape under
+a paired comparison invalidates both arms and looks like a result. BUILDING it was never
+gated, only turning it on: with the switch off the observation is byte-for-byte the shipped
+one -- no new key, the same vector width and offsets, the same <code>config()</code>.</p>
+<p><strong>What the switch turns on, as shipped.</strong> One switch, because it is one change to what a
+network sees:
+- <code>card_ids</code> as above (<code>obs.card_id_planes</code>).
+- <code>enemy_last_card</code> in the vector, one-hot <code>[n+1]</code>, the last card the enemy played (D2's
+  decision put it with the planes). It sits at the END of the fair block, so no existing fair
+  offset moves, and it is read from the same cycle memory <code>enemy_possible_hand</code> uses.
+- <code>config()</code> records <code>card_identity: true</code> and <code>card_names</code>, the catalogue in order; a builder
+  constructed with <code>card_names</code> REFUSES to bind to an engine whose names differ, naming the
+  first id that moved.</p>
+<p>The memory learns a play by diffing two hand snapshots, one per decision. That is exact
+because a seat plays at most one card per decision; a caller that steps twice without
+observing in between can let the second card -- the one that replaced the first -- enter and
+leave inside one gap, where no diff can see it. The env never does that; a hand-written
+harness can.</p>
+<p><strong>These planes enter at the STEM, and the trunk is unchanged</strong> (learn). <code>card_ids</code> is a
+separate key, embedded and concatenated into the channels, so adding it widens one
+convolution and adds one embedding table whose input width is a constructor argument. That
+is the fact that makes landing them after the Rust port cheap rather than a rework, and it
+is why the port targets today's shape: the equality harness holds both implementations to
+each other, so a new plane is a change both sides make and the harness catches the
+divergence.</p>
+<p><strong>FLIPPING THE FLAG IS A TWO-REPO CHANGE, NOT A CONFIG EDIT</strong> (learn). A new observation
+KEY is the right storage decision and it is not free on the learner's side, where a new
+float channel inside <code>spatial</code> would have cost nothing. It touches four things there: the
+codec learns a third key, since it reads <code>spatial</code> and <code>vector</code> and derives <code>mask_planes</code>
+from the mask and has no general any-key path; the buffer's row layout and <code>row_bytes</code>
+change, and that is the number the shared-memory rectangle is sized from; <code>ObsBatch</code> gains
+a field, and so does every site that constructs one; and the stem does the lookup and
+concatenates. So the flag is off by default on BOTH sides, and turning it on is a
+coordinated change rather than a switch. The cost is worth paying: the alternative was a
+card id stored as a scaled half, which fails silently, and silent is worse than work.</p>
+<h2 id="3c-queued-positional-channels-not-built-and-frozen-until-trains-run-ends">3c. Queued: positional channels (NOT built, and frozen until train's run ends)<a class="headerlink" href="#3c-queued-positional-channels-not-built-and-frozen-until-trains-run-ends" title="Permanent link">&para;</a></h2>
+<p>Recorded so the reasoning survives, including the part of it that was WRONG, because the
+wrong version is the one a reader is likely to re-derive.</p>
+<p><strong>The dead claim.</strong> Counting distinct per-tile feature vectors in <code>spatial</code> gives 11 to 18
+distinct vectors across 576 tiles, with the most common covering 43% of the board. Measured
+on build <code>d872d792711934c2</code>, blue seat, at steps 0, 20 and 60 of a played battle with 6, 12
+and 15 entities on the board; the 43% held at all three. It is
+tempting to conclude that a pointer head, which scores a tile by an inner product with that
+tile's features, therefore has ~18 logits available and cannot separate 250 tiles by any
+weights. <strong>That conclusion is false.</strong> The head's inner product is not with this array: the
+learner's trunk concatenates two coordinate planes, normalised y and x, into the stem's
+input, so the feature map the head sees distinguishes two empty tiles by construction. The
+measurement is real and the inference on top of it is not.</p>
+<p><strong>What is true</strong>, in learn's formulation: what distinguishes two empty tiles is their
+coordinates plus whatever falls inside the receptive field, which at four residual blocks of
+3x3 convolutions is roughly 9 to 11 tiles. So a tile further than that from every entity is
+described by its position and the static planes alone. That predicts a policy can learn
+"deploy at this coordinate" and cannot learn "deploy 14 tiles from that Giant" without more
+depth. It is weaker than the dead claim and, unlike it, checkable.</p>
+<p><strong>The queued channels.</strong> Distance to each tower, and lane. Worth a plane each because a 3x3
+convolution stack has to spend DEPTH computing something an input plane could simply state,
+and depth is what this network does not have much of.</p>
+<p><strong>Not now, and the reason is the same as the card planes'.</strong> The observation shape is frozen
+until train's several-hundred-iteration run finishes: changing what the network sees
+mid-comparison invalidates both arms and looks like a result. These land behind the
+card-identity planes.</p>
+<p><strong>These do NOT overlap with <code>card_ids</code>.</strong> The card planes differentiate about 19 OCCUPIED
+tiles of 576; the tiles a positional channel helps are the empty ones. Two different gaps.
+Both this session and learn had been counting them as one.</p>
+<h2 id="4-the-flat-vector-float32-12n-43-fair">4. The flat <code>vector</code>, float32 <code>[12n + 43]</code> (fair)<a class="headerlink" href="#4-the-flat-vector-float32-12n-43-fair" title="Permanent link">&para;</a></h2>
+<p>All slots are clipped to <code>[0, 1]</code>. The offsets in the table are for n = 16, which is
+<code>MockEngine</code>'s default catalogue and what the test suite runs on. It is <strong>not</strong> the
+full card list, which is larger and gives a wider vector. Read offsets from
+<code>vector_offsets(n, reveal)</code>. Never copy a number out of this table into code.</p>
+<table>
+<thead>
+<tr>
+<th>slots (n=16)</th>
+<th>field</th>
+<th>size</th>
+<th>range</th>
+<th>meaning</th>
+<th>fair?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>own_elixir</code></td>
+<td>1</td>
+<td>0..1</td>
+<td>own elixir / MAX_MANA</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>enemy_elixir</code></td>
+<td>1</td>
+<td>0..1</td>
+<td>opponent's elixir / MAX_MANA (<strong>counted</strong>, see below)</td>
+<td>fair (source switches under <code>Reveal.enemy_elixir</code>)</td>
+</tr>
+<tr>
+<td>2–69</td>
+<td><code>own_hand_cards</code></td>
+<td>4(n+1)</td>
+<td>0/1</td>
+<td>hand slot card one-hot; index n = empty slot</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>70–73</td>
+<td><code>own_hand_cost</code></td>
+<td>4</td>
+<td>0..1</td>
+<td>hand slot elixir cost / MAX_MANA</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>74–77</td>
+<td><code>own_hand_affordable</code></td>
+<td>4</td>
+<td>0/1</td>
+<td>affordable right now: the bar less <code>own_pending_cost</code> pays it, and it has no play waiting</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>78–81</td>
+<td><code>own_hand_pending</code></td>
+<td>4</td>
+<td>0/1</td>
+<td>this slot's card has a play waiting to run (command delay, RoyaleSim df69520); the seat's own taps only</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>82</td>
+<td><code>own_pending_cost</code></td>
+<td>1</td>
+<td>0..1</td>
+<td>elixir the own waiting commands hold / MAX_MANA</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>83–99</td>
+<td><code>own_next_card</code></td>
+<td>n+1</td>
+<td>0/1</td>
+<td>cycle position 5</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>100–150</td>
+<td><code>own_cycle_6_8</code></td>
+<td>3(n+1)</td>
+<td>0/1</td>
+<td>cycle positions 6, 7, 8; index n = not deduced yet</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>151–166</td>
+<td><code>own_deck</code></td>
+<td>n</td>
+<td>0/1</td>
+<td>own deck multi-hot, as deduced so far</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>167–183</td>
+<td><code>own_last_card</code></td>
+<td>n+1</td>
+<td>0/1</td>
+<td>last card own played; index n = none yet</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>184</td>
+<td><code>own_ticks_since_play</code></td>
+<td>1</td>
+<td>0..1</td>
+<td>ticks since own last play / 600, clipped</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>185</td>
+<td><code>own_elixir_leaked</code></td>
+<td>1</td>
+<td>0..1</td>
+<td>own elixir lost to the cap so far / 20, clipped</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>186–201</td>
+<td><code>enemy_cards_seen</code></td>
+<td>n</td>
+<td>0/1</td>
+<td>cards the opponent has played at least once</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>202–217</td>
+<td><code>enemy_possible_hand</code></td>
+<td>n</td>
+<td>0/1</td>
+<td>cards that could be in the opponent's hand now</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>218</td>
+<td><code>enemy_plays</code></td>
+<td>1</td>
+<td>0..1</td>
+<td>opponent's plays this match / 40, clipped</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>219–221</td>
+<td><code>own_tower_hp</code></td>
+<td>3</td>
+<td>0..1</td>
+<td>tower hp / max, <code>[king, left, right]</code></td>
+<td>fair</td>
+</tr>
+<tr>
+<td>222–224</td>
+<td><code>enemy_tower_hp</code></td>
+<td>3</td>
+<td>0..1</td>
+<td>the same, in the opponent's own-frame slots</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>225–226</td>
+<td><code>crowns</code></td>
+<td>2</td>
+<td>0..1</td>
+<td>own crowns / 3, enemy crowns / 3</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>227–228</td>
+<td><code>king_active</code></td>
+<td>2</td>
+<td>0/1</td>
+<td>own king active, enemy king active</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>229–231</td>
+<td><code>clock</code></td>
+<td>3</td>
+<td>0..1</td>
+<td>regulation left / regulation, in overtime, overtime left / overtime</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>232–234</td>
+<td><code>elixir_rate</code></td>
+<td>3</td>
+<td>0/1</td>
+<td>one-hot over 1x, 2x, 3x (triple elixir late in overtime, RoyaleSim df69520 on)</td>
+<td>fair</td>
+</tr>
+<tr>
+<td>appended</td>
+<td><code>enemy_hand_cards</code></td>
+<td>4(n+1)</td>
+<td>0/1</td>
+<td>the opponent's hand</td>
+<td><strong>reveal</strong> (<code>enemy_hand</code>)</td>
+</tr>
+<tr>
+<td>appended</td>
+<td><code>enemy_next_card</code></td>
+<td>n+1</td>
+<td>0/1</td>
+<td>the opponent's cycle position 5</td>
+<td><strong>reveal</strong> (<code>enemy_next_card</code>)</td>
+</tr>
+<tr>
+<td>appended</td>
+<td><code>enemy_deck</code></td>
+<td>n</td>
+<td>0/1</td>
+<td>the opponent's deck</td>
+<td><strong>reveal</strong> (<code>enemy_deck</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>600, 20 and 40 are presentation constants (<code>PLAY_GAP_TICKS</code>, <code>LEAK_SCALE</code>,
+<code>PLAYS_SCALE</code>) that decide where a feature saturates. They are not game numbers and
+are not read from calibration.</p>
+<h3 id="12n-43-not-12n-36">12n + 43, not 12n + 36<a class="headerlink" href="#12n-43-not-12n-36" title="Permanent link">&para;</a></h3>
+<p>The specification this rewrite was built to called the width 12n + 36. It is 12n + 43,
+and the extra slots are real rather than accidents. The arithmetic, term by term:</p>
+<table>
+<thead>
+<tr>
+<th>block</th>
+<th>width</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the previous layout</td>
+<td>5n + 30</td>
+</tr>
+<tr>
+<td><code>own_deck</code></td>
+<td>+ n</td>
+</tr>
+<tr>
+<td><code>own_cycle_6_8</code></td>
+<td>+ 3n + 3</td>
+</tr>
+<tr>
+<td><code>own_last_card</code></td>
+<td>+ n + 1</td>
+</tr>
+<tr>
+<td><code>enemy_cards_seen</code></td>
+<td>+ n</td>
+</tr>
+<tr>
+<td><code>enemy_possible_hand</code></td>
+<td>+ n</td>
+</tr>
+<tr>
+<td><code>own_ticks_since_play</code>, <code>own_elixir_leaked</code>, <code>enemy_plays</code></td>
+<td>+ 3</td>
+</tr>
+<tr>
+<td><code>elixir_rate</code>'s 3x slot (RoyaleSim df69520's triple elixir)</td>
+<td>+ 1</td>
+</tr>
+<tr>
+<td><code>own_hand_pending</code>, <code>own_pending_cost</code> (RoyaleSim df69520's command delay)</td>
+<td>+ 5</td>
+</tr>
+<tr>
+<td><strong>total</strong></td>
+<td><strong>12n + 43</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The previous layout's 5n + 30 includes the one enemy-elixir slot, which is kept and
+now holds the count, so it is not double-counted. A test asserts 12n + 43 directly.</p>
+<h3 id="the-counted-enemy-elixir">The counted enemy elixir<a class="headerlink" href="#the-counted-enemy-elixir" title="Permanent link">&para;</a></h3>
+<p><code>enemy_elixir</code> is maintained by the builder, not read from the state, and this is the
+one fair feature that needs saying carefully.</p>
+<ul>
+<li>It is <strong>seeded once</strong>, at the start of the match, from the opponent's bar. The
+  starting amount is public, and a curriculum start that hands one side extra elixir
+  is equally public. After that the state's copy is never read again.</li>
+<li>From there it is the engine's own arithmetic (<code>protocol.ElixirLaw</code>, derived from
+  <code>calibration.json</code> and <code>globals.csv</code>): pay for each play seen, regenerate over the
+  ticks that passed at the rate the clock says, clamp at the cap. All in integer
+  "fine" units (one elixir is <code>lcm(regen 1x, regen 2x)</code> of them), because
+  milli-elixir cannot carry the law. A tick is worth 17.857… milli at the shipped
+  numbers, and a milli-space sum drifts inside one match.</li>
+<li>A <strong>play</strong> is a public event: a unit appears, a spell is cast. The builder reads it
+  from the opponent's hand changing between two observed states, which names the same
+  event and names the card exactly.</li>
+</ul>
+<p>The result is bit-exact against the bar the engine keeps, which is why it belongs in
+the fair set rather than being an estimate. <code>Reveal.enemy_elixir</code> swaps in the value
+read from the state. A test plays a battle out and asserts the two agree at every
+step, from both seats, on a busy game and on a quiet one (the quiet game is what
+exercises the cap). Verified exact, per step, on: the opening, a <code>start_tick</code> that
+crosses the 2x threshold, a start already in overtime, asymmetric starting elixir,
+<code>decision_ms</code> of 50 (one tick per step) and 3000 (sixty), a randomised mid-game
+curriculum, and a game quiet enough to sit at the cap.</p>
+<p><strong><code>MatchMemory.exact</code></strong> says when it cannot be. The same law runs on the player's own
+bar, which is visible, so the count is checked every step against a number the memory
+is not allowed to guess at. The moment the two disagree, <code>exact</code> goes False and stays
+False for the match. Two things make that happen: a deck that repeats a card (a play
+that swaps a card for itself changes no hand slot, so it is unseen; a real deck is
+eight distinct cards), and an engine whose elixir law is not the one in
+<code>calibration.json</code>. The builder then resyncs the own bar from the observed value so it
+stops drifting. It leaves the enemy count alone, because the only way to repair it
+would be to read it. A training run that wants the guarantee can assert <code>exact</code>.</p>
+<h3 id="the-cycle-features">The cycle features<a class="headerlink" href="#the-cycle-features" title="Permanent link">&para;</a></h3>
+<p>A card played goes to the back of an 8-card cycle. Hand is positions 1–4,
+<code>next_card</code> is 5, and 6–8 are behind it.</p>
+<ul>
+<li><code>own_cycle_6_8</code> starts unknown (all three one-hots point at index n) and learns one
+  position per play, so the whole cycle is visible after three plays. <code>own_deck</code> fills
+  in the same way.</li>
+<li><code>enemy_possible_hand</code> is the same rule applied to the opponent: the last four cards
+  they played are exactly the four behind their hand, so those are 0 and everything
+  else is 1. "Everything else" is the whole catalogue until eight distinct cards have
+  been seen, at which point their deck is known and the answer narrows to it.</li>
+</ul>
+<h3 id="the-builder-is-stateful">The builder is stateful<a class="headerlink" href="#the-builder-is-stateful" title="Permanent link">&para;</a></h3>
+<p>These features make the builder carry a <code>MatchMemory</code> per seat. Two guards keep one
+episode out of the next. <code>ObsBuilder.reset(state)</code>, which the env calls, re-seeds both
+seats. And <code>MatchMemory.observe</code> re-seeds whenever the clock moves <strong>backwards</strong>,
+which can only be a new battle. <code>observe</code> is also idempotent by tick, so building the
+same state twice cannot drift. That is what lets the seat-flip and list-order gates
+build the same state dozens of times.</p>
+<p>Tests replay a seeded episode twice in the same env and require the two observation
+sequences to be identical, with a plant that removes both guards and shows the
+difference.</p>
+<h3 id="the-same-fields-without-an-engine">The same fields without an engine<a class="headerlink" href="#the-same-fields-without-an-engine" title="Permanent link">&para;</a></h3>
+<p>Most of the vector is what a player remembers, not what the board shows. Four published
+names let code outside the env compute those fields with no engine running: for recorded
+matches, for a bot playing through a client, for any tool that has a log of plays. The
+env computes its own vector through the same four, so the numbers match by construction.</p>
+<ul>
+<li><code>MatchMemory.start(tick, own_elixir_milli, enemy_elixir_milli, own_hand, next_card)</code>
+  begins a match from what a player sees at its start.</li>
+<li><code>MatchMemory.advance(tick, regular_ticks, overtime, own_plays, enemy_plays)</code> moves it
+  to <code>tick</code> through the plays since the last call, each a <code>(tick, card)</code> pair. A play
+  inside the interval splits the regeneration at its tick. The env's <code>observe</code> calls
+  the same method, dating every play at the previous observation, because the engine
+  pays a command before the step's first tick. Ability presses (a hero's, a champion's)
+  go in as the optional <code>own_presses</code> and <code>foe_presses</code>, each a <code>(tick, elixir)</code> pair:
+  paid from the bar like a play, and no play.</li>
+<li><code>MatchClock.at(tick)</code> is the clock of a match still running at <code>tick</code>, from the rules.
+  <code>MatchClock.of(state)</code> is the clock an engine reports.</li>
+<li><code>fair_fields(memory, clock, hand, next_card, own_elixir_milli, cards, max_mana)</code>
+  returns every fair field except the four the board decides (<code>BOARD_FIELDS</code>: tower
+  hitpoints, crowns, awake kings), by name, as <code>FAIR_FIELDS</code> lists them.
+  <code>build_vector</code> calls it for those fields.</li>
+</ul>
+<p>The caller supplies what a player sees anyway: the own hand, the next card and the
+own bar. Rules a caller has to get right:</p>
+<ul>
+<li>A play at tick p is paid before tick p runs. An observation at tick T sees the plays
+  made before T.</li>
+<li><code>own_ticks_since_play</code> counts from the observation that first showed the play, not
+  from the play. That is what the env has always recorded.</li>
+<li><code>MatchMemory.unaffordable</code> counts plays the counted bar could not pay, (own, enemy).
+  It stays at zero on an engine's own log. Anywhere else it means a missing play or a
+  different elixir law.</li>
+</ul>
+<p><code>tests/test_fair_fields.py</code> plays battles on MockEngine and RustEngine, dates every
+accepted play, and compares every field with the env's vector at every step, for both
+seats. It also holds <code>MatchClock.at</code> to the engine's clock at every step. The battles
+cover a full turn of both queues, spells in flight, the switch to 2x, the exact tick
+regulation ends, ticks past 4800, gaps of 1 to 13 ticks, and a seat that leaks at a
+full bar. Plays dated one tick late must fail, and so must an overtime rule one tick
+late. When <code>fair_fields</code> was split out of <code>build_vector</code>, every vector the builders
+wrote over those battles was compared byte for byte before and after, on both engines.</p>
+<p><strong>The whole surface such a caller may rely on</strong>, because it is more than the four names
+above. From <code>royalegym.obs</code>: <code>MatchMemory(num_cards, law)</code> with <code>bind(cards)</code>, <code>start</code>,
+<code>advance</code> and <code>show_own_hand(hand, next_card)</code>, and the attributes <code>tick</code>, <code>own_fine</code>,
+<code>foe_fine</code> and <code>unaffordable</code>; <code>MatchClock</code>, <code>fair_fields</code>, <code>FAIR_FIELDS</code> and
+<code>BOARD_FIELDS</code>. From <code>royalegym.protocol</code>: <code>ElixirLaw.load(calibration)</code> and
+<code>ElixirLaw.to_milli(fine)</code>, <code>default_calibration()</code>, <code>CardInfo</code>, <code>DECK_SIZE</code> and
+<code>HAND_SIZE</code>. <code>tests/test_fair_fields.py</code> names every one of them, so renaming or removing
+any fails this repo's own suite, not only a caller's.</p>
+<hr />
+<h2 id="5-entitylistobsbuilder">5. <code>EntityListObsBuilder</code><a class="headerlink" href="#5-entitylistobsbuilder" title="Permanent link">&para;</a></h2>
+<p>For attention / transformer policies. <code>entities [N, 18 + n + 1]</code>, <code>spells [M, 14 + n]</code>,
+plus the same <code>vector</code>, <code>action_mask</code> and <code>mask_planes</code>. Column names are in
+<code>ENTITY_FEATURE_NAMES</code> and <code>SPELL_FEATURE_NAMES</code>; the full per-column meaning is in
+the class docstring.</p>
+<p>Rows are sorted by a key made of <strong>every field the row is built from</strong>, so two rows
+that tie are identical and the order is seat-invariant whatever order the engine
+listed them in.</p>
+<p>The only reveal here is the aim point. Columns 9 and 10 are the aim of the <strong>viewer's
+own</strong> spells and are 0 on an enemy row; <code>Reveal.enemy_spell_aim</code> <strong>appends two more
+columns</strong> for the opponent's, so the space really does change width.</p>
+<p>The sort key puts the aim <strong>last</strong>, and that is not cosmetic. Row order is observable
+(it decides whose delay and hit count appear first), and the key must still name every
+field a row is built from, so the aim cannot leave it. With the aim ranked early, two
+enemy spells alike in everything visible came out in an order set by where they were
+going. Two states differing <em>only</em> in two hidden aim points gave delay columns
+<code>[0.03, 0.07]</code> and <code>[0.07, 0.03]</code>. With the aim last, hidden data can only order rows
+whose every visible field ties, and those rows write the same numbers. A test and a
+plant hold this.</p>
+<hr />
+<h2 id="6-ground-truth">6. Ground truth<a class="headerlink" href="#6-ground-truth" title="Permanent link">&para;</a></h2>
+<p>The observation is built from <code>BattleState</code>, which is whatever the engine reports
+(<code>royalegym/protocol.py</code>). Where a channel is described as matching the live game, the
+comparison is against traces recorded by RoyaleLive, the client instrument that
+records ground-truth traces from the real game.</p>
+<p>MockEngine resolves spells inside a tick and models no status effects, so on it the
+spell and stun channels and the <code>spells</code> array are always zero. The Rust engine's
+tests are where those channels are exercised on real battles.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../architecture/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Architecture">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Architecture
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../background/" class="md-footer__link md-footer__link--next" aria-label="Next: Background">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Background
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://discord.gg/4D2BS5JBHP" target="_blank" rel="noopener" title="The project Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://github.com/RoyaleGym" target="_blank" rel="noopener" title="The RoyaleGym organisation" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
