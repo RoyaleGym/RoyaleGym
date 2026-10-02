@@ -98,3 +98,27 @@ def test_make_env_without_the_engine_says_how_to_install_it(monkeypatch):
     monkeypatch.setattr(env_mod, "core_available", lambda: False)
     with pytest.raises(ImportError, match=r'pip install "royalegym\[sim\]"'):
         make_env()
+
+
+# -- play_battle: the quickstart's last step, a battle to watch ------------------------
+
+
+def test_play_battle_plays_a_bot_and_saves_a_battle_the_viewer_can_open(tmp_path):
+    from royalegym import load_trace, make_env, play_battle
+
+    calls = {"n": 0}
+
+    def bot(obs):  # a trained policy's shape: one seat's obs in, an action out
+        calls["n"] += 1
+        return 0
+
+    out = play_battle(make_env(engine="mock"), blue=bot, red="random", seed=3,
+                      save_to=tmp_path / "battle.msgpack")
+    assert out.path == tmp_path / "battle.msgpack"
+    assert out.path.exists()
+    trace = load_trace(out.path)
+    assert trace.result is not None
+    assert len(trace.frames) > 10
+    assert calls["n"] > 10, "the bot was never asked for a move"
+    assert out.winner in (0, 1, 2, None)
+    assert out.crowns == trace.result.crowns

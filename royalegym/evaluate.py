@@ -34,13 +34,15 @@ from __future__ import annotations
 import math
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from pathlib import Path
+from typing import Any, NamedTuple
 
 import numpy as np
 
 from .env import AGENTS, ClashParallelEnv
 from .protocol import Winner
-from .selfplay import Opponent
+from .replay import ReplayRecorder, save_trace
+from .selfplay import CallableOpponent, NoopOpponent, Opponent, RandomLegalOpponent
 
 #: Anything that builds a fresh environment. A FACTORY, because an environment carries
 #: per-battle state and evaluation plays many battles.
@@ -176,6 +178,59 @@ def _z_for(confidence: float) -> float:
     if confidence in table:
         return table[confidence]
     raise ValueError(f"confidence must be one of {sorted(table)}, not {confidence}")
+
+
+class Battle(NamedTuple):
+    """One battle ``play_battle`` played: who won, the crowns, and where it was saved."""
+
+    winner: int | None  # protocol.Winner (0 Blue, 1 Red, 2 draw); None when cut short
+    crowns: list[int]  # [Blue's, Red's]
+    ticks: int
+    path: Path | None  # the saved battle, for ``royaleviser PATH``; None when not saved
+
+
+def play_battle(
+    env: ClashParallelEnv,
+    blue: Opponent | Callable[[dict[str, Any]], int] | str,
+    red: Opponent | Callable[[dict[str, Any]], int] | str = "random",
+    seed: int = 0,
+    save_to: str | Path | None = None,
+) -> Battle:
+    """Play one battle and, with ``save_to``, save it for the viewer: ``royaleviser PATH``.
+
+    ``blue`` and ``red`` are each a trained policy (a function from one seat's observation
+    to an action, as a learner's saved bot is), an ``Opponent``, ``"random"`` (a bot that
+    plays random legal moves) or ``"noop"`` (one that never plays). A policy's illegal move
+    is played as a no-op.
+    """
+    players = {"blue": _as_opponent(blue), "red": _as_opponent(red)}
+    recorder = ReplayRecorder() if save_to is not None else None
+    before = env.recorder
+    if recorder is not None:
+        env.recorder = recorder
+    try:
+        winner, ticks, _ = play_one(env, players["blue"], players["red"], seed)
+    finally:
+        env.recorder = before
+    path = None
+    if recorder is not None and recorder.trace is not None:
+        path = save_trace(recorder.trace, save_to)
+    state = env.battle_state
+    return Battle(
+        None if winner is None else int(winner), [p.crowns for p in state.players], ticks, path
+    )
+
+
+def _as_opponent(who: Opponent | Callable[[dict[str, Any]], int] | str) -> Opponent:
+    if isinstance(who, str):
+        if who == "random":
+            return RandomLegalOpponent()
+        if who == "noop":
+            return NoopOpponent()
+        raise ValueError(f'a player is a policy, an Opponent, "random" or "noop", not {who!r}')
+    if hasattr(who, "act"):
+        return who  # type: ignore[return-value]
+    return CallableOpponent(lambda obs, mask: who(obs))  # type: ignore[operator]
 
 
 def play_one(

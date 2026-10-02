@@ -55,7 +55,7 @@ from .env import (
     make_env,
     make_gym_vec_env,
 )
-from .evaluate import MatchResult, SeatResult, evaluate
+from .evaluate import Battle, MatchResult, SeatResult, evaluate, play_battle
 from .mock_engine import MockEngine
 from .obs import (
     EntityListObsBuilder,
@@ -151,6 +151,7 @@ __all__ = [
     "ActionParser",
     "AllCondition",
     "AnyCondition",
+    "Battle",
     "CallableOpponent",
     "ClashGymEnv",
     "ClashParallelEnv",
@@ -217,6 +218,7 @@ __all__ = [
     "make_env",
     "make_gym_vec_env",
     "measure_variability",
+    "play_battle",
     "save_trace",
     "verify_trace",
 ]
