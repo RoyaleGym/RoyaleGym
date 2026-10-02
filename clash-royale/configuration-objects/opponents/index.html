@@ -3350,9 +3350,11 @@ RoyaleGym. You can write your own in a few lines, or use a bot you trained.</p>
 </tr>
 </tbody>
 </table>
+<p>RoyaleLearn trains only against these three. The scripted bots below, and opponents you write,
+are for testing a bot: with <code>evaluate</code>, with <code>play_battle</code>, or in <code>ClashGymEnv</code> with another
+training library.</p>
 <h2 id="the-scripted-bots">The Scripted Bots<a class="headerlink" href="#the-scripted-bots" title="Permanent link">&para;</a></h2>
-<p>Each of these plays one simple idea. They are useful to test a bot against, and as practice
-partners.</p>
+<p>Each of these plays one simple idea. They are useful to test a bot against.</p>
 <table>
 <thead>
 <tr>
@@ -3430,7 +3432,10 @@ better, or that it is too close to call:</p>
 <p>The range in brackets is where the real win rate probably lies. With only 20 battles it is
 wide, so it can't separate the two bots. Play more battles to narrow it.</p>
 <p>A bot you trained can play here too. <code>Learner.load_policy("runs/my_bot")</code> loads it, and
-<code>CallableOpponent(lambda obs, mask: bot(obs))</code> turns it into an opponent.</p>
+<code>CallableOpponent(lambda obs, mask: bot(obs))</code> turns it into an opponent. Test it with your own
+<code>build_env</code> (<code>from quickstart import build_env</code>) in place of <code>make_env</code>, so it plays its own
+deck: <code>make_env()</code> always deals the starter deck. The <a href="../../../faq/#how-do-i-know-how-good-my-bot-is">FAQ</a>
+has a whole file that tests your bot against every bot above.</p>
 <h2 id="a-single-seat-environment">A Single-Seat Environment<a class="headerlink" href="#a-single-seat-environment" title="Permanent link">&para;</a></h2>
 <p><code>ClashGymEnv</code> puts an opponent in one seat, so the environment looks like an ordinary
 one-player Gymnasium environment. That's handy for other training libraries:</p>

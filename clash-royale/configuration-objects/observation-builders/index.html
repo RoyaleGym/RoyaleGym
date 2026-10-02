@@ -3410,17 +3410,24 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 <td><code>SpatialObsBuilder(reveal=Reveal(...))</code></td>
 <td>Hidden information, such as the opponent's real elixir. For experiments only.</td>
 </tr>
-<tr>
-<td><code>EntityListObsBuilder()</code></td>
-<td>A list of units, one row each, instead of a grid.</td>
-</tr>
 </tbody>
 </table>
+<p><code>Reveal</code> comes from <code>royalegym</code>. Turn on what you want the bot to see:
+<code>Reveal(enemy_elixir=True)</code>, <code>Reveal(enemy_hand=True)</code>, and also <code>enemy_next_card</code>,
+<code>enemy_deck</code> and <code>enemy_spell_aim</code>. For example,
+<code>obs_builder = SpatialObsBuilder(reveal=Reveal(enemy_elixir=True))</code>.</p>
+<p><code>EntityListObsBuilder()</code> gives a list of units, one row each, instead of a grid. RoyaleLearn
+can't train on it.</p>
 <div class="admonition note">
 <p class="admonition-title">Which builders RoyaleLearn can train</p>
-<p>RoyaleLearn's trainer reads <code>SpatialObsBuilder</code>'s four keys, with any of its options. A
-builder of your own works with the environment and with a trainer you write or bring
-yourself.</p>
+<p>RoyaleLearn's trainer reads <code>SpatialObsBuilder</code>'s four keys, with any of the options in the
+table. A builder of your own works with the environment and with a trainer you write or
+bring yourself.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">In your quickstart.py</p>
+<p>The builder is the <code>obs_builder = ...</code> line in <code>build_env</code>. Changing what the bot sees
+needs a new bot: change <code>save_dir</code> to a new name too.</p>
 </div>
 <h2 id="how-they-work">How They Work<a class="headerlink" href="#how-they-work" title="Permanent link">&para;</a></h2>
 <p>Every observation builder has these methods:</p>

@@ -6,56 +6,62 @@
 > StateMutator, ObsBuilder, ActionParser, RewardFunction, termination and truncation
 > DoneConditions), RoyaleLearn (the PPO trainer; RLGym-PPO's role), RoyaleViser (the viewer;
 > RLViser's role) and RoyaleImitate (warm start from a trained bot, and a penalty that keeps a
-> new bot near it). Install everything with `pip install "royalegym[all]"` (Python 3.12+); on
-> Windows install CUDA PyTorch first. Training assumes an NVIDIA GPU. The engine's battle logic
-> is still being matched to the real game; the Python APIs are meant to stay put.
+> new bot near it). Not on PyPI yet. Install everything with
+> `pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.1`
+> (Python 3.13 or 3.12). On Windows, install CUDA PyTorch first with
+> `pip install torch --index-url https://download.pytorch.org/whl/cu128`. Training assumes an
+> NVIDIA GPU; Macs need Apple silicon. The engine's battle logic is still being matched to the
+> real game; the Python APIs are meant to stay put.
 
-Each repository also has an AGENTS.md at its root with its layout, build and test commands, and
-the rules its tests enforce.
+RoyaleSim and RoyaleViser also have an AGENTS.md at their repository root with their layout,
+build and test commands, and the rules their tests enforce.
 
 ## Getting Started
 
-- [Introduction](index.md): what the five packages are, installation and the extras
-- [Overview](overview.md): the configuration objects, the two seats, what happens in one step
-- [Quick Start Guide](quickstart.md): one file, build_env() plus Learner(...), that trains a bot
+- [Introduction](https://royalegym.github.io/RoyaleGym/): what it is, quick answers, the five packages
+- [Install](https://royalegym.github.io/RoyaleGym/install/): Python, a virtual environment, PyTorch, the install line, a check
+- [Quick Start](https://royalegym.github.io/RoyaleGym/quickstart/): one file, build_env() plus Learner(...), that trains a bot; its output, watching, stopping, decks
+- [FAQ](https://royalegym.github.io/RoyaleGym/faq/): computer, training, decks, testing and sharing a bot, updating
+- [It Doesn't Work](https://royalegym.github.io/RoyaleGym/it-doesnt-work/): error messages and their fixes
+- [How It Fits Together](https://royalegym.github.io/RoyaleGym/overview/): the configuration objects, the two seats, what happens in one step
 
 ## Clash Royale
 
-- [Training an Agent](clash-royale/training-an-agent.md): custom rewards, every trainer setting, self-play, decks, watching, wandb
-- [Action Parsers](clash-royale/configuration-objects/action-parsers.md): the 2305 moves, the action mask, ability buttons, writing one
-- [Done Conditions](clash-royale/configuration-objects/done-conditions.md): termination vs truncation, the shipped ones, writing one
-- [Observation Builders](clash-royale/configuration-objects/observation-builders.md): the spatial observation, fair information, writing one
-- [Opponents](clash-royale/configuration-objects/opponents.md): scripted bots, evaluate(), ClashGymEnv
-- [Reward Functions](clash-royale/configuration-objects/reward-functions.md): the shipped rewards, CombinedReward, writing one
-- [State Mutators](clash-royale/configuration-objects/state-mutators.md): decks by name, evolutions and heroes, mid-game starts, writing one
-- [Viewer](clash-royale/configuration-objects/viewer.md): watch training live, save and open a battle, keys
+- [Training an Agent](https://royalegym.github.io/RoyaleGym/clash-royale/training-an-agent/): custom rewards, every trainer setting, self-play, decks, watching, wandb
+- [Action Parsers](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/action-parsers/): the 2305 moves, the action mask, ability buttons, writing one
+- [Done Conditions](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/done-conditions/): termination vs truncation, the shipped ones, writing one
+- [Observation Builders](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/observation-builders/): the spatial observation, fair information, Reveal, writing one
+- [Opponents](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/opponents/): scripted bots, evaluate(), ClashGymEnv
+- [Reward Functions](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/reward-functions/): the shipped rewards, CombinedReward, writing one
+- [State Mutators](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/state-mutators/): decks by name, evolutions and heroes, mid-game starts, writing one
+- [Viewer](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/viewer/): watch training live, save and open a battle, keys
 
 ## Cheatsheets
 
-- [Game Values](cheatsheets/game-values.md): arena, ticks, elixir rates, towers, codes, the action formula, the card list
-- [Reinforcement Learning Terms](cheatsheets/rl-terms.md): plain-language definitions
+- [Game Values](https://royalegym.github.io/RoyaleGym/cheatsheets/game-values/): arena, ticks, elixir rates, towers, codes, the action formula, card names, evolutions and heroes, the card list
+- [Reinforcement Learning Terms](https://royalegym.github.io/RoyaleGym/cheatsheets/rl-terms/): plain-language definitions
 
 ## Additional Resources
 
-- [RoyaleSim](resources/royalesim.md): the engine, determinism, driving it directly
-- [RoyaleLearn](resources/royalelearn.md): every Learner setting with its default, checkpoints, using a trained bot
-- [RoyaleViser](resources/royaleviser.md): the viewer
-- [RoyaleImitate](resources/royaleimitate.md): warm start and stay-close training
-- [FAQ](faq.md): install, GPU, training, deck and viewer errors
-- [royalegym API](reference/royalegym.md)
-- [royalelearn API](reference/royalelearn.md)
-- [royaleviser API](reference/royaleviser.md)
+- [RoyaleSim](https://royalegym.github.io/RoyaleGym/resources/royalesim/): the engine, determinism, driving it directly
+- [RoyaleLearn](https://royalegym.github.io/RoyaleGym/resources/royalelearn/): every Learner setting with its default, checkpoints, using a trained bot
+- [RoyaleViser](https://royalegym.github.io/RoyaleGym/resources/royaleviser/): the viewer
+- [RoyaleImitate](https://royalegym.github.io/RoyaleGym/resources/royaleimitate/): warm start and stay-close training
+- [royalegym API](https://royalegym.github.io/RoyaleGym/reference/royalegym/)
+- [royalelearn API](https://royalegym.github.io/RoyaleGym/reference/royalelearn/)
+- [royaleviser API](https://royalegym.github.io/RoyaleGym/reference/royaleviser/)
 
 ## Advanced
 
-- [How accurate is the engine](accuracy.md)
-- [The engine inside](pieces/engine.md), [the environments inside](pieces/environments.md), [the learner inside](pieces/learner.md), [the viewer inside](pieces/viewer.md)
-- [Build from source](build-from-source.md): all repositories side by side, building the engine
-- [Troubleshooting in depth](troubleshooting.md)
+- [How accurate is the engine](https://royalegym.github.io/RoyaleGym/accuracy/)
+- [The engine inside](https://royalegym.github.io/RoyaleGym/pieces/engine/), [the environments inside](https://royalegym.github.io/RoyaleGym/pieces/environments/), [the learner inside](https://royalegym.github.io/RoyaleGym/pieces/learner/), [the viewer inside](https://royalegym.github.io/RoyaleGym/pieces/viewer/)
+- [Build from source](https://royalegym.github.io/RoyaleGym/build-from-source/): all repositories side by side, building the engine
+- [Troubleshooting in depth](https://royalegym.github.io/RoyaleGym/troubleshooting/)
+
 ## Every repo's own docs (copied onto the site at build time)
 
-- RoyaleSim: [overview](repos/royalesim/README.md), [in depth](repos/royalesim/engine.md), [Python API](repos/royalesim/api.md), [architecture](repos/royalesim/architecture.md), [mechanics](repos/royalesim/mechanics.md), [game values](repos/royalesim/game-values.md), [calibration ledger](repos/royalesim/calibration.md), [pathfinding](repos/royalesim/pathfinding.md), [pathfinder spec](repos/royalesim/pathfinder-spec.md), [movement measurements](repos/royalesim/movement-measurements.md), [spell spec](repos/royalesim/spell-spec.md), [performance](repos/royalesim/performance.md), [replay parity](repos/royalesim/replay-parity.md), [card coverage queue](repos/royalesim/card-coverage-queue.md), [contributing](repos/royalesim/contributing.md), [changelog](repos/royalesim/changelog.md)
-- RoyaleGym: [the long guide](repos/royalegym/guide.md), [architecture](repos/royalegym/architecture.md), [observation spec](repos/royalegym/observation-spec.md), [background](repos/royalegym/background.md), [contributing](repos/royalegym/contributing.md), [changelog](repos/royalegym/changelog.md)
-- RoyaleLearn: [guide](repos/royalelearn/guide.md), [running a job](repos/royalelearn/running.md), [metrics](repos/royalelearn/metrics.md), [checkpoints](repos/royalelearn/checkpoints.md), [the ladder](repos/royalelearn/ladder.md), [determinism](repos/royalelearn/determinism.md), [throughput](repos/royalelearn/throughput.md), [extensions](repos/royalelearn/extensions.md), [design](repos/royalelearn/design.md), [harness spec](repos/royalelearn/harness-spec.md), [changelog](repos/royalelearn/changelog.md)
-- RoyaleViser: [guide](repos/royaleviser/guide.md), [internals](repos/royaleviser/internals.md), [contributing](repos/royaleviser/contributing.md), [changelog](repos/royaleviser/changelog.md)
-- RoyaleImitate: [guide](repos/royaleimitate/guide.md), [the contract](repos/royaleimitate/spec.md), [public log](repos/royaleimitate/public-log.md), [alarms](repos/royaleimitate/alarms.md)
+- RoyaleSim: [overview](https://royalegym.github.io/RoyaleGym/repos/royalesim/), [in depth](https://royalegym.github.io/RoyaleGym/repos/royalesim/engine/), [Python API](https://royalegym.github.io/RoyaleGym/repos/royalesim/api/), [architecture](https://royalegym.github.io/RoyaleGym/repos/royalesim/architecture/), [mechanics](https://royalegym.github.io/RoyaleGym/repos/royalesim/mechanics/), [game values](https://royalegym.github.io/RoyaleGym/repos/royalesim/game-values/), [calibration ledger](https://royalegym.github.io/RoyaleGym/repos/royalesim/calibration/), [pathfinding](https://royalegym.github.io/RoyaleGym/repos/royalesim/pathfinding/), [pathfinder spec](https://royalegym.github.io/RoyaleGym/repos/royalesim/pathfinder-spec/), [movement measurements](https://royalegym.github.io/RoyaleGym/repos/royalesim/movement-measurements/), [spell spec](https://royalegym.github.io/RoyaleGym/repos/royalesim/spell-spec/), [performance](https://royalegym.github.io/RoyaleGym/repos/royalesim/performance/), [replay parity](https://royalegym.github.io/RoyaleGym/repos/royalesim/replay-parity/), [card coverage queue](https://royalegym.github.io/RoyaleGym/repos/royalesim/card-coverage-queue/), [contributing](https://royalegym.github.io/RoyaleGym/repos/royalesim/contributing/), [changelog](https://royalegym.github.io/RoyaleGym/repos/royalesim/changelog/)
+- RoyaleGym: [the long guide](https://royalegym.github.io/RoyaleGym/repos/royalegym/guide/), [architecture](https://royalegym.github.io/RoyaleGym/repos/royalegym/architecture/), [observation spec](https://royalegym.github.io/RoyaleGym/repos/royalegym/observation-spec/), [background](https://royalegym.github.io/RoyaleGym/repos/royalegym/background/), [contributing](https://royalegym.github.io/RoyaleGym/repos/royalegym/contributing/), [changelog](https://royalegym.github.io/RoyaleGym/repos/royalegym/changelog/)
+- RoyaleLearn: [guide](https://royalegym.github.io/RoyaleGym/repos/royalelearn/guide/), [running a job](https://royalegym.github.io/RoyaleGym/repos/royalelearn/running/), [metrics](https://royalegym.github.io/RoyaleGym/repos/royalelearn/metrics/), [checkpoints](https://royalegym.github.io/RoyaleGym/repos/royalelearn/checkpoints/), [the ladder](https://royalegym.github.io/RoyaleGym/repos/royalelearn/ladder/), [determinism](https://royalegym.github.io/RoyaleGym/repos/royalelearn/determinism/), [throughput](https://royalegym.github.io/RoyaleGym/repos/royalelearn/throughput/), [extensions](https://royalegym.github.io/RoyaleGym/repos/royalelearn/extensions/), [design](https://royalegym.github.io/RoyaleGym/repos/royalelearn/design/), [harness spec](https://royalegym.github.io/RoyaleGym/repos/royalelearn/harness-spec/), [changelog](https://royalegym.github.io/RoyaleGym/repos/royalelearn/changelog/)
+- RoyaleViser: [guide](https://royalegym.github.io/RoyaleGym/repos/royaleviser/guide/), [internals](https://royalegym.github.io/RoyaleGym/repos/royaleviser/internals/), [contributing](https://royalegym.github.io/RoyaleGym/repos/royaleviser/contributing/), [changelog](https://royalegym.github.io/RoyaleGym/repos/royaleviser/changelog/)
+- RoyaleImitate: [guide](https://royalegym.github.io/RoyaleGym/repos/royaleimitate/guide/), [the contract](https://royalegym.github.io/RoyaleGym/repos/royaleimitate/spec/), [public log](https://royalegym.github.io/RoyaleGym/repos/royaleimitate/public-log/), [alarms](https://royalegym.github.io/RoyaleGym/repos/royaleimitate/alarms/)

@@ -3324,19 +3324,19 @@
 <h1 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h1>
 <p>This takes about ten minutes, most of it waiting for downloads. Do the steps in order. After
 each one, check that you see what the page says you'll see before you go on.</p>
-<p><strong>How to run a command:</strong> type it, or paste it, then press Enter. In PowerShell, Ctrl+V or a
-right-click pastes. When a box has several lines, do them one at a time.</p>
+<p><strong>How to run a command:</strong> type it, or paste it, then press Enter. To paste: Ctrl+V or a
+right-click in PowerShell on Windows, Cmd+V on a Mac, Ctrl+Shift+V in a Linux terminal. When a
+box has several lines, do them one at a time.</p>
 <p>If anything goes wrong, look up the message on <a href="../it-doesnt-work/">It Doesn't Work</a>.</p>
 <h2 id="1-install-python">1. Install Python<a class="headerlink" href="#1-install-python" title="Permanent link">&para;</a></h2>
-<p>You need Python 3.12, 3.13 or 3.14.</p>
+<p>You need <strong>Python 3.13 or 3.12</strong>. Not 3.14 or newer yet: the viewer can't install on those.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">macOS</label><label for="__tabbed_1_3">Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ol>
 <li>Go to <a href="https://www.python.org/downloads/windows/">python.org/downloads/windows</a>.</li>
-<li>Under <strong>Stable Releases</strong>, find the newest <strong>Python 3.14</strong> (or 3.13 or 3.12) and click
-   <strong>Download Windows installer (64-bit)</strong>. If the page offers a version newer than 3.14,
-   skip it: PyTorch may not support it yet.</li>
+<li>Under <strong>Stable Releases</strong>, find the newest <strong>Python 3.13</strong> (or 3.12) and click
+   <strong>Download Windows installer (64-bit)</strong>. Skip the newer versions above it.</li>
 <li>Run the installer. On its first screen, <strong>tick "Add python.exe to PATH"</strong> at the bottom.
    Leave the other box as it is.</li>
 <li>Click <strong>Install Now</strong>. When it finishes, you can ignore the "Disable path length limit"
@@ -3346,13 +3346,20 @@ right-click pastes. When a box has several lines, do them one at a time.</p>
 Uninstall) and run the installer again.</p>
 </div>
 <div class="tabbed-block">
+<p>You need a Mac with Apple silicon (M1 or newer). On a Mac with an Intel processor, the
+PyTorch that RoyaleGym needs no longer installs.</p>
 <p>Go to <a href="https://www.python.org/downloads/macos/">python.org/downloads/macos</a>, download the
-<strong>macOS 64-bit universal2 installer</strong> for Python 3.14 (or 3.13 or 3.12), and run it.</p>
+<strong>macOS 64-bit universal2 installer</strong> for the newest Python 3.13 (or 3.12), and run it. Skip
+newer versions.</p>
 </div>
 <div class="tabbed-block">
-<p>Use your system's package manager, for example on Ubuntu 24.04:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>python3-venv<span class="w"> </span>python3-pip
+<p>Open a terminal (Ctrl+Alt+T on Ubuntu). On Ubuntu 24.04, which comes with Python 3.12, run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>update
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>python3-venv<span class="w"> </span>python3-pip
 </code></pre></div>
+<p><code>sudo</code> asks for your password, and nothing shows while you type it. That's normal. Older
+versions of Ubuntu come with an older Python: install Python 3.12 or 3.13 with your package
+manager first, or upgrade Ubuntu.</p>
 </div>
 </div>
 </div>
@@ -3378,12 +3385,12 @@ Uninstall) and run the installer again.</p>
 </div>
 </div>
 <p>You should see something like:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Python 3.14.8
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Python 3.13.16
 </code></pre></div>
-<p>If it shows an older version, such as 3.10, you have an older Python too and the terminal found
-that one first. On Windows, use <code>py -3.14</code> (or <code>py -3.13</code>, <code>py -3.12</code>) in place of <code>python</code> in
-step 3, for example <code>py -3.14 -m venv venv</code>. After that, inside the virtual environment, plain
-<code>python</code> is the right one.</p>
+<p>3.12 is fine too. If it shows another version, you have more than one Python and the terminal
+found the wrong one first. Name the version in step 3 instead: <code>py -3.13 -m venv venv</code> on
+Windows, <code>python3.13 -m venv venv</code> on a Mac or Linux. After that, inside the virtual
+environment, plain <code>python</code> is the right one.</p>
 <h2 id="3-make-a-folder-for-your-bot">3. Make a Folder for Your Bot<a class="headerlink" href="#3-make-a-folder-for-your-bot" title="Permanent link">&para;</a></h2>
 <p>This makes a folder called <code>royale</code> and a <strong>virtual environment</strong> inside it. A virtual
 environment is a private copy of Python just for this project, so nothing you install here
@@ -3424,11 +3431,14 @@ normal.</p>
 </div>
 </div>
 <p>Your prompt now starts with <code>(venv)</code>. That means the virtual environment is on, and anything
-you install goes into it:</p>
+you install goes into it. On Windows it looks like the first line below, on a Mac like the
+second:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>(venv) PS C:\Users\you\royale&gt;
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>(venv) you@your-mac royale %
 </code></pre></div>
-<p>Your folder is <code>C:\Users\&lt;your name&gt;\royale</code> on Windows, and <code>royale</code> in your home folder on a
-Mac or Linux.</p>
+<p>From here on, plain <code>python</code> and <code>pip</code> work on every system, because the virtual environment
+is on. Your folder is <code>C:\Users\&lt;your name&gt;\royale</code> on Windows, and <code>royale</code> in your home folder
+on a Mac or Linux.</p>
 <div class="admonition note">
 <p class="admonition-title">Every time you open a new terminal</p>
 <p>Run just these two lines. Don't run <code>mkdir</code> or the <code>venv</code> line again.</p>
@@ -3446,7 +3456,7 @@ Mac or Linux.</p>
 </div>
 </div>
 </div>
-<p>If your prompt already ends in <code>royale</code>, skip the <code>cd</code> line. If the prompt doesn't start
+<p>If your prompt already shows <code>royale</code>, skip the <code>cd</code> line. If the prompt doesn't start
 with <code>(venv)</code>, Python won't find RoyaleGym.</p>
 </div>
 <h2 id="4-install-pytorch-for-your-graphics-card">4. Install PyTorch for Your Graphics Card<a class="headerlink" href="#4-install-pytorch-for-your-graphics-card" title="Permanent link">&para;</a></h2>
@@ -3461,6 +3471,8 @@ graphics card.</p>
 <p>You <strong>don't</strong> need to install CUDA or anything else from NVIDIA. This one command brings
 what PyTorch needs. Just make sure your NVIDIA driver is up to date, for example with the
 NVIDIA App. It works with GTX 16-series and RTX 20-series cards and newer.</p>
+<p>It's a big download, about 3 GB, and <code>pip</code> can sit on one line for several minutes while it
+downloads. That's normal. When it's done, the last line starts with <code>Successfully installed</code>.</p>
 </div>
 <div class="tabbed-block">
 <p>Nothing to do here: the next step installs PyTorch for you. Macs don't have NVIDIA cards,
@@ -3468,34 +3480,33 @@ and RoyaleGym doesn't use Apple's graphics chip, so training runs on the process
 </div>
 <div class="tabbed-block">
 <p>Nothing to do here: the next step installs a PyTorch that already works with NVIDIA cards.
-Keep your NVIDIA driver up to date.</p>
+It needs NVIDIA driver 580 or newer. Check yours with <code>nvidia-smi</code>; the version is in the top
+line. To update it on Ubuntu, run <code>sudo ubuntu-drivers install</code>, then restart.</p>
 </div>
 </div>
 </div>
-<p>It's a big download, about 3 GB, and <code>pip</code> can sit on one line for several minutes while it
-downloads. That's normal. When it's done, the last line starts with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Successfully installed
-</code></pre></div>
-<p>If <code>pip</code> also prints a notice that "a new release of pip is available", you can ignore it.</p>
+<p>If <code>pip</code> prints a notice that "a new release of pip is available", you can ignore it.</p>
 <h2 id="5-install-royalegym">5. Install RoyaleGym<a class="headerlink" href="#5-install-royalegym" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.1
 </code></pre></div>
 <p>Copy the whole line with the copy button, quotes included. <code>[all]</code> means "with every part": the
 engine, the environments, the trainer, the viewer and the extras. The <code>--find-links</code> part tells
 <code>pip</code> where to download them, because RoyaleGym isn't on PyPI (Python's package store) yet. You
 don't need Git or Rust.</p>
-<p>You'll see a lot of <code>Downloading</code> and <code>Installing</code> lines. It ends with a line that starts with
-<code>Successfully installed</code> and lists everything it installed, <code>royalegym</code> among them.</p>
+<p>You'll see a lot of <code>Downloading</code> and <code>Installing</code> lines. On Linux this step also downloads
+PyTorch, about 3 GB, so it can sit on one line for several minutes. It ends with a line that
+starts with <code>Successfully installed</code> and lists everything it installed, <code>royalegym</code> among them.</p>
 <h2 id="6-check-that-it-works">6. Check That It Works<a class="headerlink" href="#6-check-that-it-works" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>python -c "import royalegym, torch; print('RoyaleGym', royalegym.__version__, '| graphics card:', torch.cuda.is_available())"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python -c "import royalegym, torch; print('RoyaleGym', royalegym.__version__, '| graphics card:', torch.cuda.is_available())"
 </code></pre></div>
 <p>You should see:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>RoyaleGym 0.1.1 | graphics card: True
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>RoyaleGym 0.1.1 | graphics card: True
 </code></pre></div>
 <p>The version number may be newer. If it says <code>graphics card: False</code> on a computer with an NVIDIA
 card, see <a href="../it-doesnt-work/#pytorch-cant-see-my-graphics-card">PyTorch can't see my graphics card</a>.
 On a Mac, <code>False</code> is expected.</p>
-<p>All of this takes about 5 GB of disk space, most of it PyTorch.</p>
+<p>All of this takes about 5 GB of disk space on Windows and Linux, most of it PyTorch, and much
+less on a Mac.</p>
 <p>You're ready. Next: the <a href="../quickstart/">Quick Start</a>.</p>
 
 

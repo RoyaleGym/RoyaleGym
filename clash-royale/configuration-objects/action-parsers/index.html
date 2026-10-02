@@ -3396,7 +3396,7 @@ while that ability can be used. <code>make_env(heroes=[...])</code> turns the bu
 </tr>
 <tr>
 <td><code>TileActionParser(buildings="taps_where_the_building_stays")</code></td>
-<td>Only offers building taps where the building lands on the tile you chose. By default the game moves a building that doesn't fit to the nearest place it does.</td>
+<td>Only offers building taps where the building lands on the tile you chose. By default the game moves a building that doesn't fit to the nearest place it does. Not for RoyaleLearn: its start-up check refuses it when the deck has a building.</td>
 </tr>
 <tr>
 <td><code>HalfTileActionParser()</code></td>
@@ -3406,9 +3406,16 @@ while that ability can be used. <code>make_env(heroes=[...])</code> turns the bu
 </table>
 <div class="admonition note">
 <p class="admonition-title">Which parsers RoyaleLearn can train</p>
-<p>RoyaleLearn's trainer is built for <code>TileActionParser</code>'s grid of moves, with or without
-ability buttons. Any other action parser, including your own, works with the environment
-and with a trainer you write or bring yourself.</p>
+<p>RoyaleLearn's trainer is built for <code>TileActionParser</code>'s grid of moves, with its default
+buildings setting, with or without ability buttons. Any other action parser, including
+your own, works with the environment and with a trainer you write or bring yourself. With
+another parser in <code>build_env</code>, training stops with <code>spatial planes are (32, 18) tiles,
+tiles says (64, 36)</code> or <code>the observation space has no 'mask_planes' key</code>: that's this limit.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">In your quickstart.py</p>
+<p>The parser is the <code>action_parser = ...</code> line in <code>build_env</code>. Changing it changes the bot's
+moves, so it needs a new bot: change <code>save_dir</code> to a new name too.</p>
 </div>
 <h2 id="how-they-work">How They Work<a class="headerlink" href="#how-they-work" title="Permanent link">&para;</a></h2>
 <p>Every action parser has these methods:</p>

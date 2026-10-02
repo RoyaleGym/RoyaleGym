@@ -3327,7 +3327,7 @@
 
 
   
-    <a href="https://github.com/RoyaleGym/RoyaleGym/edit/main/docs/site/pages/repos/royalegym/guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/RoyaleGym/RoyaleGym/edit/main/docs/guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -3804,17 +3804,19 @@ says which skips are expected and why.</p>
   <a href="https://github.com/RoyaleGym/RoyaleGym/tree/main/docs/site/pages"><code>docs/site/pages/</code></a>, and you can build the site yourself. It needs
   RoyaleViser and RoyaleLearn installed too, because its reference pages read their code. From
   the <code>Royale</code> folder, run <code>.venv\Scripts\python -m pip install -e "RoyaleGym[docs]"</code>. Then
-  <code>cd RoyaleGym\docs\site</code> and run <code>..\..\..\.venv\Scripts\mkdocs serve</code>. On macOS and Linux
+  <code>cd RoyaleGym\docs\site</code>, run <code>..\..\..\.venv\Scripts\python collect.py --root ..\..\..</code> (it copies
+  every repo's docs onto the site), then <code>..\..\..\.venv\Scripts\mkdocs serve</code>. On macOS and Linux
   those are <code>.venv/bin/python</code> and <code>../../../.venv/bin/mkdocs</code>. It serves the site at
   <code>http://127.0.0.1:8000/RoyaleGym/</code>. It first prints a boxed warning about MkDocs 2.0 from the
   theme's authors. That is a notice, not an error, and the build carries on.
-  <a href="https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/site/pages/first-bot.md">Your first bot</a> walks a custom policy from
-  nothing to beating the random opponent, and there are pages on
-  <a href="https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/site/pages/install.md">installing</a>,
-  <a href="https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/site/pages/rewards.md">writing a reward</a>,
-  <a href="https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/site/pages/observations-and-actions.md">observations and actions</a>,
-  <a href="https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/site/pages/accuracy.md">how accurate the engine is</a> and
-  <a href="https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/site/pages/troubleshooting.md">what to do when something breaks</a>.</li>
+  The published site is <a href="https://royalegym.github.io/RoyaleGym/">royalegym.github.io/RoyaleGym</a>: the
+  <a href="https://royalegym.github.io/RoyaleGym/quickstart/">Quick Start</a> trains a first bot, and there are pages on
+  <a href="https://royalegym.github.io/RoyaleGym/install/">installing</a>,
+  <a href="https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/reward-functions/">writing a reward</a>,
+  <a href="https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/observation-builders/">observations</a> and
+  <a href="https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/action-parsers/">actions</a>,
+  <a href="https://royalegym.github.io/RoyaleGym/accuracy/">how accurate the engine is</a> and
+  <a href="https://royalegym.github.io/RoyaleGym/it-doesnt-work/">what to do when something breaks</a>.</li>
 <li><a href="../architecture/"><code>docs/architecture.md</code></a> for the layers, the engine contract, the
   action space, the module map, and why each convention is there.</li>
 <li><a href="../observation-spec/"><code>docs/observation-spec.md</code></a> for every channel and every vector

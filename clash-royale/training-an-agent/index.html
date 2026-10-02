@@ -3447,7 +3447,8 @@ are three small ones to start from. It's tidiest to put them in a file of their 
 (<code>results</code>). <a href="../configuration-objects/reward-functions/">Reward Functions</a> explains every
 field you can read.</p>
 <h3 id="the-environment">The environment<a class="headerlink" href="#the-environment" title="Permanent link">&para;</a></h3>
-<p>Now set up the battle with these rewards mixed in. <code>CombinedReward</code> adds several rewards
+<p>Now set up the battle with these rewards mixed in. Save this and the trainer below together in
+one file, <code>my_bot.py</code>, next to <code>rewards.py</code>. <code>CombinedReward</code> adds several rewards
 together, each with a weight. Keep the win itself the biggest part: the others are hints that
 help the bot find its way to a win, and if a hint pays more than winning, the bot will chase
 the hint instead.</p>
@@ -3481,8 +3482,8 @@ the hint instead.</p>
 <a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>    <span class="p">)</span>
 </code></pre></div>
 <h3 id="the-trainer">The trainer<a class="headerlink" href="#the-trainer" title="Permanent link">&para;</a></h3>
-<p>Then the trainer. It's the quickstart's, except that the bot plays against copies of itself, and
-it streams a battle to the viewer:</p>
+<p>Then the trainer. It's the quickstart's, except that the bot plays against copies of itself, it
+saves to <code>runs/my_bot</code>, and it saves the finished bot at the end:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -3616,12 +3617,15 @@ second terminal:</p>
 <p>It attaches to the running training and shows the battle as it happens. Space pauses, <code>h</code>
 lists every key, <code>q</code> quits.</p>
 <p>To watch a bot after training, load it from its <code>save_dir</code>, play a battle with it, and open the file:</p>
+<p>Put this in its own file, such as <code>watch_my_bot.py</code>, next to <code>my_bot.py</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">play_battle</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">bot</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/my_bot"</span><span class="p">)</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">battle</span> <span class="o">=</span> <span class="n">play_battle</span><span class="p">(</span><span class="n">build_env</span><span class="p">(),</span> <span class="n">blue</span><span class="o">=</span><span class="n">bot</span><span class="p">,</span> <span class="n">red</span><span class="o">=</span><span class="s2">"random"</span><span class="p">,</span> <span class="n">save_to</span><span class="o">=</span><span class="s2">"my_bot_battle.msgpack"</span><span class="p">)</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Crowns </span><span class="si">{</span><span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">my_bot</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">bot</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/my_bot"</span><span class="p">)</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">battle</span> <span class="o">=</span> <span class="n">play_battle</span><span class="p">(</span><span class="n">build_env</span><span class="p">(),</span> <span class="n">blue</span><span class="o">=</span><span class="n">bot</span><span class="p">,</span> <span class="n">red</span><span class="o">=</span><span class="s2">"random"</span><span class="p">,</span> <span class="n">save_to</span><span class="o">=</span><span class="s2">"my_bot_battle.msgpack"</span><span class="p">)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Crowns </span><span class="si">{</span><span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>royaleviser my_bot_battle.msgpack
 </code></pre></div>

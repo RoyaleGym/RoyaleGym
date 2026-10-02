@@ -550,6 +550,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#can-i-use-google-colab-or-a-rented-gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can I use Google Colab or a rented GPU?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#do-i-need-to-know-python-or-machine-learning" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -786,6 +797,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#can-i-see-graphs-of-how-its-doing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can I see graphs of how it's doing?
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -808,6 +830,17 @@
     <span class="md-ellipsis">
       
         What can I do with my bot once it's trained?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-do-i-share-my-bot-or-a-battle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How do I share my bot, or a battle?
       
     </span>
   </a>
@@ -3674,6 +3707,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#can-i-use-google-colab-or-a-rented-gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can I use Google Colab or a rented GPU?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#do-i-need-to-know-python-or-machine-learning" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3910,6 +3954,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#can-i-see-graphs-of-how-its-doing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can I see graphs of how it's doing?
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3932,6 +3987,17 @@
     <span class="md-ellipsis">
       
         What can I do with my bot once it's trained?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-do-i-share-my-bot-or-a-battle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How do I share my bot, or a battle?
       
     </span>
   </a>
@@ -4069,18 +4135,25 @@ game, any game files or an account.</p>
 <p>RoyaleGym never touches the game, your account or Supercell's servers, so there's nothing to ban.</p>
 <h3 id="what-computer-do-i-need">What computer do I need?<a class="headerlink" href="#what-computer-do-i-need" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Windows 10 or 11, Linux or a Mac, with Python 3.12, 3.13 or 3.14.</li>
+<li>Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.13 or 3.12.
+  Not Python 3.14 yet: the viewer can't install on it.</li>
 <li>About 5 GB of free disk space, most of it for PyTorch.</li>
+<li>16 GB of memory (RAM) or more. Training with the quickstart's settings can use around 10 GB.</li>
 <li>To train at a useful speed, an NVIDIA graphics card: a GTX 16-series, an RTX 20-series, or
-  anything newer.</li>
-<li>A processor with more cores helps too, because the battles run on it.</li>
+  anything newer. GTX 10-series and older cards don't work with the PyTorch it uses.</li>
+<li>A fast processor helps too, because the battles run on it.</li>
 </ul>
+<p>Intel Macs can't install the PyTorch RoyaleGym needs, so RoyaleGym doesn't run on them.</p>
 <p>If you have a PC with an NVIDIA card and a Mac, use the PC.</p>
 <h3 id="can-i-use-it-without-an-nvidia-graphics-card-or-on-a-mac">Can I use it without an NVIDIA graphics card, or on a Mac?<a class="headerlink" href="#can-i-use-it-without-an-nvidia-graphics-card-or-on-a-mac" title="Permanent link">&para;</a></h3>
 <p>Yes, but training runs on the processor instead, which is far slower. RoyaleGym doesn't use
 Apple's graphics chip, so a Mac always trains on its processor. Everything else (running
-battles, writing rewards, the viewer) works the same. On a laptop, a smaller <code>n_envs</code>, such as 8,
-keeps it from using every core.</p>
+battles, writing rewards, the viewer) works the same.</p>
+<h3 id="can-i-use-google-colab-or-a-rented-gpu">Can I use Google Colab or a rented GPU?<a class="headerlink" href="#can-i-use-google-colab-or-a-rented-gpu" title="Permanent link">&para;</a></h3>
+<p>We haven't tested Colab. A rented Linux machine with an NVIDIA card works like any Linux
+computer: follow <a href="../install/">Install</a> in its terminal. It has no screen, so watch your bot by
+saving battles with <code>watch.py</code> and opening them on your own computer (see
+<a href="../it-doesnt-work/#no-window-appears-at-all">No window appears at all</a>).</p>
 <h3 id="do-i-need-to-know-python-or-machine-learning">Do I need to know Python or machine learning?<a class="headerlink" href="#do-i-need-to-know-python-or-machine-learning" title="Permanent link">&para;</a></h3>
 <p>You need to be able to run a Python file and change a line in it. You don't need to know any
 machine learning. The <a href="../quickstart/">Quick Start</a> shows you everything step by step, and the
@@ -4090,8 +4163,10 @@ machine learning. The <a href="../quickstart/">Quick Start</a> shows you everyth
 <h2 id="training">Training<a class="headerlink" href="#training" title="Permanent link">&para;</a></h2>
 <h3 id="i-ran-the-quickstart-what-am-i-looking-at">I ran the quickstart. What am I looking at?<a class="headerlink" href="#i-ran-the-quickstart-what-am-i-looking-at" title="Permanent link">&para;</a></h3>
 <p>One line each time the bot learns from a batch of battles. The number to watch is <code>crowns</code>:
-crowns taken minus crowns lost, per battle. If it goes up over time, your bot is learning. Every
-column is explained in <a href="../quickstart/#3-what-youll-see">What You'll See</a>.</p>
+crowns taken minus crowns lost, per battle. If it goes up over time, your bot is learning. It
+jumps up and down from line to line, so look at the trend over 20 lines or more. It starts above
+zero because the random bot waits 9 moves out of 10, and near +3 your bot beats it 3-0 almost
+every time. Every column is explained in <a href="../quickstart/#3-what-youll-see">What You'll See</a>.</p>
 <h3 id="how-long-until-my-bot-is-any-good">How long until my bot is any good?<a class="headerlink" href="#how-long-until-my-bot-is-any-good" title="Permanent link">&para;</a></h3>
 <p>There's no fixed answer. It depends on your graphics card, your settings and your reward. Bots
 for games like this usually need many hours of training, often days, before they play well.
@@ -4100,11 +4175,13 @@ Leave it running overnight, and watch it play now and then to see how it's doing
 <p>While it trains, open a second terminal, turn on the virtual environment and run <code>royaleviser</code>.
 A window shows one of its battles live. See <a href="../quickstart/#5-watch-it-play">Watch It Play</a>.</p>
 <h3 id="how-do-i-stop-training-and-carry-on-later">How do I stop training and carry on later?<a class="headerlink" href="#how-do-i-stop-training-and-carry-on-later" title="Permanent link">&para;</a></h3>
-<p>Press <strong>Ctrl+C</strong> once in the training terminal, and wait. It finishes the update it's on, saves,
-and stops. Run the same command again to carry on where it stopped. See
-<a href="../quickstart/#6-stop-and-carry-on">Stop and Carry On</a>.</p>
+<p>Press <strong>Ctrl+C</strong> once in the training terminal (Control+C on a Mac too), and wait. It finishes
+the update it's on, saves, and stops. Run the same command again to carry on where it stopped.
+See <a href="../quickstart/#6-stop-and-carry-on">Stop and Carry On</a>.</p>
 <h3 id="how-do-i-start-over">How do I start over?<a class="headerlink" href="#how-do-i-start-over" title="Permanent link">&para;</a></h3>
-<p>Delete the <code>runs\quickstart</code> folder, or change <code>save_dir</code> in <code>quickstart.py</code> to a new name.</p>
+<p>Delete the <code>runs\quickstart</code> folder (<code>Remove-Item -Recurse runs\quickstart</code> in PowerShell,
+<code>rm -r runs/quickstart</code> on a Mac or Linux), or change <code>save_dir</code> in <code>quickstart.py</code> to a new
+name.</p>
 <h3 id="is-it-ok-to-leave-it-running-overnight-or-for-days">Is it OK to leave it running overnight, or for days?<a class="headerlink" href="#is-it-ok-to-leave-it-running-overnight-or-for-days" title="Permanent link">&para;</a></h3>
 <p>Yes. It's like running a demanding game for that long: the fans get loud, and that's normal.
 Keep a laptop plugged in with the lid open, and turn off sleep while it trains. If the computer
@@ -4126,21 +4203,23 @@ and tower damage, like the quickstart's, pay out much more often.</p>
 <h3 id="why-does-my-bot-spam-one-card">Why does my bot spam one card?<a class="headerlink" href="#why-does-my-bot-spam-one-card" title="Permanent link">&para;</a></h3>
 <p>It found something your reward pays for, and it's doing it as often as it can. Look at what the
 reward pays: a reward for playing cards, for example, teaches it to play cards, any cards,
-anywhere. Change the reward, or let it train against copies of itself (<code>opponent="self"</code>), so a
-trick that beats a weak opponent stops working.</p>
+anywhere. Change the reward, or train a new bot against copies of itself (<code>opponent="self"</code>, with
+a new <code>save_dir</code>), so a trick that beats a weak opponent stops working.</p>
 <h3 id="why-does-crowns-stay-near-zero">Why does <code>crowns</code> stay near zero?<a class="headerlink" href="#why-does-crowns-stay-near-zero" title="Permanent link">&para;</a></h3>
 <p>If it plays against itself (<code>opponent="self"</code>), both sides get better together, so neither wins
 more. That's expected. Watch it play to see whether it's improving. After a few million steps,
-the file <code>metrics.jsonl</code> in your <code>save_dir</code> also records a rating (<code>ladder/rating_above_v0</code>):
-how much stronger it is than its first saved version.</p>
+the file <code>metrics.jsonl</code> in your <code>save_dir</code> also records a rating, <code>ladder/rating_above_v0</code>: how
+much stronger it is than its first saved version, in Elo points. +100 means it wins about 64% of
+its games against that first version.</p>
 <h3 id="how-do-i-make-it-use-my-deck">How do I make it use my deck?<a class="headerlink" href="#how-do-i-make-it-use-my-deck" title="Permanent link">&para;</a></h3>
-<p>Change the <code>deck = [...]</code> line in <code>quickstart.py</code> to your eight cards. See
-<a href="../quickstart/#8-use-your-own-deck">Use Your Own Deck</a>. Card names have no spaces; the full list
-is in <a href="../cheatsheets/game-values/#cards">Game Values</a>.</p>
+<p>Change the <code>deck = [...]</code> line in <code>quickstart.py</code> to your eight cards, and use a new <code>save_dir</code>
+there and in <code>watch.py</code>. See <a href="../quickstart/#8-use-your-own-deck">Use Your Own Deck</a>. Card names
+have no spaces, except <code>Elixir Collector</code>; the full list is in
+<a href="../cheatsheets/game-values/#cards">Game Values</a>.</p>
 <h3 id="can-it-use-evolutions-heroes-and-champions">Can it use evolutions, heroes and champions?<a class="headerlink" href="#can-it-use-evolutions-heroes-and-champions" title="Permanent link">&para;</a></h3>
-<p>Most evolutions and hero forms, and every champion. See
-<a href="../quickstart/#evolutions-and-heroes">Evolutions and heroes</a> to add them to your deck. If one
-isn't in RoyaleGym yet, you get an error that says so.</p>
+<p>Most of them: 42 evolutions, 16 heroes and every champion. The lists are in
+<a href="../cheatsheets/game-values/#evolutions-and-heroes">Game Values</a>, and
+<a href="../quickstart/#evolutions-and-heroes">Evolutions and heroes</a> shows how to add them to your deck.</p>
 <h3 id="what-level-are-the-cards-can-i-pick-a-tower-troop">What level are the cards? Can I pick a tower troop?<a class="headerlink" href="#what-level-are-the-cards-can-i-pick-a-tower-troop" title="Permanent link">&para;</a></h3>
 <p>Every card and tower is level 11, the tournament standard. The towers are the normal Princess
 Towers; tower troops aren't in RoyaleGym.</p>
@@ -4159,24 +4238,47 @@ the words. You can train a good bot without touching most of them.</p>
 <h3 id="how-do-i-make-training-faster">How do I make training faster?<a class="headerlink" href="#how-do-i-make-training-faster" title="Permanent link">&para;</a></h3>
 <p>First make sure PyTorch can see your graphics card (see
 <a href="../it-doesnt-work/#pytorch-cant-see-my-graphics-card">It Doesn't Work</a>).</p>
-<p>Then look at your processor. The battles run on it, and they are usually what holds training
-back. Open Task Manager &gt; Performance &gt; CPU (Activity Monitor on a Mac) while it trains. If the
-processor isn't near 100%, raise <code>n_envs</code>, the number of battles played at once, in steps (for
-example from 32 to 48, then 64) and watch again. If you raise it too far, training just gets
-slower, or runs out of memory.</p>
+<p>The battles take turns on one processor core, so the processor won't show near 100%, and a
+faster core helps more than more cores. Playing more battles at once (<code>n_envs</code>) lets the
+graphics card work on many of them together, which is why the quickstart plays 32. <code>n_envs</code> is
+fixed for a run: to try another number, start a new bot with a new <code>save_dir</code>.</p>
+<h3 id="can-i-see-graphs-of-how-its-doing">Can I see graphs of how it's doing?<a class="headerlink" href="#can-i-see-graphs-of-how-its-doing" title="Permanent link">&para;</a></h3>
+<p>Yes, with Weights &amp; Biases, a free website for charts. Make an account at
+<a href="https://wandb.ai">wandb.ai</a>, run <code>pip install wandb</code> and then <code>wandb login</code> once (with the
+virtual environment on), and set <code>log_to_wandb=True</code> in <code>quickstart.py</code>.</p>
 <h2 id="playing">Playing<a class="headerlink" href="#playing" title="Permanent link">&para;</a></h2>
 <h3 id="what-can-i-do-with-my-bot-once-its-trained">What can I do with my bot once it's trained?<a class="headerlink" href="#what-can-i-do-with-my-bot-once-its-trained" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Watch it play: live while it trains, or <a href="../quickstart/#7-watch-a-whole-battle-later">a whole battle later</a>.</li>
-<li>Test it against the simple bots that come with RoyaleGym (see the next question).</li>
-<li>Keep training it, with a new reward or against itself.</li>
+<li>Test it against the simple bots that come with RoyaleGym (see below).</li>
+<li>Keep training it with a new reward. Training it against itself starts a new bot in a new
+  <code>save_dir</code>.</li>
 <li>Keep a copy of its folder in <code>runs</code>: that's your bot, with everything it has learned.</li>
 </ul>
+<h3 id="how-do-i-share-my-bot-or-a-battle">How do I share my bot, or a battle?<a class="headerlink" href="#how-do-i-share-my-bot-or-a-battle" title="Permanent link">&para;</a></h3>
+<p>Send your bot's folder from <code>runs</code>. Your friend loads it with <code>Learner.load_policy("that folder")</code>
+and plays it with the same deck, as in <code>watch.py</code>. They can't carry on training it on their
+computer. To share a battle, send the <code>.msgpack</code> file that <code>watch.py</code> saves; they open it with
+<code>royaleviser FILE</code>. To make a video of it, see
+<a href="../it-doesnt-work/#no-window-appears-at-all">No window appears at all</a>.</p>
 <h3 id="can-i-play-against-my-bot">Can I play against my bot?<a class="headerlink" href="#can-i-play-against-my-bot" title="Permanent link">&para;</a></h3>
 <p>Not yet. You can watch it play against other bots, or against itself.</p>
 <h3 id="how-do-i-know-how-good-my-bot-is">How do I know how good my bot is?<a class="headerlink" href="#how-do-i-know-how-good-my-bot-is" title="Permanent link">&para;</a></h3>
-<p>Watch it play, and test it against the simple bots that come with RoyaleGym. See
-<a href="../clash-royale/configuration-objects/opponents/#who-is-better">Who Is Better?</a>.</p>
+<p>Watch it play, and test it against the simple bots that come with RoyaleGym. Save this as
+<code>how_good.py</code> next to <code>quickstart.py</code> and run <code>python how_good.py</code>. It takes a few minutes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallableOpponent</span><span class="p">,</span> <span class="n">evaluate</span><span class="p">,</span> <span class="n">ladder</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">quickstart</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">bot</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/quickstart"</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">me</span> <span class="o">=</span> <span class="n">CallableOpponent</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obs</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">bot</span><span class="p">(</span><span class="n">obs</span><span class="p">))</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">opponent</span> <span class="ow">in</span> <span class="n">ladder</span><span class="p">():</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">evaluate</span><span class="p">(</span><span class="n">me</span><span class="p">,</span> <span class="n">opponent</span><span class="p">,</span> <span class="n">build_env</span><span class="p">,</span> <span class="n">games</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">"my bot"</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+</code></pre></div>
+<p>Each line says how many battles it won and whether it's clearly better or "too close to call".
+A good bot clearly beats every bot on the list, not just the random one. More about this on
+<a href="../clash-royale/configuration-objects/opponents/#who-is-better">Opponents</a>.</p>
 <h2 id="the-game">The Game<a class="headerlink" href="#the-game" title="Permanent link">&para;</a></h2>
 <h3 id="is-it-exactly-like-the-real-game">Is it exactly like the real game?<a class="headerlink" href="#is-it-exactly-like-the-real-game" title="Permanent link">&para;</a></h3>
 <p>Close, but not exact. The engine is checked against recordings of real battles, and most cards
@@ -4185,14 +4287,18 @@ behave the same. Some details are still being matched, and the engine keeps impr
 <p>Most cards you can use in ladder battles. The list is in
 <a href="../cheatsheets/game-values/#cards">Game Values</a>.</p>
 <h3 id="how-do-i-remove-everything">How do I remove everything?<a class="headerlink" href="#how-do-i-remove-everything" title="Permanent link">&para;</a></h3>
-<p>Delete your <code>royale</code> folder. That removes RoyaleGym, PyTorch and your bots. If you don't need
-Python any more, uninstall it too (on Windows: Settings &gt; Apps &gt; Installed apps &gt; Python &gt;
-Uninstall).</p>
+<p>First, with the virtual environment on, run <code>pip cache purge</code>: <code>pip</code> keeps its own copy of
+everything it downloaded, PyTorch included, outside your folder. Then delete your <code>royale</code>
+folder. That removes RoyaleGym, PyTorch and your bots. If you don't need Python any more,
+uninstall it too (on Windows: Settings &gt; Apps &gt; Installed apps &gt; Python &gt; Uninstall).</p>
 <h3 id="what-happens-when-clash-royale-updates">What happens when Clash Royale updates?<a class="headerlink" href="#what-happens-when-clash-royale-updates" title="Permanent link">&para;</a></h3>
-<p>New cards and balance changes reach RoyaleGym in a new version of the engine. To update, run the
-install line from <a href="../install/#5-install-royalegym">Install</a> again, with <code>--upgrade</code> added right
-after <code>pip install</code>. Your code keeps working, but a bot trained on the old
-version may play a little differently on the new one.</p>
+<p>New cards and balance changes reach RoyaleGym in a new version of the engine. To update, find
+the newest version on the <a href="https://github.com/RoyaleGym/RoyaleGym/releases">Releases page</a>, for
+example <code>v0.1.2</code>, and run this with that version at the end:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.2
+</code></pre></div>
+<p>It updates the five RoyaleGym packages and leaves your PyTorch alone. Your code keeps working,
+but a bot can't carry on training across an update: start a new one with a new <code>save_dir</code>.</p>
 
 
 

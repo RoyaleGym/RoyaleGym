@@ -3358,8 +3358,10 @@ a new bot get started.</p>
 </code></pre></div>
 <p>Keep winning the biggest part. The smaller rewards are hints that help the bot find its way to
 a win. If a hint is worth more than winning, the bot learns to chase the hint instead.</p>
-<p>At the end of each battle, the last step's <code>info</code> says how much each part paid over the whole
-battle, as <code>reward_sum/&lt;name&gt;</code>. That tells you which part the bot is really earning from.</p>
+<p>While it trains, each line of <code>metrics.jsonl</code> in your <code>save_dir</code> has <code>env/reward_terms/&lt;name&gt;</code>:
+how much each part paid per battle, after its weight. That tells you which part the bot is really
+earning from. (In your own code, the last step's <code>info</code> of a battle has the same as
+<code>reward_sum/&lt;name&gt;</code>.)</p>
 <h2 id="how-they-work">How They Work<a class="headerlink" href="#how-they-work" title="Permanent link">&para;</a></h2>
 <p>Every reward function has one method you must write, and two you can:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Required. Called once per seat after every step. Return that seat's reward.</span>
@@ -3389,6 +3391,12 @@ battle, as <code>reward_sum/&lt;name&gt;</code>. That tells you which part the b
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="n">after</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">players</span><span class="p">[</span><span class="n">foe</span><span class="p">]</span><span class="o">.</span><span class="n">tower_hp</span><span class="p">)</span>
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="k">return</span> <span class="p">(</span><span class="n">before</span> <span class="o">-</span> <span class="n">after</span><span class="p">)</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">players</span><span class="p">[</span><span class="n">foe</span><span class="p">]</span><span class="o">.</span><span class="n">tower_max_hp</span><span class="p">)</span>
 </code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">In your quickstart.py</p>
+<p>Paste the class above the line <code>def build_env():</code>. Then use it in the <code>reward_fn</code> lines, for
+example by changing <code>(TowerHPReward(), 0.1),</code> to <code>(TowerDamageDealtReward(), 0.1),</code>. In
+<code>ClashParallelEnv</code> the reward's keyword is <code>reward_fn=</code>; in <code>make_env</code>, below, it's <code>reward=</code>.</p>
+</div>
 <p>Use it like any other reward, on its own or in a <code>CombinedReward</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>
