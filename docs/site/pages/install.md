@@ -3,11 +3,6 @@
 This takes about ten minutes, most of it waiting for downloads. Do the steps in order. After
 each one, check that you see what the page says you'll see before you go on.
 
-<!-- known issue, v0.1.0 only: remove when v0.1.1 ships -->
-!!! warning "Right now: Windows only"
-    In this first version (v0.1.0), the quickstart only runs on Windows. On Linux and macOS it
-    installs, but stops with an error as it starts. A fix is coming in the next version.
-
 **How to run a command:** type it, or paste it, then press Enter. In PowerShell, Ctrl+V or a
 right-click pastes. When a box has several lines, do them one at a time.
 
@@ -201,7 +196,7 @@ If `pip` also prints a notice that "a new release of pip is available", you can 
 ## 5. Install RoyaleGym
 
 ```
-pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.0
+pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.1
 ```
 
 Copy the whole line with the copy button, quotes included. `[all]` means "with every part": the
