@@ -16,10 +16,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# The engine. Built from ../RoyaleSim with `maturin develop --release`; the package
-# imports without it (MockEngine is the pure-Python reference) and RustEngine()
-# raises ImportError naming the build command.
+# One install line for every piece: pip install "royalegym[all]".
+# The engine (a prebuilt wheel; it carries its own data). The package imports without it
+# (MockEngine is the pure-Python reference), and RustEngine() and make_env() say how to
+# install it.
 sim = ["royalesim"]
+# The learner, with PyTorch, which trains on a CPU.
+learn = ["royalelearn[torch]"]
+# The viewer: watch a battle live or from a saved file.
+viser = ["royaleviser"]
+# Imitation from replays.
+imitate = ["royaleimitate"]
+all = ["royalesim", "royalelearn[torch]", "royaleviser[media]", "royaleimitate"]
 dev = [
     "pytest>=8.0",
     "hypothesis>=6.100",

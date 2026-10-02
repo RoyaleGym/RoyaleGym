@@ -69,22 +69,43 @@ DATA_DIR_ENV = "ROYALESIM_DATA_DIR"
 def data_dir() -> Path:
     """RoyaleSim's ``data/`` directory (calibration.json, raw/, derived/).
 
-    ``ROYALESIM_DATA_DIR`` when set; otherwise the sibling checkout, ``../RoyaleSim/data``
-    from this repo, which is the documented workspace layout (the five repos cloned into
-    one folder). Raises FileNotFoundError naming both when neither is a directory, so a
-    missing sibling is reported once here rather than as a bare path from every loader.
+    In order: ``ROYALESIM_DATA_DIR`` when set; the data the installed engine carries
+    (``royalesim.data_dir()``, the pip-installed case); the sibling checkout,
+    ``../RoyaleSim/data`` from this repo (the five repos cloned into one folder). Raises
+    FileNotFoundError saying how to install the engine when none is a directory, so a
+    missing engine is reported once here rather than as a bare path from every loader.
     """
     override = os.environ.get(DATA_DIR_ENV)
-    p = Path(override) if override else DEFAULT_DATA_DIR
+    if override:
+        p = Path(override)
+    else:
+        p = _installed_engine_data() or DEFAULT_DATA_DIR
     if not p.is_dir():
         where = (
             f"{DATA_DIR_ENV}={override}" if override else f"{DEFAULT_DATA_DIR} (no {DATA_DIR_ENV})"
         )
         raise FileNotFoundError(
-            f"RoyaleSim data directory not found at {where}: clone RoyaleSim next to this "
-            f"repo ({WORKSPACE_ROOT / 'RoyaleSim'}) or set {DATA_DIR_ENV} to its data/ folder"
+            f"RoyaleSim's data was not found at {where}. Install the engine, which carries "
+            f'its own data: pip install "royalegym[sim]". Working from source instead: clone '
+            f"RoyaleSim next to this repo ({WORKSPACE_ROOT / 'RoyaleSim'}), or set "
+            f"{DATA_DIR_ENV} to its data/ folder."
         )
     return p
+
+
+def _installed_engine_data() -> Path | None:
+    """The data folder the installed engine carries (``royalesim.data_dir()``), or None when
+    there is no engine or it does not say. An installed engine's own data is the data it
+    was built with, so the mask and the engine read the same rules."""
+    try:
+        import royalesim
+    except ImportError:
+        return None
+    where = getattr(royalesim, "data_dir", None)
+    if not callable(where):
+        return None
+    p = Path(where())
+    return p if p.is_dir() else None
 
 
 def require_data_file(p: Path, *commands: str, generated: bool = True) -> Path:

@@ -92,7 +92,8 @@ from .protocol import (
     default_calibration,
 )
 from .replay import ReplayRecorder
-from .reward import RewardFunction, default_reward
+from .reward import RewardFunction, TowerHPReward, default_reward
+from .rust_engine import RustEngine, core_available
 from .selfplay import NoopOpponent, Opponent
 from .state_mutator import DefaultStateMutator, Snapshot, StateMutator
 from .viser import ViserPublisher, play_event
@@ -1140,6 +1141,69 @@ UNSHAREABLE = (
     "recorder",
     "viser",
 )
+
+
+#: Eight cards every catalogue holds, MockEngine's included: the deck ``make_env`` deals
+#: both seats when none is named.
+STARTER_DECK: tuple[str, ...] = (
+    "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap", "Cannon", "Musketeer",
+)
+
+
+def make_env(
+    reward: RewardFunction | None = None,
+    deck: Sequence[str] | Sequence[Sequence[str]] | str = STARTER_DECK,
+    engine: str | Engine = "rust",
+    **env_kwargs: Any,
+) -> ClashParallelEnv:
+    """A two-seat battle, ready to train on: the quickest way to an environment.
+
+    ``reward``: what the bot is paid for. Default ``TowerHPReward()``, tower damage done
+    minus tower damage taken, which pays out on most steps of a battle.
+
+    ``deck``: eight card names dealt to both seats (default ``STARTER_DECK``), a pair of
+    such lists (Blue's, then Red's), or ``"random"`` for eight random cards each battle.
+
+    ``engine``: ``"rust"``, the real engine (``pip install "royalegym[sim]"``); ``"mock"``,
+    the pure-Python stand-in that runs anywhere but is not the game; or an engine.
+
+    Anything else goes to ``ClashParallelEnv`` (``decision_ms``, ``obs_builder``,
+    ``action_parser``, ``command_delay_ticks``, ...). Both seats are agents ("blue" and
+    "red"); a trainer decides who plays each.
+    """
+    if engine == "rust":
+        if not core_available():
+            raise ImportError(
+                'The battle engine is not installed. Install it with: pip install "royalegym[sim]"'
+                ' (or pass engine="mock" for the pure-Python stand-in, which is not the game).'
+            )
+        built: Engine = RustEngine()
+    elif engine == "mock":
+        built = MockEngine()
+    elif isinstance(engine, str):
+        raise ValueError(f'engine must be "rust", "mock" or an engine, not {engine!r}')
+    else:
+        built = engine
+    mutator = env_kwargs.pop("state_mutator", None)
+    if mutator is None:
+        if deck == "random":
+            mutator = DefaultStateMutator()
+        else:
+            pair = (deck, deck) if deck and isinstance(deck[0], str) else tuple(deck)
+            ids = {c.name: c.card_id for c in built.cards()}
+            unknown = sorted({n for d in pair for n in d if n not in ids})
+            if unknown:
+                raise ValueError(
+                    f"no card named {', '.join(unknown)} in this engine's catalogue; the names "
+                    "are engine.cards()[i].name, e.g. 'Knight', 'MiniPekka', 'Fireball'"
+                )
+            mutator = DefaultStateMutator(decks=[[ids[n] for n in d] for d in pair])
+    return ClashParallelEnv(
+        built,
+        reward_fn=reward if reward is not None else TowerHPReward(),
+        state_mutator=mutator,
+        **env_kwargs,
+    )
 
 
 def make_gym_vec_env(

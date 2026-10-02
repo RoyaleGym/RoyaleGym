@@ -47,7 +47,14 @@ from .done_condition import (
     TickLimitCondition,
     TruncationCondition,
 )
-from .env import ClashGymEnv, ClashParallelEnv, ClashSelfPlayVecEnv, make_gym_vec_env
+from .env import (
+    STARTER_DECK,
+    ClashGymEnv,
+    ClashParallelEnv,
+    ClashSelfPlayVecEnv,
+    make_env,
+    make_gym_vec_env,
+)
 from .evaluate import MatchResult, SeatResult, evaluate
 from .mock_engine import MockEngine
 from .obs import (
@@ -140,6 +147,7 @@ __all__ = [
     "GYM_ENV_IDS",
     "GYM_MOCK_ENV_ID",
     "GYM_RUST_ENV_ID",
+    "STARTER_DECK",
     "ActionParser",
     "AllCondition",
     "AnyCondition",
@@ -206,6 +214,7 @@ __all__ = [
     "fair_fields",
     "ladder",
     "load_trace",
+    "make_env",
     "make_gym_vec_env",
     "measure_variability",
     "save_trace",
