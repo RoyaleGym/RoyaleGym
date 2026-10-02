@@ -175,3 +175,27 @@ def test_the_publisher_can_send_a_busy_battle_frame_on_every_os():
             listener.close()
     finally:
         pub._sock.close()
+
+
+@pytest.mark.parametrize("switch", ["1", "true", "on", "yes", "TRUE"])
+def test_a_plain_on_switch_streams_to_the_default_address(monkeypatch, switch):
+    """ROYALEVISER=1 means "stream", at the default address. It was read as host '' port 1, so
+    a run bound 127.0.0.1:1: refused on Linux and macOS (a port below 1024), and on Windows
+    bound where no viewer ever looks."""
+    monkeypatch.setattr(viser_mod, "PORT", 0)  # the default, made ephemeral for the test
+    monkeypatch.setenv(viser_mod.ENV_VAR, switch)
+    pub = ViserPublisher.from_env()
+    try:
+        assert pub is not None
+        assert pub.address[0] == viser_mod.HOST
+        assert pub.address[1] != 1
+    finally:
+        pub._sock.close()
+
+
+def test_only_an_address_in_use_is_reported_as_in_use():
+    """Any other bind failure says what happened, not "something is already using it"."""
+    with pytest.raises(OSError, match=r"cannot stream from 192.0.2.1") as caught:
+        ViserPublisher(host="192.0.2.1", port=0)  # TEST-NET-1: never an address of this machine
+    assert "already using it" not in str(caught.value)
+    assert "192.0.2.1" in str(caught.value)

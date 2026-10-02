@@ -42,6 +42,7 @@ WIRE FORM
 from __future__ import annotations
 
 import contextlib
+import errno
 import os
 import socket
 import time
@@ -71,6 +72,12 @@ ATTACH_TIMEOUT_S = 3.0  # no heartbeat for this long: detached, nothing is sent
 POLL_INTERVAL_S = 1.0  # how often the socket is looked at for heartbeats
 MAX_DATAGRAM = 65507
 ENV_VAR = "ROYALEVISER"  # host:port; read once by ClashParallelEnv when no publisher is given
+#: ROYALEVISER values that mean "stream, at the default address" rather than an address.
+ON_SWITCHES = frozenset({"1", "true", "on", "yes"})
+#: The errors that mean "this address is already taken", on POSIX and on Windows.
+ADDRESS_IN_USE = frozenset(
+    e for e in (errno.EADDRINUSE, getattr(errno, "WSAEADDRINUSE", None)) if e is not None
+)
 RUN_ENV_VAR = "ROYALEVISER_RUN"  # names the run whose frames these are (see from_env)
 EVENTS_KEPT = 200  # event lines carried in every frame (newest last)
 
@@ -307,6 +314,12 @@ class ViserPublisher:
             # ephemeral port would need a discovery file, which is more machinery than
             # this should carry.
             self._sock.close()
+            if exc.errno not in ADDRESS_IN_USE:
+                raise OSError(
+                    f"cannot stream from {host}:{port}: {exc}. Set the ROYALEVISER environment "
+                    f"variable to host:port with an address of this machine (the default is "
+                    f"{HOST}:{PORT}), or to 1 for the default."
+                ) from exc
             raise OSError(
                 f"cannot stream to {host}:{port} because something is already using it, "
                 "which is almost always another run of your own: ONE run holds this port "
@@ -335,6 +348,8 @@ class ViserPublisher:
     def from_env(cls) -> ViserPublisher | None:
         """A publisher for ROYALEVISER=host:port, or None when the variable is unset/empty.
 
+        ROYALEVISER=1 (or true, on, yes) means the default address, ``HOST:PORT``.
+
         ``ROYALEVISER_RUN`` names the run these frames come from. The ports are fixed, so
         two runs on one machine reach the same viewer and it cannot tell whose frames it
         is drawing beside whose learning panel; the name in every frame is what lets it
@@ -343,10 +358,13 @@ class ViserPublisher:
         spec = os.environ.get(ENV_VAR, "").strip()
         if not spec:
             return None
+        run = os.environ.get(RUN_ENV_VAR, "").strip()
+        if spec.lower() in ON_SWITCHES:
+            return cls(HOST, PORT, run)
         host, _, port = spec.rpartition(":")
         if not port.isdigit():
             raise ValueError(f"{ENV_VAR}={spec!r} is not host:port")
-        return cls(host or HOST, int(port), os.environ.get(RUN_ENV_VAR, "").strip())
+        return cls(host or HOST, int(port), run)
 
     def _poll(self, now: float) -> None:
         self._last_poll = now
