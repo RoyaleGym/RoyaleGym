@@ -158,10 +158,50 @@ def test_every_public_name_says_what_it_is():
 
     import royalegym
 
+    def own_doc(obj: object) -> str | None:
+        # A class's OWN docstring: inspect.getdoc falls back to a base class's, so an enum with
+        # none of its own would pass on IntEnum's "Enum where members are also ints".
+        if inspect.isclass(obj):
+            return obj.__dict__.get("__doc__")
+        return inspect.getdoc(obj)
+
     bare = [n for n in royalegym.__all__
             if (inspect.isclass(getattr(royalegym, n)) or inspect.isfunction(getattr(royalegym, n)))
-            and not inspect.getdoc(getattr(royalegym, n))]
+            and not (own_doc(getattr(royalegym, n)) or "").strip()]
     assert bare == [], f"public names with no docstring: {bare}"
+
+
+def test_what_a_custom_reward_condition_or_mutator_needs_is_importable_from_royalegym():
+    import royalegym
+
+    for name in ("EntityKind", "to_own", "MatchSetup", "deck_ids", "Winner", "TowerSlot"):
+        assert name in royalegym.__all__, name
+        assert getattr(royalegym, name) is not None
+
+
+def test_a_builder_written_from_scratch_needs_no_channel_names():
+    """The two methods a builder must write are observation_space and build."""
+    import numpy as np
+    from gymnasium import spaces
+
+    from royalegym import ClashParallelEnv, ObsBuilder
+    from royalegym.mock_engine import MockEngine
+
+    class Tiny(ObsBuilder):
+        def observation_space(self):
+            return spaces.Dict({
+                "vector": spaces.Box(0.0, 1.0, shape=(1,), dtype=np.float32),
+                "action_mask": self.mask_space,
+            })
+
+        def build(self, state, team, action_mask):
+            elixir = state.players[team].elixir_milli / 10_000
+            return {"vector": np.array([elixir], dtype=np.float32), "action_mask": action_mask}
+
+    env = ClashParallelEnv(engine=MockEngine(), obs_builder=Tiny())
+    obs, _ = env.reset(seed=0)
+    assert obs["blue"]["vector"].shape == (1,)
+    assert Tiny().channel_names() == []
 
 
 def test_make_env_deals_evolved_and_hero_forms_by_name():

@@ -294,6 +294,8 @@ class SpellMotion(enum.IntEnum):
 
 
 class EntityKind(enum.IntEnum):
+    """What a unit on the board is: a troop, a building, or a king or princess tower."""
+
     TROOP = 0
     BUILDING = 1
     KING_TOWER = 2
@@ -347,6 +349,8 @@ class DeployStatus(enum.IntEnum):
 
 
 class Winner(enum.IntEnum):
+    """Who won a battle: NONE while it runs, then BLUE, RED or DRAW."""
+
     NONE = -1
     BLUE = 0
     RED = 1

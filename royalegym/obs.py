@@ -1344,9 +1344,12 @@ class ObsBuilder(ABC):
             self.evolution_progress,
         )
 
-    @abstractmethod
     def channel_names(self) -> list[str]:
-        """The names of the feature planes / columns this builder writes, in order."""
+        """The names of the feature planes / columns this builder writes, in order.
+
+        None by default: a builder with no planes or columns need not write this.
+        """
+        return []
 
     def spatial_layout(self) -> tuple[tuple[str, bool], ...]:
         """``(channel name, is static)`` per spatial plane, or empty if there are none.

@@ -47,6 +47,11 @@ class Snapshot:
 
 
 class StateMutator(ABC):
+    """How each episode starts. Write ``build(rng, cards)``, returning a ``MatchSetup`` (decks,
+    shuffle, forms) or a ``Snapshot`` to start mid-battle. ``StateSetter`` is the same class
+    under its older name.
+    """
+
     @abstractmethod
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup | Snapshot:
         """Describe the next episode's starting state."""

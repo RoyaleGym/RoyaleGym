@@ -218,6 +218,14 @@ def tower_hp_frac(state: BattleState, team: int) -> float:
 
 
 class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
+    """A two-seat battle ("blue" and "red"), PettingZoo parallel API.
+
+    Each piece is a config object you can swap: the engine, the state mutator (how a battle
+    starts), the obs builder (what each seat sees), the action parser (what it can do), the
+    reward function, and the termination and truncation conditions. ``make_env`` builds one
+    with sensible choices for all of them.
+    """
+
     metadata: ClassVar[dict[str, Any]] = {
         "name": "clash_royale_v0",
         "render_modes": ["ansi"],

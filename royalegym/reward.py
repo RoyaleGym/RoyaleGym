@@ -50,6 +50,10 @@ from .protocol import (
 
 
 class RewardFunction(ABC):
+    """What a bot is paid for. Write ``get_reward(team, prev, state, results)``: one number
+    per seat per step, bigger is better. ``bind``, ``reset`` and ``config`` are optional.
+    """
+
     def bind(self, engine: Engine) -> None:
         """Receive static engine data (card catalogue etc.). Optional."""
         del engine

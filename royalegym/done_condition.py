@@ -26,6 +26,12 @@ from .protocol import BattleState
 
 
 class DoneCondition(ABC):
+    """When an episode ends. Write ``is_done(state)``; ``reset`` and ``config`` are optional.
+
+    The env takes one for termination (the battle is decided) and one for truncation (the
+    episode is cut short). ``TerminalCondition`` is the same class under its older name.
+    """
+
     def reset(self, state: BattleState) -> None:
         """Called at episode start. Optional."""
         del state

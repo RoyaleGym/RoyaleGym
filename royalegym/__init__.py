@@ -77,7 +77,7 @@ from .opponents import (
     PushOpponent,
     ladder,
 )
-from .protocol import Engine
+from .protocol import Engine, EntityKind, MatchSetup, TowerSlot, Winner, to_own
 from .replay import ReplayRecorder, load_trace, save_trace, verify_trace
 from .reward import (
     CombinedReward,
@@ -115,6 +115,7 @@ from .state_mutator import (
     StateSetter,
     WeightedStateMutator,
     WeightedStateSetter,
+    deck_ids,
 )
 
 #: ``gym.make`` ids. The plain one takes whatever engine you pass and defaults to the
@@ -173,6 +174,7 @@ __all__ = [
     "ElixirLeakPenalty",
     "ElixirTradeReward",
     "Engine",
+    "EntityKind",
     "EntityListObsBuilder",
     "FirstAffordableOpponent",
     "FirstCrownCondition",
@@ -182,6 +184,7 @@ __all__ = [
     "MatchClock",
     "MatchMemory",
     "MatchResult",
+    "MatchSetup",
     "MidGameStateMutator",
     "MidGameStateSetter",
     "MockEngine",
@@ -211,12 +214,15 @@ __all__ = [
     "TickLimitCondition",
     "TileActionParser",
     "TowerHPReward",
+    "TowerSlot",
     "TruncationCondition",
     "Variability",
     "WeightedStateMutator",
     "WeightedStateSetter",
     "WinLossReward",
+    "Winner",
     "core_available",
+    "deck_ids",
     "default_reward",
     "evaluate",
     "fair_fields",
@@ -227,5 +233,6 @@ __all__ = [
     "measure_variability",
     "play_battle",
     "save_trace",
+    "to_own",
     "verify_trace",
 ]
