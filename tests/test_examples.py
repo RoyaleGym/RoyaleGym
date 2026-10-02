@@ -66,6 +66,9 @@ PROOF = {
         "relocation is a property of the footprint, not the card"
     ),
 }
+#: Examples another test runs, with the test that does. The quickstart trains for minutes
+#: as shipped, so tests/test_quickstart.py runs it with a smaller budget.
+RUN_ELSEWHERE = {"quickstart.py": "tests/test_quickstart.py"}
 
 
 def example_files() -> list[Path]:
@@ -79,10 +82,13 @@ def test_every_example_is_covered_here() -> None:
     to list it leaves this suite green and the example unchecked.
     """
     names = {p.name for p in example_files()}
-    assert names == set(PROOF), (
-        f"examples/ and PROOF disagree. Only on disk: {sorted(names - set(PROOF))}. "
-        f"Only in PROOF: {sorted(set(PROOF) - names)}"
+    covered = set(PROOF) | set(RUN_ELSEWHERE)
+    assert names == covered, (
+        f"examples/ and PROOF disagree. Only on disk: {sorted(names - covered)}. "
+        f"Only in PROOF: {sorted(covered - names)}"
     )
+    for test in RUN_ELSEWHERE.values():
+        assert (REPO / test).exists(), f"{test} is named as running an example and is gone"
 
 
 @pytest.mark.parametrize("name", sorted(PROOF), ids=lambda n: n[:-3])
