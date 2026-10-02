@@ -4,6 +4,17 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.3 (2026-10-02)
+
+### Fixed
+- The observation's next cards (positions 6 to 8) stay right while a played card's hand slot waits
+  for its refill: the game refills one empty slot per period, so a slot can show no card for a few
+  ticks after a quick second play.
+
+### Changed
+- `[imitate]` and `[all]` need royaleimitate 0.2.0, which records battles and clones a bot from them.
+- The release page carries royalesim 0.1.2, royalelearn 0.5.0 and royaleimitate 0.2.0.
+
 ## 0.1.2 (2026-10-02)
 
 ### Fixed
