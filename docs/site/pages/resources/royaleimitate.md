@@ -45,8 +45,8 @@ if __name__ == "__main__":
                     "kind": "reference_kl",
                     "name": "teacher",
                     "reference": "teacher",
-                    "budget": {"kind": "constant", "value": 0.05},
-                    "coef": {"start": 0.3},
+                    "budget": {"kind": "constant", "value": 0.1},
+                    "coef": {"start": 1.0},
                 }],
             },
         },
@@ -57,6 +57,7 @@ if __name__ == "__main__":
 `save_actor` writes the teacher in the form RoyaleImitate reads, and returns a fingerprint of it
 (`digest`), so the student is sure to load exactly that file. `budget` is how far the student may
 drift from the teacher, and `coef` how hard it is pulled back; the pull adjusts itself to keep
-the student inside the budget.
+the student inside the budget. The two numbers here are RoyaleImitate's defaults, a starting
+point and not a recommendation; newer versions let you leave them out.
 
 Every option is in the [RoyaleImitate guide](https://github.com/RoyaleGym/RoyaleImitate/blob/main/docs/guide.md).
