@@ -11,9 +11,16 @@ change the observation's shape; each such change is listed here.
   for its refill: the game refills one empty slot per period, so a slot can show no card for a few
   ticks after a quick second play.
 
+### Added
+- `SpatialObsBuilder(spell_aim_after_ticks=k)`: the plane `enemy_spell_aim_seen`, an enemy spell's
+  landing point once a player could read it off the screen. A thrown spell shows it after k ticks of
+  flight (counted from when it starts moving); a rolling or area spell from the first sight. Off by
+  default.
+
 ### Changed
-- `[imitate]` and `[all]` need royaleimitate 0.2.0, which records battles and clones a bot from them.
-- The release page carries royalesim 0.1.2, royalelearn 0.5.0 and royaleimitate 0.2.0.
+- `[imitate]` and `[all]` need royaleimitate 0.2.1, which records battles, clones a bot from them,
+  and saves the clone so `Learner.load_policy` can play it.
+- The release page carries royalesim 0.1.2, royalelearn 0.5.1 and royaleimitate 0.2.1.
 
 ## 0.1.2 (2026-10-02)
 

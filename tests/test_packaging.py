@@ -270,8 +270,9 @@ def test_mock_engine_without_its_card_tables_says_how_to_go_on(monkeypatch, tmp_
 
 
 def test_the_imitate_extras_require_record_and_clone():
-    """The site's basic-clone guide uses RoyaleImitate's record and clone, from 0.2.0."""
+    """The site's basic-clone guide records, clones, and plays the clone with
+    Learner.load_policy: royaleimitate 0.2.1."""
     extras = _extras()
     for extra in ("imitate", "all"):
         pins = [r for r in extras[extra] if r.startswith("royaleimitate")]
-        assert pins == ["royaleimitate>=0.2.0"], f"[{extra}]: {pins}"
+        assert pins == ["royaleimitate>=0.2.1"], f"[{extra}]: {pins}"

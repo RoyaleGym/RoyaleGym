@@ -26,8 +26,8 @@ learn = ["royalelearn[torch]>=0.4.2"]
 # The viewer: watch a battle live or from a saved file.
 viser = ["royaleviser"]
 # Imitation from replays.
-imitate = ["royaleimitate>=0.2.0"]
-all = ["royalesim", "royalelearn[torch]>=0.4.2", "royaleviser[media]", "royaleimitate>=0.2.0"]
+imitate = ["royaleimitate>=0.2.1"]
+all = ["royalesim", "royalelearn[torch]>=0.4.2", "royaleviser[media]", "royaleimitate>=0.2.1"]
 dev = [
     "pytest>=8.0",
     "hypothesis>=6.100",
