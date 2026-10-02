@@ -3238,10 +3238,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1911-the-replay-driver-l3" class="md-nav__link">
+  <a href="#1911-where-demonstrations-come-from" class="md-nav__link">
     <span class="md-ellipsis">
       
-        19.11 The replay driver (L3)
+        19.11 Where demonstrations come from
       
     </span>
   </a>
@@ -3249,10 +3249,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1912-behaviour-cloning-the-timing-model-and-demo_bc-l5" class="md-nav__link">
+  <a href="#1912-behaviour-cloning-the-field-reference-and-demo_bc-l5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        19.12 Behaviour cloning, the timing model and demo_bc (L5)
+        19.12 Behaviour cloning, the field reference and demo_bc (L5)
       
     </span>
   </a>
@@ -3526,10 +3526,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1911-the-replay-driver-l3" class="md-nav__link">
+  <a href="#1911-where-demonstrations-come-from" class="md-nav__link">
     <span class="md-ellipsis">
       
-        19.11 The replay driver (L3)
+        19.11 Where demonstrations come from
       
     </span>
   </a>
@@ -3537,10 +3537,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1912-behaviour-cloning-the-timing-model-and-demo_bc-l5" class="md-nav__link">
+  <a href="#1912-behaviour-cloning-the-field-reference-and-demo_bc-l5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        19.12 Behaviour cloning, the timing model and demo_bc (L5)
+        19.12 Behaviour cloning, the field reference and demo_bc (L5)
       
     </span>
   </a>
@@ -3619,7 +3619,7 @@ one numbering.</p>
 <h2 id="19-learning-from-demonstrations">19. Learning from demonstrations<a class="headerlink" href="#19-learning-from-demonstrations" title="Permanent link">&para;</a></h2>
 <p>A run can start from a policy cloned from demonstrations, and can be held near a reference policy
 while it learns. This section is the contract for that machinery. It is generic: a demonstration is
-any timed log of card plays that can be driven through the run's own environment.</p>
+any recorded play stored as shard rows (19.10).</p>
 <p>It lands as six packages, named here so that a config, a commit and a test can refer to them.
 Not all of it is built (checked 2026-09-28 against this repo's code):</p>
 <table>
@@ -3645,12 +3645,6 @@ Not all of it is built (checked 2026-09-28 against this repo's code):</p>
 <td>yes</td>
 </tr>
 <tr>
-<td>L3</td>
-<td>the replay driver: a timed log through the run's environment</td>
-<td>19.11</td>
-<td>no</td>
-</tr>
-<tr>
 <td>L4</td>
 <td>demonstration shards: the stored rows, keyed to the engine</td>
 <td>19.10</td>
@@ -3658,9 +3652,9 @@ Not all of it is built (checked 2026-09-28 against this repo's code):</p>
 </tr>
 <tr>
 <td>L5</td>
-<td><code>royalelearn bc</code>, the field-reference fit and the <code>demo_bc</code> regulariser</td>
+<td>recording and cloning, the field-reference fit and the <code>demo_bc</code> regulariser</td>
 <td>19.12</td>
-<td>the fit only, as <code>royaleimitate fit-field-reference</code></td>
+<td>the fit, as <code>royaleimitate fit-field-reference</code></td>
 </tr>
 <tr>
 <td>L6</td>
@@ -3685,26 +3679,20 @@ refused by name. Top level rather than inside <code>ppo</code>, because most of 
 section carries its own alarm thresholds, which stay out of the identity as the core's do.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">"warm_start"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">"init"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"artifacts/bc-v1"</span><span class="p">,</span><span class="w"> </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;artifact digest&gt;"</span><span class="p">,</span><span class="w"> </span><span class="nt">"self_test_atol"</span><span class="p">:</span><span class="w"> </span><span class="mf">1e-5</span><span class="p">},</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">"actor_lr_scale"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"piecewise"</span><span class="p">,</span><span class="w"> </span><span class="nt">"points"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">82080</span><span class="p">,</span><span class="w"> </span><span class="mf">0.25</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">98496</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">]]},</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">"alarms"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"handoff_window"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="nt">"handoff_kl"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span><span class="w"> </span><span class="nt">"handoff_clip"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="nt">"ev_at_unfreeze"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.3</span><span class="p">}</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">},</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nt">"imitation"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">"references"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">"bc"</span><span class="p">:</span><span class="w">     </span><span class="p">{</span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"snapshot"</span><span class="p">,</span><span class="w">  </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"artifacts/bc-v1"</span><span class="p">,</span><span class="w">     </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;artifact digest&gt;"</span><span class="p">},</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">"timing"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"field_mlp"</span><span class="p">,</span><span class="w"> </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"artifacts/timing-v1"</span><span class="p">,</span><span class="w"> </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;artifact digest&gt;"</span><span class="p">}</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="p">},</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="nt">"regularisers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="p">{</span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"reference_kl"</span><span class="p">,</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bc"</span><span class="p">,</span><span class="w"> </span><span class="nt">"reference"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bc"</span><span class="p">,</span><span class="w"> </span><span class="nt">"factor"</span><span class="p">:</span><span class="w"> </span><span class="s2">"joint"</span><span class="p">,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">     </span><span class="nt">"exclude_when"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">     </span><span class="nt">"budget"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"piecewise"</span><span class="p">,</span><span class="w"> </span><span class="nt">"points"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.1</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">547200</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">1368000</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">]]},</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">     </span><span class="nt">"coef"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="nt">"max"</span><span class="p">:</span><span class="w"> </span><span class="mf">10.0</span><span class="p">,</span><span class="w"> </span><span class="nt">"up"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.5</span><span class="p">,</span><span class="w"> </span><span class="nt">"down"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.5</span><span class="p">,</span><span class="w"> </span><span class="nt">"band"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.5</span><span class="p">,</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">              </span><span class="nt">"min"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"piecewise"</span><span class="p">,</span><span class="w"> </span><span class="nt">"points"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">547200</span><span class="p">,</span><span class="w"> </span><span class="mf">0.001</span><span class="p">]]}}}</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="p">],</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span><span class="nt">"alarms"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"ref_kl_warn"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="nt">"lambda_saturated_patience"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">}</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="p">}</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="p">}</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">"init"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"artifacts/my-policy"</span><span class="p">,</span><span class="w"> </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;artifact digest&gt;"</span><span class="p">}</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">},</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">"imitation"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">"references"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">"teacher"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"snapshot"</span><span class="p">,</span><span class="w"> </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"artifacts/my-policy"</span><span class="p">,</span><span class="w"> </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;artifact digest&gt;"</span><span class="p">}</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">"regularisers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="p">{</span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"reference_kl"</span><span class="p">,</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"teacher"</span><span class="p">,</span><span class="w"> </span><span class="nt">"reference"</span><span class="p">:</span><span class="w"> </span><span class="s2">"teacher"</span><span class="p">}</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">}</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">}</span>
 </code></pre></div>
+<p>Every other field has a default: a regulariser's <code>budget</code> (a constant 0.1), its <code>coef</code> (starting at
+1.0) and its <code>factor</code> (<code>joint</code>), and each section's alarm thresholds.</p>
 <ul>
 <li><code>init</code> (optional): the actor's starting weights (19.4).</li>
 <li><code>actor_lr_scale</code> (optional, a schedule): multiplies the actor's learning rate (19.5). Absent is 1.</li>
@@ -3833,8 +3821,7 @@ ratio is only informative some iterations after the two have parted; a dry run r
 <li>When the actor is frozen, or no row was covered, there is no <code>m</code> and λ does not move.</li>
 <li>λ is update state like <code>BackoffState</code> and is saved in the update's checkpoint folder. A resume
   restores it; a checkpoint written without the block restores the configured <code>start</code>.</li>
-<li><code>min(t)</code> can fall over the run: while it is high λ is protected, and once it drops λ can fall on
-  its own as long as the KL stays inside a budget that widens.</li>
+<li><code>min</code>, <code>max</code> and <code>budget</code> are schedules; λ stays inside <code>[min(t), max]</code>.</li>
 </ul>
 <p><code>imitation/&lt;name&gt;/lambda</code> is the value the iteration used and <code>imitation/&lt;name&gt;/budget</code> is κ.</p>
 <h3 id="199-metrics-and-alarms">19.9 Metrics and alarms<a class="headerlink" href="#199-metrics-and-alarms" title="Permanent link">&para;</a></h3>
@@ -3941,7 +3928,7 @@ actor sees bit-identical inputs to the ones PPO's rollout and update see, and th
 change of codec table. A packed row carries no static plane (the codec supplies the run's own on
 decode), so the reader checks each part's static planes against the run's and refuses a part from
 another arena rather than show it the run's.</p>
-<p><strong>Flags.</strong> Bits 0 and 1 are the driver's (<code>projected</code>, <code>other_command</code>). A producer names its own
+<p><strong>Flags.</strong> Bits 0 and 1 are reserved (<code>projected</code>, <code>other_command</code>). A producer names its own
 from bit 8 up; the writer refuses a row carrying an unnamed bit.</p>
 <p><strong>The manifest</strong> records the environment's <code>config()</code> without its truncation, <code>card_names</code>, the
 obs and action digests, <code>n_actions</code>, the engine's digests and parameters, the package versions and
@@ -3963,70 +3950,28 @@ dataset, and the refusal is what stops that being silent.</p>
 an integer are 0-4 mod 100. By match rather than by row, because rows of one match are not
 independent.</p>
 <p><code>frame_stack</code> above one is refused by the reader: a shard row is one frame.</p>
-<h3 id="1911-the-replay-driver-l3">19.11 The replay driver (L3)<a class="headerlink" href="#1911-the-replay-driver-l3" title="Permanent link">&para;</a></h3>
-<p>The replay driver (specified, not built) drives a <code>ReplayLog</code> through the run's own environment,
-built from the run's <code>EnvFactorySpec</code> with the truncation removed, and returns the rows a shard
-stores. A <code>ReplayLog</code> is:</p>
+<h3 id="1911-where-demonstrations-come-from">19.11 Where demonstrations come from<a class="headerlink" href="#1911-where-demonstrations-come-from" title="Permanent link">&para;</a></h3>
+<p>Demonstrations come from any source that yields shard rows (19.10). Replaying recorded logs
+through the environment is out of scope here.</p>
+<h3 id="1912-behaviour-cloning-the-field-reference-and-demo_bc-l5">19.12 Behaviour cloning, the field reference and <code>demo_bc</code> (L5)<a class="headerlink" href="#1912-behaviour-cloning-the-field-reference-and-demo_bc-l5" title="Permanent link">&para;</a></h3>
+<p><strong>Recording</strong>, <code>royaleimitate.record(learner, teacher, out, battles=, seed=)</code>: a teacher -- a
+scripted bot by name, an <code>Opponent</code>, or any policy such as a saved bot -- plays both seats of
+battles in the learner's own environment, and every decision it makes is a shard row, grouped by
+battle.</p>
+<p><strong>Cloning</strong>, <code>royaleimitate.clone(learner, demonstrations, out, epochs=, batch_size=,
+learning_rate=, weight_decay=, patience=, seed=)</code>, trains the run's own actor, built by the run's network factory from its
+<code>net</code>, so its <code>arch_digest</code> is the run's. No critic is trained.</p>
 <ul>
-<li><code>seed</code> and a <code>MatchSetup</code> (decks in the order the log implies, so <code>shuffle</code> is <code>NONE</code>);</li>
-<li>per seat, the card plays as <code>(tick, card_id, x, y)</code> with <code>(x, y)</code> a tile in that seat's own
-  action frame, the one <code>GridActionParser.encode</code> takes, and the ticks of the seat's other
-  commands;</li>
-<li>which seats are labelled;</li>
-<li>optionally, the true outcome: the winner, each side's crowns and final tower count.</li>
-</ul>
-<p>The env is reset with <code>options={"setup": log.setup}</code>. At each decision boundary from <code>first_tick</code>,
-for each seat:</p>
-<ul>
-<li>A play is <strong>due</strong> at the first boundary at or after its tick, one per seat per boundary, in order.</li>
-<li>Due play: the slot is the card's position in the engine's hand; a card that is not in the hand is
-  an error in the log, raised, not a row. The action is <code>encode(slot, x, y)</code>. If the mask allows it,
-  it is applied and it is the label.</li>
-<li>Otherwise the engine's <code>check_deploy</code> says why, and:</li>
-<li><code>NOT_ENOUGH_ELIXIR</code>: the play waits and the row is not labelled. Waiting past <code>defer_limit</code>
-    boundaries is event <strong>E3</strong>.</li>
-<li><code>OUT_OF_TERRITORY</code>: event <strong>E2</strong>. The log played where this engine's board does not allow.</li>
-<li>any other placement refusal: the nearest legal tile of the same slot within Chebyshev distance
-    <code>project_radius</code> is taken, flagged <code>PROJECTED</code>. None is event <strong>E4</strong>.</li>
-<li><code>GAME_OVER</code>: event <strong>E5</strong>.</li>
-<li>No play due: the label is the no-op. A boundary holding one of the seat's other commands is
-  labelled the no-op and flagged <code>OTHER_COMMAND</code>.</li>
-<li><strong>E1</strong>: the engine has destroyed more of a side's towers than the true outcome says it lost.</li>
-</ul>
-<p>The replay stops at the first event; no row after it is emitted. Rows before <code>first_tick</code>, rows
-with one legal action, and rows at or after <code>end_tick</code> are not emitted either. Both seats' plays
-are applied whether or not the seat is labelled.</p>
-<p>Per match it also returns the event list, the terminal agreement when the true outcome is given
-(winner, crowns, and each side's tower count), the env's reward on each row, a RoyaleGym <code>Trace</code>
-when the env has a recorder, and <strong>the behaviour statistics of the labelled seats computed by the
-same function the run's metrics use</strong> (hold rate, mean elixir at decision, play rate by elixir,
-per-card play rate given in hand, the top tile's share). So a demonstration's behaviour and a
-policy's are measured by one piece of code, and a difference between them is not a difference
-between two implementations.</p>
-<p>A driver hook, <code>on_boundary(env, seat_rows)</code>, lets the log's owner measure anything else at each
-boundary without this package knowing what it is.</p>
-<h3 id="1912-behaviour-cloning-the-timing-model-and-demo_bc-l5">19.12 Behaviour cloning, the timing model and <code>demo_bc</code> (L5)<a class="headerlink" href="#1912-behaviour-cloning-the-timing-model-and-demo_bc-l5" title="Permanent link">&para;</a></h3>
-<p><strong><code>royalelearn bc --config &lt;run config&gt; --shards &lt;dir&gt; --out &lt;folder&gt; [--bc &lt;bc config&gt;]</code></strong>
-(specified, not built) trains
-the run's own actor:
-built by the run's network factory from the run's <code>net</code>, so its <code>arch_digest</code> is the run's, with
-<code>net.noop_bias</code> kept (the no-op's bias learns around the constant). No critic is trained.</p>
-<ul>
-<li><strong>Loss</strong>: weighted masked cross-entropy through <code>MaskedCategorical</code>. A no-op row's target is
-  one-hot. A play row's target is <code>1 − tile_smoothing</code> on the played action and <code>tile_smoothing</code>
-  spread as a Gaussian of <code>tile_sigma</code> tiles over the same slot's legal tiles.
-  <code>label_smoothing_uniform</code> (default 0) mixes in a uniform over the legal set. No rebalancing: the
-  target's hold rate is the demonstrations' own.</li>
-<li><strong>Reported by the chain rule</strong>: play/wait cross-entropy, card cross-entropy given play, tile
-  cross-entropy given card, and on validation the NLL, per-flag NLL and the hold-rate calibration.</li>
-<li><strong>Optimiser</strong>: AdamW, cosine learning rate, weight decay off for norms, biases and embeddings,
-  gradient clip, early stopping on validation NLL. A <strong>focus pass</strong> re-weights rows carrying a
-  named flag for a fraction of an epoch.</li>
-<li><strong>Reproducible</strong>: the row order is a function of <code>master_seed</code>, and the artifact records the BC
-  config, the shard manifest digest, the engine key, any <code>allow_engine_mismatch</code> reason and the
-  validation metrics in <code>meta</code>.</li>
-<li><strong>Output</strong>: an actor artifact (19.2) with 1,024 validation rows as probe rows and their
-  log-probabilities, computed by the self-test's own function on the weights as saved.</li>
+<li><strong>Loss</strong>: cross-entropy of the labelled action under the masked distribution
+  (<code>MaskedCategorical</code>), weighted by each row's weight.</li>
+<li><strong>Split</strong>: by group (19.10), so a battle is wholly in training or wholly in validation.</li>
+<li><strong>Optimiser</strong>: AdamW with a cosine learning-rate schedule, and early stopping on validation NLL
+  (the best epoch's weights are kept). Defaults: 20 epochs, batches of 256, learning rate 3e-4,
+  weight decay 0.01, patience 3.</li>
+<li><strong>Output</strong>: an actor artifact (19.2) with up to 1,024 validation rows as its probe rows and their
+  log-probabilities, computed by the self-test's own function on the weights as saved. Its
+  <code>meta["clone"]</code> records the validation NLL before training and after each epoch. <code>clone</code> returns
+  the folder's digest.</li>
 </ul>
 <p><strong><code>royaleimitate fit-field-reference --rows &lt;file.npz&gt; --fields a,b,c --out &lt;folder&gt;</code></strong> fits the
 <code>field_mlp</code> reference: weighted binary cross-entropy of a play label on named field columns, CPU.
@@ -4042,9 +3987,8 @@ key; there is no mismatch escape here.</p>
 <p>RoyaleLearn's <code>docs/harness-spec.md</code> section 19.13.</p>
 <h3 id="1914-what-stays-out-of-the-public-packages">19.14 What stays out of the public packages<a class="headerlink" href="#1914-what-stays-out-of-the-public-packages" title="Permanent link">&para;</a></h3>
 <p>The logs, the shards, the fitted references, the cloned weights and any run initialised from them
-live where the log's owner keeps them, under a path the config names with a digest. Nothing in this
-package reads a log format; the driver's input is the <code>ReplayLog</code> above, built by the owner's code,
-which is never a component and so never enters <code>user_code</code>.</p>
+live where their owner keeps them, under a path the config names with a digest. Nothing in this
+package reads a log format.</p>
 <h3 id="1915-controls-each-seen-failing-on-a-plant-before-it-is-trusted">19.15 Controls, each seen failing on a plant before it is trusted<a class="headerlink" href="#1915-controls-each-seen-failing-on-a-plant-before-it-is-trusted" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>The blind control (L1).</strong> The block present with every coefficient zero, no init and a scale of
@@ -4061,9 +4005,6 @@ which is never a component and so never enters <code>user_code</code>.</p>
   weighting of <code>kl_tile</code> must break it.</li>
 <li><strong>The shard round trip (L4).</strong> Rows written and read back through the codec equal the rows the
   codec produces from the env's observation directly. Plant: a spatial value off by one quantum.</li>
-<li><strong>The driver round trip (L3).</strong> A battle played by a policy in the env, exported as a timed log
-  with its deck order and replayed, produces no events and the same labels at every boundary. Plant:
-  shifting one play by one boundary must produce a different label.</li>
 </ul>
 
 

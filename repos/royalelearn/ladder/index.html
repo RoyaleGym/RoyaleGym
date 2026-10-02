@@ -3769,9 +3769,8 @@ of the time. Every other pool member keeps a weight of 1.</p>
 In a pool or scripted battle the learner's seat is fixed per battle, blue in even battles and red in
 odd ones, so the seats stay balanced. <code>mix</code> still decides how many battles are mirror battles. With
 <code>seed_snapshots</code> and a pool share, the field seat can be one policy you already have, and
-<code>opponent_mode</code> sets how that player picks its moves: it samples by default, and <code>"gtau:&lt;x&gt;"</code> plays
-only when its chance of playing is above <code>x</code>, then its most likely card at that card's most likely
-tile. Without <code>seat_decks</code>, battles deal whatever the environment's own state mutator deals.
+<code>opponent_mode</code> sets how that player picks its moves: it samples by default, <code>"argmax"</code> takes its
+most likely move, and <code>"plugin:&lt;module&gt;:&lt;function&gt;"</code> uses a decode you write. Without <code>seat_decks</code>, battles deal whatever the environment's own state mutator deals.
 <code>tests/test_seat_decks.py</code> checks the deal and the seats.</p>
 <h2 id="who-the-bot-plays-in-a-given-battle">Who the bot plays in a given battle<a class="headerlink" href="#who-the-bot-plays-in-a-given-battle" title="Permanent link">&para;</a></h2>
 <p>Every battle draws its opponent from a three-way mixture. <code>LadderConfig.mix</code> in

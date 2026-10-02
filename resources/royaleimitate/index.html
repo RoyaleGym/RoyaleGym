@@ -3308,8 +3308,8 @@ works exactly the same without it.</p>
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>                    <span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"reference_kl"</span><span class="p">,</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>                    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"teacher"</span><span class="p">,</span>
 <a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>                    <span class="s2">"reference"</span><span class="p">:</span> <span class="s2">"teacher"</span><span class="p">,</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>                    <span class="s2">"budget"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"constant"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">},</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>                    <span class="s2">"coef"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"start"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>                    <span class="s2">"budget"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"constant"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>                    <span class="s2">"coef"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"start"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
 <a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>                <span class="p">}],</span>
 <a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>            <span class="p">},</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="p">},</span>
@@ -3319,7 +3319,8 @@ works exactly the same without it.</p>
 <p><code>save_actor</code> writes the teacher in the form RoyaleImitate reads, and returns a fingerprint of it
 (<code>digest</code>), so the student is sure to load exactly that file. <code>budget</code> is how far the student may
 drift from the teacher, and <code>coef</code> how hard it is pulled back; the pull adjusts itself to keep
-the student inside the budget.</p>
+the student inside the budget. The two numbers here are RoyaleImitate's defaults, a starting
+point and not a recommendation; newer versions let you leave them out.</p>
 <p>Every option is in the <a href="https://github.com/RoyaleGym/RoyaleImitate/blob/main/docs/guide.md">RoyaleImitate guide</a>.</p>
 
 

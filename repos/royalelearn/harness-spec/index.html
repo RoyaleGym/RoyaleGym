@@ -7141,13 +7141,13 @@ harness exists to remove.</p>
 <td><code>release_mode</code></td>
 <td><code>"stochastic"</code></td>
 <td></td>
-<td>rating both the sampled and the argmax variant doubles the pool and the cost for no decision. It also takes <code>"argmax"</code> and <code>"gtau:&lt;x&gt;"</code>, decoded as <code>opponent_mode</code> is</td>
+<td>rating both the sampled and the argmax variant doubles the pool and the cost for no decision. It also takes <code>"argmax"</code> and <code>"plugin:&lt;module&gt;:&lt;function&gt;"</code>, as <code>opponent_mode</code> does</td>
 </tr>
 <tr>
 <td><code>opponent_mode</code></td>
 <td><code>"stochastic"</code></td>
 <td></td>
-<td>how a frozen pool or seed opponent picks its action in TRAINING battles: <code>"stochastic"</code> samples (every run before this field), <code>"argmax"</code> takes the mode, and <code>"gtau:&lt;x&gt;"</code> plays when <code>1 - p(no-op) &gt; x</code> and then takes the group with the largest summed probability -- a hand slot summed over its tiles, or one ability button -- at that slot's most likely tile, illegal actions counting as zero (<code>royalelearn/learn/decode.py</code>). The learner's seats always sample. Training battles are not rated, so it is not in the ladder context</td>
+<td>how a frozen pool or seed opponent picks its action in TRAINING battles: <code>"stochastic"</code> samples (every run before this field), <code>"argmax"</code> takes the mode, and <code>"plugin:&lt;module&gt;:&lt;function&gt;"</code> calls a function of your own with the rows' masked log-probabilities, mask and observation vector, which returns one legal action per row (<code>royalelearn/learn/decode.py</code>). The learner's seats always sample. Training battles are not rated, so it is not in the ladder context</td>
 </tr>
 <tr>
 <td><code>refit_every_iterations</code></td>
