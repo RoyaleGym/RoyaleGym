@@ -216,7 +216,7 @@ python -c "import royalegym, torch; print('RoyaleGym', royalegym.__version__, '|
 You should see:
 
 ```text
-RoyaleGym 0.1.0 | graphics card: True
+RoyaleGym 0.1.1 | graphics card: True
 ```
 
 The version number may be newer. If it says `graphics card: False` on a computer with an NVIDIA
