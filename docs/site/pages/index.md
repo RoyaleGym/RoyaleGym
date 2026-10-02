@@ -8,7 +8,7 @@ works out the rest by trial and error.
 
 ## Quick Answers
 
-**Do I need the game, a phone or an emulator?**
+**Do I need the game or a phone?**
 No. The battles run in RoyaleSim, a copy of the game's battle engine that runs on your computer.
 You don't need the game, any game files, or an account.
 

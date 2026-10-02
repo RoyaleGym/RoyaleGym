@@ -2,7 +2,7 @@
 
 [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) is the battle engine: RoyaleGym's
 RocketSim. It plays a whole Clash Royale battle (elixir, hands, troops walking and fighting,
-spells, towers, overtime and crowns) with no game, phone or emulator involved. It's written in
+spells, towers, overtime and crowns) with no game or phone involved. It's written in
 Rust and installs as a Python module, with prebuilt files for Windows, Linux and macOS.
 
 Most of the time you never touch it directly: `RustEngine()` in RoyaleGym drives it for you.

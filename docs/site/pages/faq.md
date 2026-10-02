@@ -12,7 +12,7 @@ A way to make a Clash Royale bot on your own computer. Your bot plays thousands 
 battles and learns from them. You decide what it's rewarded for, like winning or taking towers,
 and it works out how to get there.
 
-### Do I need the game, a phone or an emulator?
+### Do I need the game or a phone?
 
 No. The battles run in a copy of the game's battle engine, on your computer. You don't need the
 game, any game files or an account.
