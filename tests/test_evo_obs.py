@@ -196,8 +196,16 @@ def test_a_hero_is_not_an_evolved_unit():
     env = _env(heroes=["Musketeer"])
     sp = env.obs_builder.channel_names()
     own_ev = sp.index("own_evolved")
-    lit = []
-    _cycle(env, 16, lambda obs, slot, card, state: lit.append(obs["blue"]["spatial"][own_ev].sum()))
+    names = {c.card_id: c.name for c in env.engine.cards()}
+    lit, heroes = [], []
+
+    def watch(obs, slot, card, state):
+        lit.append(obs["blue"]["spatial"][own_ev].sum())
+        if slot >= 0 and names[card] == "Musketeer":
+            heroes.append(card)
+
+    _cycle(env, 16, watch, prefer="Musketeer")
+    assert heroes, "the hero was never played, so this test would show nothing"
     assert max(lit) == 0
 
 
@@ -212,8 +220,10 @@ def test_the_enemys_counters_are_never_read():
     b.reset(state)
     plain = b.build(state, 0, mask)
     b.reset(state)
-    red = state.players[1]
-    rows = [[c, 2, 1, 2] for c, *_ in red.evo] or [[0, 2, 1, 2]]
+    red, blue = state.players[1], state.players[0]
+    # A ready charge on every card Blue can see in its own hand: if anything read Red's rows,
+    # Blue's flags would light.
+    rows = [[c, 2, 1, 2] for c in {*blue.hand, blue.next_card}]
     forged = msgspec.structs.replace(
         state, players=[state.players[0], msgspec.structs.replace(red, evo=rows)]
     )
