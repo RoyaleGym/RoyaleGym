@@ -304,7 +304,8 @@ def test_every_file_the_readme_links_to_exists() -> None:
     # The docs are the published site now, not pages in this repo (owner, 2026-10-02:
     # "the docs link should go to the site instead of another readme").
     text = README.read_text(encoding="utf-8")
-    assert "](https://royalegym.github.io/RoyaleGym/)" in text, "the README no longer links the docs site"
+    site = "](https://royalegym.github.io/RoyaleGym/)"
+    assert site in text, "the README no longer links the docs site"
 
 
 def test_every_image_the_readme_shows_is_described() -> None:

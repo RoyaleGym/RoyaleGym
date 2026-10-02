@@ -125,7 +125,7 @@ def rewrite(
         source_site = site_path(repo_name, source_rel) or ""
         if html:
             here = page_url(source_site).rstrip("/") if source_site.endswith(".md") else ""
-            if source_site.endswith(".md") and posixpath.basename(source_site) in ("README.md", "index.md"):
+            if posixpath.basename(source_site) in ("README.md", "index.md"):
                 here = posixpath.dirname(source_site)
             goal = page_url(landed)
             out = posixpath.relpath(goal.rstrip("/") or ".", here or ".")
@@ -138,7 +138,16 @@ def rewrite(
     return f"{ORG}/{repo}/{kind}/main/{rel}" + suffix
 
 
-def rewrite_markdown(text: str, repo_name: str, source_rel: str, copied: dict[str, set[str]]) -> str:
+def rewrite_markdown(
+    text: str, repo_name: str, source_rel: str, copied: dict[str, set[str]]
+) -> str:
+    def md(m: re.Match[str]) -> str:
+        return m.group(1) + rewrite(m.group(2), repo_name, source_rel, copied) + m.group(3)
+
+    def raw(m: re.Match[str]) -> str:
+        new = rewrite(m.group(2), repo_name, source_rel, copied, html=True)
+        return m.group(1) + new + m.group(3)
+
     out, fenced = [], False
     for line in text.splitlines(keepends=True):
         if FENCE.match(line):
@@ -146,8 +155,6 @@ def rewrite_markdown(text: str, repo_name: str, source_rel: str, copied: dict[st
             out.append(line)
             continue
         if not fenced:
-            md = lambda m: m.group(1) + rewrite(m.group(2), repo_name, source_rel, copied) + m.group(3)  # noqa: E731
-            raw = lambda m: m.group(1) + rewrite(m.group(2), repo_name, source_rel, copied, html=True) + m.group(3)  # noqa: E731
             line = MD_LINK.sub(md, line)
             line = HTML_ATTR.sub(raw, line)
             line = REF_DEF.sub(md, line)
@@ -157,9 +164,13 @@ def rewrite_markdown(text: str, repo_name: str, source_rel: str, copied: dict[st
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--root", type=Path, required=True,
-                        help="the folder that holds RoyaleSim, RoyaleLearn, RoyaleViser and RoyaleImitate")
-    parser.add_argument("--ref", default="origin/main", help="the git ref to read the other repos at")
+    parser.add_argument(
+        "--root", type=Path, required=True,
+        help="the folder that holds RoyaleSim, RoyaleLearn, RoyaleViser and RoyaleImitate",
+    )
+    parser.add_argument(
+        "--ref", default="origin/main", help="the git ref to read the other repos at"
+    )
     args = parser.parse_args()
 
     found: dict[str, dict[str, bytes]] = {}
@@ -183,7 +194,8 @@ def main() -> int:
             else:
                 dest.write_bytes(data)
         pages = sum(1 for rel in files if rel.endswith(".md"))
-        print(f"{name}: {pages} pages and {len(files) - pages} other files -> pages/repos/{REPOS[name]}/")
+        others = len(files) - pages
+        print(f"{name}: {pages} pages and {others} other files -> pages/repos/{REPOS[name]}/")
     return 0
 
 
