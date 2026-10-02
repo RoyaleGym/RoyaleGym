@@ -92,6 +92,7 @@ from .protocol import (
     CARD_KINDS,
     DEFAULT_DATA_DIR,
     HAND_SIZE,
+    INSTALL_PAGE,
     RED,
     TEAMS,
     Arena,
@@ -131,13 +132,12 @@ BUILD_PAGE = "docs/site/pages/build-from-source.md"
 
 
 def core_import_message(error: object) -> str:
-    """What a reader is told when the engine is not installed: the pip line first, as the
-    README's Install section shows it, then the page for a source build."""
+    """What a reader is told when the engine is not installed: the install page, whose line
+    works before PyPI too, then the page for a source build."""
     return (
-        f"The battle engine (royalesim) is not installed ({error}). Install it with: "
-        f'pip install "royalegym[sim]" ({INSTALL_POINTER} has the full line). To build it '
-        f"from a RoyaleSim checkout instead, follow {BUILD_PAGE}: the data is extracted "
-        "first, then `maturin develop --release`."
+        f"The battle engine (royalesim) is not installed ({error}). Install it with the "
+        f"install line on {INSTALL_PAGE}. To build it from a RoyaleSim checkout instead, "
+        f"follow {BUILD_PAGE}: the data is extracted first, then `maturin develop --release`."
     )
 
 

@@ -58,6 +58,7 @@ from .protocol import (
     BIT_NO_DEPLOY,
     BIT_WATER,
     BLUE,
+    DATA_DIR_ENV,
     DECK_SIZE,
     EMPTY_CARD,
     HAND_SIZE,
@@ -538,6 +539,20 @@ class MockEngine:
         # joinpath, not "/": the source scan in tests/test_env_protocol.py reads a
         # division of two non-literals as arithmetic, and this module may hold none.
         base = data_dir().joinpath("raw", RAW_CARD_PACK, "csv_logic")
+        tables = (
+            "characters.csv", "buildings.csv", "projectiles.csv", "area_effect_objects.csv",
+            "spells_characters.csv", "spells_buildings.csv", "spells_other.csv",
+        )
+        missing = [name for name in tables if not base.joinpath(name).is_file()]
+        if missing:
+            # An installed engine (pip) carries derived tables only: the raw 2018 pack is
+            # Supercell's, and the wheel ships just the two files the engine itself reads.
+            raise FileNotFoundError(
+                f"MockEngine reads the 2018 card tables from {base}, and {', '.join(missing)} "
+                "is not there. An installed engine does not carry them. Use the real engine "
+                "instead (make_env() does by default, or pass engine=RustEngine()), or set "
+                f"{DATA_DIR_ENV} to the data/ folder of a RoyaleSim checkout."
+            )
         chars = _csv_table(base / "characters.csv", UNIT_COLUMNS)
         bldgs = _csv_table(base / "buildings.csv", UNIT_COLUMNS)
         projs = _csv_table(base / "projectiles.csv", ("Name", "Damage"))

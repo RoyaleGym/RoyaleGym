@@ -48,6 +48,7 @@ from pathlib import Path
 
 import pytest
 
+from royalegym.protocol import INSTALL_PAGE
 from royalegym.rust_engine import BUILD_PAGE, INSTALL_POINTER, INSTALL_SECTION, core_import_message
 
 REPO = Path(__file__).resolve().parents[1]
@@ -371,7 +372,9 @@ def test_the_engine_missing_message_says_how_to_install_it() -> None:
     msg = core_import_message("No module named 'royalesim'")
     install = README.read_text(encoding="utf-8").split(f"## {INSTALL_SECTION}", 1)[1]
     assert 'pip install "royalegym[all]"' in install
-    assert 'pip install "royalegym[sim]"' in msg
+    assert INSTALL_PAGE in msg
+    page = (REPO / "docs" / "site" / "pages" / "install.md").read_text(encoding="utf-8")
+    assert 'pip install "royalegym[all]" --find-links' in page, "the install page lost its line"
     assert BUILD_PAGE in msg
     page = (REPO / BUILD_PAGE).read_text(encoding="utf-8")
     assert "maturin develop --release" in page

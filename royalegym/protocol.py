@@ -64,6 +64,8 @@ WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 # calibration.json, raw/, derived/), never as a copy in this package.
 DEFAULT_DATA_DIR = WORKSPACE_ROOT / "RoyaleSim" / "data"
 DATA_DIR_ENV = "ROYALESIM_DATA_DIR"
+#: The page with the install line that works (before PyPI it names a release page).
+INSTALL_PAGE = "https://royalegym.github.io/RoyaleGym/install/"
 
 
 def data_dir() -> Path:
@@ -86,9 +88,9 @@ def data_dir() -> Path:
         )
         raise FileNotFoundError(
             f"RoyaleSim's data was not found at {where}. Install the engine, which carries "
-            f'its own data: pip install "royalegym[sim]". Working from source instead: clone '
-            f"RoyaleSim next to this repo ({WORKSPACE_ROOT / 'RoyaleSim'}), or set "
-            f"{DATA_DIR_ENV} to its data/ folder."
+            f"its own data, with the install line on {INSTALL_PAGE}. Working from source "
+            f"instead: clone RoyaleSim next to this repo ({WORKSPACE_ROOT / 'RoyaleSim'}), or "
+            f"set {DATA_DIR_ENV} to its data/ folder."
         )
     return p
 

@@ -93,7 +93,7 @@ from .protocol import (
 )
 from .replay import ReplayRecorder
 from .reward import RewardFunction, TowerHPReward, default_reward
-from .rust_engine import RustEngine, core_available
+from .rust_engine import RustEngine, core_available, core_import_message
 from .selfplay import NoopOpponent, Opponent
 from .state_mutator import DefaultStateMutator, Snapshot, StateMutator
 from .viser import ViserPublisher, play_event
@@ -1174,7 +1174,7 @@ def make_env(
     ``deck``: eight card names dealt to both seats (default ``STARTER_DECK``), a pair of
     such lists (Blue's, then Red's), or ``"random"`` for eight random cards each battle.
 
-    ``engine``: ``"rust"``, the real engine (``pip install "royalegym[sim]"``); ``"mock"``,
+    ``engine``: ``"rust"``, the real engine (see ``INSTALL_PAGE``); ``"mock"``,
     the pure-Python stand-in that runs anywhere but is not the game; or an engine.
 
     ``evolved`` and ``heroes``: cards of the deck to play in their evolved or hero form, by
@@ -1187,10 +1187,9 @@ def make_env(
     """
     if engine == "rust":
         if not core_available():
-            raise ImportError(
-                'The battle engine is not installed. Install it with: pip install "royalegym[sim]"'
-                ' (or pass engine="mock" for the pure-Python stand-in, which is not the game).'
-            )
+            # The same words as everywhere else the engine is missing, so one troubleshooting
+            # entry answers them all.
+            raise ImportError(core_import_message("royalesim did not import"))
         built: Engine = RustEngine()
     elif engine == "mock":
         built = MockEngine()

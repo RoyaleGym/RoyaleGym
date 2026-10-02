@@ -7,6 +7,7 @@ pull in every piece: the engine, the learner, the viewer and imitation.
 
 from __future__ import annotations
 
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -73,7 +74,7 @@ def test_with_nothing_found_the_error_says_how_to_install(monkeypatch, tmp_path)
     monkeypatch.delenv(protocol.DATA_DIR_ENV, raising=False)
     monkeypatch.setattr(protocol, "DEFAULT_DATA_DIR", tmp_path / "none")
     monkeypatch.setitem(sys.modules, "royalesim", SimpleNamespace())
-    with pytest.raises(FileNotFoundError, match=r'pip install "royalegym\[sim\]"'):
+    with pytest.raises(FileNotFoundError, match=re.escape(protocol.INSTALL_PAGE)):
         protocol.data_dir()
 
 
@@ -105,7 +106,7 @@ def test_make_env_without_the_engine_says_how_to_install_it(monkeypatch):
     from royalegym import make_env
 
     monkeypatch.setattr(env_mod, "core_available", lambda: False)
-    with pytest.raises(ImportError, match=r'pip install "royalegym\[sim\]"'):
+    with pytest.raises(ImportError, match=re.escape(protocol.INSTALL_PAGE)):
         make_env()
 
 
@@ -147,11 +148,20 @@ def test_the_package_says_its_version():
 
     with PYPROJECT.open("rb") as f:
         version = tomllib.load(f)["project"]["version"]
-    direct = metadata.distribution("royalegym").read_text("direct_url.json")
+    dist = metadata.distribution("royalegym")
+    direct = dist.read_text("direct_url.json")
     url = json.loads(direct).get("url", "") if direct else ""
     here = PYPROJECT.parent.resolve().as_posix().lower()
     if url.startswith("file:") and here not in url.lower():
         pytest.skip(f"SKIPPED, NOT PASSED: royalegym is installed from {url}, not this tree")
+    editable = any("__editable__" in str(f) for f in dist.files or ())
+    if editable and dist.version != version:
+        # An editable install keeps the version it was installed at; a version bump in the
+        # tree does not reach it until it is reinstalled. CI installs fresh and checks.
+        pytest.skip(
+            f"SKIPPED, NOT PASSED: this editable install says {dist.version}, made before the "
+            f"tree's {version}; reinstall it (pip install -e .) to check"
+        )
     assert royalegym.__version__ == version
 
 
@@ -233,3 +243,27 @@ def test_make_env_deals_evolved_and_hero_forms_by_name():
         assert len(p.evo) == 1, p.evo
     with pytest.raises(ValueError, match="Hog"):
         make_env(deck=deck, evolved=["Hog"])
+
+
+def test_mock_engine_without_its_card_tables_says_how_to_go_on(monkeypatch, tmp_path):
+    """An installed engine carries no 2018 card tables, and MockEngine reads them. Constructing
+    it there must say so and name the ways on, not raise a bare missing-file error."""
+    import shutil
+
+    from royalegym import mock_engine
+
+    # The data an installed engine ships: the ledger, the derived tables, and from the 2018
+    # pack only the two tables the engine itself reads.
+    real = protocol.data_dir()
+    shutil.copy(real / "calibration.json", tmp_path / "calibration.json")
+    shutil.copytree(real / "derived", tmp_path / "derived")
+    pack = tmp_path / "raw" / mock_engine.RAW_CARD_PACK / "csv_logic"
+    pack.mkdir(parents=True)
+    for name in ("globals.csv", "rarities.csv"):
+        shutil.copy(real / "raw" / mock_engine.RAW_CARD_PACK / "csv_logic" / name, pack / name)
+    monkeypatch.setenv(protocol.DATA_DIR_ENV, str(tmp_path))
+    with pytest.raises(FileNotFoundError, match="MockEngine reads the 2018 card tables") as caught:
+        mock_engine.MockEngine()
+    message = str(caught.value)
+    assert "RustEngine" in message
+    assert protocol.DATA_DIR_ENV in message
