@@ -1,43 +1,57 @@
 # RoyaleGym
 
-> Make a Clash Royale bot in Python. Five packages: RoyaleSim (a deterministic battle engine in
-> Rust with Python bindings), RoyaleGym (Gymnasium and PettingZoo environments: observations,
-> actions with a legality mask, rewards), RoyaleLearn (a PPO self-play trainer), RoyaleViser (a
-> viewer for saved or live battles) and RoyaleImitate (imitation from replays). Install all with
-> `pip install "royalegym[all]"` (Python 3.12+). The engine's battle logic is still being matched
-> to the real game; the Python APIs are meant to stay put.
+> Train Clash Royale bots with reinforcement learning, in Python. Five packages, split the way
+> RLGym splits Rocket League: RoyaleSim (the battle engine, Rust with Python bindings; RocketSim's
+> role), RoyaleGym (the environment, built from configuration objects with RLGym v2's names:
+> StateMutator, ObsBuilder, ActionParser, RewardFunction, termination and truncation
+> DoneConditions), RoyaleLearn (the PPO trainer; RLGym-PPO's role), RoyaleViser (the viewer;
+> RLViser's role) and RoyaleImitate (warm start from a trained bot, and a penalty that keeps a
+> new bot near it). Install everything with `pip install "royalegym[all]"` (Python 3.12+); on
+> Windows install CUDA PyTorch first. Training assumes an NVIDIA GPU. The engine's battle logic
+> is still being matched to the real game; the Python APIs are meant to stay put.
 
 Each repository also has an AGENTS.md at its root with its layout, build and test commands, and
 the rules its tests enforce.
 
 ## Getting Started
 
-- [Introduction](index.md): what the five packages are and how they fit
-- [Install](install.md): the one install line, the extras, a virtual environment
-- [Quick Start](quick-start.md): one file that trains a bot and saves a battle to watch
-- [Watch Your Bot](watch-your-bot.md): open a saved battle or a live training run
+- [Introduction](index.md): what the five packages are, installation and the extras
+- [Overview](overview.md): the configuration objects, the two seats, what happens in one step
+- [Quick Start Guide](quickstart.md): one file, build_env() plus Learner(...), that trains a bot
 
-## Guides
+## Clash Royale
 
-- [Rewards](guides/rewards.md): write a reward, combine rewards, read the per-term breakdown
-- [Observations and Actions](guides/observations-and-actions.md): the observation dict, the 2305 moves, the mask, ability buttons
-- [Custom Decks](guides/custom-decks.md): decks by name, one per side, evolutions and heroes
+- [Training an Agent](clash-royale/training-an-agent.md): custom rewards, every trainer setting, self-play, decks, watching, wandb
+- [Action Parsers](clash-royale/configuration-objects/action-parsers.md): the 2305 moves, the action mask, ability buttons, writing one
+- [Done Conditions](clash-royale/configuration-objects/done-conditions.md): termination vs truncation, the shipped ones, writing one
+- [Observation Builders](clash-royale/configuration-objects/observation-builders.md): the spatial observation, fair information, writing one
+- [Opponents](clash-royale/configuration-objects/opponents.md): scripted bots, evaluate(), ClashGymEnv
+- [Reward Functions](clash-royale/configuration-objects/reward-functions.md): the shipped rewards, CombinedReward, writing one
+- [State Mutators](clash-royale/configuration-objects/state-mutators.md): decks by name, evolutions and heroes, mid-game starts, writing one
+- [Viewer](clash-royale/configuration-objects/viewer.md): watch training live, save and open a battle, keys
 
-## Reference
+## Cheatsheets
 
-- [Troubleshooting](troubleshooting.md): known errors and their fixes
+- [Game Values](cheatsheets/game-values.md): arena, ticks, elixir rates, towers, codes, the action formula, the card list
+- [Reinforcement Learning Terms](cheatsheets/rl-terms.md): plain-language definitions
+
+## Additional Resources
+
+- [RoyaleSim](resources/royalesim.md): the engine, determinism, driving it directly
+- [RoyaleLearn](resources/royalelearn.md): every Learner setting with its default, checkpoints, using a trained bot
+- [RoyaleViser](resources/royaleviser.md): the viewer
+- [RoyaleImitate](resources/royaleimitate.md): warm start and stay-close training
+- [FAQ](faq.md): install, GPU, training, deck and viewer errors
 - [royalegym API](reference/royalegym.md)
 - [royalelearn API](reference/royalelearn.md)
 - [royaleviser API](reference/royaleviser.md)
 
 ## Advanced
 
-- [Build from source](build-from-source.md): all repositories side by side, building the engine
-- [Your first bot, step by step](first-bot.md)
-- [The engine](pieces/engine.md), [the environments](pieces/environments.md), [the learner](pieces/learner.md), [the viewer](pieces/viewer.md)
-- [Rewards in depth](rewards.md)
-- [Observations and actions in depth](observations-and-actions.md)
 - [How accurate is the engine](accuracy.md)
+- [The engine inside](pieces/engine.md), [the environments inside](pieces/environments.md), [the learner inside](pieces/learner.md), [the viewer inside](pieces/viewer.md)
+- [Build from source](build-from-source.md): all repositories side by side, building the engine
+- [Troubleshooting in depth](troubleshooting.md)
 - Engine internals, mechanics and the calibration ledger: https://github.com/RoyaleGym/RoyaleSim/tree/main/docs
 - Trainer configuration and design: https://github.com/RoyaleGym/RoyaleLearn/tree/main/docs
 - Viewer formats and internals: https://github.com/RoyaleGym/RoyaleViser/blob/main/docs/internals.md

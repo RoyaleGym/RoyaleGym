@@ -8,8 +8,8 @@ the main modules, not every one. `royalegym.evaluate`, which scores one bot agai
 and `royalegym.opponents`, the scripted opponents, are not on this page. Read their docstrings
 in the code.
 
-If you are looking for where to start rather than what a name does, read
-[Your first bot](../first-bot.md) and [Writing a reward function](../rewards.md) first.
+If you are looking for where to start rather than what a name does, read the
+[Quick Start Guide](../quickstart.md) and the [Overview](../overview.md) first.
 
 ## The environments
 

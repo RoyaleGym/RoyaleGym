@@ -164,7 +164,7 @@ config's env block. Naming it in the config means it gets recorded in the checkp
 later the file still says what the bot was trained to want. `examples/custom_reward.py` shows
 it: it adds one term to the shipped reward and names the result in the config.
 
-[Writing a reward function](../rewards.md) is the page for this, and it works today against the
+[Writing a reward function](../clash-royale/configuration-objects/reward-functions.md) is the page for this, and it works today against the
 environments.
 
 !!! warning "Do not re-tune the shipped weights"
@@ -190,7 +190,7 @@ environments.
 | You want to | Go here instead |
 |---|---|
 | train with a library you already know, such as MaskablePPO | [The environments](environments.md) |
-| change what the bot wants | [Writing a reward function](../rewards.md) |
+| change what the bot wants | [Writing a reward function](../clash-royale/configuration-objects/reward-functions.md) |
 | change what it sees or what its moves mean | [The environments](environments.md) |
 | fix how the battle behaves | [The engine](engine.md) |
 | watch a run | [The viewer](viewer.md) |

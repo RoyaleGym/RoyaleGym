@@ -203,8 +203,8 @@ smallest. Pick a cause because you can fix it, not because it is top of the tabl
 
 | You want to | Go here instead |
 |---|---|
-| change what your bot is rewarded for | [Writing a reward function](../rewards.md) |
-| change what your bot sees, or what its moves mean | [What the bot sees and does](../observations-and-actions.md) |
+| change what your bot is rewarded for | [Writing a reward function](../clash-royale/configuration-objects/reward-functions.md) |
+| change what your bot sees, or what its moves mean | [What the bot sees and does](../clash-royale/configuration-objects/observation-builders.md) |
 | start a match from a mid-game position | [The environments](environments.md) |
 | run a training loop | [The learner](learner.md) |
 | watch a battle, or save a picture of one | [The viewer](viewer.md) |

@@ -11,7 +11,7 @@
 # that repo's own docs rather than copying them.
 
 site_name: Royale
-site_description: Train a Clash Royale bot. A fast battle engine, the environments to train in, and the viewer to watch it.
+site_description: Train Clash Royale bots with reinforcement learning. A fast battle engine, the environments to train in, a trainer and a viewer.
 site_url: https://royalegym.github.io/RoyaleGym/
 repo_url: https://github.com/RoyaleGym/RoyaleGym
 repo_name: RoyaleGym
@@ -65,13 +65,21 @@ markdown_extensions:
   - toc:
       permalink: true
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  # Snippets are read from the repository root, so a page can include a file such as
+  # examples/quickstart.py. A missing file is an error, not an empty box.
+  - pymdownx.snippets:
+      base_path: ["../.."]
+      check_paths: true
 
 plugins:
   - search
@@ -91,28 +99,41 @@ nav:
   - Getting Started:
       - Introduction: index.md
       - Install: install.md
-      - Quick Start: quick-start.md
-      - Watch Your Bot: watch-your-bot.md
-  - Guides:
-      - Rewards: guides/rewards.md
-      - Observations and Actions: guides/observations-and-actions.md
-      - Custom Decks: guides/custom-decks.md
-  - Troubleshooting: troubleshooting.md
-  - API Reference:
-      - royalegym: reference/royalegym.md
-      - royaleviser: reference/royaleviser.md
-      - royalelearn: reference/royalelearn.md
+      - Quick Start: quickstart.md
+      - FAQ: faq.md
+      - It Doesn't Work: it-doesnt-work.md
+      - How It Fits Together: overview.md
+  - Clash Royale:
+      - Training an Agent: clash-royale/training-an-agent.md
+      - Configuration Objects:
+          - Action Parsers: clash-royale/configuration-objects/action-parsers.md
+          - Done Conditions: clash-royale/configuration-objects/done-conditions.md
+          - Observation Builders: clash-royale/configuration-objects/observation-builders.md
+          - Opponents: clash-royale/configuration-objects/opponents.md
+          - Reward Functions: clash-royale/configuration-objects/reward-functions.md
+          - State Mutators: clash-royale/configuration-objects/state-mutators.md
+          - Viewer: clash-royale/configuration-objects/viewer.md
+  - Cheatsheets:
+      - Game Values: cheatsheets/game-values.md
+      - Reinforcement Learning Terms: cheatsheets/rl-terms.md
+  - Additional Resources:
+      - RoyaleSim: resources/royalesim.md
+      - RoyaleLearn: resources/royalelearn.md
+      - RoyaleViser: resources/royaleviser.md
+      - RoyaleImitate: resources/royaleimitate.md
+      - API Reference:
+          - royalegym: reference/royalegym.md
+          - royalelearn: reference/royalelearn.md
+          - royaleviser: reference/royaleviser.md
+  # Deep pages for contributors and the curious. Nothing in Getting Started links here.
   - Advanced:
-      - Build from source: build-from-source.md
-      - Your first bot, step by step: first-bot.md
-      - The pieces:
-          - The engine: pieces/engine.md
-          - The environments: pieces/environments.md
-          - The learner: pieces/learner.md
-          - The viewer: pieces/viewer.md
-      - Rewards in depth: rewards.md
-      - Observations and actions in depth: observations-and-actions.md
       - How accurate is the engine: accuracy.md
+      - The engine inside: pieces/engine.md
+      - The environments inside: pieces/environments.md
+      - The learner inside: pieces/learner.md
+      - The viewer inside: pieces/viewer.md
+      - Build from source: build-from-source.md
+      - Troubleshooting in depth: troubleshooting.md
 
 extra:
   social:

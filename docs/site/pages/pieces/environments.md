@@ -32,7 +32,7 @@ version that works, so you can ignore four of them and still have a bot.
 | When the match ends | `DoneCondition` | `GameOverCondition` for the real ending, `StepLimitCondition` and `TickLimitCondition` for cutting an episode short |
 
 Most people change exactly one of these: the reward. That is
-[Writing a reward function](../rewards.md), and it is a few lines.
+[Writing a reward function](../clash-royale/configuration-objects/reward-functions.md), and it is a few lines.
 
 The last row has a wrinkle worth knowing before it bites you. There are two ways an episode can
 stop, and they are not the same thing. **Terminated** means the match is genuinely over and the
@@ -229,7 +229,7 @@ and every slot is in
 
 ## When you would touch it
 
-- You want a different reward. This is the common one. See [Writing a reward function](../rewards.md).
+- You want a different reward. This is the common one. See [Writing a reward function](../clash-royale/configuration-objects/reward-functions.md).
 - You want your bot to see something extra, or see it differently.
 - You want moves at a different resolution, or a different action space entirely.
 - You want matches to start somewhere other than 0-0, for instance from a damaged mid-game board
@@ -289,4 +289,4 @@ MaskablePPO expects, so you can point an existing library at them instead if you
 - [`docs/background.md`](https://github.com/RoyaleGym/RoyaleGym/blob/main/docs/background.md)
   for what is publicly known about the game's rules.
 
-Ready to build one? [Your first bot](../first-bot.md){ .md-button .md-button--primary }
+Ready to build one? [Your first bot](../quickstart.md){ .md-button .md-button--primary }
