@@ -4,6 +4,23 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.4 (2026-10-02)
+
+### Fixed
+- A random deck (`DefaultStateMutator` with no decks, `make_env(deck="random")`, a deck
+  curriculum with no pool) holds at most one champion, as the ladder allows. It could hold four,
+  and the engine refused the battle. A draw with two or more champions is drawn again, so about
+  8% of seeds now deal a different random deck than 0.1.3 did; every other seed deals the same.
+- Starting a bot from a saved one (RoyaleImitate's `warm_start`) works from the install line:
+  `[learn]` and `[all]` need royalelearn 0.5.2, which no longer refuses a package installed from a
+  wheel.
+- `[imitate]` and `[all]` need royaleimitate 0.2.3, whose `public_log` waits for the engine's
+  hand refill timer as royalesim 0.1.3 does.
+
+### Added
+- `CardInfo.champion`: whether a card is a champion, from the engine's catalogue (or, for
+  royalesim 0.1.3 and before, its list of champions).
+
 ## 0.1.3 (2026-10-02)
 
 ### Fixed
@@ -20,7 +37,7 @@ change the observation's shape; each such change is listed here.
 ### Changed
 - `[imitate]` and `[all]` need royaleimitate 0.2.1, which records battles, clones a bot from them,
   and saves the clone so `Learner.load_policy` can play it.
-- The release page carries royalesim 0.1.2, royalelearn 0.5.1 and royaleimitate 0.2.1.
+- The release page carries royalesim 0.1.3, royalelearn 0.5.1 and royaleimitate 0.2.1.
 
 ## 0.1.2 (2026-10-02)
 
