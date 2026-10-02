@@ -48,24 +48,23 @@ For a fresh random deck every battle, pass `deck="random"`.
 
 ## Evolutions and heroes
 
-Some cards have an evolved form or a hero form. Name them, and they are played that way on both
-sides. The card must be in the deck.
+Some cards have an evolved form or a hero form. Name them, and both sides get them. The card must
+be in the deck. An evolved Knight plays as its evolution every third time you play it (most cards;
+a few cycle faster). A hero always plays as its hero form.
 
 ```python
 env = make_env(deck=blue, evolved=["Knight"], heroes=["Musketeer"])
 env.reset(seed=0)
 me = env.battle_state.players[0]
-print("evolution counters:", [[names[c], plays, nxt] for c, plays, nxt in me.evo])
 print("ability buttons:", len(me.abilities), "| moves:", env.action_parser.n_actions)
 ```
 
 ```
-evolution counters: [['Knight', 0, 0]]
 ability buttons: 1 | moves: 2308
 ```
 
-A hero has an ability button, so its deck gets extra moves for pressing it: 2308 here instead of
-2305. A champion card, such as the Golden Knight, brings a button too.
+A deck with a hero or a champion gets three extra moves, one per button slot, so 2308 instead of
+2305. Here only one slot holds a button. A slot with no button is never allowed.
 
 These outputs were run on 2026-10-01 on engine build `650078fef1aca217`. Hands depend on the
 engine version, so yours may differ.
