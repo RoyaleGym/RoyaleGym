@@ -22,12 +22,12 @@ dependencies = [
 # install it.
 sim = ["royalesim"]
 # The learner, with PyTorch, which trains on a CPU.
-learn = ["royalelearn[torch]>=0.4.1"]
+learn = ["royalelearn[torch]>=0.4.2"]
 # The viewer: watch a battle live or from a saved file.
 viser = ["royaleviser"]
 # Imitation from replays.
 imitate = ["royaleimitate"]
-all = ["royalesim", "royalelearn[torch]>=0.4.1", "royaleviser[media]", "royaleimitate"]
+all = ["royalesim", "royalelearn[torch]>=0.4.2", "royaleviser[media]", "royaleimitate"]
 dev = [
     "pytest>=8.0",
     "hypothesis>=6.100",
