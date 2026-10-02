@@ -152,3 +152,26 @@ def test_the_special_forms_rows_decode_as_the_viewer_reads_them() -> None:
     d["players"][0]["evo"] = [[ids["Cannon"], 2, 1]]
     with pytest.raises(msgspec.ValidationError):
         model.decode_frame(msgspec.msgpack.encode(d))
+
+
+def test_the_publisher_can_send_a_busy_battle_frame_on_every_os():
+    """macOS caps one UDP datagram at the send buffer (9216 bytes by default), so a busy
+    battle's frame failed to send there. The publisher raises its buffer past UDP's 64 KB."""
+    import socket
+
+    plain = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    default = plain.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF)
+    plain.close()
+    pub = ViserPublisher(port=0)
+    try:
+        raised = pub._sock.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF)
+        assert raised > default, (raised, default)
+        assert raised >= 1 << 16, raised
+        listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        listener.bind(("127.0.0.1", 0))
+        try:
+            assert pub._sock.sendto(b"x" * 60_000, listener.getsockname()) == 60_000
+        finally:
+            listener.close()
+    finally:
+        pub._sock.close()

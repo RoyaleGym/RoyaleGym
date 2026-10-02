@@ -80,6 +80,7 @@ A battle opens with a short wait when no card can be played, so at first only th
 allowed. Then play opens. The count changes with your elixir, your hand and the board.
 
 If a move gets past the mask anyway, the engine refuses it and the step becomes a wait.
+`info["deploy_status"]` says why.
 
 ## Ability buttons
 

@@ -41,6 +41,7 @@ WIRE FORM
 
 from __future__ import annotations
 
+import contextlib
 import os
 import socket
 import time
@@ -314,6 +315,10 @@ class ViserPublisher:
                 "port> and point the viewer at the same number. The original error was: "
                 f"{exc}"
             ) from exc
+        # macOS caps one UDP datagram at the send buffer, 9216 bytes by default, so a busy
+        # battle's frame would not send. Raise it past UDP's 64 KB limit on every OS.
+        with contextlib.suppress(OSError):
+            self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1 << 20)
         self._sock.setblocking(False)
         self.address: tuple[str, int] = self._sock.getsockname()[:2]
         self._peer: tuple[str, int] | None = None
