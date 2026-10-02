@@ -61,17 +61,36 @@ class StateMutator(ABC):
         return {}
 
 
+#: Champions a random deck may hold: the ladder allows one. (The engine refuses a side with
+#: more champions and heroes than its ability buttons.)
+MAX_CHAMPIONS = 1
+
+
 def random_deck(rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[int]:
+    """Eight different cards of the catalogue, with at most ``MAX_CHAMPIONS`` champions.
+
+    A draw with more is drawn again, so every draw the rule allows is the deck the same seed
+    dealt before the rule."""
     if len(cards) < DECK_SIZE:
         raise ValueError(f"need at least {DECK_SIZE} cards, catalogue has {len(cards)}")
-    return [int(c) for c in rng.choice(len(cards), size=DECK_SIZE, replace=False)]
+    others = sum(not c.champion for c in cards)
+    if others < DECK_SIZE - MAX_CHAMPIONS:
+        raise ValueError(
+            f"a random deck holds at most {MAX_CHAMPIONS} champion, and the catalogue has only "
+            f"{others} other cards"
+        )
+    while True:
+        deck = [int(c) for c in rng.choice(len(cards), size=DECK_SIZE, replace=False)]
+        if sum(bool(cards[c].champion) for c in deck) <= MAX_CHAMPIONS:
+            return deck
 
 
 class DefaultStateMutator(StateMutator):
     """A normal battle from tick 0.
 
     ``decks``: fixed [blue, red] decks, each 8 card names (or catalogue ids, or a mix);
-    None draws a random 8-card deck per team. Names are looked up in the engine's
+    None draws a random 8-card deck per team (at most one champion, as the ladder allows).
+    Names are looked up in the engine's
     catalogue at every build, so a deck written by name means the same cards on every
     card table; an id is only a position in it.
     ``mirror``: both teams get Blue's deck in the same order (ShuffleMode.MIRRORED)

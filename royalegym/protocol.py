@@ -389,6 +389,10 @@ class CardInfo(msgspec.Struct, frozen=True):
     # troop's placement code. None from an engine without the column; ``card_is_spell``
     # then falls back to the placement.
     card_kind: str | None = None
+    # Whether the card is a CHAMPION (one ability button whenever it is in a deck, no form
+    # needed). The ladder allows one per deck, and ``random_deck`` deals by that rule. None
+    # from an engine adapter that cannot say; RustEngine and MockEngine always say.
+    champion: bool | None = None
 
 
 #: The engine's card kinds, by name (py.rs CARD_KINDS).

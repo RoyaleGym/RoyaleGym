@@ -706,6 +706,7 @@ class MockEngine:
                 else "BUILDING" if placement == Placement.BUILDING
                 else "SPELL"
             ),
+            champion=False,  # the 2018 game had none
         )
         self._cards.append(_CardTpl(info=info, unit=unit, spell=spell))
 

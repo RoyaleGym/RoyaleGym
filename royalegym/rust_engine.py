@@ -170,6 +170,13 @@ _PLACEMENT_OF_KIND = {
 CATALOGUE_PREFIX = (
     "name", "placement", "elixir", "count", "radius", "flying", "hitpoints", "footprint_tiles",
 )
+#: The champions of an engine whose catalogue has no ``champion`` column (RoyaleSim 0.1.3 and
+#: before; checked card by card on 0.1.3 by which cards get an ability button with no form).
+#: An engine that states the column is read from it instead, so a later champion is not missed.
+CHAMPIONS_BEFORE_THE_COLUMN = frozenset({
+    "MightyMiner", "SkeletonKing", "ArcherQueen", "GoldenKnight", "Monk", "LittlePrince",
+    "Goblinstein", "BossBandit",
+})
 #: Ledger sections this package reads from the ledger OUTSIDE the engine (ElixirLaw, the
 #: clock), so a ``calibration_overrides`` key in one of them would split the observation
 #: from the engine: refused.
@@ -763,6 +770,13 @@ class RustEngine:
                 f"this adapter reads them by position as {list(CATALOGUE_PREFIX)}"
             )
         kind_at = fields.index("card_kind") if "card_kind" in fields else None
+        champion_at = fields.index("champion") if "champion" in fields else None
+
+        def champion(row: list) -> bool:
+            if champion_at is not None and len(row) > champion_at:
+                return bool(row[champion_at])
+            return row[0] in CHAMPIONS_BEFORE_THE_COLUMN
+
         self._cards = [
             CardInfo(
                 card_id=cid,
@@ -775,6 +789,7 @@ class RustEngine:
                 hitpoints=row[6],
                 footprint_tiles=row[7] if len(row) > 7 else None,
                 card_kind=row[kind_at] if kind_at is not None and len(row) > kind_at else None,
+                champion=champion(row),
             )
             for cid, row in enumerate(rows)
         ]
