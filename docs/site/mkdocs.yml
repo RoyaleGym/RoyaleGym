@@ -98,6 +98,7 @@ nav:
       - The viewer: pieces/viewer.md
   - Writing a reward function: rewards.md
   - What the bot sees and does: observations-and-actions.md
+  - Custom decks: custom-decks.md
   - How accurate is the engine: accuracy.md
   - Troubleshooting: troubleshooting.md
   - API reference:
