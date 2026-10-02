@@ -183,9 +183,9 @@ in TextEdit, choose Format > Make Plain Text before you save.
 
 ### `The battle engine ... is not installed`
 
-The engine wasn't installed with RoyaleGym. Don't use the `pip` line inside the message: it
-lacks the `--find-links` part. Run the install line from step 5 of
-[Install](install.md#5-install-royalegym) again.
+The engine wasn't installed with RoyaleGym. Run the install line from step 5 of
+[Install](install.md#5-install-royalegym) again. If the message shows a `pip` line of its own,
+don't use that one: it lacks the `--find-links` part.
 
 ### `names '...', which this engine's catalogue of ... cards does not have`
 

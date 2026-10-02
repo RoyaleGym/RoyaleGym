@@ -270,9 +270,10 @@ most of the cost.
 
 ## Two more things that are easy to miss
 
-**You do not need the Rust engine to start.** `royalegym` imports without it. `RustEngine()` then
-raises an error that names the build command, and `MockEngine` runs the whole API in the
-meantime. It is a stand-in and not a second simulator: spells resolve instantly, there are no
+**Working from source, you do not need the Rust engine to start.** `royalegym` imports without
+it. `RustEngine()` then raises an error that names the install page and the build command, and
+`MockEngine` runs the whole API in the meantime. `MockEngine` reads the 2018 card tables in a
+RoyaleSim checkout, so it only works from source, not in a `pip install`. It is a stand-in and not a second simulator: spells resolve instantly, there are no
 stuns or knockbacks, and cards run at base level. Fine for writing code, wrong for judging a bot.
 
 **[The learner](learner.md) trains on these environments, as of 2026-09-22, and no bot has
