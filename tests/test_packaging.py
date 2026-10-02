@@ -38,11 +38,12 @@ def test_one_extra_per_piece_and_all_installs_every_piece():
 
 
 def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
-    """The quickstart uses the Learner's named settings (timestep_limit etc.), from 0.4.0."""
+    """The quickstart uses the Learner's named settings (0.4.0) and is stopped with Ctrl+C, which
+    finishes the update, saves a checkpoint and returns from learn() (0.4.1)."""
     extras = _extras()
     for extra in ("learn", "all"):
         pins = [r for r in extras[extra] if r.startswith("royalelearn")]
-        assert pins == ["royalelearn[torch]>=0.4.0"], f"[{extra}]: {pins}"
+        assert pins == ["royalelearn[torch]>=0.4.1"], f"[{extra}]: {pins}"
 
 
 def test_the_engine_data_comes_from_the_installed_engine(monkeypatch, tmp_path):
