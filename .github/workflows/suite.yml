@@ -48,6 +48,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/RoyaleGym/RoyaleSim.git
           git clone --depth 1 https://github.com/RoyaleGym/RoyaleViser.git
+          git clone --depth 1 https://github.com/RoyaleGym/RoyaleLearn.git
 
       # docs/site/pages/install.md, the macOS/Linux commands, verbatim.
       - name: venv and tools
@@ -86,6 +87,10 @@ jobs:
         run: |
           .venv/bin/python -m pip install -e RoyaleGym
           .venv/bin/python -m pip install -e RoyaleViser
+          # RoyaleLearn trains the bot in examples/quickstart.py, which tests/test_quickstart.py
+          # runs. CPU torch: the quickstart runs on CPU, and the default Linux wheel is the CUDA one.
+          .venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          .venv/bin/python -m pip install -e "RoyaleLearn[torch]"
 
       # A SKIP IS NOT A PASS, and this is where that bites hardest. If the engine did not
       # install, every Rust-backed test skips and the suite is green while testing almost
