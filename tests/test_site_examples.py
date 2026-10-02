@@ -58,9 +58,6 @@ MARK = "@@SITE_EXAMPLE_RESULT@@"
 
 #: (page path suffix, text the block contains) -> why its output cannot be compared here.
 EXEMPT = {
-    ("first-bot.md", "ViserPublisher()"): (
-        "its count depends on when a viewer attaches, which no single process controls"
-    ),
     ("pieces/viewer.md", '"shot.png"'): (
         "prints an image's size in bytes, which moves with the viewer's drawing and the "
         "platform's zlib; the page says yours may differ. RoyaleViser's tests cover capture"
@@ -347,15 +344,16 @@ def test_plant_a_real_page_with_one_output_line_changed_fails(tmp_path: Path) ->
     Judged as on the build the page stamps, where a changed output must FAIL, beside a
     blind control: the same page unchanged, judged the same way, must not fail. The first
     version of this plant asserted rewards.md was unstamped. It is stamped, across a line
-    break, and the plant passed only because the stamp pattern missed that stamp.
+    break, and the plant passed only because the stamp pattern missed that stamp. rewards.md
+    went with the 2026-10-01 rewrite; Game Values is the stamped page now.
     """
-    page = PAGES / "rewards.md"
+    page = PAGES / "cheatsheets" / "game-values.md"
     text = page.read_text(encoding="utf-8")
     stamps = STAMP.findall(text)
-    assert stamps, "rewards.md no longer stamps a build; pick a stamped page for this plant"
+    assert stamps, "game-values.md no longer stamps a build; pick a stamped page for this plant"
     control = check_page(page, text, stamps[0], tmp_path)
     assert not control.failures, (
-        "the control failed: rewards.md is stale on this engine, so the plant would prove "
+        "the control failed: game-values.md is stale on this engine, so the plant would prove "
         f"nothing\n{control.failures[0]}"
     )
     fs = fences(text)
@@ -367,12 +365,11 @@ def test_plant_a_real_page_with_one_output_line_changed_fails(tmp_path: Path) ->
     out_start = text.index(chr(10), fs[at + 1][0]) + 1  # first line inside the output fence
     planted = text[:out_start] + "PLANTED " + text[out_start:]
     v = check_page(page, planted, stamps[0], tmp_path)
-    assert v.failures, "PLANT DID NOT LAND: a changed output on rewards.md passed"
+    assert v.failures, "PLANT DID NOT LAND: a changed output on game-values.md passed"
     assert "PLANTED" in v.failures[0], v.failures[0]
 
 
 def test_a_stamp_wrapped_across_a_line_is_still_a_stamp() -> None:
     assert STAMP.findall("run on engine\nbuild `0123456789abcdef` today") == ["0123456789abcdef"]
-    assert STAMP.findall((PAGES / "rewards.md").read_text(encoding="utf-8")), (
-        "rewards.md's stamp is not found"
-    )
+    page = PAGES / "cheatsheets" / "game-values.md"
+    assert STAMP.findall(page.read_text(encoding="utf-8")), "game-values.md's stamp is not found"
