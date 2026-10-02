@@ -1,8 +1,8 @@
 """The README's "Try it" runs as pasted: one battle, a printed winner, a saved battle to watch.
 
-The README is the short front page (40 lines at most). Its program is copied into an empty
-folder and run there, as a reader runs it. What it prints depends on the engine, so the
-check is on what it must do, not on the numbers.
+The README is the short front page: the logo, the install line, then this program. The program
+is copied into an empty folder and run there, as a reader runs it. What it prints depends on
+the engine, so the check is on what it must do, not on the numbers.
 
 SKIPS
     Without the engine. Not a pass.
@@ -31,9 +31,21 @@ def _try_it() -> str:
     return m.group(1)
 
 
-def test_the_readme_is_short():
-    lines = README.read_text(encoding="utf-8").splitlines()
-    assert len(lines) <= 40, len(lines)
+def test_the_readme_opens_with_the_logo_then_install_then_try_it():
+    """No line limit (owner, 2026-10-02: "keep it concise"); what a reader meets first is fixed:
+    the logo, then the install line, then something to run."""
+    text = README.read_text(encoding="utf-8")
+    first = next(line for line in text.splitlines() if line.strip())
+    assert "royalegym-mark.png" in first, first
+    install, try_it = text.index("## Install"), text.index("## Try it")
+    assert install < try_it
+    section = text[install:try_it]
+    assert re.search(
+        r'pip install "royalegym\[all\]" --find-links '
+        r"https://github\.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v\d+\.\d+\.\d+",
+        section,
+    ), "the Install section lost its line"
+    assert "```python" in text[try_it:], "Try it has no program"
 
 
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
