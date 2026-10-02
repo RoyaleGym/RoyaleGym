@@ -93,7 +93,9 @@ def _old_fair_fields(
     )
     afford = afford * (1.0 - pending)
     cycle = np.zeros((DECK_SIZE - HAND_SIZE - 1, onehot), dtype=np.float32)
-    for i, card in enumerate(memory.own_cycle[1:]):
+    # Positions 6-8. The old path's queue always held four cards; under the refill timer it holds
+    # one more while a played card's slot waits, so read the same three slots the writer reads.
+    for i, card in enumerate(memory.own_cycle[1 : DECK_SIZE - HAND_SIZE]):
         cycle[i, num_cards if card == EMPTY_CARD else card] = 1
     reg_left = max(0, clock.regular_ticks - clock.tick) / max(1, clock.regular_ticks)
     ot_left = 0.0
