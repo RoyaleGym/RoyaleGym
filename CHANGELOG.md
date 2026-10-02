@@ -20,6 +20,8 @@ change the observation's shape; each such change is listed here.
 ### Added
 - `CardInfo.champion`: whether a card is a champion, from the engine's catalogue (or, for
   royalesim 0.1.3 and before, its list of champions).
+- `play_battle` takes the scripted bots by name (`"first-affordable"`, `"defend"`, `"push"`,
+  `"patient"`), the names RoyaleImitate's `record` takes for a teacher.
 
 ## 0.1.3 (2026-10-02)
 
