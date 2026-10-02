@@ -120,6 +120,7 @@ nav:
       - How It Fits Together: overview.md
   - Clash Royale:
       - Training an Agent: clash-royale/training-an-agent.md
+      - Cloning a Bot: clash-royale/cloning-a-bot.md
       - Configuration Objects:
           - Overview: clash-royale/configuration-objects/index.md
           - Action Parsers: clash-royale/configuration-objects/action-parsers.md

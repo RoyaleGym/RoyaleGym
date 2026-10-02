@@ -12,6 +12,14 @@ That's useful when you change something about your setup, such as the reward, an
 what an earlier bot learned instead of starting over. Leave RoyaleImitate out and RoyaleLearn
 works exactly the same without it.
 
+It can also make a bot from scratch by copying another bot's moves: see
+[Cloning a Bot](../clash-royale/cloning-a-bot.md).
+
+!!! warning "RoyaleGym 0.1.3"
+    In 0.1.3 the example below stops with `the commit of the package providing these sections
+    cannot be named`. [It Doesn't Work](../it-doesnt-work.md#the-commit-of-the-package-providing-these-sections-cannot-be-named)
+    has the two lines that get around it. The next release fixes it.
+
 ## Example
 
 Train a first bot (the teacher), save it, then start a second bot (the student) from it:
