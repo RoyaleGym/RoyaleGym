@@ -2956,36 +2956,25 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Unreleased">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Added
+        0.1.1
       
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="0.1.1">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#changed" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed
       
     </span>
   </a>
@@ -3236,36 +3225,25 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Unreleased">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Added
+        0.1.1
       
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="0.1.1">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#changed" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fixed
       
     </span>
   </a>
@@ -3316,29 +3294,31 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes to RoyaleViser. Versions follow <a href="https://semver.org">Semantic Versioning</a>.</p>
 <h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
-<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<h2 id="011">0.1.1<a class="headerlink" href="#011" title="Permanent link">&para;</a></h2>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The window library is pygame-ce instead of pygame. It is used the same way (<code>import pygame</code>)
+  and installs on Python 3.14, which pygame does not. Uninstall pygame first if you have it:
+  the two share the <code>pygame</code> folder.</li>
+<li>CI also installs and tests the viewer on Python 3.14.</li>
+<li>The guide tells a <code>pip install</code> user to skip Setup, which is only for working on the viewer.</li>
+</ul>
+<h2 id="010">0.1.0<a class="headerlink" href="#010" title="Permanent link">&para;</a></h2>
+<p>The first tagged version: recordings, saved battles and a running engine in one window, with the
+compare ghost, the inspector, pictures and clips.</p>
 <ul>
 <li>A <code>royaleviser</code> command. On its own it waits for a training run on <code>127.0.0.1:9870</code> and shows
   it live. Given a folder, it opens the newest saved battle in it.</li>
 <li><code>royaleviser --version</code> and <code>royaleviser.__version__</code>.</li>
 <li>Saved battles show the special forms: hero cards are crowned, and evolved cards count their
   plays. A battle saved with RoyaleGym 2f710e8 or later also shows the ability buttons.</li>
-</ul>
-<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
-<ul>
-<li>The README is short. The full guide is now <a href="../guide/">docs/guide.md</a>.</li>
 <li>A missing file, an empty folder or a missing RoyaleGym is reported in one line, not a
   traceback.</li>
-<li>CI also runs on macOS.</li>
-</ul>
-<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
-<ul>
+<li>Busy frames send on macOS (its default socket buffer refused a datagram over 9 KB).</li>
+<li>CI on Windows, Ubuntu and macOS.</li>
 <li>Opening a saved battle whose step log holds an ability press no longer crashes.</li>
 <li>Two cards in one deck can no longer show the same small-tile code.</li>
 </ul>
-<h2 id="010">0.1.0<a class="headerlink" href="#010" title="Permanent link">&para;</a></h2>
-<p>The first version: recordings, saved battles and a running engine in one window, with the
-compare ghost, the inspector, pictures and clips.</p>
 
 
 
