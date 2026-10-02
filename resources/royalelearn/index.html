@@ -3511,10 +3511,12 @@ checkpoint's folder.</p>
   already at 600,000 trains 400,000 more.</li>
 <li>You can change the learning rates, <code>ppo_epochs</code>, the batch sizes, <code>ppo_ent_coef</code> and
   <code>gae_gamma</code> between runs; it carries on and prints what changed.</li>
-<li>If you change the network size or the opponent, it refuses to carry on and says why.</li>
-<li>If you change what's inside <code>build_env</code>, such as the deck or the reward, it does <strong>not</strong>
-  notice: it carries on training the old bot under the new setup. Use a new <code>save_dir</code> when you
-  want a new bot.</li>
+<li>If you change the network size, the opponent, <code>n_envs</code>, what the bot sees or what it can do, or
+  you update RoyaleGym, it refuses to carry on and says what differs.</li>
+<li>If you change the deck or the reward inside <code>build_env</code>, it carries on training the old bot
+  under the new setup, and prints one line that names what changed:
+  <code>build_env makes a different environment from this run's last one: the decks.</code> Use a new
+  <code>save_dir</code> when you want a new bot.</li>
 <li><code>resume=False</code> refuses a folder that already holds a run. It never deletes anything.</li>
 </ul>
 <h2 id="using-a-trained-bot">Using a Trained Bot<a class="headerlink" href="#using-a-trained-bot" title="Permanent link">&para;</a></h2>

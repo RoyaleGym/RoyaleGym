@@ -4135,8 +4135,8 @@ game, any game files or an account.</p>
 <p>RoyaleGym never touches the game, your account or Supercell's servers, so there's nothing to ban.</p>
 <h3 id="what-computer-do-i-need">What computer do I need?<a class="headerlink" href="#what-computer-do-i-need" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.13 or 3.12.
-  Not Python 3.14 yet: the viewer can't install on it.</li>
+<li>Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.12, 3.13 or
+  3.14.</li>
 <li>About 5 GB of free disk space, most of it for PyTorch.</li>
 <li>16 GB of memory (RAM) or more. Training with the quickstart's settings can use around 10 GB.</li>
 <li>To train at a useful speed, an NVIDIA graphics card: a GTX 16-series, an RTX 20-series, or
@@ -4293,8 +4293,9 @@ folder. That removes RoyaleGym, PyTorch and your bots. If you don't need Python 
 uninstall it too (on Windows: Settings &gt; Apps &gt; Installed apps &gt; Python &gt; Uninstall).</p>
 <h3 id="what-happens-when-clash-royale-updates">What happens when Clash Royale updates?<a class="headerlink" href="#what-happens-when-clash-royale-updates" title="Permanent link">&para;</a></h3>
 <p>New cards and balance changes reach RoyaleGym in a new version of the engine. To update, find
-the newest version on the <a href="https://github.com/RoyaleGym/RoyaleGym/releases">Releases page</a>, for
-example <code>v0.1.2</code>, and run this with that version at the end:</p>
+the newest version on the <a href="https://github.com/RoyaleGym/RoyaleGym/releases">Releases page</a>, and
+run this with that version in place of <code>v0.1.2</code> at the end. Updating from v0.1.1? Run
+<code>pip uninstall -y pygame</code> first: the viewer now uses pygame-ce in its place.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.2
 </code></pre></div>
 <p>It updates the five RoyaleGym packages and leaves your PyTorch alone. Your code keeps working,

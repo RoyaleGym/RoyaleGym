@@ -860,6 +860,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#module-pygame-has-no-attribute-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        module 'pygame' has no attribute 'init'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-viewer-window-stays-empty" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3934,6 +3945,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#module-pygame-has-no-attribute-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        module 'pygame' has no attribute 'init'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-viewer-window-stays-empty" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4048,24 +4070,24 @@ whole, quotes included.</p>
 <p>You see something like:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ERROR: Package 'royalegym' requires a different Python: 3.11.9 not in '&gt;=3.12'
 </code></pre></div>
-<p>Your Python is too old. Install Python 3.13 or 3.12 (step 1 of <a href="../install/">Install</a>), then
-make the virtual environment again (step 3).</p>
+<p>Your Python is too old. Install Python 3.14, 3.13 or 3.12 (step 1 of <a href="../install/">Install</a>),
+then make the virtual environment again (step 3).</p>
 <h3 id="failed-to-build-pygame-or-no-version-of-pygame"><code>Failed to build 'pygame'</code>, or no version of <code>pygame</code><a class="headerlink" href="#failed-to-build-pygame-or-no-version-of-pygame" title="Permanent link">&para;</a></h3>
 <p>You see one of these in step 5, often after a wall of red text:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Failed to build 'pygame'
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>ERROR: Could not find a version that satisfies the requirement pygame&gt;=2.6
 </code></pre></div>
-<p>Your Python is 3.14 or newer, and the viewer can't install on it yet. Install Python 3.13 (step
-1 of <a href="../install/">Install</a>), make the virtual environment again with it (step 3), and repeat
-steps 4 and 5.</p>
+<p>You used an older install line. Its viewer needs <code>pygame</code>, which doesn't install on Python 3.14.
+The viewer now uses <code>pygame-ce</code>, which does. Copy the install line from step 5 of
+<a href="../install/#5-install-royalegym">Install</a> again, with its copy button.</p>
 <h3 id="could-not-find-a-version-that-satisfies-the-requirement-torch"><code>Could not find a version that satisfies the requirement torch</code><a class="headerlink" href="#could-not-find-a-version-that-satisfies-the-requirement-torch" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>On a Mac with an Intel processor</strong>, the message ends with <code>(from versions: 2.2.0, 2.2.1,
   2.2.2)</code>. PyTorch no longer makes a version for Intel Macs that RoyaleGym can use, so it doesn't
   install there. You need a Mac with Apple silicon, or a Windows or Linux computer.</li>
 <li><strong>Anywhere else</strong>, your Python is probably newer than PyTorch supports yet. Check with
-  <code>python --version</code>, install Python 3.13 or 3.12, make the virtual environment again (step 3),
-  and repeat step 4.</li>
+  <code>python --version</code>, install Python 3.14 (or 3.13 or 3.12), make the virtual environment again
+  (step 3), and repeat step 4.</li>
 </ul>
 <h3 id="could-not-find-a-version-that-satisfies-the-requirement-royalegym"><code>Could not find a version that satisfies the requirement royalegym</code><a class="headerlink" href="#could-not-find-a-version-that-satisfies-the-requirement-royalegym" title="Permanent link">&para;</a></h3>
 <p><code>pip</code> can't find RoyaleGym. It isn't on PyPI yet, so <code>pip install "royalegym[all]"</code> on its own
@@ -4242,9 +4264,18 @@ helps more than more cores. <code>n_envs</code> is fixed for a run: to try anoth
 <p>The virtual environment isn't on (see <a href="#no-module-named-royalegym">No module named 'royalegym'</a>),
 or the viewer isn't installed. Run the install line from step 5 of
 <a href="../install/#5-install-royalegym">Install</a> again.</p>
+<h3 id="module-pygame-has-no-attribute-init"><code>module 'pygame' has no attribute 'init'</code><a class="headerlink" href="#module-pygame-has-no-attribute-init" title="Permanent link">&para;</a></h3>
+<p>You see this when you start the viewer:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>AttributeError: module 'pygame' has no attribute 'init'
+</code></pre></div>
+<p>You removed <code>pygame</code> after updating. The viewer now uses <code>pygame-ce</code>, and the two share one
+folder, so removing <code>pygame</code> took <code>pygame-ce</code>'s files with it. Put them back, with the virtual
+environment on:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pip install --force-reinstall pygame-ce
+</code></pre></div>
 <h3 id="the-viewer-window-stays-empty">The viewer window stays empty<a class="headerlink" href="#the-viewer-window-stays-empty" title="Permanent link">&para;</a></h3>
 <p>The terminal says:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
 </code></pre></div>
 <p>The viewer is waiting for a training run to watch. Start training in another terminal, with
 <code>viser=True</code> in your <code>Learner(...)</code>. The quickstart has it on already. The battle appears once
@@ -4266,7 +4297,7 @@ other run, or set <code>viser=False</code> in one of them. If you put a <code>Vi
   <code>royaleviser my_bot_battle.msgpack</code>.</li>
 <li>
 <p>Or make a video of it on the server (on Linux, add <code>SDL_VIDEODRIVER=dummy</code> in front):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
 </code></pre></div>
 </li>
 </ul>

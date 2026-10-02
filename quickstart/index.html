@@ -3753,8 +3753,9 @@ the rest. A wrong name stops it with an error that suggests the closest real one
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>['IceWizard', 'IceSpirits', 'IceGolemite', 'SuperIceGolemite']
 </code></pre></div>
 <p>Then change <code>save_dir="runs/quickstart"</code> to a new name, such as <code>save_dir="runs/hog"</code>, and the
-same in <code>watch.py</code>. Otherwise it quietly carries on training your old bot with the new deck,
-instead of starting a new one.</p>
+same in <code>watch.py</code>. Otherwise it carries on training your old bot with the new deck, instead of
+starting a new one. It says so in one line before it starts:
+<code>build_env makes a different environment from this run's last one: the decks.</code></p>
 <h3 id="evolutions-and-heroes">Evolutions and heroes<a class="headerlink" href="#evolutions-and-heroes" title="Permanent link">&para;</a></h3>
 <p>Add a <code>forms</code> line under your deck, with one number per card in the same order: <code>0</code> the normal
 card, <code>1</code> its evolution, <code>2</code> its hero. Then pass it to <code>DefaultStateMutator</code>:</p>

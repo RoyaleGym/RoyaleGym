@@ -3329,14 +3329,15 @@ right-click in PowerShell on Windows, Cmd+V on a Mac, Ctrl+Shift+V in a Linux te
 box has several lines, do them one at a time.</p>
 <p>If anything goes wrong, look up the message on <a href="../it-doesnt-work/">It Doesn't Work</a>.</p>
 <h2 id="1-install-python">1. Install Python<a class="headerlink" href="#1-install-python" title="Permanent link">&para;</a></h2>
-<p>You need <strong>Python 3.13 or 3.12</strong>. Not 3.14 or newer yet: the viewer can't install on those.</p>
+<p>You need <strong>Python 3.12, 3.13 or 3.14</strong>. The newest, 3.14, is a good choice.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">macOS</label><label for="__tabbed_1_3">Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ol>
 <li>Go to <a href="https://www.python.org/downloads/windows/">python.org/downloads/windows</a>.</li>
-<li>Under <strong>Stable Releases</strong>, find the newest <strong>Python 3.13</strong> (or 3.12) and click
-   <strong>Download Windows installer (64-bit)</strong>. Skip the newer versions above it.</li>
+<li>Under <strong>Stable Releases</strong>, find the newest <strong>Python 3.14</strong> (or 3.13 or 3.12) and click
+   <strong>Download Windows installer (64-bit)</strong>. If a version newer than 3.14 is listed above it,
+   skip that one.</li>
 <li>Run the installer. On its first screen, <strong>tick "Add python.exe to PATH"</strong> at the bottom.
    Leave the other box as it is.</li>
 <li>Click <strong>Install Now</strong>. When it finishes, you can ignore the "Disable path length limit"
@@ -3349,8 +3350,8 @@ Uninstall) and run the installer again.</p>
 <p>You need a Mac with Apple silicon (M1 or newer). On a Mac with an Intel processor, the
 PyTorch that RoyaleGym needs no longer installs.</p>
 <p>Go to <a href="https://www.python.org/downloads/macos/">python.org/downloads/macos</a>, download the
-<strong>macOS 64-bit universal2 installer</strong> for the newest Python 3.13 (or 3.12), and run it. Skip
-newer versions.</p>
+<strong>macOS 64-bit universal2 installer</strong> for the newest Python 3.14 (or 3.13 or 3.12), and run it.
+Skip anything newer than 3.14.</p>
 </div>
 <div class="tabbed-block">
 <p>Open a terminal (Ctrl+Alt+T on Ubuntu). On Ubuntu 24.04, which comes with Python 3.12, run:</p>
@@ -3358,8 +3359,8 @@ newer versions.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>python3-venv<span class="w"> </span>python3-pip
 </code></pre></div>
 <p><code>sudo</code> asks for your password, and nothing shows while you type it. That's normal. Older
-versions of Ubuntu come with an older Python: install Python 3.12 or 3.13 with your package
-manager first, or upgrade Ubuntu.</p>
+versions of Ubuntu come with an older Python: install Python 3.12, 3.13 or 3.14 with your
+package manager first, or upgrade Ubuntu.</p>
 </div>
 </div>
 </div>
@@ -3385,11 +3386,11 @@ manager first, or upgrade Ubuntu.</p>
 </div>
 </div>
 <p>You should see something like:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Python 3.13.16
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Python 3.14.8
 </code></pre></div>
-<p>3.12 is fine too. If it shows another version, you have more than one Python and the terminal
-found the wrong one first. Name the version in step 3 instead: <code>py -3.13 -m venv venv</code> on
-Windows, <code>python3.13 -m venv venv</code> on a Mac or Linux. After that, inside the virtual
+<p>3.12 and 3.13 are fine too. If it shows another version, you have more than one Python and the
+terminal found the wrong one first. Name the version in step 3 instead, for example
+<code>py -3.14 -m venv venv</code> on Windows or <code>python3.14 -m venv venv</code> on a Mac or Linux. After that, inside the virtual
 environment, plain <code>python</code> is the right one.</p>
 <h2 id="3-make-a-folder-for-your-bot">3. Make a Folder for Your Bot<a class="headerlink" href="#3-make-a-folder-for-your-bot" title="Permanent link">&para;</a></h2>
 <p>This makes a folder called <code>royale</code> and a <strong>virtual environment</strong> inside it. A virtual
@@ -3487,7 +3488,7 @@ line. To update it on Ubuntu, run <code>sudo ubuntu-drivers install</code>, then
 </div>
 <p>If <code>pip</code> prints a notice that "a new release of pip is available", you can ignore it.</p>
 <h2 id="5-install-royalegym">5. Install RoyaleGym<a class="headerlink" href="#5-install-royalegym" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.2
 </code></pre></div>
 <p>Copy the whole line with the copy button, quotes included. <code>[all]</code> means "with every part": the
 engine, the environments, the trainer, the viewer and the extras. The <code>--find-links</code> part tells
@@ -3500,7 +3501,7 @@ starts with <code>Successfully installed</code> and lists everything it installe
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python -c "import royalegym, torch; print('RoyaleGym', royalegym.__version__, '| graphics card:', torch.cuda.is_available())"
 </code></pre></div>
 <p>You should see:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>RoyaleGym 0.1.1 | graphics card: True
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>RoyaleGym 0.1.2 | graphics card: True
 </code></pre></div>
 <p>The version number may be newer. If it says <code>graphics card: False</code> on a computer with an NVIDIA
 card, see <a href="../it-doesnt-work/#pytorch-cant-see-my-graphics-card">PyTorch can't see my graphics card</a>.
