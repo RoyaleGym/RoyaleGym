@@ -4,6 +4,15 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.3.1 (2026-10-03)
+
+A backport onto 0.1.3 of one fix from 0.1.9. Nothing else changes.
+
+### Fixed
+- Under a command delay, the count of the enemy's elixir charged an ability press twice: once when
+  the press was accepted, and again when its button flipped as it ran on a later step. The count now
+  charges exactly the presses the env accepted.
+
 ## 0.1.3 (2026-10-02)
 
 ### Fixed
