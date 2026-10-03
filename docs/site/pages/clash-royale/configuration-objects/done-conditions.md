@@ -24,7 +24,8 @@ environment refuses one in the wrong slot.
 | `AllCondition([...])` | either (with RoyaleLearn: termination only) | all of them are met. |
 
 The defaults are `GameOverCondition()` and no truncation. A Clash Royale battle always ends by
-itself, after three minutes plus at most two of overtime, so most bots never need a truncation.
+itself, after three minutes plus at most two of overtime and a few seconds of tiebreak, so most bots
+never need a truncation.
 
 ## How They Work
 

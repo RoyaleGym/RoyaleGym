@@ -21,7 +21,7 @@ engine's values, which follow the game's.
 | Regular time | 3 minutes | 3,600 ticks, or 360 decisions. |
 | Overtime | up to 2 minutes | Only if the crowns are level after regular time. The first crown wins. |
 | Opening wait | 4.5 seconds | Nobody can play a card in the first 90 ticks. |
-| Longest battle | 5 minutes | 6,000 ticks, or 600 decisions. |
+| Longest battle | about 5 min 10 s | Overtime ends at 6,000 ticks (600 decisions). If the crowns are level, the tiebreak adds at most about 10 seconds with level-11 towers. |
 
 ## Elixir
 
@@ -51,7 +51,7 @@ Every card and tower is at level 11, the tournament standard.
 | Three crowns | Destroy the king tower, and the battle ends at once. |
 | More crowns | When regular time ends, the side with more crowns wins. |
 | First crown in overtime | In overtime, the next crown wins. |
-| Tiebreak | If the crowns are still level when overtime ends, the side whose weakest tower has more health left wins. If those are equal too, it's a draw. |
+| Tiebreak | If the crowns are still level when overtime ends, play stops and the board is cleared down to the crown towers. About 3 seconds later every tower starts losing the same health each tick, faster while the weakest tower on the board has more left. The first tower to fall loses its side the match. If both sides' weakest towers have exactly the same health, it's a draw. |
 
 ## Codes
 

@@ -89,21 +89,22 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 1  crowns [1, 1]  tick 6000
+winner 1  crowns [1, 2]  tick 6123
 ```
 
-That is a whole match, re-run 2026-09-28 on engine build `bb6797d83bdf3031` with the **15.535 card
+That is a whole match, re-run 2026-10-02 on engine build `6f18fbeda772dfad` with the **15.535 card
 table**, which the Install steps below put at `cards.json`. It was one crown each when the three
 minutes ran out: Red took Blue's left princess tower at tick 1800 and Blue took Red's left one at
-tick 3580. Nobody scored in overtime, so at tick 6000 a tiebreak decided it, and Red won: Blue's
-weakest standing tower had less health left.
+tick 3580. Nobody scored in overtime, so when it ended at tick 6000 the tiebreak decided it: play
+stopped, the board was cleared down to the crown towers, and from tick 6067 every tower lost the
+same health each tick. Blue's weakest tower had the least left, so it fell first, at tick 6123,
+and Red won 2-1.
 
 Measured on the project's desktop, not on a clean runner, building the engine from
-**RoyaleSim `0d0ccd6`**. The compiled engine is `engine_binary_sha256` `2c3c052ed85c1f5e`.
+**RoyaleSim `9ee48a3`**. The compiled engine is `engine_binary_sha256` `db1b9c91f77ad735`.
 
-**This result has moved six times, and each move is traced to one engine rule.** All six were
-found the same way: switch that one rule back, run this exact program, and get the previous result
-exactly.
+**This result has moved seven times.** The first six were each traced to one engine rule the same
+way: switch that one rule back, run this exact program, and get the previous result exactly.
 
 - On 2026-09-23 it went from `winner 0  crowns [2, 1]  tick 3600` to `winner 0  crowns [1, 0]  tick
   3755`, when a tower whose target dies started carrying its attack timing on to the next target
@@ -123,11 +124,16 @@ exactly.
   on the client (`combat.CORPSE_SWITCH_REACH`). With that rule switched back, that build printed
   `winner 0  crowns [1, 1]  tick 6000` exactly; switching back any one of the other nine rules that
   changed with it did not.
-- On 2026-09-28 it moved to the result above, when a troop tapped on one of its own buildings
+- On 2026-09-28 it moved to `winner 1  crowns [1, 1]  tick 6000`, when a troop tapped on one of its own buildings
   started being moved off it as off a crown tower, as measured on the client
   (`placement.TROOP_BUILDING_TAPS`). With that rule switched back, this build prints `winner 1
   crowns [0, 1]  tick 3600` exactly; switching back any one of the other four placement rules
   that changed with it does not.
+- On 2026-10-02 it moved to the result above, when a level overtime stopped ending in a tiebreak
+  at tick 6000 and started ending as on the client: play stops, the board clears down to the
+  crown towers, and the towers drain until one falls (`match.OVERTIME_TIEBREAK`, RoyaleSim 0.1.4).
+  Up to tick 6000 the battle is the same, with the same two towers falling at ticks 1800 and 3580,
+  and so is the winner: the drain takes the weakest tower first, the one the old tiebreak judged.
 
 **The RoyaleSim commit is written here because the digest cannot supply it.** `build_digest` hashes
 the calibration values and the arena compiled into the extension; it has no access to the Rust at
@@ -153,8 +159,8 @@ against recordings, which `cards.json` lists under `thin_slice`, so the example 
 best-measured part of the engine. Any eight will do. Leave the deck out and each team is dealt a
 random eight, which is the default.
 
-One env step is half a second of game time, which is 10 ticks. The battle ended at tick 6000,
-the full five minutes, so each player made 600 decisions. The whole battle takes under a second of real time, and how far under depends
+One env step is half a second of game time, which is 10 ticks. The battle ended at tick 6123,
+five minutes and six seconds in, so each player made 613 decisions. The whole battle takes under a second of real time, and how far under depends
 entirely on what else your machine is doing: four runs on 2026-09-22, on a laptop with 8 GB of
 memory and several other jobs going, gave 0.57 to 0.74 s. Treat any timing on this page the same way.
 
