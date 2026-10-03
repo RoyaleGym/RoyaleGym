@@ -1270,11 +1270,11 @@ def test_plant_a_builder_with_neither_guard_leaks_across_episodes(monkeypatch):
     monkeypatch.setattr(obs_mod.ObsBuilder, "reset", lambda self, state: None)
     original = obs_mod.MatchMemory.observe
 
-    def no_reseed(self, state, team):
+    def no_reseed(self, state, team, **kwargs):
         if 0 <= state.tick < self.tick:  # the backwards-tick guard, removed
             self.tick = state.tick
             return
-        original(self, state, team)
+        original(self, state, team, **kwargs)
 
     monkeypatch.setattr(obs_mod.MatchMemory, "observe", no_reseed)
     env = _counting_env()
