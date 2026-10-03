@@ -126,6 +126,7 @@ from .protocol import (
     HAND_SIZE,
     RED,
     STATUS_EVOLVED,
+    STATUS_HERO,
     TEAMS,
     Arena,
     BattleState,
@@ -1502,17 +1503,36 @@ SEEN_AIM_CHANNEL: tuple[str, str] = (
 )
 
 
+#: The planes ``SpatialObsBuilder(heroes=True)`` adds, after every other optional fair plane.
+#: Fair: a hero looks different on the board, and its one ability shows when it fires, so a
+#: player knows whether the enemy's hero has used its charge.
+HERO_SPATIAL_CHANNELS: list[tuple[str, str]] = [
+    ("own_hero", "count of own hero units whose centre is in the tile"),
+    ("enemy_hero", "count of enemy hero units whose centre is in the tile"),
+    (
+        "enemy_hero_unspent",
+        "count of enemy hero units in the tile whose one ability charge is not used yet",
+    ),
+]
+
+
 def spatial_channels(
-    reveal: Reveal | None = None, evolutions: bool = False, spell_aim: bool = False
+    reveal: Reveal | None = None,
+    evolutions: bool = False,
+    spell_aim: bool = False,
+    heroes: bool = False,
 ) -> list[tuple[str, str]]:
-    """The spatial channels: the fair ones, the evolved-unit pair and the readable enemy spell
-    targets when asked for, then the revealed ones. The fair block keeps its offsets either way."""
+    """The spatial channels: the fair ones, then the evolved-unit pair, the readable enemy spell
+    targets and the hero planes when asked for, then the revealed ones. Each optional block is
+    appended after the ones before it, so turning one on moves no existing plane."""
     rev = reveal or Reveal()
     out = list(FAIR_SPATIAL_CHANNELS)
     if evolutions:
         out.extend(EVOLVED_SPATIAL_CHANNELS)
     if spell_aim:
         out.append(SEEN_AIM_CHANNEL)
+    if heroes:
+        out.extend(HERO_SPATIAL_CHANNELS)
     for field, entry in REVEAL_SPATIAL_CHANNELS.items():
         if getattr(rev, field):
             out.append(entry)
@@ -1626,6 +1646,48 @@ def evolved_channels(entities: Sequence[EntityState], team: int, arena: Arena) -
         if status & STATUS_EVOLVED and e.kind not in TOWER_KINDS:
             ty, tx = _tile(arena, team, e.x, e.y)
             acc[0 if e.team == team else 1, ty, tx] += 1
+    out: np.ndarray = acc.astype(np.float32)
+    return out
+
+
+def hero_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
+    """float32 [3, tiles_y, tiles_x], seen by ``team``: own heroes, enemy heroes, and the enemy
+    heroes whose one ability charge is not used yet (``HERO_SPATIAL_CHANNELS``).
+
+    Counted on the centre tile, from each unit's ``STATUS_HERO`` bit. An engine that does not
+    report the bits is refused, as ``evolved_channels`` refuses it. An enemy hero's charge is
+    read from the enemy's button row that names its card, and from that row's ``spent`` column
+    alone: ``available`` and ``cost`` are not on a player's screen for the enemy's buttons. A
+    hero no row names is refused rather than guessed. Module-level so a test can plant a defect.
+    """
+    spent: dict[int, int] = {}
+    for r in map(ability_row, state.players[1 - team].abilities):
+        if r.card_id != EMPTY_CARD:
+            spent[r.card_id] = r.spent
+    acc = np.zeros((3, arena.tiles_y, arena.tiles_x), dtype=np.int64)
+    for e in state.entities:
+        status = status_of(e)
+        if status is None:
+            raise ValueError(
+                f"heroes=True, but this engine does not report which units are heroes "
+                f"(entity uid {e.uid} has no status_flags). Use an engine that reports them, "
+                "such as RustEngine, or leave heroes off."
+            )
+        if not status & STATUS_HERO or e.kind in TOWER_KINDS:
+            continue
+        ty, tx = _tile(arena, team, e.x, e.y)
+        if e.team == team:
+            acc[0, ty, tx] += 1
+            continue
+        acc[1, ty, tx] += 1
+        if e.card_id not in spent:
+            raise ValueError(
+                f"enemy hero uid {e.uid} (card {e.card_id}) is on the board, but no ability "
+                f"row names its card (the enemy's rows: {state.players[1 - team].abilities}), "
+                "so whether its charge is used cannot be read"
+            )
+        if spent[e.card_id] == 0:
+            acc[2, ty, tx] += 1
     out: np.ndarray = acc.astype(np.float32)
     return out
 
@@ -1786,9 +1848,11 @@ class SpatialObsBuilder(ObsBuilder):
         evolutions: bool = False,
         evolution_progress: bool = False,
         spell_aim_after_ticks: int | None = None,
+        heroes: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.card_identity = bool(card_identity)
+        self.heroes = bool(heroes)
         self.enemy_last_card = self.card_identity
         if spell_aim_after_ticks is not None and (
             not isinstance(spell_aim_after_ticks, int) or spell_aim_after_ticks < 0
@@ -1835,7 +1899,7 @@ class SpatialObsBuilder(ObsBuilder):
         super().bind(engine, action_parser)
         a = self.arena
         self.channels = spatial_channels(
-            self.reveal, self.evolutions, self.spell_aim_after_ticks is not None
+            self.reveal, self.evolutions, self.spell_aim_after_ticks is not None, self.heroes
         )
         self._channel_index = {name: i for i, (name, _) in enumerate(self.channels)}
         self.shape = (len(self.channels), a.tiles_y, a.tiles_x)
@@ -1916,6 +1980,9 @@ class SpatialObsBuilder(ObsBuilder):
             sp[idx["enemy_spell_aim_seen"]] = seen_aim_plane(
                 state, team, self.arena, self._aim_clock
             )
+        if self.heroes:
+            at = idx["own_hero"]
+            sp[at : at + 3] = hero_channels(state, team, self.arena)
         np.clip(sp, 0.0, SPATIAL_CLIP, out=sp)
         out: dict[str, Any] = {
             "spatial": sp,
@@ -1935,6 +2002,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["evolutions"] = True
         if self.evolution_progress:
             out["evolution_progress"] = True
+        if self.heroes:
+            out["heroes"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
