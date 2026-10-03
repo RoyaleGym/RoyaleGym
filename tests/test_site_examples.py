@@ -11,7 +11,13 @@ WHAT IT RUNS. Every ```python block on a page, each in a process of its own, in 
 folder, so nothing one block opens or writes reaches the next block or a checkout. A block
 runs on its own first, the way a reader who copies only that block would run it. If that
 fails with a NameError, it runs again after the blocks above it on the same page, the way a
-page that says "add this to the program above" means it.
+page that says "add this to the program above" means it. A block the page tells the reader to
+save as a file carries the name in its fence (```python title="my_bot.py"), and is saved under
+that name in the page's folder first, so a later block that imports it runs.
+
+ONLY ```python IS RUN. Python under any other tag (```py, ```python3, an untagged block with
+import lines) would be published unchecked, so a test refuses it: on 2026-10-02 thirty ```py
+blocks, a whole new page among them, had never been run.
 
 WHAT IT COMPARES. A block's stdout against the untagged fenced block right under it, with
 nothing but blank lines between, line by line, trailing spaces ignored.
@@ -50,7 +56,9 @@ from royalegym.rust_engine import build_digest as engine_build_digest
 
 REPO = Path(__file__).resolve().parents[1]
 PAGES = REPO / "docs" / "site" / "pages"
-FENCE = re.compile(r"^( *)```(\w*)[^\n]*\n(.*?)^\1```", re.MULTILINE | re.DOTALL)
+FENCE = re.compile(r"^( *)```(\w*)([^\n]*)\n(.*?)^\1```", re.MULTILINE | re.DOTALL)
+#: A fence's file name, as mkdocs-material shows it above the code: ```python title="x.py"
+TITLE = re.compile(r'\btitle="([^"/\\]+\.py)"')
 #: "engine" and "build" may sit on two lines: rewards.md wraps there, and a pattern with
 #: one literal space read that page as unstamped (found by the docs session).
 STAMP = re.compile(r"engine\s+build\s+`([0-9a-f]{16})`")
@@ -119,11 +127,26 @@ def exemption(page: Path, body: str) -> str | None:
     )
 
 
-def fences(text: str) -> list[tuple[int, int, str, str]]:
-    return [
-        (m.start(), m.end(), m.group(2), textwrap.dedent(m.group(3)))
-        for m in FENCE.finditer(text)
-    ]
+class Fence(NamedTuple):
+    start: int
+    end: int
+    lang: str
+    body: str
+    #: The file the page tells the reader to save this block as (its ``title="x.py"``).
+    title: str | None
+
+
+def fences(text: str) -> list[Fence]:
+    out = []
+    for m in FENCE.finditer(text):
+        named = TITLE.search(m.group(3))
+        out.append(
+            Fence(
+                m.start(), m.end(), m.group(2), textwrap.dedent(m.group(4)),
+                named.group(1) if named else None,
+            )
+        )
+    return out
 
 
 def run(prefix: list[str], code: str, cwd: Path) -> dict:
@@ -147,10 +170,14 @@ def check_page(page: Path, text: str, engine: str | None, cwd: Path) -> Verdict:
     unchecked: list[str] = []
     lines: list[str] = []
     ran: list[str] = []
-    for i, (pos, end, lang, body) in enumerate(fs):
+    for i, (pos, end, lang, body, title) in enumerate(fs):
         if lang != "python":
             continue
         where = f"{page.name}:{text.count(chr(10), 0, pos) + 1}"
+        if title is not None:
+            # The page tells the reader to save this block under that name, and later blocks
+            # import it: save it in the page's folder before anything runs it.
+            (cwd / title).write_text(body, encoding="utf-8")
         nxt = fs[i + 1] if i + 1 < len(fs) else None
         expected = nxt[3] if nxt and nxt[2] == "" and not text[end:nxt[0]].strip() else None
         why = exemption(page, body)
@@ -216,7 +243,7 @@ def test_every_exemption_still_names_exactly_one_block() -> None:
     """An exemption that matches nothing protects nothing, and one that matches two hides one."""
     counts = {key: 0 for key in EXEMPT}
     for page in site_pages():
-        for _pos, _end, lang, body in fences(page.read_text(encoding="utf-8")):
+        for _pos, _end, lang, body, _title in fences(page.read_text(encoding="utf-8")):
             if lang != "python":
                 continue
             for suffix, marker in EXEMPT:
@@ -369,6 +396,78 @@ def test_plant_a_real_page_with_one_output_line_changed_fails(tmp_path: Path) ->
     v = check_page(page, planted, stamps[0], tmp_path)
     assert v.failures, "PLANT DID NOT LAND: a changed output on game-values.md passed"
     assert "PLANTED" in v.failures[0], v.failures[0]
+
+
+TITLED_PAGE = '''\
+Make a file called `helper_mod.py`:
+
+```python title="helper_mod.py"
+VALUE = 41
+```
+
+Then, next to it:
+
+```python
+from helper_mod import VALUE
+print(VALUE + 1)
+```
+
+```
+42
+```
+'''
+
+
+def test_a_titled_block_is_saved_as_its_file_for_the_blocks_after_it(tmp_path: Path) -> None:
+    """A page that says "make a file called helper_mod.py" names it in the fence's title
+    (``python title="helper_mod.py"``, which the site shows above the code). The block is saved
+    under that name in the page's folder, so a later block that imports it runs as a reader's
+    would. Control: the same page with no title must fail on the import."""
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    titled = check_page(tmp_path / "page.md", TITLED_PAGE, None, tmp_path / "a")
+    assert not titled.failures, titled.failures
+    assert [line.split(" page.md")[0] for line in titled.lines] == ["prints nothing", "ok"]
+    untitled = TITLED_PAGE.replace(' title="helper_mod.py"', "")
+    control = check_page(tmp_path / "page.md", untitled, None, tmp_path / "b")
+    assert control.failures, control.lines
+    assert "helper_mod" in control.failures[0], control.failures
+
+
+#: Fence tags a reader's Python could hide under. The checker runs ``python`` blocks only, so a
+#: program under any of these would be published unchecked (cloning-a-bot.md, 2026-10-02).
+OTHER_PYTHON_TAGS = {"py", "py3", "python3", "pycon", "ipython"}
+IMPORT_LINE = re.compile(r"^\s*(from\s+[\w.]+\s+import\s|import\s+[\w.]+\s*$)", re.M)
+
+
+def unchecked_python(page: Path) -> list[str]:
+    """Where a page shows Python the checker would not run: an other-Python tag, or Python
+    import lines in a block tagged anything but python."""
+    text = page.read_text(encoding="utf-8")
+    out = []
+    for f in fences(text):
+        where = f"{page.relative_to(PAGES).as_posix()}:{text.count(chr(10), 0, f[0]) + 1}"
+        if f[2].lower() in OTHER_PYTHON_TAGS or (f[2] != "python" and f[2].lower() == "python"):
+            out.append(f"{where}: ```{f[2]}: tag it ```python so it is run")
+        elif f[2] != "python" and IMPORT_LINE.search(f[3]):
+            out.append(f"{where}: Python under ```{f[2] or '(no tag)'}: tag it ```python")
+    return out
+
+
+def test_no_python_on_the_site_hides_under_another_tag() -> None:
+    hidden = [w for page in site_pages() for w in unchecked_python(page)]
+    assert not hidden, "\n".join(hidden)
+
+
+def test_the_hidden_python_guard_sees_both_kinds(tmp_path: Path) -> None:
+    page = PAGES / "_guard_selftest.md"
+    text = "```py\nprint(1)\n```\n\n```\nfrom royalegym import make_env\n```\n\n```python\nx\n```\n"
+    try:
+        page.write_text(text, encoding="utf-8")
+        found = unchecked_python(page)
+    finally:
+        page.unlink()
+    assert len(found) == 2, found
 
 
 def test_a_stamp_wrapped_across_a_line_is_still_a_stamp() -> None:
