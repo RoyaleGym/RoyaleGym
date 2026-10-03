@@ -185,6 +185,14 @@ def test_level_game_goes_to_overtime_then_draw():
     assert not s.game_over
     eng.step([], eng.overtime_ticks)
     s = eng.state()
+    if eng.overtime_tiebreak == "client_hp_drain":
+        # The ledger's rule from RoyaleSim ship31: a level match goes on past overtime's end.
+        # Full, equal towers drain once at t6067 and draw at t6147 (test_overtime_tiebreak).
+        assert not s.game_over
+        while not s.game_over and s.tick < 6300:
+            eng.step([], 1)
+            s = eng.state()
+        assert s.tick == 6148
     assert s.game_over
     assert s.winner == Winner.DRAW
 

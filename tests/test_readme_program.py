@@ -233,7 +233,19 @@ def test_the_try_it_program_runs_and_prints_what_the_readme_says() -> None:
 
 
 def test_a_moved_build_that_prints_the_page_battle_passes(monkeypatch) -> None:
-    """The pass path above, taken on purpose: the digest moved, the battle did not."""
+    """The pass path above, taken on purpose: the digest moved, the battle did not.
+
+    The page's battle is set to what THIS engine prints, so the path is taken on any engine.
+    It used to rely on the live engine still printing the page's battle, and RoyaleSim
+    ship31's tiebreak drain, which lets a level match go on past t6000, moved that battle
+    and turned this self-test red for a reason that was not the pass path's."""
+    program, _page = try_it_program()
+    done = subprocess.run(
+        [sys.executable, "-c", program], capture_output=True, text=True, timeout=300, cwd=REPO
+    )
+    assert done.returncode == 0, done.stderr[-2000:]
+    printed = done.stdout
+    monkeypatch.setattr(sys.modules[__name__], "try_it_program", lambda: (program, printed))
     monkeypatch.setattr(sys.modules[__name__], "engine_build_digest", lambda: "0" * 16)
     try:
         test_the_try_it_program_runs_and_prints_what_the_readme_says()
