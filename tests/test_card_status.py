@@ -283,3 +283,26 @@ def test_the_enemy_count_equals_the_enemys_own_counters():
             obs, *_ = env.step(acts)
     assert checked > 500, checked
     assert evolved_plays >= 1, "no evolved enemy play was seen, so the reset was never tested"
+
+
+def test_units_on_the_board_at_the_start_are_not_plays():
+    """A battle that starts mid-match (a mutator's spawns, a loaded state) can already hold an
+    evolved enemy unit. A basic play of that card on the first step is still basic."""
+    _, parser, b, state = _builder()
+    off = b.vector_offsets()
+    hand = list(state.players[RED].hand)
+    slot = hand.index(3) if 3 in hand else 0
+    hand[slot] = 3
+    start = msgspec.structs.replace(
+        _reporting(state, p1={"hand": list(hand)}),
+        entities=[*_reporting(state).entities, _enemy_unit(800, 3, STATUS_EVOLVED)],
+    )
+    b.reset(start)
+    hand[slot] = 14
+    s = msgspec.structs.replace(
+        _reporting(state, p1={"hand": list(hand)}), tick=state.tick + 5,
+        entities=[*start.entities, _enemy_unit(801, 3, 0)],
+    )
+    v = _vec(b, parser, s)
+    assert v[off["enemy_evo_progress"]][3] == pytest.approx(0.5), "the play counted as evolved"
+    assert v[off["enemy_seen_evolved"]][3] == 0
