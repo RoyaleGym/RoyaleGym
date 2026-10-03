@@ -90,12 +90,11 @@ PRODUCER_DECK = (
 )
 ENGINES = ["mock", pytest.param("rust", marks=needs_rust)]
 
-#: Cards whose price the catalogue test does not grade, each with a strict xfail of its own.
-#: The Tri Wizards: from RoyaleSim round 9 the card puts its Electro Wizard and Ice Wizard down
-#: under THEIR OWN card ids (42, 23), so the term prices a play of it at 7 + 4 + 3. Every other
-#: multi-unit card stamps the played card's id on what it puts down (a Goblin Gang's Spear
-#: Goblins are 41, not 19). It is an event-only card, and event-only cards are deferred to
-#: the end of the engine's queue, so the stamp waits with them.
+#: Cards whose price the catalogue test does not grade, each with a test of its own.
+#: The Tri Wizards: from RoyaleSim round 9 to 0.1.4 the card puts its Electro Wizard and Ice
+#: Wizard down under THEIR OWN card ids (42, 23), so the term prices a play of it at 7 + 4 + 3.
+#: From 0.1.5 every unit reports the card whose play put it down, and the play prices at 7.
+#: Its own test is an expected failure on the old labels and a pass on the new.
 PRICED_ELSEWHERE = frozenset({"TriWizards"})
 # The three ways the catalogue describes a card that puts nothing of its own on the board.
 # Spelled out from the engine's own placement classes rather than taken from the term, so a
@@ -336,10 +335,12 @@ def test_every_card_the_catalogue_calls_a_spell_is_charged_once_at_the_tap(kind,
 def test_a_unit_a_card_produced_is_not_billed_at_that_cards_price(owner):
     """A Tombstone dies, leaves skeletons behind, and the skeletons are swept up.
 
-    The engine reports every one of those skeletons under the Witch, so a term that
-    trusts the reported card pays five elixir a head for what a three-elixir card left
-    behind. Two steps: the Tombstone itself, which the catalogue does price, and then
-    only skeletons, which it does not.
+    An engine before RoyaleSim 0.1.5 reports every one of those skeletons under the Witch,
+    so a term that trusts the reported card pays five elixir a head for what a three-elixir
+    card left behind. From 0.1.5 they report the Tombstone, whose row describes a building,
+    not a skeleton. Either way a skeleton is not the unit its reported card's row describes,
+    and that is what keeps it unbilled. Two steps: the Tombstone itself, which the catalogue
+    does price, and then only skeletons, which it does not.
     """
     engine = make_engine("rust", PRODUCER_DECK)
     tbl = Table(engine)
@@ -372,7 +373,8 @@ def test_a_unit_a_card_produced_is_not_billed_at_that_cards_price(owner):
     for e in left:
         under = tbl.by_id[e.card_id]
         assert not is_own_unit(under, e), "a skeleton is not the unit its reported card describes"
-        assert under.name != "Tombstone", "the engine reports it under some other card entirely"
+        # Reported under the Witch before RoyaleSim 0.1.5, under the Tombstone from it.
+        assert under.name in ("Witch", "Tombstone"), under.name
     assert t.get_reward(owner, prev, cur, results) == pytest.approx(
         (FIREBALL - tomb.elixir) / SCALE
     )
@@ -524,7 +526,7 @@ def test_one_tap_of_any_card_is_priced_at_exactly_that_cards_elixir(kind):
     If any of that slipped, the term would quietly under- or over-pay every play of that
     card for the rest of training, so it is measured rather than believed.
 
-    The cards in ``PRICED_ELSEWHERE`` are graded by their own strict xfails, not here.
+    The cards in ``PRICED_ELSEWHERE`` are graded by tests of their own, not here.
     """
     engine = make_engine(kind)
     tbl = Table(engine)
@@ -551,30 +553,35 @@ def test_one_tap_of_any_card_is_priced_at_exactly_that_cards_elixir(kind):
 
 
 @needs_rust
-@pytest.mark.xfail(
-    reason=(
-        "RoyaleSim reports the Tri Wizards' Electro and Ice Wizards under their own card ids "
-        "(42, 23), so the term prices the play 14; stamping the played card's id is deferred "
-        "with the other event-only cards"
-    ),
-    strict=True,
-)
 def test_a_play_of_the_tri_wizards_is_priced_at_the_card():
     """A play of the Tri Wizards is worth the card: 7, not its wizards' own cards' 7 + 4 + 3.
 
     From round 9 the card puts three different wizards down through a deploy spawn area;
     before it, only the TriWizard. The price is the property either way, so it is what is
-    asserted, with the units read listed beside it."""
+    asserted, with the units read listed beside it.
+
+    Before RoyaleSim 0.1.5 the Electro and Ice Wizards were reported under their own cards,
+    so the play priced at 14: on such an engine this is an expected failure, named by the
+    labels it read. From 0.1.5 every unit reports the card whose play put it down, and the
+    play must price at 7."""
     engine = make_engine("rust")
     if "TriWizards" not in {c.name for c in engine.cards()}:
         pytest.skip("this engine's catalogue has no Tri Wizards")
+    tbl = Table(engine)
     t = term(engine)
-    priced, read = [], []
+    priced, read, labels = [], [], set()
     for _card, seat, _prev, _result, put_down in tap_everything(
-        engine, Table(engine), only=frozenset({"TriWizards"})
+        engine, tbl, only=frozenset({"TriWizards"})
     ):
         priced.append((seat, str(sum((t.unit_value(e) for e in put_down), Fraction(0)))))
         read.append(sorted((e.card_id, e.max_hp) for e in put_down))
+        labels |= {tbl.by_id[e.card_id].name for e in put_down}
+    if labels != {"TriWizards"}:
+        assert priced == [(BLUE, "14"), (RED, "14")], f"{priced}; units read: {read}"
+        pytest.xfail(
+            f"this engine reports the Tri Wizards' units under {sorted(labels)}, each priced "
+            "as its own card (14); RoyaleSim 0.1.5 reports the card that was played"
+        )
     assert priced == [(BLUE, "7"), (RED, "7")], f"{priced}; units read: {read}"
 
 

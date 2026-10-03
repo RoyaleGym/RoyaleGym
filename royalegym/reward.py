@@ -188,16 +188,17 @@ class ElixirTradeReward(RewardFunction):
     WHAT THE CATALOGUE DOES NOT PRICE. A card can put units on the board that are not
     the unit the card itself summons -- a hut and a Witch keep producing them, a
     Tombstone leaves more behind when it dies, a barrel releases them where it lands.
-    The catalogue has one row per card and no row for any of those units, and an
-    engine reports each of them under SOME card that can produce it, which need not
-    be the card its owner played: a Tombstone's skeleton is reported under the Witch,
-    a five-elixir card its owner may not even hold. So a unit is paid for only when
-    it is the unit its own card's row describes -- same hitpoints, same collision
-    radius, same air or ground -- and anything else a card produced scores nothing.
-    THAT IS AN UNDERSTATEMENT AND IT IS DELIBERATE: a Tombstone's skeleton is worth
-    something, and this term says zero rather than five. It is the closest to right
-    the reported state allows. The day an entity says which card produced it, the
-    produced unit can be priced instead.
+    The catalogue has one row per card and no row for any of those units. An engine
+    before RoyaleSim 0.1.5 reports each of them under SOME card that can produce it,
+    which need not be the card its owner played: a Tombstone's skeleton is reported
+    under the Witch, a five-elixir card its owner may not even hold. From 0.1.5 an
+    entity reports the card whose play put it down (the Tombstone's skeletons report
+    the Tombstone). Either way a unit is paid for only when it is the unit its own
+    card's row describes -- same hitpoints, same collision radius, same air or
+    ground -- and anything else a card produced scores nothing. THAT IS AN
+    UNDERSTATEMENT AND IT IS DELIBERATE: a Tombstone's skeleton is worth something,
+    and this term says zero rather than five. Now that an entity says which card
+    produced it, a produced unit could be priced instead; this term does not do that.
 
     WHAT THAT LEAVES TRUE is the property the term actually needs: ONE PLAY OF A CARD IS
     WORTH EXACTLY THAT CARD'S ELIXIR, charged once, either at the tap or through the
@@ -212,12 +213,13 @@ class ElixirTradeReward(RewardFunction):
     reported under. Both are measured in tests/test_rewards.py over every card either
     engine will place, on both seats, because the whole rule rests on them.
 
-    ONE CARD BREAKS IT: THE TRI WIZARDS. From RoyaleSim 6909b6f their Electro Wizard and Ice
-    Wizard are reported under THEIR OWN card ids (42, 23), not the Tri Wizards', so each
-    matches its own card's row and is priced as that card: a 7-elixir play totals 14. Every
-    other multi-unit card stamps the played card's id on what it puts down. The engine's
-    stamp is deferred with the other event-only cards; tests/test_rewards.py holds the
-    card to a strict xfail of its own (``PRICED_ELSEWHERE``).
+    ONE CARD BROKE IT BEFORE ROYALESIM 0.1.5: THE TRI WIZARDS. From RoyaleSim 6909b6f to
+    0.1.4 their Electro Wizard and Ice Wizard are reported under THEIR OWN card ids (42,
+    23), not the Tri Wizards', so each matches its own card's row and is priced as that
+    card: a 7-elixir play totals 14. From 0.1.5 every unit reports the card whose play put
+    it down, and the play totals 7. tests/test_rewards.py grades the card on its own
+    (``PRICED_ELSEWHERE``): an expected failure on an engine with the old labels, a pass on
+    one with the new.
 
     EXACT ARITHMETIC. Unit values are ``Fraction(elixir, count)`` and the sum is
     exact until the final division. A running float sum of the same values depends
