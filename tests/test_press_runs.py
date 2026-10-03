@@ -74,7 +74,9 @@ def test_a_press_that_ran_is_charged_its_price():
 
 def test_the_own_side_and_plays_in_the_report_charge_no_enemy_press():
     nothing = _count_after([], presses=())
-    other = _count_after([(122, 0, "ability", SLOT, 0), (122, 1, "deploy", 5, 0)], presses=(1,))
+    # A play's ``what`` is a card id, here one that reads as this button's slot if misread.
+    other = _count_after([(122, 0, "ability", SLOT, 0), (122, 1, "deploy", SLOT, 0)],
+                         presses=(1,))
     assert other == nothing
 
 
@@ -85,3 +87,57 @@ def test_without_a_report_the_accepted_press_is_charged_when_due():
     m.observe(at(110), 0, presses=[(1, BUTTON)])
     m.observe(at(130), 0, presses=[])
     assert _count_after([], presses=()) - m.enemy_elixir_milli() == PRICE * 1000
+
+
+def _builder_count(runs_second):
+    from royalegym.action import TileActionParser
+    from royalegym.obs import SpatialObsBuilder
+
+    eng, at = _states()
+    parser = TileActionParser()
+    parser.bind(eng)
+    b = SpatialObsBuilder()
+    b.bind(eng, parser)
+    b.command_delay = (DELAY, DELAY)
+    b.reset(at(100))
+    mask = parser.action_mask(at(100), 0)
+    b.see_presses([(1, BUTTON)])
+    b.see_runs([])
+    b.build(at(110), 0, mask)
+    b.see_presses([])
+    b.see_runs(runs_second)
+    b.build(at(130), 0, mask)
+    return b.memory[0].enemy_elixir_milli()
+
+
+def test_the_builder_hands_its_memories_the_report():
+    refused = _builder_count([(122, 1, "ability", SLOT, 15)])
+    ran = _builder_count([(122, 1, "ability", SLOT, 0)])
+    assert refused - ran == PRICE * 1000
+
+
+def test_the_env_hands_its_builder_the_engines_report():
+    from royalegym import ClashParallelEnv
+    from royalegym.obs import SpatialObsBuilder
+
+    report = [(7, 1, "ability", SLOT, 15)]
+
+    class Reporting(MockEngine):
+        def step_commands_run(self):
+            return list(report)
+
+    class Recording(SpatialObsBuilder):
+        def see_runs(self, runs):
+            seen.append(runs)
+            super().see_runs(runs)
+
+    seen = []
+    env = ClashParallelEnv(engine=Reporting(), obs_builder=Recording())
+    env.reset(seed=0)
+    env.step({a: 0 for a in env.agents})
+    assert seen == [report]
+    seen.clear()
+    plain = ClashParallelEnv(engine=MockEngine(), obs_builder=Recording())
+    plain.reset(seed=0)
+    plain.step({a: 0 for a in plain.agents})
+    assert seen == [None], "an engine without the report hands None, not an empty list"
