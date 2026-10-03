@@ -19,6 +19,9 @@ change the observation's shape; each such change is listed here.
   is where in the `card_ids` vocabulary: own and opponent spells at their centre tile, own spells at
   their aim tile, and the opponent's at their aim tile once a player could read it. Needs
   `card_identity=True` and `spell_aim_after_ticks`. Off by default.
+- `SpatialObsBuilder(unit_status=True)`: eight planes, own and opponent: shield hp left, units under
+  a Rage, units slowed by cold, and units whose current target is a crown tower. A frozen unit is
+  already in the stunned planes. Off by default.
 
 ## 0.1.8 (2026-10-03)
 
