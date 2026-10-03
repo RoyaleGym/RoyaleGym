@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "royalegym"
-version = "0.1.4"
+version = "0.1.5"
 description = "RoyaleGym: reinforcement-learning environments for Clash Royale, over the RoyaleSim battle engine"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -22,12 +22,12 @@ dependencies = [
 # install it.
 sim = ["royalesim"]
 # The learner, with PyTorch, which trains on a CPU.
-learn = ["royalelearn[torch]>=0.5.2"]
+learn = ["royalelearn[torch]>=0.5.3"]
 # The viewer: watch a battle live or from a saved file.
 viser = ["royaleviser"]
 # Imitation from replays.
 imitate = ["royaleimitate>=0.2.3"]
-all = ["royalesim", "royalelearn[torch]>=0.5.2", "royaleviser[media]", "royaleimitate>=0.2.3"]
+all = ["royalesim", "royalelearn[torch]>=0.5.3", "royaleviser[media]", "royaleimitate>=0.2.3"]
 dev = [
     "pytest>=8.0",
     "hypothesis>=6.100",

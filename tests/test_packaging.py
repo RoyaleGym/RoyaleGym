@@ -42,11 +42,12 @@ def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
     """The quickstart uses the Learner's named settings (0.4.0) and is stopped with Ctrl+C, which
     finishes the update, saves a checkpoint and returns (0.4.1); it starts on macOS from 0.4.2.
     Before 0.5.2 a run with an extension section (royaleimitate's warm_start) was refused for any
-    package installed from a wheel, which is every user of the install line."""
+    package installed from a wheel, which is every user of the install line. From 0.5.3 its
+    preflight battle may run past t6000, where RoyaleSim 0.1.4 ends a level overtime."""
     extras = _extras()
     for extra in ("learn", "all"):
         pins = [r for r in extras[extra] if r.startswith("royalelearn")]
-        assert pins == ["royalelearn[torch]>=0.5.2"], f"[{extra}]: {pins}"
+        assert pins == ["royalelearn[torch]>=0.5.3"], f"[{extra}]: {pins}"
 
 
 def test_the_engine_data_comes_from_the_installed_engine(monkeypatch, tmp_path):

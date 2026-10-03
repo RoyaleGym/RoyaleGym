@@ -4,6 +4,23 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.5 (2026-10-02)
+
+### Changed
+- A level overtime ends as the game ends it (royalesim 0.1.4): no card can be played from
+  overtime's end, two ticks later every troop, building and spell leaves the board, and from
+  3.35 s past the end every crown tower loses the same hp each tick until one falls; the crowns
+  then decide. Towers exactly level drain once and the match is a draw 4 s later. A match can
+  now run past tick 6000 (to about tick 6200). `MockEngine` runs the same rule when its
+  calibration selects it.
+- `[learn]` and `[all]` need royalelearn 0.5.3, whose start-up check allows a match past tick
+  6000.
+
+### Added
+- `SpellState.ticks_flown`: how many ticks a thrown spell has flown (-1 from an engine before
+  royalesim 0.1.4). `SpatialObsBuilder(spell_aim_after_ticks=k)` reads it when the engine reports
+  it, so each spell object is timed exactly.
+
 ## 0.1.4 (2026-10-02)
 
 ### Fixed
