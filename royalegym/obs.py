@@ -140,6 +140,7 @@ from .protocol import (
     EntityKind,
     EntityState,
     Placement,
+    PlayerState,
     SpellMotion,
     SpellState,
     TowerSlot,
@@ -162,6 +163,7 @@ MASK_OBS_KEYS = ("action_mask", "mask_planes")
 LEAK_SCALE = 20.0  # elixir leaked at which ``own_elixir_leaked`` saturates
 PLAY_GAP_TICKS = 600.0  # ticks since own last play at which that feature saturates
 PLAYS_SCALE = 40.0  # enemy plays at which ``enemy_plays`` saturates
+COOLDOWN_SCALE = 600.0  # ticks of an ability's cooldown at which a cooldown field saturates
 
 
 @dataclass(frozen=True)
@@ -209,6 +211,7 @@ def vector_layout(
     enemy_last_card: bool = False,
     evolutions: bool = False,
     evolution_progress: bool = False,
+    card_status: bool = False,
 ) -> list[VectorField]:
     """The flat vector, field by field, in order. THE definition of the layout.
 
@@ -228,6 +231,11 @@ def vector_layout(
     ``evolution_progress`` also ``own_hand_evo_progress``. They are fair because the
     client shows the charge on a player's own cards. The enemy's charge is not shown, so
     nothing here reads it.
+
+    ``card_status`` (off by default) appends ``CARD_STATUS_FIELDS`` after those: every card's
+    evolution and hero status, own and enemy (owner 2026-10-03). The own ones are what a player
+    knows of its deck; the enemy's are counted from the plays it has seen, as a good player
+    does, and never name a card the enemy has not played.
     """
     rev = reveal or Reveal()
     n = num_cards
@@ -310,6 +318,8 @@ def vector_layout(
                 "hand slot's evolution counter: plays / the cycle length, 0 without one [4]",
             )
         )
+    if card_status:
+        fields.extend(card_status_layout(n))
     if rev.enemy_hand:
         fields.append(
             VectorField(
@@ -343,14 +353,54 @@ def vector_fields(
     enemy_last_card: bool = False,
     evolutions: bool = False,
     evolution_progress: bool = False,
+    card_status: bool = False,
 ) -> list[tuple[str, int]]:
     """``(description, size)`` per field, in order. The suite checks the sizes add up."""
     return [
         (f"{f.key}: {f.doc}", f.size)
         for f in vector_layout(
-            num_cards, reveal, enemy_last_card, evolutions, evolution_progress
+            num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status
         )
     ]
+
+
+def card_status_layout(n: int) -> list[VectorField]:
+    """The ``card_status`` fields, in order: per card id [n] unless a size says otherwise."""
+    return [
+        VectorField("own_deck_all", n, "own deck multi-hot [n], the whole deck (PlayerState.deck)"),
+        VectorField("own_deck_evo", n, "own deck cards in their evolution form [n]"),
+        VectorField("own_deck_hero", n, "own deck cards in their hero form [n]"),
+        VectorField("own_hand_evo", HAND_SIZE, "hand slot's card is in its evolution form [4]"),
+        VectorField("own_hand_hero", HAND_SIZE, "hand slot's card is in its hero form [4]"),
+        VectorField("own_next_form", 2, "the next card is in its evolution form, its hero form"),
+        VectorField("own_evo_progress", n, "own evolution counter: plays / its cycle [n]"),
+        VectorField("own_evo_next", n, "own card's next play is its evolved form [n]"),
+        VectorField("own_button", n, "own ability button, by its card [n]"),
+        VectorField("own_button_available", n, "own button would be taken but for elixir [n]"),
+        VectorField("own_button_spent", n, "own hero's one charge is used [n]"),
+        VectorField(
+            "own_button_cooldown", n, f"own button's cooldown left / {COOLDOWN_SCALE:.0f} ticks [n]"
+        ),
+        VectorField("enemy_seen_evolved", n, "enemy card played in its evolution form [n]"),
+        VectorField("enemy_seen_hero", n, "enemy card played in its hero form [n]"),
+        VectorField(
+            "enemy_evo_progress",
+            n,
+            "enemy basic plays since its last evolved play / the card's evo_cycle [n]",
+        ),
+        VectorField("enemy_evo_next", n, "enemy card's next play would be evolved, by count [n]"),
+        VectorField("enemy_button_spent", n, "enemy hero's one charge is used [n]"),
+        VectorField(
+            "enemy_button_cooldown",
+            n,
+            f"enemy button's cooldown left / {COOLDOWN_SCALE:.0f} ticks [n]",
+        ),
+    ]
+
+
+#: The ``card_status`` field names, in order. Written by ``build_vector`` from the state and
+#: the builder's ``EnemyForms``, like ``BOARD_FIELDS``; ``fair_fields`` does not produce them.
+CARD_STATUS_FIELDS = tuple(f.key for f in card_status_layout(1))
 
 
 def vector_offsets(
@@ -359,11 +409,14 @@ def vector_offsets(
     enemy_last_card: bool = False,
     evolutions: bool = False,
     evolution_progress: bool = False,
+    card_status: bool = False,
 ) -> dict[str, slice]:
     """``key -> slice`` into the flat vector, so nothing has to count slots by hand."""
     out: dict[str, slice] = {}
     at = 0
-    for f in vector_layout(num_cards, reveal, enemy_last_card, evolutions, evolution_progress):
+    for f in vector_layout(
+        num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status
+    ):
         out[f.key] = slice(at, at + f.size)
         at += f.size
     return out
@@ -1077,13 +1130,14 @@ def _vector_slots(
     enemy_last_card: bool,
     evolutions: bool = False,
     evolution_progress: bool = False,
+    card_status: bool = False,
 ) -> tuple[dict[str, slice], int]:
     """``vector_offsets`` and the vector's width, cached and read-only.
 
     The layout is a function of these alone, and ``vector_layout`` is the one
     definition of it.
     """
-    flags = (enemy_last_card, evolutions, evolution_progress)
+    flags = (enemy_last_card, evolutions, evolution_progress, card_status)
     off = vector_offsets(num_cards, reveal, *flags)
     return off, sum(f.size for f in vector_layout(num_cards, reveal, *flags))
 
@@ -1098,8 +1152,13 @@ def build_vector(
     enemy_last_card: bool = False,
     evolutions: bool = False,
     evolution_progress: bool = False,
+    card_status: bool = False,
+    enemy_forms: EnemyForms | None = None,
 ) -> np.ndarray:
     """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``.
+
+    ``card_status`` needs ``enemy_forms``, the seat's ``EnemyForms``, already moved to
+    ``state``.
 
     The fields a player's own view decides are ``fair_fields``' (both write them through
     ``_write_fair``); this adds the four the board decides and any reveal, each at its
@@ -1108,7 +1167,7 @@ def build_vector(
     me, foe = state.players[team], state.players[1 - team]
     num_cards = len(cards)
     off, width = _vector_slots(
-        num_cards, reveal, enemy_last_card, evolutions, evolution_progress
+        num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status
     )
     vec = np.zeros(width, dtype=np.float32)
     # Each own slot priced as the engine prices it (a Mirror: its copy plus one), where the
@@ -1136,6 +1195,10 @@ def build_vector(
         )
     if reveal.enemy_next_card:
         _put_one(vec[off["enemy_next_card"]], foe.next_card, num_cards)
+    if card_status:
+        if enemy_forms is None:
+            raise ValueError("card_status needs the seat's EnemyForms (enemy_forms=)")
+        _write_card_status(vec, off, me, foe, cards, enemy_forms)
     if reveal.enemy_deck:
         deck = vec[off["enemy_deck"]]
         for c in (*foe.hand, foe.next_card):
@@ -1144,6 +1207,146 @@ def build_vector(
         deck[memory.foe_seen] = 1
     np.clip(vec, 0.0, 1.0, out=vec)
     return vec
+
+
+class EnemyForms:
+    """What a player counts about the enemy's evolutions and heroes, from the plays it sees.
+
+    Per enemy card: whether it has been played in its evolution form or its hero form, and
+    its BASIC plays since its last evolved play (the engine's own counter, ``PlayerState.evo``'s
+    second column, counted from outside). A play's form is the form of the units it puts down:
+    each step, the enemy units new this step are matched by card id to the plays the memory
+    saw this step (``MatchMemory.foe_recent``). A play that puts down no unit (a spell) counts
+    as basic. ``see`` must follow ``MatchMemory.observe`` on the same state.
+    """
+
+    def __init__(self, num_cards: int) -> None:
+        self.num_cards = num_cards
+        self.reset()
+
+    def reset(self) -> None:
+        n = self.num_cards
+        self.seen_evolved = np.zeros(n, dtype=bool)
+        self.seen_hero = np.zeros(n, dtype=bool)
+        self.basic_since = np.zeros(n, dtype=np.int64)
+        self.uids: set[int] = set()
+        self.plays = 0
+        self.tick = -1
+
+    def seed(self, state: BattleState, team: int, memory: MatchMemory) -> None:
+        """Start of a match, beside ``MatchMemory.seed``: the units on the board are not plays."""
+        self.reset()
+        self.uids = {e.uid for e in state.entities if e.team != team}
+        self.plays = memory.foe_plays
+        self.tick = state.tick
+
+    def see(self, state: BattleState, team: int, memory: MatchMemory) -> None:
+        if state.tick == self.tick:
+            return
+        if self.tick < 0 or state.tick < self.tick:
+            self.seed(state, team, memory)
+            return
+        self.tick = state.tick
+        new: dict[int, tuple[bool, bool]] = {}
+        for e in state.entities:
+            if e.team == team or e.uid in self.uids:
+                continue
+            self.uids.add(e.uid)
+            if e.kind in TOWER_KINDS:
+                continue
+            status = status_of(e)
+            if status is None:
+                raise ValueError(
+                    "card_status=True, but this engine does not report which units are evolved "
+                    f"or heroes (entity uid {e.uid} has no status_flags), so the enemy's forms "
+                    "cannot be counted. Use an engine that reports them, such as RustEngine."
+                )
+            evolved, hero = new.get(e.card_id, (False, False))
+            new[e.card_id] = (
+                evolved or bool(status & STATUS_EVOLVED),
+                hero or bool(status & STATUS_HERO),
+            )
+        played = memory.foe_plays - self.plays
+        self.plays = memory.foe_plays
+        recent = memory.foe_recent[len(memory.foe_recent) - played :] if played > 0 else []
+        for card in recent:
+            evolved, hero = new.get(card, (False, False))
+            if hero:
+                self.seen_hero[card] = True
+            if evolved:
+                self.seen_evolved[card] = True
+                self.basic_since[card] = 0
+            else:
+                self.basic_since[card] += 1
+
+
+def _write_card_status(
+    out: np.ndarray,
+    off: dict[str, slice],
+    me: PlayerState,
+    foe: PlayerState,
+    cards: Sequence[CardInfo],
+    forms: EnemyForms,
+) -> None:
+    """The ``card_status`` fields. Module-level so a test can plant a defect in it."""
+    if not me.deck:
+        raise ValueError(
+            "card_status=True, but this engine does not report the deck (PlayerState.deck): "
+            "a battle restored with load_state on an engine before RoyaleSim ship36 has none. "
+            "Reset the battle, or use an engine that reports it."
+        )
+    deck_forms = dict(zip(me.deck, me.forms or [0] * len(me.deck), strict=True))
+    deck_all, deck_evo, deck_hero = (out[off[k]] for k in ("own_deck_all", "own_deck_evo",
+                                                           "own_deck_hero"))
+    for card, form in deck_forms.items():
+        deck_all[card] = 1.0
+        deck_evo[card] = float(form == 1)
+        deck_hero[card] = float(form == 2)
+    hand_evo, hand_hero = out[off["own_hand_evo"]], out[off["own_hand_hero"]]
+    for i, card in enumerate(me.hand):
+        form = deck_forms.get(card, 0) if card != EMPTY_CARD else 0
+        hand_evo[i] = float(form == 1)
+        hand_hero[i] = float(form == 2)
+    form = deck_forms.get(me.next_card, 0) if me.next_card != EMPTY_CARD else 0
+    out[off["own_next_form"]] = (float(form == 1), float(form == 2))
+    progress, nxt = out[off["own_evo_progress"]], out[off["own_evo_next"]]
+    for row in me.evo:
+        card = int(row[0])
+        if len(row) < 4 or int(row[3]) < 1:
+            raise ValueError(
+                f"card_status needs each evolution counter's cycle length, the fourth column of "
+                f"PlayerState.evo, and this engine's row for card {card} is {list(row)}"
+            )
+        progress[card] = min(1.0, int(row[1]) / int(row[3]))
+        nxt[card] = float(bool(int(row[2])))
+    button, available, spent, cooldown = (
+        out[off[k]] for k in ("own_button", "own_button_available", "own_button_spent",
+                              "own_button_cooldown")
+    )
+    for row in map(ability_row, me.abilities):
+        if row.card_id == EMPTY_CARD:
+            raise ValueError(
+                "card_status needs each ability button's card (PlayerState.abilities' fourth "
+                "column), and this engine's rows do not name it"
+            )
+        button[row.card_id] = 1.0
+        available[row.card_id] = float(bool(row.available))
+        spent[row.card_id] = float(bool(row.spent))
+        cooldown[row.card_id] = min(1.0, max(0, row.cooldown_ticks) / COOLDOWN_SCALE)
+    out[off["enemy_seen_evolved"]] = forms.seen_evolved
+    out[off["enemy_seen_hero"]] = forms.seen_hero
+    eprog, enext = out[off["enemy_evo_progress"]], out[off["enemy_evo_next"]]
+    for card in np.flatnonzero(forms.basic_since):
+        cycle = cards[card].evo_cycle or 0
+        if cycle > 0:
+            eprog[card] = min(1.0, forms.basic_since[card] / cycle)
+            enext[card] = float(forms.basic_since[card] >= cycle)
+    espent, ecool = out[off["enemy_button_spent"]], out[off["enemy_button_cooldown"]]
+    for row in map(ability_row, foe.abilities):
+        if row.card_id == EMPTY_CARD:
+            continue  # an engine before the champion columns: nothing to index it by
+        espent[row.card_id] = float(bool(row.spent))
+        ecool[row.card_id] = min(1.0, max(0, row.cooldown_ticks) / COOLDOWN_SCALE)
 
 
 class Variability(NamedTuple):
@@ -1296,6 +1499,9 @@ class ObsBuilder(ABC):
     #: spatial planes the evolved units. Only SpatialObsBuilder's ``evolutions`` sets them.
     evolutions: bool = False
     evolution_progress: bool = False
+    #: Whether the vector carries ``CARD_STATUS_FIELDS``. Only SpatialObsBuilder's
+    #: ``card_status`` turns it on.
+    card_status: bool = False
 
     def __init__(
         self, reveal: Reveal | None = None, calibration: Calibration | None = None
@@ -1356,9 +1562,11 @@ class ObsBuilder(ABC):
         """Called at the start of every episode: both seats forget the last one."""
         self.presses = None
         self.runs = None
+        self.enemy_forms = {t: EnemyForms(self.num_cards) for t in TEAMS}
         delay = getattr(self, "command_delay", (0, 0))
         for team, memory in self.memory.items():
             memory.seed(state, team)
+            self.enemy_forms[team].seed(state, team, memory)
             memory.delay = [delay[team], delay[1 - team]]
 
     def see_presses(self, presses: Sequence[tuple[int, int]] | None) -> None:
@@ -1387,14 +1595,14 @@ class ObsBuilder(ABC):
         """The flat vector's fields, in order, for this builder's ``Reveal``."""
         return vector_layout(
             self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
-            self.evolution_progress,
+            self.evolution_progress, self.card_status,
         )
 
     def vector_offsets(self) -> dict[str, slice]:
         """``key -> slice`` into the flat vector this builder writes."""
         return vector_offsets(
             self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
-            self.evolution_progress,
+            self.evolution_progress, self.card_status,
         )
 
     def channel_names(self) -> list[str]:
@@ -1466,11 +1674,16 @@ class ObsBuilder(ABC):
         # it was before D2, so anything that wraps or substitutes build_vector with the old
         # six arguments keeps working -- this suite's own plant tests do, and the first
         # version of this line broke two of them by always passing a seventh.
-        extra: dict[str, bool] = {"enemy_last_card": True} if self.enemy_last_card else {}
+        extra: dict[str, Any] = {"enemy_last_card": True} if self.enemy_last_card else {}
         if self.evolutions:
             extra["evolutions"] = True
         if self.evolution_progress:
             extra["evolution_progress"] = True
+        if self.card_status:
+            forms = self.enemy_forms[team]
+            forms.see(state, team, memory)
+            extra["card_status"] = True
+            extra["enemy_forms"] = forms
         return build_vector(
             state, team, self.cards, self.max_mana, self.reveal, memory, **extra
         )
@@ -2015,8 +2228,10 @@ class SpatialObsBuilder(ObsBuilder):
         heroes: bool = False,
         spell_identity: bool = False,
         unit_status: bool = False,
+        card_status: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
+        self.card_status = bool(card_status)
         self.card_identity = bool(card_identity)
         self.heroes = bool(heroes)
         self.unit_status = bool(unit_status)
@@ -2075,6 +2290,15 @@ class SpatialObsBuilder(ObsBuilder):
 
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
+        if self.card_status:
+            unstated = [c.name for c in self.cards if c.evo_cycle is None]
+            if unstated:
+                raise ValueError(
+                    "card_status=True counts the enemy's evolution charge with each card's "
+                    "evo_cycle (the catalogue's evo_cycle column, RoyaleSim ship35 on), and this "
+                    f"engine states none for {len(unstated)} cards, e.g. {unstated[:3]}. Use an "
+                    "engine that states it, or leave card_status off."
+                )
         a = self.arena
         self.channels = spatial_channels(
             self.reveal,
@@ -2207,6 +2431,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["spell_identity"] = True
         if self.unit_status:
             out["unit_status"] = True
+        if self.card_status:
+            out["card_status"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
