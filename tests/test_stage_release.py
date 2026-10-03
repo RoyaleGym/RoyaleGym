@@ -59,3 +59,34 @@ def test_a_repo_with_no_tag_is_refused(tmp_path):
     repo = _repo(tmp_path, [("0.1.0", None)])
     with pytest.raises(SystemExit, match="has no v\\* tag"):
         tool.newest_tag(repo)
+
+
+STAGED = {"royalesim": "0.1.5", "royalelearn": "0.5.3", "royaleviser": "0.1.1",
+          "royaleimitate": "0.2.5"}
+ALL = ["royalesim>=0.1.5", "royalelearn[torch]>=0.5.3", "royaleviser[media]>=0.1.1",
+       "royaleimitate[replays]>=0.2.5"]
+
+
+def test_floors_that_match_the_page_pass():
+    assert _tool().floor_problems(ALL, STAGED) == []
+
+
+def test_a_floor_below_the_staged_version_is_refused():
+    """`pip install --upgrade "royalegym[all]"` keeps a package its floor already allows, so a
+    floor left at an older version keeps users on it (measured 2026-10-03: royalesim 0.1.3)."""
+    low = [r.replace("royalesim>=0.1.5", "royalesim>=0.1.4") for r in ALL]
+    problems = _tool().floor_problems(low, STAGED)
+    assert len(problems) == 1
+    assert "royalesim" in problems[0]
+    assert "0.1.4" in problems[0]
+    assert "0.1.5" in problems[0]
+
+
+def test_a_floor_above_the_page_or_none_at_all_is_refused():
+    tool = _tool()
+    high = [r.replace(">=0.2.5", ">=0.2.6") for r in ALL]
+    assert any("royaleimitate" in p for p in tool.floor_problems(high, STAGED))
+    bare = [r.replace("royaleviser[media]>=0.1.1", "royaleviser[media]") for r in ALL]
+    assert any("royaleviser" in p and "no minimum" in p for p in tool.floor_problems(bare, STAGED))
+    missing = [r for r in ALL if not r.startswith("royalelearn")]
+    assert any("royalelearn" in p for p in tool.floor_problems(missing, STAGED))

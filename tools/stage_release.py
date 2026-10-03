@@ -9,7 +9,9 @@ r"""Stage the wheels for a RoyaleGym release page: everything `pip install "roya
   to this checkout. A repo with no v* tag, or a tag that is not "v" + the version in that tagged
   tree, is refused.
 
-It prints one row per package (name, version, tag, commit) for the release notes. Then run
+It refuses a page whose royalegym [all] minimums are not exactly the versions it stages (so
+`pip install --upgrade "royalegym[all]"` moves every package), then prints one row per package
+(name, version, tag, commit) for the release notes. Then run
 tools/fresh_user_test.py --by-name --wheels OUT_DIR before publishing anything.
 """
 
@@ -58,6 +60,30 @@ def check_tag(repo: Path, tag: str) -> str:
             "itself one version and hold another; fix the tag or the version first."
         )
     return version
+
+
+def floor_problems(all_reqs: list[str], staged: dict[str, str]) -> list[str]:
+    """What is wrong with royalegym's [all] minimums for the versions this page stages.
+
+    Each must be exactly the staged version. One below it lets `pip install --upgrade
+    "royalegym[all]"` keep the older package (pip upgrades a dependency only when a requirement
+    forces it), and one above it cannot be installed from this page."""
+    floors = {}
+    for req in all_reqs:
+        name = req.split("[")[0].split(">")[0].split("=")[0].split("<")[0].strip()
+        floors[name] = req.split(">=", 1)[1].strip() if ">=" in req else None
+    problems = []
+    for name, version in staged.items():
+        if name not in floors:
+            problems.append(f"[all] does not name {name}, which this page stages at {version}")
+        elif floors[name] is None:
+            problems.append(f"[all] names {name} with no minimum; this page stages {version}")
+        elif floors[name] != version:
+            problems.append(
+                f"[all] asks for {name}>={floors[name]} and this page stages {version}: set the "
+                f"minimum to {version} in royalegym's pyproject and tag again"
+            )
+    return problems
 
 
 def build(repo: Path, tag: str, out: Path) -> None:
@@ -126,6 +152,17 @@ def main() -> int:
         build(repo, tag, out)
         rows.append(
             (name.lower(), version, tag, git(repo, "rev-parse", "--short", f"{tag}^{{commit}}"))
+        )
+
+    gym_tag = next(row[2] for row in rows if row[0] == "royalegym")
+    all_reqs = tomllib.loads(git(here, "show", f"{gym_tag}:pyproject.toml"))["project"][
+        "optional-dependencies"
+    ]["all"]
+    staged = {row[0]: row[1] for row in rows if row[0] != "royalegym"}
+    problems = floor_problems(all_reqs, staged)
+    if problems:
+        raise SystemExit(
+            "REFUSED, the page would not upgrade in one line:\n  " + "\n  ".join(problems)
         )
 
     print("| package | version | tag | commit |")
