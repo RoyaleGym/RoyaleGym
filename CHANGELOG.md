@@ -4,6 +4,16 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## Unreleased
+
+### Added
+- `SpatialObsBuilder(card_status=True)`: every card's evolution and hero status, own and opponent.
+  Your whole deck from the first frame, each card's form (per card and per hand slot), every
+  evolved card's charge wherever it sits, and each ability button by its card. For the opponent,
+  counted from the plays you have seen: which cards were played evolved or as heroes, each
+  card's evolution charge, a hero's used charge and a champion's cooldown. Off by default.
+- `PlayerState.deck` and `PlayerState.forms`: each side's deck and each card's form.
+
 ## 0.1.9 (2026-10-03)
 
 ### Changed
