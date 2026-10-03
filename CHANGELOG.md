@@ -4,6 +4,13 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.8 (2026-10-03)
+
+### Changed
+- royalesim 0.1.6: battle logic as measured in the game: crown-tower target ties, jump landings,
+  Evo Musketeer snipes, a hooked unit's release, chase limits, death bombs and headings while
+  casting. No change to installing or calling the engine; battles can end differently.
+
 ## 0.1.7 (2026-10-03)
 
 ### Changed
