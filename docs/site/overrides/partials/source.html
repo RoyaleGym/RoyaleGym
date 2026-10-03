@@ -1,0 +1,24 @@
+{#-
+  The GitHub box in the header (Material's partials/source.html), with the project's other links beside it (owner,
+  2026-10-03: "move the social links (discord, github, kofi) up there"; they were in the footer). The GitHub box is
+  the GitHub link. The links come from `extra.header_social` in mkdocs.yml; Material's footer reads
+  `extra.social`, which is now empty, so they show once. Material also puts this partial in the mobile menu.
+-#}
+{% if config.extra.header_social %}
+  <div class="rg-social">
+    {% for social in config.extra.header_social %}
+      <a href="{{ social.link }}" target="_blank" rel="noopener" title="{{ social.name | e }}" class="rg-social__link">
+        {% include ".icons/" ~ social.icon ~ ".svg" %}
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+<a href="{{ config.repo_url }}" title="{{ lang.t('source') }}" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    {% set icon = config.theme.icon.repo or "fontawesome/brands/git-alt" %}
+    {% include ".icons/" ~ icon ~ ".svg" %}
+  </div>
+  <div class="md-source__repository">
+    {{ config.repo_name }}
+  </div>
+</a>

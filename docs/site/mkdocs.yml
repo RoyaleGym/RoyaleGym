@@ -205,13 +205,11 @@ nav:
           - Alarms: repos/royaleimitate/alarms.md
 
 extra:
-  social:
+  # In the header, beside the GitHub box (overrides/partials/source.html), which is the GitHub link.
+  header_social:
     - icon: fontawesome/brands/discord
       link: https://discord.gg/4D2BS5JBHP
       name: The project Discord
-    - icon: fontawesome/brands/github
-      link: https://github.com/RoyaleGym
-      name: The RoyaleGym organisation
     - icon: simple/kofi
       link: https://ko-fi.com/jinxthecat
       name: Support RoyaleGym on Ko-fi
