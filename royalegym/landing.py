@@ -355,8 +355,8 @@ def relocations(trace, accepted_only: bool = True) -> list[Relocation]:
 #
 # WHY THIS EXISTS SEPARATELY FROM `relocations`. A relocation rate measured from a trace is
 # a rate over taps the policy ACTUALLY MADE, and that is useless for a card the policy has
-# learned not to play: train's agent plays Cannon on 0.6% of its opportunities, so more
-# traces only scale a near-zero numerator. The rate they want decomposes instead:
+# learned not to play: a policy may play a card on a tiny share of its opportunities, so
+# more traces only scale a near-zero numerator. The rate they want decomposes instead:
 #
 #     rate = sum over tiles of  P(policy taps this tile) x (a footprint loses this tile)
 #

@@ -205,10 +205,9 @@ would make the plane a function of iteration order, and two runs of one seed cou
 no tile. This matches the same object being invisible to a learner's committed-elixir
 accounting, which is the one outcome that creates no new discrepancy between the two.
 
-**Default OFF until train's policy-head arm has run.** Flipping an observation shape under
-a paired comparison invalidates both arms and looks like a result. BUILDING it was never
-gated, only turning it on: with the switch off the observation is byte-for-byte the shipped
-one -- no new key, the same vector width and offsets, the same `config()`.
+**Default OFF.** Turning it on changes what a network sees, so a network trained without
+it cannot read the new shape. With the switch off the observation is byte-for-byte the
+shipped one -- no new key, the same vector width and offsets, the same `config()`.
 
 **What the switch turns on, as shipped.** One switch, because it is one change to what a
 network sees:
@@ -246,7 +245,7 @@ coordinated change rather than a switch. The cost is worth paying: the alternati
 card id stored as a scaled half, which fails silently, and silent is worse than work.
 
 
-## 3c. Queued: positional channels (NOT built, and frozen until train's run ends)
+## 3c. Queued: positional channels (NOT built)
 
 Recorded so the reasoning survives, including the part of it that was WRONG, because the
 wrong version is the one a reader is likely to re-derive.
@@ -273,14 +272,12 @@ depth. It is weaker than the dead claim and, unlike it, checkable.
 convolution stack has to spend DEPTH computing something an input plane could simply state,
 and depth is what this network does not have much of.
 
-**Not now, and the reason is the same as the card planes'.** The observation shape is frozen
-until train's several-hundred-iteration run finishes: changing what the network sees
-mid-comparison invalidates both arms and looks like a result. These land behind the
-card-identity planes.
+**Not built yet.** They would land as another opt-in, after the card-identity planes, so
+no existing layout changes.
 
 **These do NOT overlap with `card_ids`.** The card planes differentiate about 19 OCCUPIED
-tiles of 576; the tiles a positional channel helps are the empty ones. Two different gaps.
-Both this session and learn had been counting them as one.
+tiles of 576; the tiles a positional channel helps are the empty ones. Two different gaps,
+and easy to count as one.
 
 
 ## 4. The flat `vector`, float32 `[12n + 43]` (fair)

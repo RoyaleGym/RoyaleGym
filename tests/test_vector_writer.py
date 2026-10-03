@@ -3,7 +3,7 @@
 ``build_vector`` and ``fair_fields`` used to make one small float32 array per field, clip
 each, concatenate them and clip again. Since 2026-09-26 both write every field into one
 buffer through ``obs._write_fair`` and clip once. That is a speed change and nothing else
-(train's ask: it was 27% of a training worker's step), so this file holds the new path to
+(the old path was a large share of a training worker's step), so this file holds the new path to
 a frozen copy of the old one, below, byte for byte. It checks every vector and every fair
 field of played battles, on both engines, both seats, with the card-identity field and
 every reveal.

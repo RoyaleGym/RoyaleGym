@@ -3,7 +3,7 @@
 Since 2026-09-26 an observation builder bound to an env uses the action parser's oracle when
 both were built from the same arena, rules and cards (``ObsBuilder.bind``), and the oracle
 works out a state's blocker tuple once instead of once per ``grid_key`` call
-(``PlacementOracle._blockers``). Both are speed changes and nothing else (train's ask). So
+(``PlacementOracle._blockers``). Both are speed changes and nothing else. So
 this file plays the same battles through an env built that way and through a reference env
 whose builder and parser each hold their OWN oracle, recomputing blockers on every call:
 the old path. It compares every observation key, masks included, byte for byte at every step.
