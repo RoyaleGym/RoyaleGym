@@ -828,6 +828,10 @@ class RustEngine:
         self.field_order_checked = check_field_order(_core)
         self._decode_state = msgspec.json.Decoder(BattleState)
         self._reset_called = False
+        # Each side's (deck, forms) from the last reset, for an engine whose state does not
+        # carry them (before RoyaleSim ship36). None after load_state: that battle's setup was
+        # never seen here, and a stale deck would be a wrong answer, not a missing one.
+        self._setup_cards: list[tuple[list[int], list[int]]] | None = None
         #: Whether the last step's results carried the engine's RESOLVED deploy
         #: position, or fell back to the command. None until something is stepped.
         #: A consumer that treats DeployResult.x,y as a place should read this and
@@ -970,6 +974,13 @@ class RustEngine:
             **levels,
         )
         self._reset_called = True
+        self._setup_cards = [
+            (
+                list(map(int, setup.decks[team])),
+                list(map(int, setup.forms[team])) if setup.forms else [0] * len(setup.decks[team]),
+            )
+            for team in TEAMS
+        ]
 
     def check_deploy(self, command: DeployCommand) -> int:
         return self._status(self._battle.check_deploy(*self._wire(command)))
@@ -1050,7 +1061,14 @@ class RustEngine:
         return out
 
     def state(self) -> BattleState:
-        return self._decode_state.decode(self._battle.state_json())
+        state = self._decode_state.decode(self._battle.state_json())
+        known = self._setup_cards
+        if known is not None and not state.players[0].deck:
+            state = msgspec.structs.replace(state, players=[
+                msgspec.structs.replace(p, deck=list(deck), forms=list(forms))
+                for p, (deck, forms) in zip(state.players, known, strict=True)
+            ])
+        return state
 
     def save_state(self) -> bytes:
         return bytes(self._battle.save())
@@ -1058,6 +1076,7 @@ class RustEngine:
     def load_state(self, blob: bytes) -> None:
         self._battle.load(bytes(blob))
         self._reset_called = True
+        self._setup_cards = None
 
     def state_hash(self) -> int:
         return int(self._battle.state_hash())

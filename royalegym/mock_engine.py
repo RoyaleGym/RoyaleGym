@@ -517,6 +517,8 @@ class MockEngine:
 
         self._load_cards(card_names)
         self._s: _Sim | None = None
+        # Each side's deck in setup order, from the last reset; None after load_state.
+        self._setup_decks: list[list[int]] | None = None
         self._enc = msgspec.msgpack.Encoder()
         self._dec = msgspec.msgpack.Decoder(_Sim)
 
@@ -784,6 +786,7 @@ class MockEngine:
                 "MatchSetup.levels and tower_levels need RustEngine"
             )
         self._s = self._new_battle(seed, setup)
+        self._setup_decks = [list(d) for d in setup.decks]
 
     def _new_battle(self, seed: int, setup: MatchSetup) -> _Sim:
         """The battle ``setup`` describes. Assumes ``validate_setup`` passed; writes
@@ -910,6 +913,11 @@ class MockEngine:
                     hp[e.tower_slot] = e.hp
                     max_hp[e.tower_slot] = e.max_hp
             nxt = s.queues[team][0] if s.queues[team] else EMPTY_CARD
+            deck = (
+                list(self._setup_decks[team])
+                if self._setup_decks is not None
+                else sorted(c for c in (*s.hands[team], *s.queues[team]) if c != EMPTY_CARD)
+            )
             players.append(
                 PlayerState(
                     team=team,
@@ -926,6 +934,11 @@ class MockEngine:
                         self._cards[c].info.elixir if c != EMPTY_CARD else -1
                         for c in s.hands[team]
                     ],
+                    # In setup order after a reset, as RustEngine reports it. A loaded battle's
+                    # setup order is not kept, but its hand and queue always hold the side's
+                    # eight cards, so it is still known, in card-id order. It plays no forms.
+                    deck=deck,
+                    forms=[0] * len(deck),
                 )
             )
         ents = []
@@ -975,6 +988,7 @@ class MockEngine:
         catalogue crashes.
         """
         self._s = self._adopt_snapshot(self._dec.decode(blob))
+        self._setup_decks = None
 
     def state_hash(self) -> int:
         return int.from_bytes(hashlib.blake2b(self.save_state(), digest_size=8).digest(), "little")
