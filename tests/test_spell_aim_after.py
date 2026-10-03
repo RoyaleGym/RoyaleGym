@@ -185,3 +185,22 @@ def test_a_real_goblin_barrel_appears_after_k_ticks_of_its_flight():
     first_tick, start = shown[0]
     assert first_tick - start >= K - 1, (first_tick, start)  # never earlier than K of flight
     assert all(v == 0 for t, f, v, live in seen if f is None or t - f < K - 1)
+
+
+def test_k_zero_shows_every_aim_from_the_first_tick_a_spell_exists():
+    """Owner, 2026-10-03: the bot gets everything as soon as the engine has it. So k = 0 is
+    no delay at all: a thrown spell still waiting to move (a Goblin Barrel sitting) shows its
+    target at once, both on an engine that reports ticks_flown and on one that does not."""
+    env = make_env(obs_builder=SpatialObsBuilder(spell_aim_after_ticks=0))
+    env.reset(seed=0)
+    builder = env.obs_builder
+    plane = builder.channel_names().index("enemy_spell_aim_seen")
+    a = env.engine.arena()
+    aim = (a.subtile * 9 + a.subtile // 2, a.subtile * 6 + a.subtile // 2)
+    builder.reset(env.battle_state)
+    for flown in (-1, 0):
+        waiting = SpellState(RED, 0, int(SpellMotion.FLIGHT), aim[0], aim[1], aim[0], aim[1],
+                             30, 0, 0, 0, flown)
+        s = _seen(env, builder, plane, 100 + flown, [waiting])
+        assert s.sum() == 1, f"ticks_flown {flown}: a waiting spell's aim was held back"
+        assert s[_tile(a, BLUE, aim)] == 1

@@ -1795,6 +1795,9 @@ class SpellAimClock:
     knew it, never sooner. A rolling spell's path is drawn on the ground and an area spell sits on
     its target, so those count from the first sight.
 
+    ``after_ticks`` 0 is no delay at all: every target from the first tick its spell exists,
+    a thrown spell still waiting to move included.
+
     An engine that reports ``SpellState.ticks_flown`` (RoyaleSim 0.1.4 on) is read from that,
     exactly and per spell object. For an older one the clock below dates each spell by sight:
     a spell has no id in ``BattleState``, so it is keyed by (team, card, target), which a flight
@@ -1829,7 +1832,9 @@ class SpellAimClock:
                 del self.starts[key]
 
     def readable(self, s: SpellState, tick: int) -> bool:
-        if s.motion != SpellMotion.FLIGHT:
+        if s.motion != SpellMotion.FLIGHT or self.after_ticks == 0:
+            # k = 0 asks for no delay at all: every aim from the first tick the spell exists,
+            # a thrown spell still waiting to move included.
             return True
         if s.ticks_flown >= 0:
             # The engine says how long it has flown (RoyaleSim 0.1.4 on): exact, per spell
