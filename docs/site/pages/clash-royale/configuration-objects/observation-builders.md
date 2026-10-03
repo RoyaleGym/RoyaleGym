@@ -50,6 +50,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 | `SpatialObsBuilder(spell_identity=True)` | Which spell is where, as its own `spell_ids` grid: where each spell is now and where it lands. Needs `card_identity=True` and `spell_aim_after_ticks`. |
 | `SpatialObsBuilder(unit_status=True)` | Shields, units under a Rage or slowed by cold, and units already locked on a crown tower. |
 | `SpatialObsBuilder(card_status=True)` | Each card's evolution and hero status: all of yours from the start, and the opponent's as you see them played. |
+| `SpatialObsBuilder(unit_actions=True)` | What units are doing: charging, winding up or using an ability, Clone copies, and where a tunneller will come up. |
 | `SpatialObsBuilder(reveal=Reveal(...))` | Hidden information, such as the opponent's real elixir. For experiments only. |
 
 `Reveal` comes from `royalegym`. Turn on what you want the bot to see:

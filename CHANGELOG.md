@@ -13,6 +13,12 @@ change the observation's shape; each such change is listed here.
   counted from the plays you have seen: which cards were played evolved or as heroes, each
   card's evolution charge, a hero's used charge and a champion's cooldown. Off by default.
 - `PlayerState.deck` and `PlayerState.forms`: each side's deck and each card's form.
+- `SpatialObsBuilder(unit_actions=True)`: fourteen planes, own and opponent, of what units are
+  doing: build-up (a Prince's charge, a Sparky's load, an Inferno's ramp), fully charged, winding up
+  or running an ability and the ticks it has left, a Clone's copies, and where a tunneller will come
+  up. Needs royalesim 0.1.8. Off by default.
+- `EntityState` gets values for `charge`, `dest_x`, `dest_y` and `ability_ticks`, and
+  `CardInfo.evo_cycle` gets its values, from royalesim 0.1.8.
 
 ## 0.1.9 (2026-10-03)
 
