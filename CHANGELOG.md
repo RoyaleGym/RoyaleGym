@@ -4,6 +4,18 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.7 (2026-10-03)
+
+### Changed
+- royalesim 0.1.5: every unit on the board reports the card whose play put it down. A
+  Tombstone's skeletons report the Tombstone, a hut's goblins report the hut, the Tri Wizards'
+  three wizards report the Tri Wizards. The tower-damage and elixir-trade rewards are unchanged:
+  a unit is still priced only when it is the unit its card's row describes, and a play of the
+  Tri Wizards now totals its own 7 elixir.
+- Every piece in `[all]` (and in its own extra) names a minimum version, so
+  `pip install --upgrade "royalegym[all]" --find-links ...` moves each one. Before, an upgrade
+  from an older release page could keep the old engine.
+
 ## 0.1.6 (2026-10-03)
 
 ### Added

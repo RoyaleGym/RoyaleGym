@@ -38,6 +38,20 @@ def test_one_extra_per_piece_and_all_installs_every_piece():
     assert set(PIECES.values()) <= _names(extras.get("all", [])), extras.get("all")
 
 
+def test_every_piece_names_a_minimum_so_an_upgrade_moves_it():
+    """`pip install --upgrade "royalegym[all]"` upgrades a dependency only when a requirement
+    forces it (pip's default only-if-needed strategy). Measured 2026-10-03 from a v0.1.3
+    install: [all] named royalesim with no minimum, so that upgrade kept royalesim 0.1.3
+    beside the new royalegym. Every piece names a minimum, in [all] and in its own extra."""
+    extras = _extras()
+    for extra in (*PIECES, "all"):
+        for req in extras[extra]:
+            if _names([req]) & set(PIECES.values()):
+                assert ">=" in req, f"[{extra}] names {req!r} with no minimum version"
+    floors = sorted(r for r in extras["all"] if _names([r]) & {"royalesim", "royaleviser"})
+    assert floors == ["royalesim>=0.1.5", "royaleviser[media]>=0.1.1"], floors
+
+
 def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
     """The quickstart uses the Learner's named settings (0.4.0) and is stopped with Ctrl+C, which
     finishes the update, saves a checkpoint and returns (0.4.1); it starts on macOS from 0.4.2.
