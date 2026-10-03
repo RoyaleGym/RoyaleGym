@@ -3582,7 +3582,7 @@ line. To update it on Ubuntu, run <code>sudo ubuntu-drivers install</code>, then
 </div>
 <p>If <code>pip</code> prints a notice that "a new release of pip is available", you can ignore it.</p>
 <h2 id="5-install-royalegym">5. Install RoyaleGym<a class="headerlink" href="#5-install-royalegym" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.4
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.5
 </code></pre></div>
 <p>Copy the whole line with the copy button, quotes included. <code>[all]</code> means "with every part": the
 engine, the environments, the trainer, the viewer and the extras. The <code>--find-links</code> part tells
@@ -3595,7 +3595,7 @@ starts with <code>Successfully installed</code> and lists everything it installe
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python -c "import royalegym, torch; print('RoyaleGym', royalegym.__version__, '| graphics card:', torch.cuda.is_available())"
 </code></pre></div>
 <p>You should see:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>RoyaleGym 0.1.4 | graphics card: True
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>RoyaleGym 0.1.5 | graphics card: True
 </code></pre></div>
 <p>The version number may be newer. If it says <code>graphics card: False</code> on a computer with an NVIDIA
 card, see <a href="../it-doesnt-work/#pytorch-cant-see-my-graphics-card">PyTorch can't see my graphics card</a>.

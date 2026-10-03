@@ -2171,6 +2171,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#014-2026-10-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.4 (2026-10-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#013-2026-10-02" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3305,6 +3316,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#014-2026-10-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.4 (2026-10-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#013-2026-10-02" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3376,6 +3398,18 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="014-2026-10-02">0.1.4 (2026-10-02)<a class="headerlink" href="#014-2026-10-02" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A level overtime now ends as in the game. From tick 6067 every crown tower loses the same hit points each tick, and
+  the first tower to fall decides the match (1-0, or 2-1 from 1-1). If both sides' weakest towers are exactly level,
+  the match is a draw at tick 6147. At the end of a level overtime no more cards can be played, and every troop, building
+  and spell leaves the board, so only the towers and the drain remain.</li>
+<li><code>state_json()</code>: each spell row gains a 12th value, <code>ticks_flown</code>, the ticks a flying spell has moved.</li>
+<li><code>catalogue_json()</code>: each card row gains a 12th value, <code>champion</code>, true for a champion card.</li>
+<li>Wheels are tested on CPython 3.10, 3.11, 3.12, 3.13 and 3.14.</li>
+<li>Battle logic: illegal troop taps, Furnace spirits, first hits, random delays, death rings and chases after a kill,
+  as measured in the game.</li>
+</ul>
 <h2 id="013-2026-10-02">0.1.3 (2026-10-02)<a class="headerlink" href="#013-2026-10-02" title="Permanent link">&para;</a></h2>
 <ul>
 <li>A played card's slot can now stay empty for a moment, as in the game. Each player has one refill timer: a new card

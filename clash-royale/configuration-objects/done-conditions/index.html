@@ -3406,7 +3406,8 @@ environment refuses one in the wrong slot.</p>
 </tbody>
 </table>
 <p>The defaults are <code>GameOverCondition()</code> and no truncation. A Clash Royale battle always ends by
-itself, after three minutes plus at most two of overtime, so most bots never need a truncation.</p>
+itself, after three minutes plus at most two of overtime and a few seconds of tiebreak, so most bots
+never need a truncation.</p>
 <h2 id="how-they-work">How They Work<a class="headerlink" href="#how-they-work" title="Permanent link">&para;</a></h2>
 <p>Every done condition has one method you must write, and one you can:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Required. Called once per step: is the battle over as of `state`?</span>
