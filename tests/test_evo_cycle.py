@@ -7,7 +7,8 @@ now could only be read for the own side's cards. None means "the engine did not 
 before the column. MockEngine's 2018 game had no evolutions, so it says 0 for every card.
 
 SKIPS
-    The value checks skip on an engine without the column. Not a pass.
+    The engine test skips only without the engine. With one, it checks the column's values or
+    its absence, whichever that engine has: it never skips where CI builds it.
 """
 
 from __future__ import annotations
@@ -31,17 +32,16 @@ def test_mock_engine_says_no_card_evolves():
 
 
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
-def test_an_engine_without_the_column_says_nothing():
-    if HAS_COLUMN:
-        pytest.skip("this engine has the column")
-    assert {c.evo_cycle for c in RustEngine().cards()} == {None}
-
-
-@pytest.mark.skipif(not HAS_COLUMN, reason="this engine's catalogue has no evo_cycle column")
-def test_the_column_matches_the_own_evo_rows():
+def test_the_engine_states_each_cards_cycle_or_says_nothing():
+    """ONE test for both kinds of engine, so it never skips where the engine is built: with the
+    column, each card's cycle is the one its own evo rows play by; without it, every card says
+    None rather than a 0 that would read as "no evolution"."""
     from royalegym import make_env
 
     eng = RustEngine()
+    if not HAS_COLUMN:
+        assert {c.evo_cycle for c in eng.cards()} == {None}
+        return
     by_name = {c.name: c for c in eng.cards()}
     assert by_name["Skeletons"].evo_cycle == 2
     assert by_name["Barbarians"].evo_cycle == 1
@@ -50,5 +50,7 @@ def test_the_column_matches_the_own_evo_rows():
     env = make_env(deck=["Skeletons", "Barbarians", "Knight", "Archer", "Giant", "Minions",
                          "Fireball", "Zap"], evolved=["Skeletons", "Barbarians"])
     env.reset(seed=0)
-    for card, _, _, cycle in (r[:4] for r in env.battle_state.players[0].evo):
+    rows = env.battle_state.players[0].evo
+    assert len(rows) == 2, rows
+    for card, _, _, cycle in (r[:4] for r in rows):
         assert eng.cards()[card].evo_cycle == cycle, eng.cards()[card].name
