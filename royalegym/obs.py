@@ -127,6 +127,9 @@ from .protocol import (
     RED,
     STATUS_EVOLVED,
     STATUS_HERO,
+    STATUS_HIDDEN,
+    STATUS_INVISIBLE,
+    STATUS_UNDERGROUND,
     TEAMS,
     Arena,
     BattleState,
@@ -1558,6 +1561,16 @@ STATUS_SPATIAL_CHANNELS: list[tuple[str, str]] = [
     ("enemy_slowed", "count of enemy units slowed by cold"),
     ("own_on_tower", "count of own units whose current target is a crown tower"),
     ("enemy_on_tower", "count of enemy units whose current target is a crown tower"),
+    ("own_on_building", "count of own units whose target is a building, not a crown tower"),
+    ("enemy_on_building", "count of enemy units whose target is a building, not a crown tower"),
+    ("own_hp_frac", "hp / max hp of the own unit with the most max hp in the tile, not towers"),
+    ("enemy_hp_frac", "hp / max hp of the enemy unit with the most max hp in the tile"),
+    ("own_invisible", "count of own invisible units (STATUS_INVISIBLE), where they stand"),
+    ("enemy_invisible", "count of enemy invisible units, where they stand"),
+    ("own_underground", "count of own units tunnelling (STATUS_UNDERGROUND)"),
+    ("enemy_underground", "count of enemy units tunnelling"),
+    ("own_hidden", "count of own buildings hidden in the ground (STATUS_HIDDEN)"),
+    ("enemy_hidden", "count of enemy buildings hidden in the ground"),
 ]
 #: The buff families the status planes read. A unit's ``buffs`` entry names an effect family,
 #: its members joined by "|" (the engine's grouping), so a family is matched by one member's
@@ -1748,20 +1761,26 @@ def hero_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
 
 
 def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) -> np.ndarray:
-    """float32 [8, tiles_y, tiles_x], seen by ``team``: ``STATUS_SPATIAL_CHANNELS``.
+    """float32 [18, tiles_y, tiles_x], seen by ``team``: ``STATUS_SPATIAL_CHANNELS``.
 
     Counted on the centre tile like ``entity_channels``: shield hp summed as an integer and
     scaled once by ``HP_SCALE``, raged and slowed units counted (``RAGE_BUFF``, ``SLOW_BUFF``),
-    and units whose ``target_uid`` is a crown tower's uid (a locked unit ignores a building put
-    down to pull it).
+    units whose ``target_uid`` is a crown tower's uid (a locked unit ignores a building put
+    down to pull it) or another building's, each side's strongest unit's hp fraction (the
+    largest max hp, ties to the lowest uid, so a function of the entity set), and units with
+    the invisible, underground or hidden bit. Crown towers are in none of them.
     An engine that does not report status bits is refused, as ``evolved_channels`` refuses it:
     such an engine predates the shield and buff fields too, and their defaults (no shield, no
     buffs) would read as an answer. Module-level so a test can plant a defect in it.
     """
     acc = np.zeros((len(STATUS_SPATIAL_CHANNELS), arena.tiles_y, arena.tiles_x), dtype=np.int64)
     towers = {e.uid for e in entities if e.kind in TOWER_KINDS}
+    buildings = {e.uid for e in entities if e.kind == EntityKind.BUILDING}
+    strongest: dict[tuple[int, int, int], tuple[int, int, int, int]] = {}
+    bits = ((STATUS_INVISIBLE, 12), (STATUS_UNDERGROUND, 14), (STATUS_HIDDEN, 16))
     for e in entities:
-        if status_of(e) is None:
+        status = status_of(e)
+        if status is None:
             raise ValueError(
                 f"unit_status=True, but this engine does not report unit status (entity uid "
                 f"{e.uid} has no status_flags). Use an engine that reports it, such as "
@@ -1779,8 +1798,19 @@ def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) ->
             acc[4 + side, ty, tx] += 1
         if e.target_uid in towers:
             acc[6 + side, ty, tx] += 1
+        elif e.target_uid in buildings:
+            acc[8 + side, ty, tx] += 1
+        for bit, plane in bits:
+            if status & bit:
+                acc[plane + side, ty, tx] += 1
+        key = (side, ty, tx)
+        held = strongest.get(key)
+        if held is None or (e.max_hp, -e.uid) > (held[0], -held[1]):
+            strongest[key] = (e.max_hp, e.uid, e.hp, max(1, e.max_hp))
     out = acc.astype(np.float32)
     out[:2] = (acc[:2] / HP_SCALE).astype(np.float32)
+    for (side, ty, tx), (_, _, hp, max_hp) in strongest.items():
+        out[10 + side, ty, tx] = np.float32(min(max(hp, 0), max_hp) / max_hp)
     return out
 
 

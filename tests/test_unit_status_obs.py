@@ -1,12 +1,20 @@
 """What is on a unit: ``SpatialObsBuilder(unit_status=True)``.
 
-Eight planes, own then enemy, counted per tile like the troop planes:
+Eighteen planes, own then enemy, per tile like the troop planes:
 - ``own_shield`` / ``enemy_shield``: shield hp left, summed and scaled like the hp planes (a
   Dark Prince's shield is drawn over it, and a shot breaks it before any hp goes);
 - ``own_raged`` / ``enemy_raged``: units under a Rage (drawn purple; they move and hit faster);
 - ``own_slowed`` / ``enemy_slowed``: units slowed by cold (an Ice Wizard's, a hero Ice Golem's);
 - ``own_on_tower`` / ``enemy_on_tower``: units whose current target is a crown tower. A unit
   locked on a tower ignores a building put down to pull it; one not locked yet can be pulled.
+- ``own_on_building`` / ``enemy_on_building``: units whose current target is a building that
+  is not a crown tower (a Hog pulled by a Cannon).
+- ``own_hp_frac`` / ``enemy_hp_frac``: hp / max hp of the tile's strongest unit (the largest
+  max hp; ties to the lowest uid), so a damaged P.E.K.K.A differs from a fresh one. Not towers.
+- ``own_invisible`` / ``enemy_invisible``, ``own_underground`` / ``enemy_underground``,
+  ``own_hidden`` / ``enemy_hidden``: units with that status bit, still in the troop planes
+  where they stand (the client shows an invisible unit's shimmer, a tunneller's trail, a hidden
+  building's mound).
 A frozen unit is not here: a Freeze sets ``stun_ticks``, which the stunned planes already count.
 
 A unit's ``buffs`` entry names an EFFECT FAMILY, its members joined by "|" (the engine's own
@@ -22,6 +30,7 @@ SKIPS
 from __future__ import annotations
 
 import msgspec
+import numpy as np
 import pytest
 
 from royalegym.action import TileActionParser
@@ -30,6 +39,9 @@ from royalegym.obs import HP_SCALE, Reveal, SpatialObsBuilder, spatial_channels,
 from royalegym.protocol import (
     BLUE,
     RED,
+    STATUS_HIDDEN,
+    STATUS_INVISIBLE,
+    STATUS_UNDERGROUND,
     DeployCommand,
     DeployStatus,
     EntityKind,
@@ -45,7 +57,9 @@ needs_engine = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_E
 
 PLANES = [
     "own_shield", "enemy_shield", "own_raged", "enemy_raged", "own_slowed", "enemy_slowed",
-    "own_on_tower", "enemy_on_tower",
+    "own_on_tower", "enemy_on_tower", "own_on_building", "enemy_on_building",
+    "own_hp_frac", "enemy_hp_frac", "own_invisible", "enemy_invisible",
+    "own_underground", "enemy_underground", "own_hidden", "enemy_hidden",
 ]
 SLOW = "IceWizardSlowDown|IceWizardCold|IceGolemiteHero_Slow_Buff_Tower"
 
@@ -59,7 +73,7 @@ def test_off_by_default_and_after_every_other_optional_fair_plane():
     before = [n for n, _ in spatial_channels(rev, True, True, heroes=True)]
     after = [n for n, _ in spatial_channels(rev, True, True, heroes=True, unit_status=True)]
     assert after[: len(before) - 1] == before[:-1], "an existing plane moved"
-    assert after[len(before) - 1 : len(before) + 7] == PLANES
+    assert after[len(before) - 1 : len(before) - 1 + len(PLANES)] == PLANES
     assert after[-1] == "enemy_spell_aim", "the revealed planes stay last"
 
 
@@ -77,10 +91,11 @@ def _board():
     return eng.state(), eng.arena()
 
 
-def _unit(uid, team, point, shield=0, buffs=(), kind=EntityKind.TROOP, target=-1):
+def _unit(uid, team, point, shield=0, buffs=(), kind=EntityKind.TROOP, target=-1, hp=100,
+          max_hp=100, status=0):
     return EntityState(
-        uid, team, int(kind), 3, -1, point[0], point[1], 100, 100, 500, False, 0,
-        shield=shield, buffs=tuple(buffs), status_flags=0, target_uid=target,
+        uid, team, int(kind), 3, -1, point[0], point[1], hp, max_hp, 500, False, 0,
+        shield=shield, buffs=tuple(buffs), status_flags=status, target_uid=target,
     )
 
 
@@ -105,7 +120,7 @@ def test_a_shield_is_summed_and_scaled_like_hp_on_both_sides():
     s = _with(state, [_unit(100, BLUE, p, shield=300), _unit(101, BLUE, p, shield=150)])
     blue = status_channels(s.entities, BLUE, a)
     red = status_channels(s.entities, RED, a)
-    assert blue.shape == (8, a.tiles_y, a.tiles_x)
+    assert blue.shape == (len(PLANES), a.tiles_y, a.tiles_x)
     assert blue[0][_tile(a, BLUE, p)] == pytest.approx(450 / HP_SCALE)
     assert blue[0].sum() == pytest.approx(450 / HP_SCALE)
     assert blue[1].sum() == 0
@@ -132,12 +147,17 @@ def test_rage_and_cold_are_matched_by_a_member_of_the_family():
     assert blue[4].sum() == 1
 
 
+def _buff_planes(planes):
+    """The raged and slowed planes, own and enemy: what a buff entry can light."""
+    return planes[[PLANES.index(n) for n in PLANES if n.endswith(("_raged", "_slowed"))]]
+
+
 def test_a_name_that_only_contains_a_member_does_not_match():
     state, a = _board()
     p = _at(a, 4, 20)
     lookalikes = [("BarbarianRage", 3000), ("IceWizardSlowDownX", 9)]
     s = _with(state, [_unit(100, RED, p, buffs=lookalikes)])
-    assert status_channels(s.entities, BLUE, a).sum() == 0
+    assert _buff_planes(status_channels(s.entities, BLUE, a)).sum() == 0
 
 
 def test_poison_tornado_and_freeze_are_not_status_planes():
@@ -146,7 +166,7 @@ def test_poison_tornado_and_freeze_are_not_status_planes():
     s = _with(state, [_unit(100, RED, p, buffs=[
         ("Poison", 900), ("Tornado", 400), ("Freeze|ZapFreeze", 300),
     ])])
-    assert status_channels(s.entities, BLUE, a).sum() == 0
+    assert _buff_planes(status_channels(s.entities, BLUE, a)).sum() == 0
 
 
 def test_a_unit_locked_on_a_crown_tower_is_counted_and_one_on_anything_else_is_not():
@@ -168,6 +188,61 @@ def test_a_unit_locked_on_a_crown_tower_is_counted_and_one_on_anything_else_is_n
     assert blue[7].sum() == 1
     assert red[7][_tile(a, RED, hog)] == 1
     assert red[6][_tile(a, RED, cannon)] == 1
+
+
+def test_a_unit_on_a_building_is_counted_apart_from_one_on_a_tower():
+    state, a = _board()
+    towers = {e.team: e.uid for e in state.entities if e.kind == EntityKind.PRINCESS_TOWER}
+    hog, other, cannon = _at(a, 3, 22), _at(a, 14, 22), _at(a, 9, 9)
+    s = _with(state, [
+        _unit(100, BLUE, hog, target=102),
+        _unit(101, BLUE, other, target=towers[RED]),
+        _unit(102, RED, cannon, kind=EntityKind.BUILDING),
+    ])
+    blue = status_channels(s.entities, BLUE, a)
+    on_building, on_tower = PLANES.index("own_on_building"), PLANES.index("own_on_tower")
+    assert blue[on_building][_tile(a, BLUE, hog)] == 1
+    assert blue[on_building].sum() == 1, "a unit on a tower is not on a building"
+    assert blue[on_tower].sum() == 1
+    red = status_channels(s.entities, RED, a)
+    assert red[PLANES.index("enemy_on_building")][_tile(a, RED, hog)] == 1
+
+
+def test_hp_frac_is_the_strongest_units_on_its_tile():
+    state, a = _board()
+    p, q = _at(a, 9, 12), _at(a, 4, 20)
+    s = _with(state, [
+        _unit(100, BLUE, p, hp=1500, max_hp=3000),  # a damaged Giant
+        _unit(101, BLUE, p, hp=90, max_hp=100),  # a fresh small unit beside it
+        _unit(102, RED, q, hp=250, max_hp=1000),
+        _unit(103, RED, q, hp=1000, max_hp=1000),  # a tie on max hp: the lower uid holds
+    ])
+    blue = status_channels(s.entities, BLUE, a)
+    own, foe = PLANES.index("own_hp_frac"), PLANES.index("enemy_hp_frac")
+    assert blue[own][_tile(a, BLUE, p)] == pytest.approx(0.5)
+    assert blue[foe][_tile(a, BLUE, q)] == pytest.approx(0.25)
+    assert blue[own].sum() == pytest.approx(0.5), "towers and empty tiles hold 0"
+    reordered = _with(state, list(reversed(s.entities[len(s.entities) - 4 :])))
+    assert np.array_equal(status_channels(reordered.entities, BLUE, a), blue)
+
+
+@pytest.mark.parametrize(
+    ("bit", "plane"),
+    [(STATUS_INVISIBLE, "invisible"), (STATUS_UNDERGROUND, "underground"),
+     (STATUS_HIDDEN, "hidden")],
+)
+def test_a_status_bit_marks_its_unit_where_it_stands(bit, plane):
+    state, a = _board()
+    p = _at(a, 4, 20)
+    s = _with(state, [
+        _unit(100, RED, p, status=bit),
+        _unit(101, RED, p, status=bit ^ (STATUS_INVISIBLE | STATUS_UNDERGROUND | STATUS_HIDDEN)),
+        _unit(102, BLUE, p, status=bit),
+    ])
+    blue = status_channels(s.entities, BLUE, a)
+    assert blue[PLANES.index(f"enemy_{plane}")][_tile(a, BLUE, p)] == 1
+    assert blue[PLANES.index(f"enemy_{plane}")].sum() == 1
+    assert blue[PLANES.index(f"own_{plane}")].sum() == 1
 
 
 def test_an_engine_that_does_not_report_unit_status_is_refused():
