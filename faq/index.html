@@ -4414,9 +4414,9 @@ uninstall it too (on Windows: Settings &gt; Apps &gt; Installed apps &gt; Python
 <h3 id="what-happens-when-clash-royale-updates">What happens when Clash Royale updates?<a class="headerlink" href="#what-happens-when-clash-royale-updates" title="Permanent link">&para;</a></h3>
 <p>New cards and balance changes reach RoyaleGym in a new version of the engine. To update, find
 the newest version on the <a href="https://github.com/RoyaleGym/RoyaleGym/releases">Releases page</a>, and
-run this with that version in place of <code>v0.1.5</code> at the end. Updating from v0.1.1 or earlier? Run
+run this with that version in place of <code>v0.1.6</code> at the end. Updating from v0.1.1 or earlier? Run
 <code>pip uninstall -y pygame</code> first: the viewer now uses pygame-ce in its place.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.5
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.6
 </code></pre></div>
 <p>It updates the five RoyaleGym packages and leaves your PyTorch alone. Your code keeps working,
 but a bot can't carry on training across an update: start a new one with a new <code>save_dir</code>.</p>

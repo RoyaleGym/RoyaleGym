@@ -3203,6 +3203,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#clone-human-players" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clone human players
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#use" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3409,6 +3420,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#clone-human-players" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clone human players
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#use" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3530,13 +3552,37 @@ your environment, train your learner's network on them, then start a run from th
 <code>record</code> plays it on both seats; <code>clone</code> holds out about one battle in twenty to measure the copy,
 stops when that stops improving, and writes a folder with the network and its checks. The clone
 starts out playing like its teacher, so the teacher you pick is where your bot starts.</p>
+<h2 id="clone-human-players">Clone human players<a class="headerlink" href="#clone-human-players" title="Permanent link">&para;</a></h2>
+<p>Human games work the same way. <code>from_replays</code> downloads IL_Replay, a public set of ladder games
+(<a href="https://huggingface.co/datasets/VanguardX101/IL_Replay">VanguardX101/IL_Replay</a> on Hugging Face;
+its page describes the data), and replays them in your environment:</p>
+<div class="highlight"><pre><span></span><code>pip install "royaleimitate[replays]"
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">TowerHPReward</span><span class="p">,</span> <span class="n">make_env</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royaleimitate</span><span class="w"> </span><span class="kn">import</span> <span class="n">clone</span><span class="p">,</span> <span class="n">from_replays</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_env</span><span class="p">():</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">return</span> <span class="n">make_env</span><span class="p">(</span><span class="n">reward</span><span class="o">=</span><span class="n">TowerHPReward</span><span class="p">())</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span><span class="n">build_env</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="s2">"runs/from-humans"</span><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">demos</span> <span class="o">=</span> <span class="n">from_replays</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="s2">"runs/human-demos"</span><span class="p">,</span> <span class="n">matches</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">digest</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="n">demos</span><span class="p">,</span> <span class="s2">"runs/human-clone"</span><span class="p">)</span>
+</code></pre></div>
+<p>Each match is replayed with both players' card plays, and every decision of both seats becomes
+a row labelled with what the player did there: a card on a tile, or nothing. A match is skipped
+when your catalogue lacks one of its cards, or when the engine refuses one of its plays, and the
+counts are printed. The data downloads into the Hugging Face cache, about 5,000 matches a file.</p>
 <h2 id="use">Use<a class="headerlink" href="#use" title="Permanent link">&para;</a></h2>
 <p>Add the sections to a run's config. For example, to start from a saved policy:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">"warm_start"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">"init"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"artifacts/my-policy"</span><span class="p">,</span><span class="w"> </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;digest from artifact-digest&gt;"</span><span class="p">}</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">"warm_start"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">"init"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"artifacts/my-policy"</span><span class="p">,</span><span class="w"> </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;digest from artifact-digest&gt;"</span><span class="p">}</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">}</span>
 </code></pre></div>
 <p><code>warm_start.actor_lr_scale</code>, a schedule over environment steps, can also hold the actor still for
 a while (a scale of 0) while the critic learns what a position is worth; by default it is 1 from
@@ -3559,8 +3605,8 @@ full contract, and <a href="../alarms/">docs/alarms.md</a> lists the four alarms
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
 <p>From the <code>Royale</code> folder, go into <code>RoyaleImitate</code> and run the tests there with the shared
 environment's python (<code>../.venv/bin/python</code> on macOS and Linux):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd </span><span class="n">RoyaleImitate</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="p">..\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span> <span class="n">-m</span> <span class="n">pytest</span> <span class="n">-q</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">cd </span><span class="n">RoyaleImitate</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="p">..\.</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span> <span class="n">-m</span> <span class="n">pytest</span> <span class="n">-q</span>
 </code></pre></div>
 <p>On 2026-09-28 at 03f8e82 that printed <code>121 passed</code> on Windows with the engine built. Run from
 the <code>Royale</code> folder without the <code>cd</code>, pytest collects the tests of every repo there and errors.</p>
