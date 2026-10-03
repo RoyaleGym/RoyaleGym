@@ -3601,7 +3601,7 @@ it on 2026-09-25, and the ruling is kept in that entry's <code>supersedes</code>
 equally well checked.</p>
 <p>A re-read on 2026-09-22 went through 24 entries against the corpus, of the 148 the ledger held
 that day. The ledger has grown since. Counted against it today, the re-read
-went through 24 of the 409 entries. It moved no status and no value. What it turned up was in
+went through 24 of the 416 entries. It moved no status and no value. What it turned up was in
 the evidence the statuses rest on: 42 places where a cited number, recording name or piece of
 arithmetic does not hold. Take that as a reason to re-derive, not as 42 established defects.
 Only a handful of the 42 have since been recomputed by hand, and one of those did not survive
@@ -3612,21 +3612,21 @@ where the entry said 31000. It has been rewritten. What is true of that key now:
 pinned by 34 members over 17 clean groups, the two seats' back-edge bounds are a full row apart
 rather than half a row, side 1's river bound is one native unit looser than the rotation rather
 than tighter, and side 0's range is pinned by nothing at all, which the entry now says.</p>
-<p>385 entries have not been re-read. So, concretely (every count on this page comes from
+<p>392 entries have not been re-read. So, concretely (every count on this page comes from
 <code>python tools/ledger_census.py</code>, and <code>tests/test_ledger_census.py</code> fails when the page and the
 ledger disagree, because these figures went stale twice in one afternoon before that gate existed):</p>
 <ul>
 <li><strong>The status on a key is worth trusting.</strong> No status moved in the re-read.</li>
 <li><strong>The shape of an entry is worth trusting where a judgement was made, but it is not
-  universal, so check rather than assume.</strong> All 409 carry a status. That 409 counts TOP-LEVEL
+  universal, so check rather than assume.</strong> All 416 carry a status. That 416 counts TOP-LEVEL
   entries; one further entry, <code>pathfinding.PATHFINDING_COSTS.application</code>, is nested inside
-  another and carries its own <code>measured</code> status, so counting every status in the file gives 410
-  and 296 measured. The tools agree on 409 by convention, and the convention undercounts by one. 350 name the rivals the
-  value was chosen against and 364 state what would move it, and 343 do both. The gap is mostly
+  another and carries its own <code>measured</code> status, so counting every status in the file gives 417
+  and 302 measured. The tools agree on 416 by convention, and the convention undercounts by one. 357 name the rivals the
+  value was chosen against and 371 state what would move it, and 350 do both. The gap is mostly
   the 30 <code>datamined</code> keys, where the number was read out of a shipped table and no choice was
   made, so a candidate list would be a category error; those carry a vintage and an engine
   contract instead, which is the right shape for them. But the gap is not only those. 26 of
-  the 295 <code>measured</code> entries name no rival at all, and 13 of those state no promotion criterion
+  the 301 <code>measured</code> entries name no rival at all, and 13 of those state no promotion criterion
   either. This file's rule is that evidence is discrimination and never origin. A measured key
   with no candidate list has therefore recorded nothing that it was discriminated against. Some
   are harmless (<code>time.TICK_MS</code> has no plausible rival). <code>pathfinding.PATH_GOAL_RULE</code> and
@@ -3691,7 +3691,7 @@ somebody re-measures it.</p>
 engine runs on a placeholder for these, so the behaviour it produces is not evidence about the
 real game. Each row names what a recording would have to show. The ledger is the authority; this
 table is a reading guide over it, and a key's own <code>status</code> and <code>promotion_rules</code> win where the two
-disagree. Of the 409 top-level keys with a status, 295 are <code>measured</code>; one more entry, nested inside another, is measured too (410 in all).</p>
+disagree. Of the 416 top-level keys with a status, 301 are <code>measured</code>; one more entry, nested inside another, is measured too (417 in all).</p>
 <table>
 <thead>
 <tr>
