@@ -1417,11 +1417,14 @@ class ObsBuilder(ABC):
 
     def _vector(self, state: BattleState, team: int) -> np.ndarray:
         memory = self.memory[team]
-        # By keyword and only when there are any, as below: an observe that wraps or stands in
-        # for this one with the old (state, team) keeps working, and no press accepted since
-        # the last build is the same as the rows showing none.
+        # Whenever the env said which presses it accepted, even none: the memory then charges
+        # exactly those and never reads presses off the rows. "None accepted" is NOT "the rows
+        # show none": under a command delay a press accepted on one step runs, and flips its
+        # row, on a later step whose list is empty, and the rows would charge it a second time
+        # (about half of the battles with hero presses went inexact). Without a list (a builder
+        # used outside the env), the rows are all there is.
         presses = getattr(self, "presses", None)
-        if presses:
+        if presses is not None:
             memory.observe(state, team, presses=presses)
         else:
             memory.observe(state, team)

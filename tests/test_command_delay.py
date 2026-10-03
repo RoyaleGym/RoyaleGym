@@ -120,16 +120,52 @@ def test_the_engines_own_mask_agrees_with_the_engine_while_commands_wait():
 MEMORY_DECK = ("Knight", "Archer", "Giant", "Minions", "Fireball", "Cannon", "Zap", "Musketeer")
 
 
+#: Decks with ability buttons, and the forms that give them. Pressed under a delay, a press is
+#: accepted on one step and runs a later one, which is where the count once charged it twice
+#: (about half of the battles inexact under a hero Ice Golem deck).
+HERO_DECK = ("HogRider", "Musketeer", "Cannon", "IceGolemite", "IceSpirits", "Skeletons",
+             "Earthquake", "Log")
+HERO_FORMS = {"Musketeer": 1, "Skeletons": 1, "IceGolemite": 2}
+CHAMPION_DECK = ("GoldenKnight", "ArcherQueen", "Knight", "Archer", "Fireball", "Zap", "Cannon",
+                 "Musketeer")
+
+
 @needs_delay
-def test_the_memories_stay_exact_under_a_delay():
+@pytest.mark.parametrize(
+    ("names", "forms", "buttons"),
+    [
+        (MEMORY_DECK, {}, False),
+        pytest.param(
+            HERO_DECK, HERO_FORMS, True,
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason=(
+                    "a press the engine refuses when it runs is still charged: a hero that "
+                    "died during the delay (NO_HERO at run), and every waiting command at a "
+                    "level overtime's end. Battle.commands_run() reports only the last tick "
+                    "of a step and not which button, so the count cannot tell; it needs the "
+                    "engine to report each delayed command that ran in the step (asked of "
+                    "RoyaleSim 2026-10-03)"
+                ),
+            ),
+        ),
+        (CHAMPION_DECK, {}, True),
+    ],
+    ids=["plain", "evo-and-hero-presses", "champion-presses"],
+)
+def test_the_memories_stay_exact_under_a_delay(names, forms, buttons):
     from royalegym.state_mutator import DefaultStateMutator
 
     engine = RustEngine()
     ids = {c.name: c.card_id for c in engine.cards()}
-    deck = [ids[n] for n in MEMORY_DECK]
+    if any(n not in ids for n in names):
+        pytest.skip(f"this engine's catalogue lacks {[n for n in names if n not in ids]}")
+    deck = [ids[n] for n in names]
+    row = [forms.get(n, 0) for n in names]
     env = ClashParallelEnv(
         engine, command_delay_ticks=DELAY,
-        state_mutator=DefaultStateMutator(decks=[deck, deck]),
+        state_mutator=DefaultStateMutator(decks=[deck, deck], forms=[row, row] if forms else None),
+        action_parser=TileActionParser(ability_buttons=buttons),
     )
     off = []
 
