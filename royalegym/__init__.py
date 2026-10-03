@@ -13,7 +13,7 @@ Components (each an ABC with swappable implementations):
 A DoneCondition is used in one of two roles, termination (the outcome is decided)
 or truncation (the episode is cut); TerminationCondition and TruncationCondition
 are the role-declaring subclasses, and the envs take termination_cond and
-truncation_cond. The names are RLGym v2's.
+truncation_cond.
 
 Environments (env.py): ClashParallelEnv (PettingZoo), ClashGymEnv (Gymnasium),
 ClashSelfPlayVecEnv (vectorised self-play). Engine contract: protocol.Engine;

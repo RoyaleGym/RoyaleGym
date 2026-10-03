@@ -79,8 +79,8 @@ That goes in place of the `state_mutator = ...` line in your quickstart's `build
 `MidGameStateMutator` added to its imports. The scripted-board and snapshot starts are for
 advanced use; their arguments are in the [API reference](../../reference/royalegym.md).
 
-One difference from RLGym: you don't chain mutators one after another. A mutator describes the
-whole start of a battle, and `WeightedStateMutator` picks between them.
+You don't chain mutators one after another. A mutator describes the whole start of a battle, and
+`WeightedStateMutator` picks between them.
 
 ## How They Work
 

@@ -50,5 +50,4 @@ differently.
 
 </div>
 
-If you know RLGym, the first five are its objects, with the same names. The [How It Fits
-Together](../../overview.md) page shows how they meet in one step.
+The [How It Fits Together](../../overview.md) page shows how they meet in one step.

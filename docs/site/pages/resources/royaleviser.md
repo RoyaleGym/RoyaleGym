@@ -1,6 +1,6 @@
 # RoyaleViser
 
-[RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) is the viewer: RoyaleGym's RLViser. It
+[RoyaleViser](https://github.com/RoyaleGym/RoyaleViser) is the viewer. It
 opens a window that shows a battle tick by tick: the arena, every unit with its health, both
 hands, both elixir bars and a log of what happened. Click a unit to see everything about it.
 

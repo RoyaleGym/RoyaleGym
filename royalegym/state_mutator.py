@@ -8,8 +8,7 @@ from ``env.reset(seed=...)``, so a seeded reset is reproducible end to end.
 Curriculum is expressed here, not in the engine: start mid-game with a tower
 already down, start from a scripted defensive board, replay a saved position.
 
-The name is RLGym v2's. One difference from RLGym's mutators: a battle here is
-described whole (``MatchSetup`` is the complete starting state) and then handed
+A battle here is described whole (``MatchSetup`` is the complete starting state) and then handed
 to the engine, rather than edited in place, so mutators compose by *choice*
 (``WeightedStateMutator`` picks one per episode) rather than by chaining, and
 there is no ``MutatorSequence``. Variations on a start are subclasses of

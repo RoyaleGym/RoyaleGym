@@ -1,8 +1,7 @@
 """Done conditions: state -> bool, in one of two roles.
 
 A ``DoneCondition`` answers one question per env step: is this episode over?
-Which *kind* of over is decided by the slot the env receives it in, the same
-split RLGym v2 makes:
+Which *kind* of over is decided by the slot the env receives it in:
 
 * ``termination_cond``: the MDP really ended (the value of the next state is 0):
   a king tower fell, the clock ran out, a curriculum objective was met.

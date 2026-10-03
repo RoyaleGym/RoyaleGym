@@ -40,11 +40,6 @@ next state is worth nothing. **Truncated** means you cut it short and the next s
 mattered. Mixing them up quietly ruins every value estimate near the cut, so the shipped
 conditions declare which one they are, and the environment refuses one in the wrong slot.
 
-!!! tip "These names come from RLGym"
-    If you have used RLGym v2 for Rocket League bots, the vocabulary here is deliberately the
-    same one. `StateMutator`, `TerminationCondition`, `TruncationCondition`. The older names
-    `StateSetter` and `TerminalCondition` still import, so old code keeps working.
-
 ## Two APIs, and which one you want
 
 Both drive the same battle. The difference is how many seats you are filling.

@@ -52,7 +52,7 @@ carry on later.
 
 ## The Trainer
 
-**PPO** (Proximal Policy Optimization). The training method RoyaleLearn uses, like RLGym-PPO.
+**PPO** (Proximal Policy Optimization). The training method RoyaleLearn uses.
 It collects a batch of experience, then nudges the policy toward moves that did better than
 expected, but only a little at a time, so one lucky batch can't wreck it.
 

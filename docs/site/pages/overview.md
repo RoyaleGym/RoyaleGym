@@ -8,8 +8,7 @@ those pieces for another, or for one you write yourself.
 You don't need this page to train your first bot. Read it when you want to change something the
 [Quick Start](quickstart.md) doesn't cover.
 
-These pieces are called **configuration objects**. If you've used RLGym, they're the same pieces
-with the same names.
+These pieces are called **configuration objects**.
 
 ## Configuration Objects
 

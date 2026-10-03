@@ -7,8 +7,7 @@ why the seams are where they are. The module docstrings carry the detail for eac
 ## Three layers, one direction
 
 The battle rules, the environment API and the training harness are three separate packages,
-with the viewer off to the side. (The shape is prior art: RLGym and RocketSim settled on
-the same seams for Rocket League.)
+with the viewer off to the side.
 
 | Layer | Owns | Language |
 |---|---|---|
@@ -91,8 +90,7 @@ opponent policies used for self-play. Defaults are provided and none of them is 
 default is just the implementation that ships. A new default lands with a test that holds it
 to both engines.
 
-The names are RLGym v2's, so a reader coming from there meets the vocabulary they know. A
-`DoneCondition` fills one of two roles. The env takes a `termination_cond`, which sets
+A `DoneCondition` fills one of two roles. The env takes a `termination_cond`, which sets
 Gymnasium's `terminated` (the outcome is settled and the next state is worth nothing). It
 also takes a `truncation_cond`, which sets `truncated` (the episode was cut and the next
 state is still worth bootstrapping from). Confusing the two biases every value estimate near

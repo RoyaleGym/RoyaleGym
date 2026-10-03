@@ -1,6 +1,6 @@
 # RoyaleLearn
 
-[RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) is the trainer: RoyaleGym's RLGym-PPO.
+[RoyaleLearn](https://github.com/RoyaleGym/RoyaleLearn) is the trainer.
 You give it a function that builds your environment, and it trains a bot on it with PPO. It
 plays many battles at once, learns on your graphics card, saves checkpoints as it goes, and
 carries on from the last one if you stop and start again.
@@ -44,11 +44,11 @@ Every setting has a default, so you only pass the ones you want to change.
 | `trunk_blocks` | `2` | How deep it is. |
 | `critic_hidden` | `64` | The size of the part that predicts the reward. |
 
-**The update** (the names follow RLGym-PPO's where there is one)
+**The update**
 
 | Setting | Default | What it does |
 |---|---|---|
-| `steps_per_update` | `1024` | Decisions collected before each update. RLGym-PPO calls it `ts_per_iteration`. |
+| `steps_per_update` | `1024` | Decisions collected before each update. |
 | `ppo_batch_size` | `steps_per_update // 2` | Decisions used in each update. |
 | `ppo_minibatch_size` | `steps_per_update // 8` | Decisions per adjustment. Bigger uses more graphics memory. |
 | `ppo_epochs` | `3` | Passes over each batch. |

@@ -65,9 +65,8 @@ needs, so the extractors are held to the shipped data by tests rather than trust
 
 ## There is no bot interface in the real game
 
-No bot league, competition or bot API exists for Clash Royale. RLBot works in Rocket League
-because Psyonix provides an offline exhibition interface and bots never touch matchmaking;
-there is no equivalent here. The league this project trains against is therefore built
+No bot league, competition or bot API exists for Clash Royale, and the game has no offline
+mode a bot could join. The league this project trains against is therefore built
 offline, inside these repos: self-play plus a frozen-pool ladder with confidence intervals
 (RoyaleLearn), with the simulator's fidelity to the real game gated separately by the
 calibration work above.

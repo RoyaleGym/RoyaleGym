@@ -334,10 +334,6 @@ You only need this repo and RoyaleSim to train a bot. The others are there when 
 trainer and an add-on for it, a viewer, and the recordings the engine is calibrated against.
 RoyaleGym is the front door, and the project is named after it.
 
-The layout copies the one the Rocket League community settled on: a fast engine (RocketSim), an
-environment API over it (RLGym), a trainer on top (RLGym-PPO) and a viewer beside them
-(rlviser). Swap in RoyaleSim, RoyaleGym, RoyaleLearn and RoyaleViser and you have this project.
-
 | Repo | What it is | To this repo |
 |---|---|---|
 | [RoyaleSim](https://github.com/RoyaleGym/RoyaleSim) | the battle engine. Integer-only Rust. The same seed always gives the same battle. Its movement rules are measured against recordings of real battles | the engine `RustEngine` drives, and where the arena and card data comes from |
@@ -444,9 +440,8 @@ Working:
   its enemy, such as a Royal Ghost, is still shown to the enemy seat where it stands, which a
   player cannot see. This is not fixed yet, and `config()` cannot record it, because it is not a
   `Reveal`.
-- The RLGym v2 names, so the vocabulary matches what you already know: `StateMutator`, and
-  `TerminationCondition` / `TruncationCondition` so that a settled result and a time-out are
-  different things. The earlier names still import as aliases.
+- `StateMutator`, and `TerminationCondition` / `TruncationCondition` so that a settled result and a
+  time-out are different things. The earlier names still import as aliases.
 
 **Speed: the Rust engine runs 1.16 to 1.38 times the pure-Python stand-in, measured by
 alternating the two inside one process.** That ratio is the durable number here, because

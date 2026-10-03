@@ -91,7 +91,4 @@ by name.
 
 </div>
 
-If you know RLGym for Rocket League: this is the same idea, split the same way. RoyaleSim is
-RocketSim, RoyaleGym is RLGym, RoyaleLearn is RLGym-PPO and RoyaleViser is RLViser.
-
 RoyaleGym is a fan project. It is not affiliated with, endorsed or sponsored by Supercell.
