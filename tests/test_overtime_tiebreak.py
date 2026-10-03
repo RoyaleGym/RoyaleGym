@@ -211,5 +211,9 @@ def test_the_mock_runs_the_rule_the_ledger_names():
 
 
 def test_an_unknown_rule_is_refused_at_construction():
-    with pytest.raises(ValueError, match="OVERTIME_TIEBREAK"):
+    """At construction, not at the first level overtime hours into a run, and saying what to
+    do: a newer ledger than this royalegym knows."""
+    with pytest.raises(ValueError, match="OVERTIME_TIEBREAK") as caught:
         engine("coin_flip")
+    assert "client_hp_drain" in str(caught.value)
+    assert "release page" in str(caught.value)

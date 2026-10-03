@@ -454,8 +454,12 @@ class MockEngine:
         )
         self.overtime_tiebreak = str(cal.value("match.OVERTIME_TIEBREAK"))
         if self.overtime_tiebreak not in OVERTIME_TIEBREAK_RULES:
+            # Refused here and not at the first level overtime, which can be hours into a run.
             raise ValueError(
-                f"calibration match.OVERTIME_TIEBREAK {self.overtime_tiebreak!r} is not a rule"
+                f"calibration match.OVERTIME_TIEBREAK {self.overtime_tiebreak!r} is not a rule "
+                f"this royalegym's MockEngine runs ({', '.join(OVERTIME_TIEBREAK_RULES)}): the "
+                "engine's ledger is newer than this royalegym. Install both from one release "
+                "page (https://royalegym.github.io/RoyaleGym/install/)."
             )
         if not cal.bool("match.THREE_CROWN_INSTANT_WIN"):
             raise NotImplementedError("mock only implements THREE_CROWN_INSTANT_WIN = true")
