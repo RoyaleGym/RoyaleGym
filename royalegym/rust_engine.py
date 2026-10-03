@@ -978,6 +978,20 @@ class RustEngine:
         cx, cy, box = got
         return int(cx), int(cy), (int(box[0]), int(box[1]), int(box[2]), int(box[3]))
 
+    def step_commands_run(self) -> list[tuple[int, int, str, int, int]] | None:
+        """Every delayed command that ran or was dropped during the last ``step``, in run order,
+        each ``(tick, team, kind, what, reason)``: kind "deploy" or "ability"; what a play's
+        card id, or a press's command slot (HAND_SIZE + button); reason 0 when it ran, else the
+        ``DEPLOY_REASONS`` code it was refused with when it came to run. None from a core that
+        does not report them (RoyaleSim before 0.1.7)."""
+        report = getattr(self._battle, "step_commands_run", None)
+        if report is None:
+            return None
+        return [
+            (int(tick), int(team), str(kind), int(what), int(reason))
+            for tick, team, kind, what, reason in report()
+        ]
+
     def step(self, commands: Sequence[DeployCommand], ticks: int) -> list[DeployResult]:
         if ticks < 0:
             raise ValueError("ticks must be >= 0")

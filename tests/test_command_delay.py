@@ -32,6 +32,9 @@ needs_delay = pytest.mark.skipif(
     reason=str(CORE_IMPORT_ERROR) if not core_available() else "this engine has no command delay",
 )
 DELAY = 21  # the live client's, measured (RoyaleSim r16)
+#: Whether the engine reports each delayed command that ran or was dropped in a step
+#: (RoyaleSim 0.1.7 on). Without it the count cannot see a press refused when it runs.
+HAS_RUN_REPORT = core_available() and hasattr(_core.Battle, "step_commands_run")
 
 
 def test_a_delay_is_refused_where_it_cannot_run():
@@ -138,14 +141,13 @@ CHAMPION_DECK = ("GoldenKnight", "ArcherQueen", "Knight", "Archer", "Fireball", 
         pytest.param(
             HERO_DECK, HERO_FORMS, True,
             marks=pytest.mark.xfail(
+                not HAS_RUN_REPORT,
                 strict=True,
                 reason=(
-                    "a press the engine refuses when it runs is still charged: a hero that "
-                    "died during the delay (NO_HERO at run), and every waiting command at a "
-                    "level overtime's end. Battle.commands_run() reports only the last tick "
-                    "of a step and not which button, so the count cannot tell; it needs the "
-                    "engine to report each delayed command that ran in the step (asked of "
-                    "RoyaleSim 2026-10-03)"
+                    "this engine does not report which delayed commands ran in a step "
+                    "(Battle.step_commands_run, RoyaleSim 0.1.7 on), so a press it refuses "
+                    "when it runs is still charged: a hero that died during the delay "
+                    "(NO_HERO at run), and every waiting command at a level overtime's end"
                 ),
             ),
         ),

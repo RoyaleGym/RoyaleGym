@@ -450,6 +450,12 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
                 for r in results
                 if r.status == DeployStatus.OK and r.hand_slot >= HAND_SIZE
             ])
+        # Under a command delay, which waiting commands ran in this step and which the engine
+        # refused when they came to run: a press refused then (its hero died while it waited)
+        # is never paid. From an engine that reports it; None keeps the accepted presses.
+        if hasattr(self.obs_builder, "see_runs"):
+            report = getattr(self.engine, "step_commands_run", None)
+            self.obs_builder.see_runs(report() if report is not None else None)
         self._episode_steps += 1
         full = self.full_elixir_milli
         for team in TEAMS:

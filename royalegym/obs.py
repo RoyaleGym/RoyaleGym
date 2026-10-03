@@ -558,6 +558,7 @@ class MatchMemory:
         state: BattleState,
         team: int,
         presses: Sequence[tuple[int, int]] | None = None,
+        runs: Sequence[tuple[int, int, str, int, int]] | None = None,
     ) -> None:
         """Advance to ``state``. A no-op unless the clock moved forward.
 
@@ -566,6 +567,12 @@ class MatchMemory:
         event a player sees. They are charged at the price the button's row showed, and are
         exact at any gap. Without them the presses are read off the rows (``presses_seen``),
         which misses a unit pressed and killed between two observations.
+
+        ``runs``, where the engine reports them (``RustEngine.step_commands_run``), are the
+        delayed commands that ran or were dropped since the last observation, each ``(tick,
+        team, kind, what, reason)``. For a side with a command delay they replace ``presses``:
+        a press is charged when it RAN (reason 0), at the tick it ran, so one the engine
+        refused when it came to run it (its hero died while it waited) is never charged.
         """
         if self.tick < 0 or state.tick < self.tick:
             self.seed(state, team)
@@ -607,6 +614,19 @@ class MatchMemory:
                 plays.append((min(max(due, self.tick), last), card))
             plays_by_side.append(plays)
             self.waiting[side] = list(p.pending)
+            if runs is not None and self.delay[side] > 0:
+                # What ran, from the engine: the presses it paid, at the tick it paid them.
+                shown = before if before is not None else p.abilities
+                presses_by_side.append([
+                    (min(max(tick, self.tick), last), ability_row(shown[what - HAND_SIZE]).cost)
+                    for tick, who, kind, what, reason in runs
+                    if who == p.team
+                    and kind == "ability"
+                    and reason == 0
+                    and 0 <= what - HAND_SIZE < len(shown)
+                ])
+                self.press_queue[side] = []
+                continue
             queue = self.press_queue[side] + [(self.tick + self.delay[side], c) for c in seen]
             presses_by_side.append([(max(due, self.tick), c) for due, c in queue if due <= last])
             self.press_queue[side] = [(due, c) for due, c in queue if due > last]
@@ -1332,6 +1352,7 @@ class ObsBuilder(ABC):
     def reset(self, state: BattleState) -> None:
         """Called at the start of every episode: both seats forget the last one."""
         self.presses = None
+        self.runs = None
         delay = getattr(self, "command_delay", (0, 0))
         for team, memory in self.memory.items():
             memory.seed(state, team)
@@ -1341,6 +1362,12 @@ class ObsBuilder(ABC):
         """The ability presses accepted since the last build, each ``(team, button)``, for
         the memories to charge (``MatchMemory.observe``); None reads them off the rows."""
         self.presses = None if presses is None else list(presses)
+
+    def see_runs(self, runs: Sequence[tuple[int, int, str, int, int]] | None) -> None:
+        """The delayed commands that ran or were dropped in the last step, as the engine
+        reports them (``RustEngine.step_commands_run``), for the memories to charge exactly
+        the presses that ran; None where the engine does not report them."""
+        self.runs = None if runs is None else list(runs)
 
     def counts_are_exact(self, team: int) -> bool:
         """Whether this seat's counted features are still provably right.
@@ -1425,10 +1452,13 @@ class ObsBuilder(ABC):
         # (about half of the battles with hero presses went inexact). Without a list (a builder
         # used outside the env), the rows are all there is.
         presses = getattr(self, "presses", None)
+        runs = getattr(self, "runs", None)
+        given: dict[str, Any] = {}
         if presses is not None:
-            memory.observe(state, team, presses=presses)
-        else:
-            memory.observe(state, team)
+            given["presses"] = presses
+        if runs is not None:
+            given["runs"] = runs
+        memory.observe(state, team, **given)
         # The flag goes only when it is ON, and by keyword. With it off this is the exact call
         # it was before D2, so anything that wraps or substitutes build_vector with the old
         # six arguments keeps working -- this suite's own plant tests do, and the first
