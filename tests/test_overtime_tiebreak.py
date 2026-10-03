@@ -13,7 +13,16 @@ import copy
 import pytest
 
 from royalegym.mock_engine import MockEngine
-from royalegym.protocol import BLUE, Calibration, MatchSetup, Winner, default_calibration
+from royalegym.obs import TOWER_KINDS
+from royalegym.protocol import (
+    BLUE,
+    Calibration,
+    DeployCommand,
+    DeployStatus,
+    MatchSetup,
+    Winner,
+    default_calibration,
+)
 
 DECK = list(range(8))
 RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction", "none_draw")
@@ -200,6 +209,82 @@ def test_swapping_the_sides_swaps_the_drains_winner():
     b = drained([4000, 150, 4000], [4000, 100, 4000])
     assert (a.winner, b.winner) == (Winner.RED, Winner.BLUE)
     assert a.tick == b.tick
+
+
+# When a level overtime ends, play stops (RoyaleSim ship31, from 6 of 6 live level overtimes on
+# client 16.402): no play is accepted from t6000; t6000 and t6001 run as normal; at the head of
+# t6002 every unit and building leaves the board with no death effects, and only the crown
+# towers stand, unchanged, until the drain.
+
+
+def _troop_on_own_side(eng, team: int):
+    """A legal play of a troop card in ``team``'s hand, in its own half, or None."""
+    a = eng.arena()
+    kinds = {c.card_id: c.card_kind for c in eng.cards()}
+    hand = eng.state().players[team].hand
+    ys = [a.height // 5, a.height // 4] if team == BLUE else [a.height - a.height // 5]
+    for slot, card in enumerate(hand):
+        if kinds.get(card) != "TROOP":
+            continue
+        for y in ys:
+            for x in (a.width // 2, a.width // 3, 2 * a.width // 3):
+                cmd = DeployCommand(team, slot, x, y)
+                if eng.check_deploy(cmd) == DeployStatus.OK:
+                    return cmd
+    return None
+
+
+def _level_board(start_tick: int):
+    eng = engine(DRAIN)
+    eng.reset(5, MatchSetup(decks=[DECK, DECK], start_tick=start_tick, elixir_milli=[10000, 10000]))
+    return eng
+
+
+def test_no_play_is_accepted_once_a_level_overtime_has_ended():
+    before = _level_board(5999)
+    assert _troop_on_own_side(before, BLUE) is not None, "a play is open at t5999"
+    after = _level_board(6000)
+    a = after.arena()
+    hand = after.state().players[BLUE].hand
+    statuses = {
+        after.check_deploy(DeployCommand(BLUE, slot, a.width // 2, y))
+        for slot in range(len(hand))
+        for y in (a.height // 5, a.height // 4)
+    }
+    assert statuses == {DeployStatus.GAME_OVER}, statuses
+
+
+def test_the_board_is_cleared_at_the_head_of_t6002_and_only_the_towers_stand():
+    eng = _level_board(5990)
+    for team in (BLUE, 1):
+        cmd = _troop_on_own_side(eng, team)
+        assert cmd is not None
+        assert eng.step([cmd], 1)[0].status == DeployStatus.OK
+    eng.step([], 6002 - eng.state().tick)  # through t6001: units still on the board
+    s = eng.state()
+    assert s.tick == 6002
+    assert not s.game_over
+    units = [e for e in s.entities if e.kind not in TOWER_KINDS]
+    assert units, "the units placed before t6000 are gone before t6002"
+    towers_before = sorted((e.uid, e.hp) for e in s.entities if e.kind in TOWER_KINDS)
+    eng.step([], 1)  # t6002
+    s = eng.state()
+    assert [e for e in s.entities if e.kind not in TOWER_KINDS] == []
+    assert sorted((e.uid, e.hp) for e in s.entities if e.kind in TOWER_KINDS) == towers_before
+
+
+def test_elixir_runs_on_after_the_clear():
+    eng = engine(DRAIN)
+    eng.reset(5, MatchSetup(decks=[DECK, DECK], start_tick=6000, elixir_milli=[0, 0]))
+    eng.step([], 20)
+    assert all(p.elixir_milli > 0 for p in eng.state().players)
+
+
+def test_the_absolute_rule_still_ends_a_level_overtime_at_t6000():
+    s = engine("lowest_tower_hp_absolute")
+    s.reset(5, MatchSetup(decks=[DECK, DECK], start_tick=5999))
+    s.step([], 1)
+    assert s.state().game_over
 
 
 def test_the_mock_runs_the_rule_the_ledger_names():

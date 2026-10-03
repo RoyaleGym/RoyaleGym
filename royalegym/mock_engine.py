@@ -110,6 +110,11 @@ TIEBREAK_DRAIN_START_MS = 3350
 #: Sides whose weakest crown towers are level drain one tick, and the match is a Draw this
 #: many ms after the drain's start.
 TIEBREAK_EXACT_DRAW_AFTER_MS = 4000
+#: When a level overtime ends play stops (6 of 6 live level overtimes, client 16.402): no play
+#: is accepted from overtime's end, its first two ticks still run, and at the head of the tick
+#: this many past the end every unit and building leaves the board with no death effects,
+#: leaving only the crown towers, unchanged, for the drain.
+TIEBREAK_CLEAR_AFTER_TICKS = 2
 
 
 def tiebreak_drain_step(lowest: int) -> int:
@@ -1053,7 +1058,7 @@ class MockEngine:
     def _check(self, cmd: DeployCommand) -> DeployStatus:
         s = self._sim()
         a = self._arena
-        if s.game_over:
+        if s.game_over or self._past_level_overtime(s):
             return DeployStatus.GAME_OVER
         if cmd.team not in TEAMS:
             return DeployStatus.BAD_TEAM
@@ -1106,6 +1111,12 @@ class MockEngine:
         units = self._units
 
         # UPKEEP ------------------------------------------------------------
+        end = self.regular_ticks + self.overtime_ticks
+        if self._past_level_overtime(s) and s.tick >= end + TIEBREAK_CLEAR_AFTER_TICKS:
+            # Play has stopped: only the crown towers stand. Removed, not killed, so nothing
+            # dies (no crowns, no death effects); idempotent, since nothing can be played.
+            s.ents = [e for e in s.ents if e.tower_slot >= 0]
+            s.pending = []
         drained_out = self._tiebreak_drain(s)  # at the head, as state.rs phase_upkeep
         rate = self._rate()
         gain = self.gain_3x if rate == 3 else self.gain[rate]
@@ -1303,6 +1314,16 @@ class MockEngine:
         for e in standing:
             e.hp = max(e.hp - step, 0)
         return {e.uid for e in standing if e.hp == 0}
+
+    def _past_level_overtime(self, s: _Sim) -> bool:
+        """Under client_hp_drain, a level overtime has run out and the match goes on: no play
+        is accepted (the engine's GAME_OVER reason)."""
+        return (
+            self.overtime_tiebreak == "client_hp_drain"
+            and s.overtime
+            and not s.game_over
+            and s.tick >= self.regular_ticks + self.overtime_ticks
+        )
 
     def _weakest_towers_level(self, s: _Sim) -> bool:
         """Whether both sides' weakest standing crown towers have the same hp."""
