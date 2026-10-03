@@ -480,7 +480,8 @@ def test_a_snippet_line_is_the_file_it_names() -> None:
     """quickstart.md shows examples/quickstart.py through a snippet line; the block that runs
     is the file, and a snippet of a missing file fails like the site's strict build."""
     shown = expand_snippets('--8<-- "examples/quickstart.py"\n')
-    assert shown == (REPO / "examples" / "quickstart.py").read_text(encoding="utf-8").rstrip("\n")
+    whole = (REPO / "examples" / "quickstart.py").read_text(encoding="utf-8")
+    assert shown == whole.rstrip("\n") + "\n"  # the block's own line end stays
     with pytest.raises(FileNotFoundError):
         expand_snippets('--8<-- "examples/no_such_file.py"\n')
 
