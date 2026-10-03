@@ -393,6 +393,11 @@ class CardInfo(msgspec.Struct, frozen=True):
     # needed). The ladder allows one per deck, and ``random_deck`` deals by that rule. None
     # from an engine adapter that cannot say; RustEngine and MockEngine always say.
     champion: bool | None = None
+    # The BASIC plays before each evolved play of the card's evolution (Evo Skeletons 2): the
+    # same number as the 4th value of a side's own ``evo`` rows, so the enemy's evolution
+    # charge can be counted from its plays. 0 for a card with no evolution; None from an engine
+    # before the catalogue column (RoyaleSim ship35).
+    evo_cycle: int | None = None
 
 
 #: The engine's card kinds, by name (py.rs CARD_KINDS).

@@ -772,6 +772,7 @@ class RustEngine:
             )
         kind_at = fields.index("card_kind") if "card_kind" in fields else None
         champion_at = fields.index("champion") if "champion" in fields else None
+        evo_at = fields.index("evo_cycle") if "evo_cycle" in fields else None
 
         def champion(row: list) -> bool:
             if champion_at is not None and len(row) > champion_at:
@@ -791,6 +792,7 @@ class RustEngine:
                 footprint_tiles=row[7] if len(row) > 7 else None,
                 card_kind=row[kind_at] if kind_at is not None and len(row) > kind_at else None,
                 champion=champion(row),
+                evo_cycle=int(row[evo_at]) if evo_at is not None and len(row) > evo_at else None,
             )
             for cid, row in enumerate(rows)
         ]

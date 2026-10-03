@@ -748,6 +748,7 @@ class MockEngine:
                 else "SPELL"
             ),
             champion=False,  # the 2018 game had none
+            evo_cycle=0,  # nor evolutions
         )
         self._cards.append(_CardTpl(info=info, unit=unit, spell=spell))
 
