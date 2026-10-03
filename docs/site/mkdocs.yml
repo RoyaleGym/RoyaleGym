@@ -27,7 +27,7 @@ theme:
   custom_dir: overrides
   language: en
   # The RoyaleGym mark (owner, 2026-10-02): the crown shield; the favicon is its simplified small form.
-  logo: assets/royalegym-mark.png
+  logo: assets/royalegym-logo.png
   favicon: assets/favicon.png
   icon:
     repo: fontawesome/brands/github

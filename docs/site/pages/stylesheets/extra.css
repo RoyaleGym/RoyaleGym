@@ -25,6 +25,25 @@
   --md-typeset-a-color: #8fa6ff;
 }
 
+/* ---------- header ---------- */
+
+/* Owner, 2026-10-02: a bigger mark and a taller bar, and the bar's two ends lined up with the page's. The content's text
+   and the sidebars' text start 0.8rem inside the page's grid, so the bar's row does too: the mark's left edge (the logo
+   file is cropped to the shield) sits over the text's left edge, and the GitHub box ends over its right edge. Only where
+   the logo shows; narrower screens keep Material's bar. */
+@media screen and (min-width: 76.25em) {
+  .md-header__inner { padding: 0 0.8rem; }
+  .md-header__title { height: 3.2rem; font-size: 1rem; line-height: 3.2rem; }
+  .md-header__button.md-logo { margin: 0; padding: 0.4rem 0; }
+  .md-header__button.md-logo img { height: 2.4rem; }
+  /* Material gives the GitHub box a fixed width with its text on the left, which left a gap at the right end. */
+  .md-header__source { width: auto; max-width: none; }
+  .md-header__source .md-source__repository { max-width: none; }
+  /* Everything that sat under the 2.4rem bar sits under the 3.2rem one. */
+  .md-sidebar { top: 3.2rem; }
+  .md-typeset :target { --md-scroll-margin: 4.4rem; }
+}
+
 /* ---------- banner ---------- */
 
 .rg-hero {
