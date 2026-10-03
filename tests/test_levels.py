@@ -13,7 +13,8 @@ engine's (a card's ladder), refused by the core. MockEngine plays every card and
 level 1 and has no level model, so it refuses any level it is given.
 
 SKIPS
-    The engine-backed tests skip on an engine without per-side levels. Not a pass.
+    The engine test skips only without the engine. With one, it checks levels played or
+    refused by name, whichever that engine must do: it never skips where CI builds it.
 """
 
 from __future__ import annotations
@@ -22,16 +23,22 @@ import numpy as np
 import pytest
 
 from royalegym.mock_engine import MockEngine
-from royalegym.protocol import DECK_SIZE, MatchSetup, ShuffleMode, setup_violation
+from royalegym.protocol import (
+    BLUE,
+    DECK_SIZE,
+    RED,
+    DeployCommand,
+    DeployStatus,
+    MatchSetup,
+    ShuffleMode,
+    setup_violation,
+    to_engine,
+)
 from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, _core, core_available
 from royalegym.state_mutator import DefaultStateMutator
 
 HAS_LEVELS = core_available() and "tower_levels" in (
     getattr(_core.Battle.reset, "__text_signature__", "") or ""
-)
-needs_levels = pytest.mark.skipif(
-    not HAS_LEVELS,
-    reason=str(CORE_IMPORT_ERROR) if not core_available() else "this engine has no per-side levels",
 )
 DECK = list(range(DECK_SIZE))
 
@@ -89,31 +96,45 @@ def test_the_state_mutator_carries_levels_into_the_setup():
     assert "levels" not in plain.config()
 
 
-@pytest.mark.skipif(not core_available() or HAS_LEVELS, reason="needs an engine WITHOUT levels")
-def test_an_engine_without_levels_refuses_them_by_name():
-    eng = RustEngine()
-    with pytest.raises(NotImplementedError, match="per-side levels"):
-        eng.reset(1, MatchSetup(decks=[DECK, DECK], tower_levels=[11, 11]))
-
-
-@needs_levels
-def test_a_higher_side_gets_stronger_units_and_towers():
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_the_engine_plays_per_side_levels_or_refuses_them_by_name():
+    """ONE test for both kinds of engine, so it never skips where the engine is built: an
+    engine with levels must play them, and one without must refuse them by name rather
+    than start a battle at levels nobody asked for."""
     eng = RustEngine()
     ids = {c.name: c.card_id for c in eng.cards()}
     deck = [ids[n] for n in ("Knight", "Archer", "Giant", "Minions", "Fireball", "Zap", "Cannon",
                              "Musketeer")]
+    if not HAS_LEVELS:
+        with pytest.raises(NotImplementedError, match="per-side levels"):
+            eng.reset(1, MatchSetup(decks=[deck, deck], tower_levels=[11, 11]))
+        eng.reset(1, MatchSetup(decks=[deck, deck], levels=[[], []]))  # asks for nothing
+        return
     card, tower = eng.card_level, eng._battle.tower_level()
 
-    def tower_max_hp(levels, tower_levels):
+    def battle(levels, tower_levels):
         eng.reset(1, MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE,
                                 levels=levels, tower_levels=tower_levels,
                                 start_tick=eng.rules().deploy_lockout_ticks))
-        return [list(p.tower_max_hp) for p in eng.state().players]
+        towers = [list(p.tower_max_hp) for p in eng.state().players]
+        t = eng.arena().subtile
+        plays = []
+        for team in (BLUE, RED):
+            x, y = to_engine(eng.arena(), team, 9 * t + t // 2, 10 * t + t // 2)
+            plays.append(DeployCommand(team, eng.state().players[team].hand.index(ids["Knight"]),
+                                       x, y))
+        assert all(r.status == DeployStatus.OK for r in eng.step(plays, 1))
+        eng.step([], 30)
+        knights = {e.team: e.max_hp for e in eng.state().entities if e.card_id == ids["Knight"]}
+        return towers, knights
 
-    same = tower_max_hp(None, None)
+    same, same_knights = battle(None, None)
     assert same[0] == same[1]
-    tilted = tower_max_hp([[card + 1] * DECK_SIZE, []], [tower + 1, tower])
+    assert same_knights[BLUE] == same_knights[RED]
+    tilted, knights = battle([[card + 1] * DECK_SIZE, []], [tower + 1, tower])
     assert all(b > r for b, r in zip(tilted[0], tilted[1], strict=True)), (
         f"Blue's towers one level up are not stronger: {tilted}"
     )
-    assert tilted[1] == same[1], "Red kept the engine's level"
+    assert tilted[1] == same[1], "Red kept the engine's tower level"
+    assert knights[BLUE] > knights[RED], f"Blue's Knight one level up is not stronger: {knights}"
+    assert knights[RED] == same_knights[RED], "Red kept the engine's card level"
