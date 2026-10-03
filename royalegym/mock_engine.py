@@ -85,6 +85,7 @@ from .protocol import (
     default_calibration,
     fnv1a64,
     load_globals_csv,
+    setup_asks_levels,
     spawn_order_key,
     validate_setup,
 )
@@ -772,6 +773,11 @@ class MockEngine:
                 "MockEngine models no evolved or hero forms; MatchSetup.forms must be all 0"
             )
         validate_setup(self._arena, self.cards(), setup)
+        if setup_asks_levels(setup):
+            raise NotImplementedError(
+                "MockEngine models no levels: it plays every card and tower at CSV level 1, so "
+                "MatchSetup.levels and tower_levels need RustEngine"
+            )
         self._s = self._new_battle(seed, setup)
 
     def _new_battle(self, seed: int, setup: MatchSetup) -> _Sim:

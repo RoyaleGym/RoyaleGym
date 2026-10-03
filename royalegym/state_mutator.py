@@ -94,6 +94,8 @@ class DefaultStateMutator(StateMutator):
     card table; an id is only a position in it.
     ``mirror``: both teams get Blue's deck in the same order (ShuffleMode.MIRRORED)
     -- the setting for self-play symmetry checks.
+    ``levels`` and ``tower_levels``: each side's card and crown-tower levels
+    (``MatchSetup.levels``); None plays both sides at the engine's levels.
     """
 
     def __init__(
@@ -102,11 +104,15 @@ class DefaultStateMutator(StateMutator):
         shuffle: ShuffleMode = ShuffleMode.INDEPENDENT,
         mirror: bool = False,
         forms: Sequence[Sequence[int]] | None = None,
+        levels: Sequence[Sequence[int]] | None = None,
+        tower_levels: Sequence[int] | None = None,
     ) -> None:
         self.decks = [list(d) for d in decks] if decks is not None else None
         self.shuffle = shuffle
         self.mirror = mirror
         self.forms = [list(f) for f in forms] if forms is not None else None
+        self.levels = [list(lv) for lv in levels] if levels is not None else None
+        self.tower_levels = list(tower_levels) if tower_levels is not None else None
 
     def config(self) -> dict[str, object]:
         out: dict[str, object] = {
@@ -114,6 +120,10 @@ class DefaultStateMutator(StateMutator):
         }
         if self.forms is not None:
             out["forms"] = self.forms
+        if self.levels is not None:
+            out["levels"] = self.levels
+        if self.tower_levels is not None:
+            out["tower_levels"] = self.tower_levels
         return out
 
     def _decks(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[list[int]]:
@@ -133,7 +143,13 @@ class DefaultStateMutator(StateMutator):
 
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> MatchSetup:
         shuffle = ShuffleMode.MIRRORED if self.mirror else self.shuffle
-        return MatchSetup(decks=self._decks(rng, cards), shuffle=int(shuffle), forms=self.forms)
+        return MatchSetup(
+            decks=self._decks(rng, cards),
+            shuffle=int(shuffle),
+            forms=self.forms,
+            levels=self.levels,
+            tower_levels=self.tower_levels,
+        )
 
 
 class MidGameStateMutator(DefaultStateMutator):

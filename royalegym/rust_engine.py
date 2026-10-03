@@ -117,6 +117,7 @@ from .protocol import (
     derived_cards_vintage,
     fnv1a64,
     mirror_state,
+    setup_asks_levels,
     to_engine,
     validate_setup,
 )
@@ -927,6 +928,19 @@ class RustEngine:
         """``protocol.validate_setup`` first -- nothing is read into the core, and no
         adapter table is indexed, until the whole setup has passed. See the module doc."""
         validate_setup(self._arena, self._cards, setup)
+        levels: dict[str, Any] = {}
+        if setup_asks_levels(setup):
+            signature = getattr(self._battle.reset, "__text_signature__", "") or ""
+            if "tower_levels" not in signature:
+                raise NotImplementedError(
+                    "this RoyaleSim build has no per-side levels (Battle.reset(levels, "
+                    "tower_levels), RoyaleSim 0.1.7 on); MatchSetup.levels and tower_levels "
+                    "need it"
+                )
+            if setup.levels is not None:
+                levels["levels"] = [list(map(int, side)) for side in setup.levels]
+            if setup.tower_levels is not None:
+                levels["tower_levels"] = list(map(int, setup.tower_levels))
         tower_hp = None
         if setup.tower_hp is not None:
             tower_hp = [
@@ -950,6 +964,8 @@ class RustEngine:
             [(sp.team, sp.card_id, sp.x, sp.y, sp.hp) for sp in setup.spawns],
             # By keyword and only when set: an engine older than the forms refuses it.
             **({"forms": [list(map(int, f)) for f in setup.forms]} if setup.forms else {}),
+            # The same, for per-side levels: only when one is asked for.
+            **levels,
         )
         self._reset_called = True
 

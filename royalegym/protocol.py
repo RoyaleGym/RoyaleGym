@@ -727,6 +727,9 @@ class MatchSetup(msgspec.Struct, frozen=True):
                      princess hp <= 0 starts destroyed; a king hp <= 0 is refused. A
                      positive hp above the tower's max is accepted by both engines.
       spawns         ``spawn_violation`` per spec; list order irrelevant (SpawnSpec).
+      levels         None, or [blue, red], each empty or DECK_SIZE integers fitting i32 --
+                     refused otherwise. Which levels a card has is the engine's to refuse.
+      tower_levels   None, or [blue, red] integers fitting i32 -- refused otherwise.
     Measured against the Rust core. ``RustEngine.reset`` runs ``validate_setup``
     before the core or the adapter touches anything, so an out-of-range integer never
     reaches PyO3: both engines refuse with this rule's ValueError and text
@@ -746,6 +749,12 @@ class MatchSetup(msgspec.Struct, frozen=True):
     # Each deck entry's FORM, [blue 8, red 8] parallel to ``decks``: 0 the card itself,
     # 1 its evolution, 2 its hero (an ability button). None plays every card as itself.
     forms: list[list[int]] | None = None
+    # Each side's card LEVELS, [blue, red]: each empty (the engine's ``card_level`` for every
+    # card) or one unified level per deck card, parallel to ``decks``. A real deck's cards each
+    # have their own. ``tower_levels``: [blue, red], each side's crown towers. None plays both
+    # sides at the engine's levels. Engines without levels refuse any (RoyaleSim 0.1.7 on).
+    levels: list[list[int]] | None = None
+    tower_levels: list[int] | None = None
 
 
 # --------------------------------------------------------------------------
@@ -1371,7 +1380,31 @@ def setup_violation(arena: Arena, cards: Sequence[CardInfo], setup: MatchSetup) 
         why = spawn_violation(arena, cards, sp)
         if why is not None:
             return why
+    if setup.levels is not None:
+        if len(setup.levels) != 2:
+            return "levels must be [blue, red]"
+        for t, side in enumerate(setup.levels):
+            if side and len(side) != len(setup.decks[t]):
+                return (
+                    f"levels[{t}] has {len(side)} entries for a deck of {len(setup.decks[t])}: "
+                    "one level per deck card, or none"
+                )
+            for lv in side:
+                if not I32_RANGE[0] <= lv <= I32_RANGE[1]:
+                    return f"level {lv} does not fit i32"
+    if setup.tower_levels is not None:
+        if len(setup.tower_levels) != 2:
+            return "tower_levels must be [blue, red]"
+        for lv in setup.tower_levels:
+            if not I32_RANGE[0] <= lv <= I32_RANGE[1]:
+                return f"level {lv} does not fit i32"
     return None
+
+
+def setup_asks_levels(setup: MatchSetup) -> bool:
+    """Whether ``setup`` asks for any level other than the engine's own: an empty side and
+    None both ask for nothing, so an engine without levels can still run them."""
+    return bool(setup.tower_levels is not None or any(setup.levels or ()))
 
 
 def validate_setup(arena: Arena, cards: Sequence[CardInfo], setup: MatchSetup) -> None:
