@@ -118,6 +118,90 @@ def test_a_destroyed_princess_is_not_a_zero_hp_tower():
     assert s.winner == Winner.RED
 
 
+# -- client_hp_drain (RoyaleSim ship31's rule, measured on both clients) -------------
+#
+# A level overtime does not end at t6000. From 3350 ms past it (t6067), at the head of each
+# tick, every standing crown tower, kings too, loses one step chosen by the lowest of all six
+# (50 from 1000, 40 from 500, 20 from 200, 10 from 21, else 1). A tower at 0 falls and the
+# crowns decide. Weakest towers exactly level: one drain at t6067, then a Draw at t6147. Every
+# number below is worked by hand from that rule, not computed by the code under test.
+
+DRAIN = "client_hp_drain"
+
+
+def drained(blue: list[int], red: list[int], until: int | None = None):
+    """Start at overtime's end (t6000) with hand-set tower hp, and step one tick at a time
+    until the match ends or ``until`` ticks have run. Returns the final state."""
+    eng = engine(DRAIN)
+    end = eng.regular_ticks + eng.overtime_ticks
+    assert end == 6000
+    eng.reset(5, MatchSetup(decks=[DECK, DECK], start_tick=end, tower_hp=[blue, red]))
+    assert eng.state().overtime
+    for _ in range(until if until is not None else 400):
+        eng.step([], 1)
+        if eng.state().game_over:
+            break
+    return eng.state()
+
+
+def hp(s) -> list[list[int]]:
+    return [list(p.tower_hp) for p in s.players]
+
+
+def test_the_drain_rule_is_accepted():
+    assert engine(DRAIN).overtime_tiebreak == DRAIN
+
+
+def test_the_drain_step_table():
+    from royalegym.mock_engine import tiebreak_drain_step
+
+    cases = {5000: 50, 1000: 50, 999: 40, 500: 40, 499: 20, 200: 20, 199: 10, 21: 10, 20: 1, 1: 1}
+    assert {lowest: tiebreak_drain_step(lowest) for lowest in cases} == cases
+
+
+def test_nothing_moves_until_t6067_then_every_tower_loses_the_lowest_ones_step():
+    s = drained([4000, 900, 1200], [4000, 1000, 1200], until=67)  # ticks 6000..6066
+    assert s.tick == 6067
+    assert not s.game_over
+    assert hp(s) == [[4000, 900, 1200], [4000, 1000, 1200]]
+    s = drained([4000, 900, 1200], [4000, 1000, 1200], until=68)  # and 6067: lowest 900
+    assert hp(s) == [[3960, 860, 1160], [3960, 960, 1160]]
+
+
+def test_the_weaker_weakest_tower_drains_out_first_and_the_crowns_decide():
+    # Blue's 100: eight steps of 10 (100 -> 20), then twenty of 1, so it falls on the
+    # 28th drain tick, t6094. Red's 150 stands at 50.
+    s = drained([4000, 100, 4000], [4000, 150, 4000])
+    assert s.game_over
+    assert s.winner == Winner.RED
+    assert [p.crowns for p in s.players] == [0, 1]
+    assert s.tick == 6095
+
+
+def test_exactly_level_weakest_towers_drain_once_then_draw_at_t6147():
+    s = drained([4000, 700, 1500], [4000, 1500, 700])
+    assert s.game_over
+    assert s.winner == Winner.DRAW
+    assert s.tick == 6148
+    assert hp(s) == [[3960, 660, 1460], [3960, 1460, 660]]
+
+
+def test_one_one_becomes_two_one():
+    # One princess down a side; Blue's 300 drains 20 a tick to 200, then 10 a tick, and
+    # falls before Red's 400.
+    s = drained([4000, 0, 300], [4000, 400, 0])
+    assert s.game_over
+    assert s.winner == Winner.RED
+    assert [p.crowns for p in s.players] == [1, 2]
+
+
+def test_swapping_the_sides_swaps_the_drains_winner():
+    a = drained([4000, 100, 4000], [4000, 150, 4000])
+    b = drained([4000, 150, 4000], [4000, 100, 4000])
+    assert (a.winner, b.winner) == (Winner.RED, Winner.BLUE)
+    assert a.tick == b.tick
+
+
 def test_the_default_calibration_selects_the_absolute_rule():
     assert MockEngine().overtime_tiebreak == "lowest_tower_hp_absolute"
 

@@ -99,7 +99,31 @@ RAW_CARD_PACK = "retroroyale-2018"
 #: (tools/extract_cards.py --vintage 2018): the one card table both engines can share.
 RAW_CARD_PACK_TABLE_VINTAGE = "~2018 client data (PRE-2025)"
 
-OVERTIME_TIEBREAK_RULES = ("lowest_tower_hp_absolute", "lowest_tower_hp_fraction", "none_draw")
+OVERTIME_TIEBREAK_RULES = (
+    "lowest_tower_hp_absolute", "lowest_tower_hp_fraction", "none_draw", "client_hp_drain",
+)
+#: client_hp_drain (RoyaleSim state.rs, measured on clients 15.535.29 and 16.402): a level
+#: overtime goes on past its end. From this many ms past it, at the head of each tick, every
+#: standing crown tower loses ``tiebreak_drain_step`` of the lowest of them, until one falls
+#: and the crowns decide.
+TIEBREAK_DRAIN_START_MS = 3350
+#: Sides whose weakest crown towers are level drain one tick, and the match is a Draw this
+#: many ms after the drain's start.
+TIEBREAK_EXACT_DRAW_AFTER_MS = 4000
+
+
+def tiebreak_drain_step(lowest: int) -> int:
+    """The hp every standing crown tower loses this tick, from the lowest crown tower hp of
+    all six read before it (state.rs tiebreak_drain_step)."""
+    if lowest >= 1000:
+        return 50
+    if lowest >= 500:
+        return 40
+    if lowest >= 200:
+        return 20
+    if lowest >= 21:
+        return 10
+    return 1
 
 # The ground a building stands on, as this engine models it: the CollisionRadius circle
 # and nothing else. A troop card is OCCUPIED within a building's or tower's own radius
@@ -425,6 +449,9 @@ class MockEngine:
         self.king_activate_ticks = _ceil_div(cal.int("match.KING_ACTIVATE_TIME_MS"), self.tick_ms)
         self.regular_ticks = _ceil_div(cal.int("match.REGULAR_TIME_S") * 1000, self.tick_ms)
         self.overtime_ticks = _ceil_div(cal.int("match.OVERTIME_S") * 1000, self.tick_ms)
+        self.overtime_end_ms = 1000 * (
+            cal.int("match.REGULAR_TIME_S") + cal.int("match.OVERTIME_S")
+        )
         self.overtime_tiebreak = str(cal.value("match.OVERTIME_TIEBREAK"))
         if self.overtime_tiebreak not in OVERTIME_TIEBREAK_RULES:
             raise ValueError(
@@ -1075,6 +1102,7 @@ class MockEngine:
         units = self._units
 
         # UPKEEP ------------------------------------------------------------
+        drained_out = self._tiebreak_drain(s)  # at the head, as state.rs phase_upkeep
         rate = self._rate()
         gain = self.gain_3x if rate == 3 else self.gain[rate]
         cap = self.max_mana * self.elixir_scale
@@ -1082,7 +1110,7 @@ class MockEngine:
             s.elixir[team] = min(cap, s.elixir[team] + gain)
             if s.king_active[team] and s.king_timer[team] > 0:
                 s.king_timer[team] -= 1
-        dying: set[int] = set()
+        dying: set[int] = set(drained_out)  # a tower drained to 0 falls in this tick's reap
         for e in s.ents:
             if e.deploy > 0:
                 e.deploy -= 1
@@ -1239,8 +1267,47 @@ class MockEngine:
             else:
                 s.overtime = True
         if s.overtime and not s.game_over and s.tick >= self.regular_ticks + self.overtime_ticks:
-            s.game_over = True
-            s.winner = self._overtime_tiebreak(s)
+            if self.overtime_tiebreak != "client_hp_drain":
+                s.game_over = True
+                s.winner = self._overtime_tiebreak(s)
+            elif (
+                (s.tick - 1) * self.tick_ms
+                >= self.overtime_end_ms + TIEBREAK_DRAIN_START_MS + TIEBREAK_EXACT_DRAW_AFTER_MS
+                and self._weakest_towers_level(s)
+            ):
+                # The exact tie: the drain ran one tick, and the match is a Draw now.
+                s.game_over = True
+                s.winner = Winner.DRAW
+            # Otherwise the drain runs (``_tiebreak_drain``) until a tower falls and the
+            # crowns decide above.
+
+    def _tiebreak_drain(self, s: _Sim) -> set[int]:
+        """client_hp_drain, at the head of a tick (state.rs tiebreak_drain): past overtime's
+        end with the crowns level, every standing crown tower loses the step the lowest of
+        them sets. Level weakest towers drain only the first tick. Returns the towers it
+        brought to 0, which fall in this tick's reap."""
+        if self.overtime_tiebreak != "client_hp_drain" or not s.overtime or s.game_over:
+            return set()
+        start = self.overtime_end_ms + TIEBREAK_DRAIN_START_MS
+        now = s.tick * self.tick_ms
+        if now < start or (now > start and self._weakest_towers_level(s)):
+            return set()
+        standing = [e for e in s.ents if e.tower_slot >= 0 and e.hp > 0]
+        if not standing:
+            return set()
+        step = tiebreak_drain_step(min(e.hp for e in standing))
+        for e in standing:
+            e.hp = max(e.hp - step, 0)
+        return {e.uid for e in standing if e.hp == 0}
+
+    def _weakest_towers_level(self, s: _Sim) -> bool:
+        """Whether both sides' weakest standing crown towers have the same hp."""
+
+        def weakest(team: int) -> int | None:
+            hps = [e.hp for e in s.ents if e.team == team and e.tower_slot >= 0 and e.hp > 0]
+            return min(hps) if hps else None
+
+        return weakest(BLUE) == weakest(RED)
 
     def _overtime_tiebreak(self, s: _Sim) -> Winner:
         """The verdict when overtime runs out level on crowns (calibration
