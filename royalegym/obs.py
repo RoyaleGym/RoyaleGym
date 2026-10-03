@@ -1638,7 +1638,10 @@ class SpellAimClock:
     knew it, never sooner. A rolling spell's path is drawn on the ground and an area spell sits on
     its target, so those count from the first sight.
 
-    A spell has no id in ``BattleState``; it is keyed by (team, card, target), which a flight keeps.
+    An engine that reports ``SpellState.ticks_flown`` (RoyaleSim 0.1.4 on) is read from that,
+    exactly and per spell object. For an older one the clock below dates each spell by sight:
+    a spell has no id in ``BattleState``, so it is keyed by (team, card, target), which a flight
+    keeps, and same-aim waves (Arrows' three) share one date, the last wave's.
     """
 
     def __init__(self, after_ticks: int) -> None:
@@ -1671,6 +1674,10 @@ class SpellAimClock:
     def readable(self, s: SpellState, tick: int) -> bool:
         if s.motion != SpellMotion.FLIGHT:
             return True
+        if s.ticks_flown >= 0:
+            # The engine says how long it has flown (RoyaleSim 0.1.4 on): exact, per spell
+            # object, so nothing is dated by sight and same-aim waves are not merged.
+            return s.delay_ticks == 0 and s.ticks_flown >= self.after_ticks
         start = self.starts.get((s.team, s.card_id, s.aim_x, s.aim_y))
         return start is not None and s.delay_ticks == 0 and tick - start >= self.after_ticks
 

@@ -623,6 +623,9 @@ class SpellState(msgspec.Struct, frozen=True, array_like=True):
     travelled: int  # ROLLING: subtiles rolled so far (0 otherwise)
     length: int  # ROLLING: total roll length in subtiles (0 otherwise)
     hits: int  # ROLLING: units hit so far (0 otherwise)
+    # FLIGHT: ticks it has moved (0 while it waits out delay_ticks, and for other motions).
+    # Trailing and defaulted: -1 from an engine before RoyaleSim 0.1.4, not reported.
+    ticks_flown: int = -1
 
 
 class PlayerState(msgspec.Struct, frozen=True):

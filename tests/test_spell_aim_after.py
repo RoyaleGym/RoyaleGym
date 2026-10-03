@@ -87,6 +87,36 @@ def test_first_seen_moving_counts_from_that_sight():
     assert _seen(env, builder, plane, 200 + K, flying).sum() == 1
 
 
+def _flying(team, aim, flown, delay=0, card=0):
+    """A FLIGHT spell from an engine that reports ``ticks_flown`` (RoyaleSim 0.1.4 on)."""
+    return SpellState(
+        team, card, int(SpellMotion.FLIGHT), aim[0], aim[1], aim[0], aim[1], delay, 0, 0, 0, flown
+    )
+
+
+def test_an_engine_that_reports_ticks_flown_is_read_exactly():
+    """The engine says how long the spell has flown, so nothing is dated by sight: a spell
+    first seen already K ticks into its flight shows at once (the clock would have held it
+    K more ticks), one tick short of K stays hidden, and a waiting spell stays hidden."""
+    env, builder, plane, a = _setup()
+    aim = (a.subtile * 4, a.subtile * 8)
+    builder.reset(env.battle_state)
+    assert _seen(env, builder, plane, 500, [_flying(RED, aim, K)]).sum() == 1
+    builder.reset(env.battle_state)
+    assert _seen(env, builder, plane, 500, [_flying(RED, aim, K - 1)]).sum() == 0
+    builder.reset(env.battle_state)
+    assert _seen(env, builder, plane, 500, [_flying(RED, aim, 0, delay=20)]).sum() == 0
+
+
+def test_a_row_without_ticks_flown_reads_as_not_reported():
+    spell = msgspec.json.decode(
+        msgspec.json.encode([1, 0, int(SpellMotion.FLIGHT), 10, 20, 10, 20, 0, 0, 0, 0]),
+        type=SpellState,
+    )
+    assert spell.ticks_flown == -1
+    assert _flying(RED, (1, 2), 7).ticks_flown == 7
+
+
 def test_rolling_and_area_spells_count_from_the_first_sight():
     env, builder, plane, a = _setup()
     aim = (a.subtile * 9, a.subtile * 9)
