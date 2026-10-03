@@ -713,6 +713,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#4-train-from-your-clone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Train From Your Clone
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3324,6 +3335,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#4-train-from-your-clone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Train From Your Clone
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3353,7 +3375,7 @@
 <p>A clone is a new bot that learned by copying another bot's moves. You let a teacher play some
 battles, and your bot's network learns to pick the moves the teacher picked. That takes minutes,
 not hours, and you can watch the clone play before you do any reinforcement learning.</p>
-<p>Everything here comes with <code>royalegym[all]</code> from <a href="../../install/">Install</a>, version 0.1.3 or newer.
+<p>Everything here comes with <code>royalegym[all]</code> from <a href="../../install/">Install</a>, version 0.1.4 or newer.
 The clone is part of <a href="../../resources/royaleimitate/">RoyaleImitate</a>.</p>
 <h2 id="1-pick-a-teacher">1. Pick a Teacher<a class="headerlink" href="#1-pick-a-teacher" title="Permanent link">&para;</a></h2>
 <p>The teacher can be one of the <a href="../configuration-objects/opponents/#the-scripted-bots">scripted bots</a>,
@@ -3392,7 +3414,7 @@ by name:</p>
 same battles, with the same deck and the same observation, as the one you're cloning into.</p>
 <h2 id="2-record-and-clone">2. Record and Clone<a class="headerlink" href="#2-record-and-clone" title="Permanent link">&para;</a></h2>
 <p>Make a file called <code>clone_my_bot.py</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>
+<div class="highlight"><span class="filename">clone_my_bot.py</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royaleimitate</span><span class="w"> </span><span class="kn">import</span> <span class="n">clone</span><span class="p">,</span> <span class="n">record</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
@@ -3425,13 +3447,13 @@ computer. The cloning after it uses your graphics card, like training does.</p>
 </code></pre></div>
 <h2 id="3-watch-your-clone">3. Watch Your Clone<a class="headerlink" href="#3-watch-your-clone" title="Permanent link">&para;</a></h2>
 <p>The clone loads like any bot you trained. Make <code>watch_clone.py</code> next to <code>clone_my_bot.py</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">PushOpponent</span><span class="p">,</span> <span class="n">play_battle</span>
+<div class="highlight"><span class="filename">watch_clone.py</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">play_battle</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">clone_my_bot</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">bot</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/clone"</span><span class="p">)</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">battle</span> <span class="o">=</span> <span class="n">play_battle</span><span class="p">(</span><span class="n">build_env</span><span class="p">(),</span> <span class="n">blue</span><span class="o">=</span><span class="n">bot</span><span class="p">,</span> <span class="n">red</span><span class="o">=</span><span class="n">PushOpponent</span><span class="p">(),</span> <span class="n">save_to</span><span class="o">=</span><span class="s2">"clone_battle.msgpack"</span><span class="p">)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">battle</span> <span class="o">=</span> <span class="n">play_battle</span><span class="p">(</span><span class="n">build_env</span><span class="p">(),</span> <span class="n">blue</span><span class="o">=</span><span class="n">bot</span><span class="p">,</span> <span class="n">red</span><span class="o">=</span><span class="s2">"push"</span><span class="p">,</span> <span class="n">save_to</span><span class="o">=</span><span class="s2">"clone_battle.msgpack"</span><span class="p">)</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Crowns:"</span><span class="p">,</span> <span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"-"</span><span class="p">,</span> <span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python watch_clone.py
@@ -3442,6 +3464,24 @@ teacher, but not exactly: it learned from 200 battles, not from the teacher's ru
 <p>To see how good it is, test it against the scripted bots the way the FAQ's
 <a href="../../faq/#how-do-i-know-how-good-my-bot-is">How do I know how good my bot is?</a> does, with
 <code>runs/clone</code> in place of <code>runs/quickstart</code>.</p>
+<h2 id="4-train-from-your-clone">4. Train From Your Clone<a class="headerlink" href="#4-train-from-your-clone" title="Permanent link">&para;</a></h2>
+<p>Your clone can go on learning with reinforcement learning, starting from what it copied instead
+of from nothing. Make <code>train_from_clone.py</code> next to the others:</p>
+<div class="highlight"><span class="filename">train_from_clone.py</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royaleimitate.artifacts</span><span class="w"> </span><span class="kn">import</span> <span class="n">artifact_digest</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">clone_my_bot</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">start</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="s2">"runs/clone"</span><span class="p">,</span> <span class="s2">"sha256"</span><span class="p">:</span> <span class="n">artifact_digest</span><span class="p">(</span><span class="s2">"runs/clone"</span><span class="p">)}</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span><span class="n">build_env</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="s2">"runs/from_clone"</span><span class="p">,</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"warm_start"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"init"</span><span class="p">:</span> <span class="n">start</span><span class="p">}})</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">learner</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_steps</span><span class="o">=</span><span class="mi">1_000_000_000</span><span class="p">)</span>  <span class="c1"># stop it with Ctrl+C whenever you like</span>
+</code></pre></div>
+<p>It trains like the <a href="../../quickstart/">Quick Start</a> and saves in <code>runs/from_clone</code>. Watch it the
+same way, with <code>runs/from_clone</code> in place of <code>runs/clone</code>.</p>
+<p><code>sha256</code> is a fingerprint of the clone's folder, so the run starts from exactly that clone. Give
+both <code>Learner</code>s the same settings: the clone's network has to fit the one you train. To keep the
+new bot's moves close to the clone's while it learns, see <a href="../../resources/royaleimitate/">RoyaleImitate</a>.</p>
 
 
 

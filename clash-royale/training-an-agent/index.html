@@ -3504,7 +3504,7 @@ included.</p>
 <p>A reward function looks at the battle after each step and pays the bot for what it did. Here
 are three small ones to start from. It's tidiest to put them in a file of their own, say
 <code>rewards.py</code>, and import them into your training script, but they can live anywhere.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">EntityKind</span><span class="p">,</span> <span class="n">RewardFunction</span><span class="p">,</span> <span class="n">to_own</span>
+<div class="highlight"><span class="filename">rewards.py</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">EntityKind</span><span class="p">,</span> <span class="n">RewardFunction</span><span class="p">,</span> <span class="n">to_own</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">TroopsInEnemyHalfReward</span><span class="p">(</span><span class="n">RewardFunction</span><span class="p">):</span>
@@ -3546,7 +3546,7 @@ one file, <code>my_bot.py</code>, next to <code>rewards.py</code>. <code>Combine
 together, each with a weight. Keep the win itself the biggest part: the others are hints that
 help the bot find its way to a win, and if a hint pays more than winning, the bot will chase
 the hint instead.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_env</span><span class="p">():</span>
+<div class="highlight"><span class="filename">my_bot.py</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_env</span><span class="p">():</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClashParallelEnv</span><span class="p">,</span> <span class="n">RustEngine</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultStateMutator</span><span class="p">,</span> <span class="n">SpatialObsBuilder</span><span class="p">,</span> <span class="n">TileActionParser</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">CombinedReward</span><span class="p">,</span> <span class="n">CrownReward</span><span class="p">,</span> <span class="n">TowerHPReward</span><span class="p">,</span> <span class="n">WinLossReward</span>
@@ -3578,7 +3578,7 @@ the hint instead.</p>
 <h3 id="the-trainer">The trainer<a class="headerlink" href="#the-trainer" title="Permanent link">&para;</a></h3>
 <p>Then the trainer. It's the quickstart's, except that the bot plays against copies of itself, it
 saves to <code>runs/my_bot</code>, and it saves the finished bot at the end:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<div class="highlight"><span class="filename">my_bot.py</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span>
@@ -3712,7 +3712,7 @@ second terminal:</p>
 lists every key, <code>q</code> quits.</p>
 <p>To watch a bot after training, load it from its <code>save_dir</code>, play a battle with it, and open the file:</p>
 <p>Put this in its own file, such as <code>watch_my_bot.py</code>, next to <code>my_bot.py</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">play_battle</span>
+<div class="highlight"><span class="filename">watch_my_bot.py</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">play_battle</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">my_bot</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>

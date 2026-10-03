@@ -2713,6 +2713,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.state_mutator.random_deck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;random_deck
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.state_mutator.deck_ids" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6953,6 +6964,17 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.state_mutator.random_deck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;random_deck
+      
+    </span>
+  </a>
   
 </li>
         
@@ -11656,7 +11678,8 @@ under its older name.</p>
 
         <p>A normal battle from tick 0.</p>
 <p><code>decks</code>: fixed [blue, red] decks, each 8 card names (or catalogue ids, or a mix);
-None draws a random 8-card deck per team. Names are looked up in the engine's
+None draws a random 8-card deck per team (at most one champion, as the ladder allows).
+Names are looked up in the engine's
 catalogue at every build, so a deck written by name means the same cards on every
 card table; an id is only a position in it.
 <code>mirror</code>: both teams get Blue's deck in the same order (ShuffleMode.MIRRORED)
@@ -12012,6 +12035,26 @@ record <code>ClashParallelEnv.config()</code> keeps under <code>"state_mutator"<
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.state_mutator.random_deck" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">random_deck</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">cards</span><span class="p">)</span></code>
+
+<a href="#royalegym.state_mutator.random_deck" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Eight different cards of the catalogue, with at most <code>MAX_CHAMPIONS</code> champions.</p>
+<p>A draw with more is drawn again, so every draw the rule allows is the deck the same seed
+dealt before the rule.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
