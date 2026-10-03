@@ -1,10 +1,12 @@
 """What is on a unit: ``SpatialObsBuilder(unit_status=True)``.
 
-Six planes, own then enemy, counted per tile like the troop planes:
+Eight planes, own then enemy, counted per tile like the troop planes:
 - ``own_shield`` / ``enemy_shield``: shield hp left, summed and scaled like the hp planes (a
   Dark Prince's shield is drawn over it, and a shot breaks it before any hp goes);
 - ``own_raged`` / ``enemy_raged``: units under a Rage (drawn purple; they move and hit faster);
-- ``own_slowed`` / ``enemy_slowed``: units slowed by cold (an Ice Wizard's, a hero Ice Golem's).
+- ``own_slowed`` / ``enemy_slowed``: units slowed by cold (an Ice Wizard's, a hero Ice Golem's);
+- ``own_on_tower`` / ``enemy_on_tower``: units whose current target is a crown tower. A unit
+  locked on a tower ignores a building put down to pull it; one not locked yet can be pulled.
 A frozen unit is not here: a Freeze sets ``stun_ticks``, which the stunned planes already count.
 
 A unit's ``buffs`` entry names an EFFECT FAMILY, its members joined by "|" (the engine's own
@@ -41,7 +43,10 @@ from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 
 needs_engine = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
-PLANES = ["own_shield", "enemy_shield", "own_raged", "enemy_raged", "own_slowed", "enemy_slowed"]
+PLANES = [
+    "own_shield", "enemy_shield", "own_raged", "enemy_raged", "own_slowed", "enemy_slowed",
+    "own_on_tower", "enemy_on_tower",
+]
 SLOW = "IceWizardSlowDown|IceWizardCold|IceGolemiteHero_Slow_Buff_Tower"
 
 
@@ -54,7 +59,7 @@ def test_off_by_default_and_after_every_other_optional_fair_plane():
     before = [n for n, _ in spatial_channels(rev, True, True, heroes=True)]
     after = [n for n, _ in spatial_channels(rev, True, True, heroes=True, unit_status=True)]
     assert after[: len(before) - 1] == before[:-1], "an existing plane moved"
-    assert after[len(before) - 1 : len(before) + 5] == PLANES
+    assert after[len(before) - 1 : len(before) + 7] == PLANES
     assert after[-1] == "enemy_spell_aim", "the revealed planes stay last"
 
 
@@ -72,10 +77,10 @@ def _board():
     return eng.state(), eng.arena()
 
 
-def _unit(uid, team, point, shield=0, buffs=(), kind=EntityKind.TROOP):
+def _unit(uid, team, point, shield=0, buffs=(), kind=EntityKind.TROOP, target=-1):
     return EntityState(
         uid, team, int(kind), 3, -1, point[0], point[1], 100, 100, 500, False, 0,
-        shield=shield, buffs=tuple(buffs), status_flags=0,
+        shield=shield, buffs=tuple(buffs), status_flags=0, target_uid=target,
     )
 
 
@@ -100,7 +105,7 @@ def test_a_shield_is_summed_and_scaled_like_hp_on_both_sides():
     s = _with(state, [_unit(100, BLUE, p, shield=300), _unit(101, BLUE, p, shield=150)])
     blue = status_channels(s.entities, BLUE, a)
     red = status_channels(s.entities, RED, a)
-    assert blue.shape == (6, a.tiles_y, a.tiles_x)
+    assert blue.shape == (8, a.tiles_y, a.tiles_x)
     assert blue[0][_tile(a, BLUE, p)] == pytest.approx(450 / HP_SCALE)
     assert blue[0].sum() == pytest.approx(450 / HP_SCALE)
     assert blue[1].sum() == 0
@@ -142,6 +147,27 @@ def test_poison_tornado_and_freeze_are_not_status_planes():
         ("Poison", 900), ("Tornado", 400), ("Freeze|ZapFreeze", 300),
     ])])
     assert status_channels(s.entities, BLUE, a).sum() == 0
+
+
+def test_a_unit_locked_on_a_crown_tower_is_counted_and_one_on_anything_else_is_not():
+    state, a = _board()
+    towers = {e.team: e.uid for e in state.entities if e.kind == EntityKind.PRINCESS_TOWER}
+    hog, other, idle, cannon = _at(a, 3, 22), _at(a, 14, 22), _at(a, 9, 18), _at(a, 9, 9)
+    s = _with(state, [
+        _unit(100, BLUE, hog, target=towers[RED]),
+        _unit(101, BLUE, other, target=102),
+        _unit(102, RED, cannon, kind=EntityKind.BUILDING, target=101),
+        _unit(103, BLUE, idle),
+        _unit(104, RED, cannon, target=towers[BLUE]),
+    ])
+    blue = status_channels(s.entities, BLUE, a)
+    red = status_channels(s.entities, RED, a)
+    assert blue[6][_tile(a, BLUE, hog)] == 1
+    assert blue[6].sum() == 1, "a unit on a unit, or on nothing, is not on a tower"
+    assert blue[7][_tile(a, BLUE, cannon)] == 1
+    assert blue[7].sum() == 1
+    assert red[7][_tile(a, RED, hog)] == 1
+    assert red[6][_tile(a, RED, cannon)] == 1
 
 
 def test_an_engine_that_does_not_report_unit_status_is_refused():
@@ -212,3 +238,43 @@ def test_a_dark_princes_shield_then_a_rage_on_it():
     assert blue["own_raged"] >= 1, "the Rage never showed on the Dark Prince"
     assert red["enemy_raged"] == blue["own_raged"]
     assert blue["enemy_raged"] == 0
+
+
+@needs_engine
+def test_a_hog_rider_locks_on_a_tower():
+    eng = RustEngine()
+    ids = {c.name: c.card_id for c in eng.cards()}
+    names = ("HogRider", "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap", "Cannon")
+    if any(n not in ids for n in names):
+        pytest.skip(f"this engine's catalogue lacks {[n for n in names if n not in ids]}")
+    deck = [ids[n] for n in names]
+    eng.reset(1, MatchSetup(
+        decks=[deck, deck], shuffle=ShuffleMode.NONE, elixir_milli=[10000, 10000],
+        start_tick=eng.rules().deploy_lockout_ticks,
+    ))
+    parser = TileActionParser()
+    parser.bind(eng)
+    builder = SpatialObsBuilder(unit_status=True)
+    builder.bind(eng, parser)
+    at = builder.channel_names()
+    own, foe = at.index("own_on_tower"), at.index("enemy_on_tower")
+    builder.reset(eng.state())
+    t = eng.arena().subtile
+    hand = eng.state().players[BLUE].hand
+    x, y = to_engine(eng.arena(), BLUE, 3 * t + t // 2, 14 * t + t // 2)
+    hog_play = DeployCommand(BLUE, hand.index(ids["HogRider"]), x, y)
+    assert eng.step([hog_play], 1)[0].status == DeployStatus.OK
+    towers = {e.uid for e in eng.state().entities if e.kind == EntityKind.PRINCESS_TOWER}
+    seen = []
+    for _ in range(400):
+        eng.step([], 1)
+        state = eng.state()
+        hog = [e for e in state.entities if e.team == BLUE and e.card_id == ids["HogRider"]]
+        if not hog:
+            break
+        blue = builder.build(state, BLUE, parser.action_mask(state, BLUE))["spatial"]
+        red = builder.build(state, RED, parser.action_mask(state, RED))["spatial"]
+        seen.append((hog[0].target_uid in towers, blue[own].sum(), red[foe].sum()))
+    assert any(locked for locked, _, _ in seen), "the Hog never locked on a tower"
+    assert all(b == r == float(locked) for locked, b, r in seen), seen[:20]
+    assert not seen[0][0], "a Hog still deploying is not locked on anything"

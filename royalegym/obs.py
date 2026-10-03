@@ -1517,7 +1517,8 @@ HERO_SPATIAL_CHANNELS: list[tuple[str, str]] = [
 
 
 #: The planes ``SpatialObsBuilder(unit_status=True)`` adds, after the hero planes. Fair: a
-#: shield is drawn over its unit, a raged unit glows, a slowed one is tinted with cold.
+#: shield is drawn over its unit, a raged unit glows, a slowed one is tinted with cold, and a
+#: unit's target is the engine's, which a player reads off where it walks and what it hits.
 STATUS_SPATIAL_CHANNELS: list[tuple[str, str]] = [
     ("own_shield", "own units' shield hp left, summed in the tile / HP_SCALE"),
     ("enemy_shield", "enemy units' shield hp left, summed in the tile / HP_SCALE"),
@@ -1525,6 +1526,8 @@ STATUS_SPATIAL_CHANNELS: list[tuple[str, str]] = [
     ("enemy_raged", "count of enemy units under a Rage"),
     ("own_slowed", "count of own units slowed by cold (an Ice Wizard's, a hero Ice Golem's)"),
     ("enemy_slowed", "count of enemy units slowed by cold"),
+    ("own_on_tower", "count of own units whose current target is a crown tower"),
+    ("enemy_on_tower", "count of enemy units whose current target is a crown tower"),
 ]
 #: The buff families the status planes read. A unit's ``buffs`` entry names an effect family,
 #: its members joined by "|" (the engine's grouping), so a family is matched by one member's
@@ -1715,15 +1718,18 @@ def hero_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
 
 
 def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) -> np.ndarray:
-    """float32 [6, tiles_y, tiles_x], seen by ``team``: ``STATUS_SPATIAL_CHANNELS``.
+    """float32 [8, tiles_y, tiles_x], seen by ``team``: ``STATUS_SPATIAL_CHANNELS``.
 
     Counted on the centre tile like ``entity_channels``: shield hp summed as an integer and
-    scaled once by ``HP_SCALE``, raged and slowed units counted (``RAGE_BUFF``, ``SLOW_BUFF``).
+    scaled once by ``HP_SCALE``, raged and slowed units counted (``RAGE_BUFF``, ``SLOW_BUFF``),
+    and units whose ``target_uid`` is a crown tower's uid (a locked unit ignores a building put
+    down to pull it).
     An engine that does not report status bits is refused, as ``evolved_channels`` refuses it:
     such an engine predates the shield and buff fields too, and their defaults (no shield, no
     buffs) would read as an answer. Module-level so a test can plant a defect in it.
     """
     acc = np.zeros((len(STATUS_SPATIAL_CHANNELS), arena.tiles_y, arena.tiles_x), dtype=np.int64)
+    towers = {e.uid for e in entities if e.kind in TOWER_KINDS}
     for e in entities:
         if status_of(e) is None:
             raise ValueError(
@@ -1741,6 +1747,8 @@ def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) ->
             acc[2 + side, ty, tx] += 1
         if SLOW_BUFF in members:
             acc[4 + side, ty, tx] += 1
+        if e.target_uid in towers:
+            acc[6 + side, ty, tx] += 1
     out = acc.astype(np.float32)
     out[:2] = (acc[:2] / HP_SCALE).astype(np.float32)
     return out
