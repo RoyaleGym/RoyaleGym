@@ -206,7 +206,7 @@ If `pip` prints a notice that "a new release of pip is available", you can ignor
 ## 5. Install RoyaleGym
 
 ```
-pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.3
+pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.4
 ```
 
 Copy the whole line with the copy button, quotes included. `[all]` means "with every part": the
@@ -227,7 +227,7 @@ python -c "import royalegym, torch; print('RoyaleGym', royalegym.__version__, '|
 You should see:
 
 ```text
-RoyaleGym 0.1.3 | graphics card: True
+RoyaleGym 0.1.4 | graphics card: True
 ```
 
 The version number may be newer. If it says `graphics card: False` on a computer with an NVIDIA

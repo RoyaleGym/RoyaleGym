@@ -255,11 +255,11 @@ uninstall it too (on Windows: Settings > Apps > Installed apps > Python > Uninst
 
 New cards and balance changes reach RoyaleGym in a new version of the engine. To update, find
 the newest version on the [Releases page](https://github.com/RoyaleGym/RoyaleGym/releases), and
-run this with that version in place of `v0.1.3` at the end. Updating from v0.1.1 or earlier? Run
+run this with that version in place of `v0.1.4` at the end. Updating from v0.1.1 or earlier? Run
 `pip uninstall -y pygame` first: the viewer now uses pygame-ce in its place.
 
 ```
-pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.3
+pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.4
 ```
 
 It updates the five RoyaleGym packages and leaves your PyTorch alone. Your code keeps working,

@@ -262,19 +262,9 @@ name in `watch.py` is wrong: use the same name as `save_dir` in `quickstart.py`.
 
 ### `the commit of the package providing these sections cannot be named`
 
-You started a bot from a saved one (RoyaleImitate's `warm_start`) or used its stay-close
-penalty, on RoyaleGym 0.1.3. The trainer writes down the exact code each run used, and in 0.1.3
-it can't do that for RoyaleImitate as `pip` installed it. The next release fixes this. Until
-then, install RoyaleImitate from its source. In your `royale` folder, with your virtual
-environment on, run:
-
-```
-git clone --branch v0.2.1 https://github.com/RoyaleGym/RoyaleImitate
-pip install --no-deps -e RoyaleImitate
-```
-
-That needs [Git](https://git-scm.com/downloads). Recording battles, [cloning a bot](clash-royale/cloning-a-bot.md)
-and `Learner.load_policy` work without it.
+You have RoyaleGym 0.1.3, where starting a bot from a saved one (RoyaleImitate's `warm_start`)
+didn't work from a normal install. 0.1.4 fixes it: update with the line in
+[What happens when Clash Royale updates?](faq.md#what-happens-when-clash-royale-updates)
 
 ### The computer gets very slow, or runs out of memory
 

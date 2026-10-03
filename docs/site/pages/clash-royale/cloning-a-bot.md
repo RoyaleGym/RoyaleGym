@@ -4,7 +4,7 @@ A clone is a new bot that learned by copying another bot's moves. You let a teac
 battles, and your bot's network learns to pick the moves the teacher picked. That takes minutes,
 not hours, and you can watch the clone play before you do any reinforcement learning.
 
-Everything here comes with `royalegym[all]` from [Install](../install.md), version 0.1.3 or newer.
+Everything here comes with `royalegym[all]` from [Install](../install.md), version 0.1.4 or newer.
 The clone is part of [RoyaleImitate](../resources/royaleimitate.md).
 
 ## 1. Pick a Teacher
@@ -69,13 +69,13 @@ To clone a bot you trained, pass it instead of `"push"`:
 The clone loads like any bot you trained. Make `watch_clone.py` next to `clone_my_bot.py`:
 
 ```py
-from royalegym import PushOpponent, play_battle
+from royalegym import play_battle
 from royalelearn import Learner
 
 from clone_my_bot import build_env
 
 bot = Learner.load_policy("runs/clone")
-battle = play_battle(build_env(), blue=bot, red=PushOpponent(), save_to="clone_battle.msgpack")
+battle = play_battle(build_env(), blue=bot, red="push", save_to="clone_battle.msgpack")
 print("Crowns:", battle.crowns[0], "-", battle.crowns[1])
 ```
 
@@ -90,3 +90,27 @@ teacher, but not exactly: it learned from 200 battles, not from the teacher's ru
 To see how good it is, test it against the scripted bots the way the FAQ's
 [How do I know how good my bot is?](../faq.md#how-do-i-know-how-good-my-bot-is) does, with
 `runs/clone` in place of `runs/quickstart`.
+
+## 4. Train From Your Clone
+
+Your clone can go on learning with reinforcement learning, starting from what it copied instead
+of from nothing. Make `train_from_clone.py` next to the others:
+
+```py
+from royaleimitate.artifacts import artifact_digest
+from royalelearn import Learner
+
+from clone_my_bot import build_env
+
+if __name__ == "__main__":
+    start = {"path": "runs/clone", "sha256": artifact_digest("runs/clone")}
+    learner = Learner(build_env, save_dir="runs/from_clone", extensions={"warm_start": {"init": start}})
+    learner.learn(total_steps=1_000_000_000)  # stop it with Ctrl+C whenever you like
+```
+
+It trains like the [Quick Start](../quickstart.md) and saves in `runs/from_clone`. Watch it the
+same way, with `runs/from_clone` in place of `runs/clone`.
+
+`sha256` is a fingerprint of the clone's folder, so the run starts from exactly that clone. Give
+both `Learner`s the same settings: the clone's network has to fit the one you train. To keep the
+new bot's moves close to the clone's while it learns, see [RoyaleImitate](../resources/royaleimitate.md).
