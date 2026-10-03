@@ -4,24 +4,39 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
-## Unreleased
+## 0.1.9 (2026-10-03)
+
+### Changed
+- royalesim 0.1.7: each side can play its own card and tower levels, and the engine reports which
+  waiting commands ran in each step. royalelearn 0.5.4 and royaleimitate 0.2.6 store the new
+  `spell_ids` observation key.
+- `SpatialObsBuilder(spell_aim_after_ticks=0)` now shows every opponent spell's target from the
+  first tick the spell exists, a thrown spell still waiting to move included.
 
 ### Fixed
 - Under a command delay, the count of the opponent's elixir charged an ability press twice: once
-  when the press was accepted, and again when its button flipped as it ran on a later step. The
-  count now charges exactly the presses the env accepted.
+  when the press was accepted, and again when its button flipped as it ran on a later step. With
+  royalesim 0.1.7 the count charges exactly the presses that ran, so a press the engine refuses
+  when it comes to run (its hero died while it waited) is never charged.
 
 ### Added
+- `MatchSetup(levels=[blue, red], tower_levels=[blue, red])` and the same two arguments on
+  `DefaultStateMutator`: each side's card levels (one per deck card, or empty for the engine's) and
+  crown tower level. Needs royalesim 0.1.7; MockEngine, which has no levels, refuses them.
 - `SpatialObsBuilder(heroes=True)`: three planes, `own_hero`, `enemy_hero` and
   `enemy_hero_unspent`, where each side's hero units stand and which of the opponent's still have
-  their one ability charge. They come after every other optional plane. Off by default.
+  their one ability charge. Off by default.
 - `SpatialObsBuilder(spell_identity=True)`: a `spell_ids` key, uint8 [4, 32, 18], naming which spell
   is where in the `card_ids` vocabulary: own and opponent spells at their centre tile, own spells at
-  their aim tile, and the opponent's at their aim tile once a player could read it. Needs
+  their aim tile, and the opponent's at their aim tile once `spell_aim_after_ticks` allows. Needs
   `card_identity=True` and `spell_aim_after_ticks`. Off by default.
-- `SpatialObsBuilder(unit_status=True)`: eight planes, own and opponent: shield hp left, units under
-  a Rage, units slowed by cold, and units whose current target is a crown tower. A frozen unit is
-  already in the stunned planes. Off by default.
+- `SpatialObsBuilder(unit_status=True)`: eighteen planes, own and opponent: shield hp left, units
+  under a Rage, units slowed by cold, units whose target is a crown tower or another building, the
+  hp fraction of each tile's strongest unit, and invisible, tunnelling and hidden units. Off by
+  default.
+- `EntityState` gains `charge`, `dest_x`, `dest_y` and `ability_ticks`, and `CardInfo` gains
+  `evo_cycle`, all "not reported" until an engine sends them; four more status bits
+  (`STATUS_CLONE`, `STATUS_WINDUP`, `STATUS_ABILITY_ACTIVE`, `STATUS_CHARGED`).
 
 ## 0.1.8 (2026-10-03)
 
