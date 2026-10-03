@@ -13,7 +13,7 @@ battles, what it sees, the moves it can make, and a trainer.
 
 ## Install
 
-    pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.5
+    pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.6
 
 Python 3.12, 3.13 or 3.14. No Rust, no game files. On Windows with an NVIDIA card, install PyTorch first
 ([Install](https://royalegym.github.io/RoyaleGym/install/), step 4).
