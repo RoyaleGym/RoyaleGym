@@ -4,6 +4,18 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## Unreleased
+
+### Fixed
+- Under a command delay, the count of the opponent's elixir charged an ability press twice: once
+  when the press was accepted, and again when its button flipped as it ran on a later step. The
+  count now charges exactly the presses the env accepted.
+
+### Added
+- `SpatialObsBuilder(heroes=True)`: three planes, `own_hero`, `enemy_hero` and
+  `enemy_hero_unspent`, where each side's hero units stand and which of the opponent's still have
+  their one ability charge. They come after every other optional plane. Off by default.
+
 ## 0.1.8 (2026-10-03)
 
 ### Changed

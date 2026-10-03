@@ -46,6 +46,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 |---|---|
 | `SpatialObsBuilder(card_identity=True)` | Which card each unit came from, as its own `card_ids` grid, and the last card the opponent played. |
 | `SpatialObsBuilder(evolutions=True)` | Which of your cards are evolved, and where evolved units stand. |
+| `SpatialObsBuilder(heroes=True)` | Where each side's heroes stand, and which of the opponent's heroes still have their ability to use. |
 | `SpatialObsBuilder(reveal=Reveal(...))` | Hidden information, such as the opponent's real elixir. For experiments only. |
 
 `Reveal` comes from `royalegym`. Turn on what you want the bot to see:
