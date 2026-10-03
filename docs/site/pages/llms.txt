@@ -6,7 +6,7 @@
 > DoneConditions), RoyaleLearn (the PPO trainer), RoyaleViser (the viewer) and RoyaleImitate
 > (record battles and clone a bot from them, warm start from a trained bot, and a penalty that
 > keeps a new bot near it). Not on PyPI yet. Install everything with
-> `pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.5`
+> `pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.6`
 > (Python 3.12, 3.13 or 3.14). On Windows, install CUDA PyTorch first with
 > `pip install torch --index-url https://download.pytorch.org/whl/cu128`. Training assumes an
 > NVIDIA GPU; Macs need Apple silicon. The engine's battle logic is still being matched to the
