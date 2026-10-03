@@ -15,6 +15,10 @@ change the observation's shape; each such change is listed here.
 - `SpatialObsBuilder(heroes=True)`: three planes, `own_hero`, `enemy_hero` and
   `enemy_hero_unspent`, where each side's hero units stand and which of the opponent's still have
   their one ability charge. They come after every other optional plane. Off by default.
+- `SpatialObsBuilder(spell_identity=True)`: a `spell_ids` key, uint8 [4, 32, 18], naming which spell
+  is where in the `card_ids` vocabulary: own and opponent spells at their centre tile, own spells at
+  their aim tile, and the opponent's at their aim tile once a player could read it. Needs
+  `card_identity=True` and `spell_aim_after_ticks`. Off by default.
 
 ## 0.1.8 (2026-10-03)
 
