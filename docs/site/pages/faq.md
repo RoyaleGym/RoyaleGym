@@ -259,8 +259,8 @@ run this with that version in place of `v0.1.6` at the end. Updating from v0.1.1
 `pip uninstall -y pygame` first: the viewer now uses pygame-ce in its place.
 
 ```
-pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.6
+pip install --upgrade "royalegym[all]" royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.6
 ```
 
-It updates the five RoyaleGym packages and leaves your PyTorch alone. Your code keeps working,
+It updates the five RoyaleGym packages, and the extras `[all]` needs, and leaves your PyTorch alone. Your code keeps working,
 but a bot can't carry on training across an update: start a new one with a new `save_dir`.
