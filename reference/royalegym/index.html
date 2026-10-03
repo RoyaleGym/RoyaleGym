@@ -111,7 +111,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="RoyaleGym" class="md-header__button md-logo" aria-label="RoyaleGym" data-md-component="logo">
       
-  <img src="../../assets/royalegym-mark.png" alt="logo">
+  <img src="../../assets/royalegym-logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -258,7 +258,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="RoyaleGym" class="md-nav__button md-logo" aria-label="RoyaleGym" data-md-component="logo">
       
-  <img src="../../assets/royalegym-mark.png" alt="logo">
+  <img src="../../assets/royalegym-logo.png" alt="logo">
 
     </a>
     RoyaleGym
@@ -3312,6 +3312,17 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.mock_engine.tiebreak_drain_step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;tiebreak_drain_step
+      
+    </span>
+  </a>
   
 </li>
         
@@ -7571,6 +7582,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.mock_engine.tiebreak_drain_step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;tiebreak_drain_step
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.mock_engine.snapshot_catalogue_violation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9988,7 +10010,10 @@ still waits (<code>delay_ticks</code> &gt; 0) starts moving at that tick plus it
 seen already moving is dated at that sight, which can only show its target later than a player
 knew it, never sooner. A rolling spell's path is drawn on the ground and an area spell sits on
 its target, so those count from the first sight.</p>
-<p>A spell has no id in <code>BattleState</code>; it is keyed by (team, card, target), which a flight keeps.</p>
+<p>An engine that reports <code>SpellState.ticks_flown</code> (RoyaleSim 0.1.4 on) is read from that,
+exactly and per spell object. For an older one the clock below dates each spell by sight:
+a spell has no id in <code>BattleState</code>, so it is keyed by (team, card, target), which a flight
+keeps, and same-aim waves (Arrows' three) share one date, the last wave's.</p>
 
 
 
@@ -13752,6 +13777,25 @@ catalogue crashes.</p>
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.mock_engine.tiebreak_drain_step" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">tiebreak_drain_step</span><span class="p">(</span><span class="n">lowest</span><span class="p">)</span></code>
+
+<a href="#royalegym.mock_engine.tiebreak_drain_step" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The hp every standing crown tower loses this tick, from the lowest crown tower hp of
+all six read before it (state.rs tiebreak_drain_step).</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
