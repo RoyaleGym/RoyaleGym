@@ -202,8 +202,12 @@ def test_swapping_the_sides_swaps_the_drains_winner():
     assert a.tick == b.tick
 
 
-def test_the_default_calibration_selects_the_absolute_rule():
-    assert MockEngine().overtime_tiebreak == "lowest_tower_hp_absolute"
+def test_the_mock_runs_the_rule_the_ledger_names():
+    """Whatever the engine's ledger selects (lowest_tower_hp_absolute until RoyaleSim ship31,
+    client_hp_drain from it), the mock runs that rule, and it is one this file pins."""
+    named = str(default_calibration().value("match.OVERTIME_TIEBREAK"))
+    assert named in (*RULES, DRAIN), named
+    assert MockEngine().overtime_tiebreak == named
 
 
 def test_an_unknown_rule_is_refused_at_construction():
