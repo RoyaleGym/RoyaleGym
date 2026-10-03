@@ -64,8 +64,30 @@ TITLE = re.compile(r'\btitle="([^"/\\]+\.py)"')
 STAMP = re.compile(r"engine\s+build\s+`([0-9a-f]{16})`")
 MARK = "@@SITE_EXAMPLE_RESULT@@"
 
-#: (page path suffix, text the block contains) -> why its output cannot be compared here.
+#: (page path suffix, text the block contains, or its fence title as title="x.py") -> why it is
+#: not run here. A full-size training run is a program a reader runs for hours; a block that
+#: loads the bot such a run saves cannot run without it.
 EXEMPT = {
+    ("quickstart.md", 'title="quickstart.py"'): (
+        "trains until Ctrl+C (a billion-step limit); tests/test_quickstart.py and the "
+        "fresh-user test run this same file at a test's size"
+    ),
+    ("quickstart.md", 'title="watch.py"'): "loads runs/quickstart, which quickstart.py trains",
+    ("faq.md", 'title="how_good.py"'): "loads runs/quickstart, which quickstart.py trains",
+    ("clash-royale/training-an-agent.md", "learner.learn()"): "trains until Ctrl+C",
+    ("clash-royale/training-an-agent.md", 'title="watch_my_bot.py"'): (
+        "loads runs/my_bot, which my_bot.py trains"
+    ),
+    ("clash-royale/cloning-a-bot.md", 'title="clone_my_bot.py"'): (
+        "records 200 battles (about 2 min) and clones them (about 30 min on a CPU)"
+    ),
+    ("clash-royale/cloning-a-bot.md", 'title="watch_clone.py"'): (
+        "loads runs/clone, which clone_my_bot.py makes"
+    ),
+    ("clash-royale/cloning-a-bot.md", 'title="train_from_clone.py"'): (
+        "trains from runs/clone until Ctrl+C"
+    ),
+    ("resources/royaleimitate.md", "total_steps=100_000"): "trains a student for 100,000 steps",
     ("pieces/viewer.md", '"shot.png"'): (
         "prints an image's size in bytes, which moves with the viewer's drawing and the "
         "platform's zlib; the page says yours may differ. RoyaleViser's tests cover capture"
@@ -119,12 +141,27 @@ def norm(text: str) -> str:
     return "\n".join(line.rstrip() for line in text.strip("\n").splitlines()).strip()
 
 
-def exemption(page: Path, body: str) -> str | None:
+def names(marker: str, body: str, title: str | None) -> bool:
+    return marker in body or (title is not None and marker == f'title="{title}"')
+
+
+def exemption(page: Path, body: str, title: str | None = None) -> str | None:
     return next(
         (why for (suffix, marker), why in EXEMPT.items()
-         if page.as_posix().endswith(suffix) and marker in body),
+         if page.as_posix().endswith(suffix) and names(marker, body, title)),
         None,
     )
+
+
+#: A whole line ``--8<-- "path"`` (pymdownx.snippets) includes that file, from the repo root
+#: as docs/site/mkdocs.yml sets ``base_path``.
+SNIPPET = re.compile(r'^[ \t]*--8<--[ \t]+"([^"]+)"[ \t]*$', re.M)
+
+
+def expand_snippets(body: str) -> str:
+    """The block as the site shows it: each snippet line replaced by its file. A missing file
+    raises, as the site's strict build does."""
+    return SNIPPET.sub(lambda m: (REPO / m.group(1)).read_text(encoding="utf-8").rstrip("\n"), body)
 
 
 class Fence(NamedTuple):
@@ -170,17 +207,22 @@ def check_page(page: Path, text: str, engine: str | None, cwd: Path) -> Verdict:
     unchecked: list[str] = []
     lines: list[str] = []
     ran: list[str] = []
-    for i, (pos, end, lang, body, title) in enumerate(fs):
+    saved: set[str] = set()
+    for i, (pos, end, lang, raw, title) in enumerate(fs):
         if lang != "python":
             continue
         where = f"{page.name}:{text.count(chr(10), 0, pos) + 1}"
+        body = expand_snippets(raw)
         if title is not None:
             # The page tells the reader to save this block under that name, and later blocks
-            # import it: save it in the page's folder before anything runs it.
-            (cwd / title).write_text(body, encoding="utf-8")
+            # import it: save it in the page's folder before anything runs it, exempt or not.
+            # Two blocks with one name are one file, in page order.
+            with (cwd / title).open("a" if title in saved else "w", encoding="utf-8") as f:
+                f.write(("\n" if title in saved else "") + body)
+            saved.add(title)
         nxt = fs[i + 1] if i + 1 < len(fs) else None
         expected = nxt[3] if nxt and nxt[2] == "" and not text[end:nxt[0]].strip() else None
-        why = exemption(page, body)
+        why = exemption(page, raw, title)
         if why is not None:
             lines.append(f"exempt {where}: {why}")
             continue
@@ -243,11 +285,11 @@ def test_every_exemption_still_names_exactly_one_block() -> None:
     """An exemption that matches nothing protects nothing, and one that matches two hides one."""
     counts = {key: 0 for key in EXEMPT}
     for page in site_pages():
-        for _pos, _end, lang, body, _title in fences(page.read_text(encoding="utf-8")):
+        for _pos, _end, lang, body, title in fences(page.read_text(encoding="utf-8")):
             if lang != "python":
                 continue
             for suffix, marker in EXEMPT:
-                if page.as_posix().endswith(suffix) and marker in body:
+                if page.as_posix().endswith(suffix) and names(marker, body, title):
                     counts[(suffix, marker)] += 1
     wrong = {k: n for k, n in counts.items() if n != 1}
     assert not wrong, f"exemptions not naming exactly one block: {wrong}"
@@ -432,6 +474,15 @@ def test_a_titled_block_is_saved_as_its_file_for_the_blocks_after_it(tmp_path: P
     control = check_page(tmp_path / "page.md", untitled, None, tmp_path / "b")
     assert control.failures, control.lines
     assert "helper_mod" in control.failures[0], control.failures
+
+
+def test_a_snippet_line_is_the_file_it_names() -> None:
+    """quickstart.md shows examples/quickstart.py through a snippet line; the block that runs
+    is the file, and a snippet of a missing file fails like the site's strict build."""
+    shown = expand_snippets('--8<-- "examples/quickstart.py"\n')
+    assert shown == (REPO / "examples" / "quickstart.py").read_text(encoding="utf-8").rstrip("\n")
+    with pytest.raises(FileNotFoundError):
+        expand_snippets('--8<-- "examples/no_such_file.py"\n')
 
 
 #: Fence tags a reader's Python could hide under. The checker runs ``python`` blocks only, so a
