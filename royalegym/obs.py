@@ -1815,6 +1815,43 @@ def card_id_planes(
     return out
 
 
+#: The ``spell_ids`` planes, in order (``SpatialObsBuilder(spell_identity=True)``).
+SPELL_ID_PLANES = ("own_at", "enemy_at", "own_aim", "enemy_aim_seen")
+
+
+def spell_id_planes(
+    state: BattleState, team: int, arena: Arena, num_cards: int, clock: SpellAimClock
+) -> np.ndarray:
+    """uint8 [4, tiles_y, tiles_x], seen by ``team``: which SPELL card is where, in the
+    ``card_ids`` vocabulary (``CARD_ID_OFFSET`` + catalogue id, ``CARD_ID_EMPTY`` for none).
+
+    Planes ``SPELL_ID_PLANES``: own, then enemy spells at the tile of their current centre;
+    own spells at their aim tile; enemy spells at their aim tile once ``clock`` says a player
+    could read it (the rule of ``enemy_spell_aim_seen``). The aim is the landing point, the
+    roll's end, or the centre itself for a spell that sits where it acts.
+
+    A spell has no uid, so TWO ON ONE TILE OF ONE PLANE KEEP THE LOWER ID: a function of the
+    spell set, not of the list order. Module-level so a test can plant a defect in it.
+    """
+    out = np.zeros((len(SPELL_ID_PLANES), arena.tiles_y, arena.tiles_x), dtype=np.uint8)
+    for sp in state.spells:
+        if not 0 <= sp.card_id < num_cards:
+            raise ValueError(
+                f"a spell has card_id {sp.card_id}, outside the {num_cards}-card catalogue, "
+                "so spell_ids has no index for it"
+            )
+        value = CARD_ID_OFFSET + sp.card_id
+        side = 0 if sp.team == team else 1
+        cells = [(side, _tile(arena, team, sp.x, sp.y))]
+        if side == 0 or clock.readable(sp, state.tick):
+            cells.append((2 + side, _tile(arena, team, sp.aim_x, sp.aim_y)))
+        for plane, (ty, tx) in cells:
+            held = out[plane, ty, tx]
+            if held == CARD_ID_EMPTY or value < held:
+                out[plane, ty, tx] = value
+    return out
+
+
 class SpatialObsBuilder(ObsBuilder):
     """Dict(spatial [C, 32, 18], mask_planes [4, 32, 18], vector [V], action_mask [A]).
 
@@ -1849,10 +1886,22 @@ class SpatialObsBuilder(ObsBuilder):
         evolution_progress: bool = False,
         spell_aim_after_ticks: int | None = None,
         heroes: bool = False,
+        spell_identity: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.card_identity = bool(card_identity)
         self.heroes = bool(heroes)
+        if spell_identity and not self.card_identity:
+            raise ValueError(
+                "spell_identity needs card_identity=True: spell_ids holds ids in the card_ids "
+                "vocabulary, which only exists (and is pinned by card_names) with it"
+            )
+        if spell_identity and spell_aim_after_ticks is None:
+            raise ValueError(
+                "spell_identity needs spell_aim_after_ticks: its enemy aim plane shows a "
+                "target only once a player could read it, by that rule"
+            )
+        self.spell_identity = bool(spell_identity)
         self.enemy_last_card = self.card_identity
         if spell_aim_after_ticks is not None and (
             not isinstance(spell_aim_after_ticks, int) or spell_aim_after_ticks < 0
@@ -1936,6 +1985,13 @@ class SpatialObsBuilder(ObsBuilder):
             entries["card_ids"] = spaces.Box(
                 0, self.card_vocab - 1, shape=(2, a.tiles_y, a.tiles_x), dtype=np.uint8
             )
+            if self.spell_identity:
+                entries["spell_ids"] = spaces.Box(
+                    0,
+                    self.card_vocab - 1,
+                    shape=(len(SPELL_ID_PLANES), a.tiles_y, a.tiles_x),
+                    dtype=np.uint8,
+                )
         self._space = spaces.Dict(entries)
 
     def reset(self, state: BattleState) -> None:
@@ -1991,6 +2047,11 @@ class SpatialObsBuilder(ObsBuilder):
         }
         if self.card_identity:
             out["card_ids"] = card_id_planes(state.entities, team, self.arena, self.num_cards)
+        if self.spell_identity:
+            assert self._aim_clock is not None  # the constructor refuses it without one
+            out["spell_ids"] = spell_id_planes(
+                state, team, self.arena, self.num_cards, self._aim_clock
+            )
         return out
 
     def config(self) -> dict[str, Any]:
@@ -2004,6 +2065,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["evolution_progress"] = True
         if self.heroes:
             out["heroes"] = True
+        if self.spell_identity:
+            out["spell_identity"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
