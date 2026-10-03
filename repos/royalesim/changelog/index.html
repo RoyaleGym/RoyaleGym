@@ -2197,6 +2197,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#015-2026-10-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.5 (2026-10-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#014-2026-10-02" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3342,6 +3353,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#015-2026-10-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.5 (2026-10-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#014-2026-10-02" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3424,6 +3446,17 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="015-2026-10-03">0.1.5 (2026-10-03)<a class="headerlink" href="#015-2026-10-03" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>state_json()</code>: an entity's <code>card_id</code> is now the card whose play put the unit on the board, all the way down its
+  chain. A Tombstone's Skeletons report the Tombstone, a Barbarian Hut's Barbarians the hut, the Goblin Drill's
+  Goblins the Drill, and the Tri-Wizards' Electro and Ice Wizards the Tri-Wizards. Before, a unit several cards can
+  make reported the first such card in the catalogue (every Skeleton reported the Witch). A projectile's
+  <code>firer_card_id</code> is unchanged: the unit that fired it.</li>
+<li>Battle logic: knockback and death pushback, units that strike and move in the same tick, kamikaze contact, cage
+  shots, barrages, dash and chain-hop timing, ghost pairs, hidden buildings, equal-distance targets and pulls at the
+  water's edge, as measured in the game.</li>
+</ul>
 <h2 id="014-2026-10-02">0.1.4 (2026-10-02)<a class="headerlink" href="#014-2026-10-02" title="Permanent link">&para;</a></h2>
 <ul>
 <li>A level overtime now ends as in the game. From tick 6067 every crown tower loses the same hit points each tick, and

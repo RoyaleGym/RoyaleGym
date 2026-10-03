@@ -3763,7 +3763,7 @@ into a shipped build:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>RUSTFLAGS='--cfg clash_plant="id_tiebreak"' CARGO_TARGET_DIR=target/plant cargo test --test mirror
 </code></pre></div>
 <p>Use a separate <code>CARGO_TARGET_DIR</code>, or the plant build poisons the normal one.</p>
-<p>There are 803 of them, each declared at the site it corrupts and named in the header of the test
+<p>There are 820 of them, each declared at the site it corrupts and named in the header of the test
 it is aimed at. To list them:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>grep -rho 'clash_plant *= *"[a-z_0-9]*"' src tests | sed 's/.*= *//' | tr -d '"' | sort -u
 </code></pre></div>
