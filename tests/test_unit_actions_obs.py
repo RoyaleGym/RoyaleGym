@@ -199,12 +199,13 @@ def test_the_engine_reports_the_columns_or_the_flag_refuses_it():
     b.bind(eng, parser)
     b.reset(eng.state())
     plane = b.channel_names().index("enemy_tunnel_dest")
-    from royalegym.protocol import DeployCommand, to_engine
+    from royalegym.protocol import DeployCommand, DeployStatus, to_engine
 
     t = eng.arena().subtile
-    x, y = to_engine(eng.arena(), BLUE, 3 * t + t // 2, 24 * t + t // 2)
+    x, y = to_engine(eng.arena(), BLUE, 3 * t + t // 2, 20 * t + t // 2)  # off any tower
     hand = eng.state().players[BLUE].hand
-    eng.step([DeployCommand(BLUE, hand.index(ids["Miner"]), x, y)], 1)
+    played = eng.step([DeployCommand(BLUE, hand.index(ids["Miner"]), x, y)], 1)
+    assert played[0].status == DeployStatus.OK, played
     lit = []
     for _ in range(60):
         state = eng.state()
