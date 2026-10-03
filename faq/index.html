@@ -4416,9 +4416,9 @@ uninstall it too (on Windows: Settings &gt; Apps &gt; Installed apps &gt; Python
 the newest version on the <a href="https://github.com/RoyaleGym/RoyaleGym/releases">Releases page</a>, and
 run this with that version in place of <code>v0.1.6</code> at the end. Updating from v0.1.1 or earlier? Run
 <code>pip uninstall -y pygame</code> first: the viewer now uses pygame-ce in its place.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade royalegym royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.6
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade "royalegym[all]" royalesim royalelearn royaleviser royaleimitate --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.6
 </code></pre></div>
-<p>It updates the five RoyaleGym packages and leaves your PyTorch alone. Your code keeps working,
+<p>It updates the five RoyaleGym packages, and the extras <code>[all]</code> needs, and leaves your PyTorch alone. Your code keeps working,
 but a bot can't carry on training across an update: start a new one with a new <code>save_dir</code>.</p>
 
 
