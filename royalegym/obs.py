@@ -125,11 +125,15 @@ from .protocol import (
     EMPTY_CARD,
     HAND_SIZE,
     RED,
+    STATUS_ABILITY_ACTIVE,
+    STATUS_CHARGED,
+    STATUS_CLONE,
     STATUS_EVOLVED,
     STATUS_HERO,
     STATUS_HIDDEN,
     STATUS_INVISIBLE,
     STATUS_UNDERGROUND,
+    STATUS_WINDUP,
     TEAMS,
     Arena,
     BattleState,
@@ -164,6 +168,7 @@ LEAK_SCALE = 20.0  # elixir leaked at which ``own_elixir_leaked`` saturates
 PLAY_GAP_TICKS = 600.0  # ticks since own last play at which that feature saturates
 PLAYS_SCALE = 40.0  # enemy plays at which ``enemy_plays`` saturates
 COOLDOWN_SCALE = 600.0  # ticks of an ability's cooldown at which a cooldown field saturates
+ABILITY_TICKS_SCALE = 200.0  # ticks left in an ability's windup or run at which a plane saturates
 
 
 @dataclass(frozen=True)
@@ -1792,6 +1797,27 @@ STATUS_SPATIAL_CHANNELS: list[tuple[str, str]] = [
 RAGE_BUFF = "Rage"
 SLOW_BUFF = "IceWizardSlowDown"
 
+#: The planes ``SpatialObsBuilder(unit_actions=True)`` adds, after the status planes: what a
+#: unit is doing, from RoyaleSim ship35's columns (``EntityState.charge``, ``dest_x`` /
+#: ``dest_y``, ``ability_ticks``) and status bits. A tunneller's landing tile shows from its
+#: first tick under (owner 2026-10-03: everything as soon as the engine has it).
+ACTION_SPATIAL_CHANNELS: list[tuple[str, str]] = [
+    ("own_charge", "the most build-up of an own unit in the tile, permille / 1000"),
+    ("enemy_charge", "the most build-up of an enemy unit in the tile, permille / 1000"),
+    ("own_charged", "count of own units fully charged (STATUS_CHARGED)"),
+    ("enemy_charged", "count of enemy units fully charged"),
+    ("own_windup", "count of own units winding up an ability (STATUS_WINDUP)"),
+    ("enemy_windup", "count of enemy units winding up an ability"),
+    ("own_ability_active", "count of own units with an ability running (STATUS_ABILITY_ACTIVE)"),
+    ("enemy_ability_active", "count of enemy units with an ability running"),
+    ("own_ability_ticks", "the most ability ticks left of an own unit in the tile / scale"),
+    ("enemy_ability_ticks", "the most ability ticks left of an enemy unit in the tile / scale"),
+    ("own_clone", "count of own units that are a Clone's copies (STATUS_CLONE)"),
+    ("enemy_clone", "count of enemy units that are a Clone's copies"),
+    ("own_tunnel_dest", "count of own tunnellers that will come up in the tile"),
+    ("enemy_tunnel_dest", "count of enemy tunnellers that will come up in the tile"),
+]
+
 
 def spatial_channels(
     reveal: Reveal | None = None,
@@ -1799,11 +1825,12 @@ def spatial_channels(
     spell_aim: bool = False,
     heroes: bool = False,
     unit_status: bool = False,
+    unit_actions: bool = False,
 ) -> list[tuple[str, str]]:
     """The spatial channels: the fair ones, then the evolved-unit pair, the readable enemy spell
-    targets, the hero planes and the unit status planes when asked for, then the revealed ones.
-    Each optional block is appended after the ones before it, so turning one on moves no
-    existing plane."""
+    targets, the hero planes, the unit status planes and the unit action planes when asked for,
+    then the revealed ones. Each optional block is appended after the ones before it, so
+    turning one on moves no existing plane."""
     rev = reveal or Reveal()
     out = list(FAIR_SPATIAL_CHANNELS)
     if evolutions:
@@ -1814,6 +1841,8 @@ def spatial_channels(
         out.extend(HERO_SPATIAL_CHANNELS)
     if unit_status:
         out.extend(STATUS_SPATIAL_CHANNELS)
+    if unit_actions:
+        out.extend(ACTION_SPATIAL_CHANNELS)
     for field, entry in REVEAL_SPATIAL_CHANNELS.items():
         if getattr(rev, field):
             out.append(entry)
@@ -2027,6 +2056,44 @@ def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) ->
     return out
 
 
+def action_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
+    """float32 [14, tiles_y, tiles_x], seen by ``team``: ``ACTION_SPATIAL_CHANNELS``.
+
+    Counted on the centre tile like ``entity_channels``; charge and ability ticks are the most
+    on the tile, a tunneller is counted at its landing tile. Crown towers are in none of them.
+    An engine before RoyaleSim ship35 sends -1, "not said", for every unit's charge, and is
+    refused rather than read as a board where nothing charges. Module-level for plants.
+    """
+    acc = np.zeros((len(ACTION_SPATIAL_CHANNELS), arena.tiles_y, arena.tiles_x), dtype=np.int64)
+    most = np.zeros((4, arena.tiles_y, arena.tiles_x), dtype=np.int64)  # charge, ticks x side
+    bits = ((STATUS_CHARGED, 2), (STATUS_WINDUP, 4), (STATUS_ABILITY_ACTIVE, 6), (STATUS_CLONE, 10))
+    for e in state.entities:
+        status = status_of(e)
+        if status is None or e.charge < 0:
+            raise ValueError(
+                "unit_actions=True, but this engine does not report what units are doing "
+                f"(entity uid {e.uid}: status_flags {e.status_flags}, charge {e.charge}). It "
+                "needs RoyaleSim ship35's charge, dest and ability_ticks columns; use an engine "
+                "that sends them, or leave unit_actions off."
+            )
+        if e.kind in TOWER_KINDS:
+            continue
+        side = 0 if e.team == team else 1
+        ty, tx = _tile(arena, team, e.x, e.y)
+        most[side, ty, tx] = max(most[side, ty, tx], min(e.charge, 1000))
+        most[2 + side, ty, tx] = max(most[2 + side, ty, tx], max(e.ability_ticks, 0))
+        for bit, plane in bits:
+            if status & bit:
+                acc[plane + side, ty, tx] += 1
+        if e.dest_x >= 0 and e.dest_y >= 0:
+            dy, dx = _tile(arena, team, e.dest_x, e.dest_y)
+            acc[12 + side, dy, dx] += 1
+    out: np.ndarray = acc.astype(np.float32)
+    out[0:2] = (most[0:2] / 1000.0).astype(np.float32)
+    out[8:10] = np.minimum(most[2:4] / ABILITY_TICKS_SCALE, 1.0).astype(np.float32)
+    return out
+
+
 class SpellAimClock:
     """When each enemy spell's target became readable, from what a player sees.
 
@@ -2229,9 +2296,11 @@ class SpatialObsBuilder(ObsBuilder):
         spell_identity: bool = False,
         unit_status: bool = False,
         card_status: bool = False,
+        unit_actions: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.card_status = bool(card_status)
+        self.unit_actions = bool(unit_actions)
         self.card_identity = bool(card_identity)
         self.heroes = bool(heroes)
         self.unit_status = bool(unit_status)
@@ -2306,6 +2375,7 @@ class SpatialObsBuilder(ObsBuilder):
             self.spell_aim_after_ticks is not None,
             self.heroes,
             self.unit_status,
+            self.unit_actions,
         )
         self._channel_index = {name: i for i, (name, _) in enumerate(self.channels)}
         self.shape = (len(self.channels), a.tiles_y, a.tiles_x)
@@ -2401,6 +2471,9 @@ class SpatialObsBuilder(ObsBuilder):
             sp[at : at + len(STATUS_SPATIAL_CHANNELS)] = status_channels(
                 state.entities, team, self.arena
             )
+        if self.unit_actions:
+            at = idx["own_charge"]
+            sp[at : at + len(ACTION_SPATIAL_CHANNELS)] = action_channels(state, team, self.arena)
         np.clip(sp, 0.0, SPATIAL_CLIP, out=sp)
         out: dict[str, Any] = {
             "spatial": sp,
@@ -2433,6 +2506,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["unit_status"] = True
         if self.card_status:
             out["card_status"] = True
+        if self.unit_actions:
+            out["unit_actions"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
