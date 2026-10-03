@@ -2410,10 +2410,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3c-queued-positional-channels-not-built-and-frozen-until-trains-run-ends" class="md-nav__link">
+  <a href="#3c-queued-positional-channels-not-built" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3c. Queued: positional channels (NOT built, and frozen until train's run ends)
+        3c. Queued: positional channels (NOT built)
       
     </span>
   </a>
@@ -3536,10 +3536,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3c-queued-positional-channels-not-built-and-frozen-until-trains-run-ends" class="md-nav__link">
+  <a href="#3c-queued-positional-channels-not-built" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3c. Queued: positional channels (NOT built, and frozen until train's run ends)
+        3c. Queued: positional channels (NOT built)
       
     </span>
   </a>
@@ -4039,10 +4039,9 @@ would make the plane a function of iteration order, and two runs of one seed cou
 <code>BattleState.spells</code> is a separate list from <code>entities</code>, so a live spell has no entity and
 no tile. This matches the same object being invisible to a learner's committed-elixir
 accounting, which is the one outcome that creates no new discrepancy between the two.</p>
-<p><strong>Default OFF until train's policy-head arm has run.</strong> Flipping an observation shape under
-a paired comparison invalidates both arms and looks like a result. BUILDING it was never
-gated, only turning it on: with the switch off the observation is byte-for-byte the shipped
-one -- no new key, the same vector width and offsets, the same <code>config()</code>.</p>
+<p><strong>Default OFF.</strong> Turning it on changes what a network sees, so a network trained without
+it cannot read the new shape. With the switch off the observation is byte-for-byte the
+shipped one -- no new key, the same vector width and offsets, the same <code>config()</code>.</p>
 <p><strong>What the switch turns on, as shipped.</strong> One switch, because it is one change to what a
 network sees:
 - <code>card_ids</code> as above (<code>obs.card_id_planes</code>).
@@ -4074,7 +4073,7 @@ a field, and so does every site that constructs one; and the stem does the looku
 concatenates. So the flag is off by default on BOTH sides, and turning it on is a
 coordinated change rather than a switch. The cost is worth paying: the alternative was a
 card id stored as a scaled half, which fails silently, and silent is worse than work.</p>
-<h2 id="3c-queued-positional-channels-not-built-and-frozen-until-trains-run-ends">3c. Queued: positional channels (NOT built, and frozen until train's run ends)<a class="headerlink" href="#3c-queued-positional-channels-not-built-and-frozen-until-trains-run-ends" title="Permanent link">&para;</a></h2>
+<h2 id="3c-queued-positional-channels-not-built">3c. Queued: positional channels (NOT built)<a class="headerlink" href="#3c-queued-positional-channels-not-built" title="Permanent link">&para;</a></h2>
 <p>Recorded so the reasoning survives, including the part of it that was WRONG, because the
 wrong version is the one a reader is likely to re-derive.</p>
 <p><strong>The dead claim.</strong> Counting distinct per-tile feature vectors in <code>spatial</code> gives 11 to 18
@@ -4096,13 +4095,11 @@ depth. It is weaker than the dead claim and, unlike it, checkable.</p>
 <p><strong>The queued channels.</strong> Distance to each tower, and lane. Worth a plane each because a 3x3
 convolution stack has to spend DEPTH computing something an input plane could simply state,
 and depth is what this network does not have much of.</p>
-<p><strong>Not now, and the reason is the same as the card planes'.</strong> The observation shape is frozen
-until train's several-hundred-iteration run finishes: changing what the network sees
-mid-comparison invalidates both arms and looks like a result. These land behind the
-card-identity planes.</p>
+<p><strong>Not built yet.</strong> They would land as another opt-in, after the card-identity planes, so
+no existing layout changes.</p>
 <p><strong>These do NOT overlap with <code>card_ids</code>.</strong> The card planes differentiate about 19 OCCUPIED
-tiles of 576; the tiles a positional channel helps are the empty ones. Two different gaps.
-Both this session and learn had been counting them as one.</p>
+tiles of 576; the tiles a positional channel helps are the empty ones. Two different gaps,
+and easy to count as one.</p>
 <h2 id="4-the-flat-vector-float32-12n-43-fair">4. The flat <code>vector</code>, float32 <code>[12n + 43]</code> (fair)<a class="headerlink" href="#4-the-flat-vector-float32-12n-43-fair" title="Permanent link">&para;</a></h2>
 <p>All slots are clipped to <code>[0, 1]</code>. The offsets in the table are for n = 16, which is
 <code>MockEngine</code>'s default catalogue and what the test suite runs on. It is <strong>not</strong> the

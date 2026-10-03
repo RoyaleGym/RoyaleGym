@@ -3456,6 +3456,9 @@ many ticks. It stops early when the battle ends.</p>
 sub-tiles. The arena is 18 tiles wide and 32 tiles long. Blue (team 0) plays from the bottom.</p>
 <p><strong>Cards.</strong> <code>card_names=None</code> loads the default catalogue. Pass a list of names to choose your own. A card's id is its
 position in that list. <code>catalogue_json()</code> lists each card with its cost, kind and deploy rule.</p>
+<p><strong>Levels.</strong> Both sides play at one card level and one tower level unless you say otherwise. To give each side its
+own, pass <code>levels=[blue, red]</code> to <code>reset</code>, each a list with one level per deck card (or empty), and
+<code>tower_levels=[blue, red]</code>. A Mirror's copy is one level above the Mirror.</p>
 <p><strong>Commands.</strong> A command is <code>(team, hand_slot, x, y)</code>. <code>step</code> returns one row per command:
 <code>(card_id, reason, tick, x, y)</code>, where <code>reason</code> indexes <code>DEPLOY_REASONS</code> (<code>0</code> is accepted) and <code>x, y</code> is where
 the card actually went down. Ask first with

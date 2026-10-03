@@ -2197,6 +2197,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#017-2026-10-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.7 (2026-10-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#016-2026-10-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3364,6 +3375,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#017-2026-10-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.7 (2026-10-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#016-2026-10-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3468,6 +3490,16 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="017-2026-10-03">0.1.7 (2026-10-03)<a class="headerlink" href="#017-2026-10-03" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Each side, and each card in a deck, can have its own level, as in a real match. <code>Battle.reset</code> takes
+  <code>levels=[blue, red]</code>, each empty or one unified level per deck card, and <code>tower_levels=[blue, red]</code>. A play is at its
+  card's level: an evolution or a hero form at its base card's, and a Mirror's copy at the Mirror's level plus one.
+  Leaving both out plays both sides at the battle's single level, as before.</li>
+<li><code>Battle.step_commands_run()</code> lists every delayed command that ran or was dropped during the last <code>step</code>, over all
+  its ticks: <code>(tick, team, kind, what, reason)</code>, where <code>what</code> is the card id of a play or the command slot of an
+  ability press. A command still waiting when a level overtime ends is now reported dropped, with reason <code>GAME_OVER</code>.</li>
+</ul>
 <h2 id="016-2026-10-03">0.1.6 (2026-10-03)<a class="headerlink" href="#016-2026-10-03" title="Permanent link">&para;</a></h2>
 <ul>
 <li>No change to installing or calling the engine. Battle logic: crown-tower target ties, jump landings, Evo Musketeer

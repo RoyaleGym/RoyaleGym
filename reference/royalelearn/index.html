@@ -2265,6 +2265,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalelearn.obs_layout.id_planes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;id_planes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalelearn.obs_layout.id_stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;id_stack
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalelearn.obs_layout.field_slice" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6722,6 +6744,28 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;HandFields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalelearn.obs_layout.id_planes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;id_planes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalelearn.obs_layout.id_stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;id_stack
       
     </span>
   </a>
@@ -11204,6 +11248,44 @@ a builder that widens the block says so by widening the field.</p>
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalelearn.obs_layout.id_planes" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">id_planes</span><span class="p">(</span><span class="n">obs_space</span><span class="p">)</span></code>
+
+<a href="#royalelearn.obs_layout.id_planes" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>How many id planes one frame carries: the planes of every id key present, summed.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalelearn.obs_layout.id_stack" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">id_stack</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span></code>
+
+<a href="#royalelearn.obs_layout.id_stack" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>One frame's id planes as one array, in <code>ID_KEYS</code> order, or None when it has none.</p>
+<p>With <code>card_ids</code> alone this is that array itself, so an observation without spell ids is
+carried exactly as before they existed.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
