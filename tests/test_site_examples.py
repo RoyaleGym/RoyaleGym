@@ -87,6 +87,10 @@ EXEMPT = {
     ("clash-royale/cloning-a-bot.md", 'title="train_from_clone.py"'): (
         "trains from runs/clone until Ctrl+C"
     ),
+    ("clash-royale/cloning-a-bot.md", 'title="clone_humans.py"'): (
+        "downloads 1,000 human games from the IL_Replay dataset and clones them (about 2 min "
+        "to read 120 matches, about 35 min to clone on a CPU)"
+    ),
     ("resources/royaleimitate.md", "total_steps=100_000"): "trains a student for 100,000 steps",
     ("pieces/viewer.md", '"shot.png"'): (
         "prints an image's size in bytes, which moves with the viewer's drawing and the "
