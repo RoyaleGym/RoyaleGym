@@ -114,3 +114,39 @@ same way, with `runs/from_clone` in place of `runs/clone`.
 `sha256` is a fingerprint of the clone's folder, so the run starts from exactly that clone. Give
 both `Learner`s the same settings: the clone's network has to fit the one you train. To keep the
 new bot's moves close to the clone's while it learns, see [RoyaleImitate](../resources/royaleimitate.md).
+
+## Clone Human Players
+
+The teacher can also be people. [IL_Replay](https://huggingface.co/datasets/VanguardX101/IL_Replay)
+is a public set of real ladder games on Hugging Face, and RoyaleImitate can replay them in your
+engine and clone the players. It comes with `royalegym[all]` from version 0.1.6.
+
+Make `clone_humans.py`. It's step 2 with `from_replays` in place of `record`:
+
+```python title="clone_humans.py"
+from royalegym import make_env
+from royaleimitate import clone, from_replays
+from royalelearn import Learner
+
+
+def build_env():
+    return make_env()
+
+
+if __name__ == "__main__":
+    learner = Learner(build_env, save_dir="runs/my_clone")
+    demos = from_replays(learner, "runs/human-demos", matches=1000)
+    clone(learner, demos, "runs/human_clone")
+    print("Your clone is in runs/human_clone")
+```
+
+- `from_replays` downloads the games as it needs them, about 5,000 matches (15 MB) at a time, into
+  the Hugging Face cache, so a second run doesn't download them again.
+- It replays each match in your engine with both players' card plays. Every decision of both
+  players becomes something for the clone to copy: the card and the tile they played, or waiting.
+- It skips a match when your engine doesn't have one of its cards or refuses one of its plays,
+  and prints how many it skipped. With `make_env()`'s cards, about 7 in 10 matches went through
+  when we tried it, each in under a second.
+
+Then watch your clone and train from it as in steps 3 and 4, with `runs/human_clone` in place of
+`runs/clone`.
