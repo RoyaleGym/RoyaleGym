@@ -44,6 +44,19 @@
   .md-typeset :target { --md-scroll-margin: 4.4rem; }
 }
 
+/* The project's links beside the GitHub box (overrides/partials/source.html). From 60em the header shows the box;
+   it grows to fit the icons and its own text instead of Material's fixed 11.7rem. */
+.rg-social { display: flex; align-items: center; gap: 0.9rem; }
+.rg-social__link { display: block; color: inherit; opacity: 0.85; transition: opacity 0.25s; }
+.rg-social__link:hover, .rg-social__link:focus { opacity: 1; }
+.rg-social__link svg { display: block; width: 1.2rem; height: 1.2rem; fill: currentcolor; }
+@media screen and (min-width: 60em) {
+  .md-header__source { display: flex; align-items: center; gap: 1.2rem; width: auto; max-width: none; }
+  .md-header__source .md-source__repository { max-width: none; }
+}
+/* In the mobile menu the links sit in a row above the GitHub box. */
+.md-nav__source .rg-social { padding: 0.6rem 0.8rem 0; }
+
 /* ---------- banner ---------- */
 
 .rg-hero {
@@ -56,7 +69,7 @@
   background: linear-gradient(160deg, #2346c8 0%, #142a85 100%);
 }
 
-/* Angled panels behind the title, the way RLGym's banner has them. */
+/* Angled panels behind the title. */
 .rg-hero__shape {
   position: absolute;
   inset: 0;
