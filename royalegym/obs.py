@@ -1516,15 +1516,35 @@ HERO_SPATIAL_CHANNELS: list[tuple[str, str]] = [
 ]
 
 
+#: The planes ``SpatialObsBuilder(unit_status=True)`` adds, after the hero planes. Fair: a
+#: shield is drawn over its unit, a raged unit glows, a slowed one is tinted with cold.
+STATUS_SPATIAL_CHANNELS: list[tuple[str, str]] = [
+    ("own_shield", "own units' shield hp left, summed in the tile / HP_SCALE"),
+    ("enemy_shield", "enemy units' shield hp left, summed in the tile / HP_SCALE"),
+    ("own_raged", "count of own units under a Rage"),
+    ("enemy_raged", "count of enemy units under a Rage"),
+    ("own_slowed", "count of own units slowed by cold (an Ice Wizard's, a hero Ice Golem's)"),
+    ("enemy_slowed", "count of enemy units slowed by cold"),
+]
+#: The buff families the status planes read. A unit's ``buffs`` entry names an effect family,
+#: its members joined by "|" (the engine's grouping), so a family is matched by one member's
+#: name, never by the whole string, which grows when the engine adds a member. A Freeze is not
+#: here: it sets ``stun_ticks``, which ``own_stunned`` / ``enemy_stunned`` count.
+RAGE_BUFF = "Rage"
+SLOW_BUFF = "IceWizardSlowDown"
+
+
 def spatial_channels(
     reveal: Reveal | None = None,
     evolutions: bool = False,
     spell_aim: bool = False,
     heroes: bool = False,
+    unit_status: bool = False,
 ) -> list[tuple[str, str]]:
     """The spatial channels: the fair ones, then the evolved-unit pair, the readable enemy spell
-    targets and the hero planes when asked for, then the revealed ones. Each optional block is
-    appended after the ones before it, so turning one on moves no existing plane."""
+    targets, the hero planes and the unit status planes when asked for, then the revealed ones.
+    Each optional block is appended after the ones before it, so turning one on moves no
+    existing plane."""
     rev = reveal or Reveal()
     out = list(FAIR_SPATIAL_CHANNELS)
     if evolutions:
@@ -1533,6 +1553,8 @@ def spatial_channels(
         out.append(SEEN_AIM_CHANNEL)
     if heroes:
         out.extend(HERO_SPATIAL_CHANNELS)
+    if unit_status:
+        out.extend(STATUS_SPATIAL_CHANNELS)
     for field, entry in REVEAL_SPATIAL_CHANNELS.items():
         if getattr(rev, field):
             out.append(entry)
@@ -1689,6 +1711,38 @@ def hero_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
         if spent[e.card_id] == 0:
             acc[2, ty, tx] += 1
     out: np.ndarray = acc.astype(np.float32)
+    return out
+
+
+def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) -> np.ndarray:
+    """float32 [6, tiles_y, tiles_x], seen by ``team``: ``STATUS_SPATIAL_CHANNELS``.
+
+    Counted on the centre tile like ``entity_channels``: shield hp summed as an integer and
+    scaled once by ``HP_SCALE``, raged and slowed units counted (``RAGE_BUFF``, ``SLOW_BUFF``).
+    An engine that does not report status bits is refused, as ``evolved_channels`` refuses it:
+    such an engine predates the shield and buff fields too, and their defaults (no shield, no
+    buffs) would read as an answer. Module-level so a test can plant a defect in it.
+    """
+    acc = np.zeros((len(STATUS_SPATIAL_CHANNELS), arena.tiles_y, arena.tiles_x), dtype=np.int64)
+    for e in entities:
+        if status_of(e) is None:
+            raise ValueError(
+                f"unit_status=True, but this engine does not report unit status (entity uid "
+                f"{e.uid} has no status_flags). Use an engine that reports it, such as "
+                "RustEngine, or leave unit_status off."
+            )
+        if e.kind in TOWER_KINDS:
+            continue
+        ty, tx = _tile(arena, team, e.x, e.y)
+        side = 0 if e.team == team else 1
+        acc[side, ty, tx] += e.shield
+        members = {m for name, _ in e.buffs for m in name.split("|")}
+        if RAGE_BUFF in members:
+            acc[2 + side, ty, tx] += 1
+        if SLOW_BUFF in members:
+            acc[4 + side, ty, tx] += 1
+    out = acc.astype(np.float32)
+    out[:2] = (acc[:2] / HP_SCALE).astype(np.float32)
     return out
 
 
@@ -1887,10 +1941,12 @@ class SpatialObsBuilder(ObsBuilder):
         spell_aim_after_ticks: int | None = None,
         heroes: bool = False,
         spell_identity: bool = False,
+        unit_status: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.card_identity = bool(card_identity)
         self.heroes = bool(heroes)
+        self.unit_status = bool(unit_status)
         if spell_identity and not self.card_identity:
             raise ValueError(
                 "spell_identity needs card_identity=True: spell_ids holds ids in the card_ids "
@@ -1948,7 +2004,11 @@ class SpatialObsBuilder(ObsBuilder):
         super().bind(engine, action_parser)
         a = self.arena
         self.channels = spatial_channels(
-            self.reveal, self.evolutions, self.spell_aim_after_ticks is not None, self.heroes
+            self.reveal,
+            self.evolutions,
+            self.spell_aim_after_ticks is not None,
+            self.heroes,
+            self.unit_status,
         )
         self._channel_index = {name: i for i, (name, _) in enumerate(self.channels)}
         self.shape = (len(self.channels), a.tiles_y, a.tiles_x)
@@ -2039,6 +2099,11 @@ class SpatialObsBuilder(ObsBuilder):
         if self.heroes:
             at = idx["own_hero"]
             sp[at : at + 3] = hero_channels(state, team, self.arena)
+        if self.unit_status:
+            at = idx["own_shield"]
+            sp[at : at + len(STATUS_SPATIAL_CHANNELS)] = status_channels(
+                state.entities, team, self.arena
+            )
         np.clip(sp, 0.0, SPATIAL_CLIP, out=sp)
         out: dict[str, Any] = {
             "spatial": sp,
@@ -2067,6 +2132,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["heroes"] = True
         if self.spell_identity:
             out["spell_identity"] = True
+        if self.unit_status:
+            out["unit_status"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
