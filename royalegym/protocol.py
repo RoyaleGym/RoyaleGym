@@ -549,6 +549,17 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # Battle.rider_states), asked for by the viser session so a viewer can draw a rider as a
     # rider. -1 for a unit that rides nothing, and for every engine before the column.
     mount_uid: int = -1
+    # Four more, agreed with sim for its ship35 (2026-10-03), for the rule that the bot sees
+    # what a human sees. -1 here is "the engine did not say" for each; the engine's own
+    # "none" is 0 for charge and ability_ticks, and -1 for the landing point.
+    # charge: a unit's build-up in permille (a charge run-up, a Sparky's load, an Inferno's
+    # ramp), 0..1000. dest_x / dest_y: a tunneller's landing point, engine-frame subtiles,
+    # fixed for each dig (set when it goes under, cleared when it surfaces; a Mighty Miner's
+    # lane switch starts a second dig). ability_ticks: ticks left in an ability's windup or run.
+    charge: int = -1
+    dest_x: int = -1
+    dest_y: int = -1
+    ability_ticks: int = -1
 
 
 #: ``EntityState.status_flags`` bits. Read them through ``status_of``.
@@ -558,6 +569,13 @@ STATUS_INVISIBLE = 2
 STATUS_EVOLVED = 8
 STATUS_HERO = 16
 STATUS_HIDDEN = 4
+#: Four more from sim's ship35: a Clone's copy; an ability winding up; an ability running (an
+#: Archer Queen's cloak, a Golden Knight's dash chain, a hero's running effect, ...); a unit
+#: fully charged (the Prince family).
+STATUS_CLONE = 32
+STATUS_WINDUP = 64
+STATUS_ABILITY_ACTIVE = 128
+STATUS_CHARGED = 256
 
 
 def status_of(entity: EntityState) -> int | None:

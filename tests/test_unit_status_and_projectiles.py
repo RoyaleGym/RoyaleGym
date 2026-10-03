@@ -107,7 +107,8 @@ def test_level_follows_status_flags_and_reads_as_not_reported_when_absent():
     """2026-09-28: the unit's level, asked for by sim so a Mirror's copy (one level up) can
     be priced. It trails status_flags, and every engine before it decodes as -1. The two
     are both ints, so a swap would raise nothing: the values here differ on purpose."""
-    assert EntityState.__struct_fields__[-3:-1] == ("status_flags", "level")
+    fields = EntityState.__struct_fields__
+    assert fields[fields.index("status_flags") + 1] == "level"
     assert decode_entity([*LEGACY, *NEW, 5]).level == -1
     e = decode_entity([*LEGACY, *NEW, 5, 12])
     assert (e.status_flags, e.level) == (5, 12)
@@ -117,13 +118,62 @@ def test_mount_uid_follows_level_and_reaches_the_viewer_only_for_a_rider():
     """2026-09-28: the uid of the unit a unit rides (the Ram Rider's rider on its ram), asked
     for by the viser session. It trails level; without it a unit decodes as riding nothing,
     and the viewer's unit carries ``extra["mount"]`` only for a rider."""
-    assert EntityState.__struct_fields__[-2:] == ("level", "mount_uid")
+    fields = EntityState.__struct_fields__
+    assert fields[fields.index("level") + 1] == "mount_uid"
     plain = decode_entity([*LEGACY, *NEW, 5, 12])
     assert plain.mount_uid == -1
     assert "mount" not in unit_dict(plain, name_of)["extra"]
     rider = decode_entity([*LEGACY, *NEW, 5, 12, 88])
     assert (rider.level, rider.mount_uid) == (12, 88)
     assert unit_dict(rider, name_of)["extra"]["mount"] == 88
+
+
+#: The ship35 columns (agreed with sim 2026-10-03), after mount_uid, in this order.
+SHIP35 = ("charge", "dest_x", "dest_y", "ability_ticks")
+
+
+def test_the_ship35_columns_trail_mount_uid_and_read_as_not_reported_when_absent():
+    """2026-10-03, for the owner's rule that the bot sees what a human sees: a unit's charge
+    (permille: a charge run-up, a Sparky's load, an Inferno's ramp), a tunneller's landing
+    point, and the ticks left in an ability's windup or run. Every engine before them decodes
+    as -1, "not said", which none of them means: the engine's own "none" is 0 for charge and
+    ability_ticks. Values all differ, so a column landing next door fails."""
+    fields = EntityState.__struct_fields__
+    at = fields.index("mount_uid")
+    assert fields[at + 1 :] == SHIP35
+    old = decode_entity([*LEGACY, *NEW, 5, 12, 88])
+    assert (old.charge, old.dest_x, old.dest_y, old.ability_ticks) == (-1, -1, -1, -1)
+    e = decode_entity([*LEGACY, *NEW, 5, 12, 88, 640, 9000, 27000, 31])
+    got = (e.mount_uid, e.charge, e.dest_x, e.dest_y, e.ability_ticks)
+    assert got == (88, 640, 9000, 27000, 31)
+    none = decode_entity([*LEGACY, *NEW, 5, 12, 88, 0, -1, -1, 0])
+    assert (none.charge, none.ability_ticks) == (0, 0), "an engine's 0 is not swallowed"
+
+
+def test_the_ship35_status_bits():
+    from royalegym.protocol import (
+        STATUS_ABILITY_ACTIVE,
+        STATUS_CHARGED,
+        STATUS_CLONE,
+        STATUS_WINDUP,
+    )
+
+    assert (STATUS_CLONE, STATUS_WINDUP, STATUS_ABILITY_ACTIVE, STATUS_CHARGED) == (
+        1 << 5, 1 << 6, 1 << 7, 1 << 8
+    )
+
+
+def test_an_engine_with_the_ship35_columns_passes_the_field_order_check():
+    from royalegym.rust_engine import check_field_order
+
+    fields = list(EntityState.__struct_fields__)
+    old = types.SimpleNamespace(ENTITY_FIELDS=fields[: fields.index("mount_uid") + 1])
+    assert check_field_order(old)["ENTITY_FIELDS"] is True
+    new = types.SimpleNamespace(ENTITY_FIELDS=fields)
+    assert check_field_order(new)["ENTITY_FIELDS"] is True
+    newer = types.SimpleNamespace(ENTITY_FIELDS=[*fields, "something_later"])
+    with pytest.raises(RuntimeError, match="something_later"):
+        check_field_order(newer)
 
 
 def test_an_engine_that_sends_only_the_old_columns_decodes_as_not_reported():
