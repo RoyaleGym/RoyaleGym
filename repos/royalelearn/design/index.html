@@ -3467,7 +3467,7 @@ down with their reasons, in this folder, before the code lands.</p>
 <li><strong>Rollout workers</strong> over <code>royalegym</code>'s self-play vectorised env (<code>ClashSelfPlayVecEnv</code>),
    with Rust-backed default observations and actions so Python stays off the per-tick path.</li>
 <li><strong>A PPO learner</strong> (proximal policy optimisation) in torch for <code>royalegym</code>'s discrete
-   card-and-tile action space, replacing the seed's Rocket League policies.</li>
+   card-and-tile action space.</li>
 <li><strong>A frozen-pool ladder</strong>: periodic policy snapshots, ELO with confidence intervals
    against the pool, and the win rate that gates a snapshot into the pool.</li>
 <li><strong>Checkpoints</strong> holding the policy, the critic, the optimizer, the pool index and the env
@@ -3483,7 +3483,7 @@ concern. RoyaleSim measures it against recordings of the real game and tracks it
 calibration ledger. Keeping the two apart matters: a bot that exploits a simulator artefact
 would score well on parity and badly on the thing anyone cares about.</p>
 <h2 id="conventions">Conventions<a class="headerlink" href="#conventions" title="Permanent link">&para;</a></h2>
-<p>The harness follows the family's conventions, which will be familiar from RLGym:</p>
+<p>The harness follows these conventions:</p>
 <ul>
 <li><strong>Every user-facing behaviour is an abstract base class (ABC) with swappable
   implementations.</strong> In this repo that means the rollout worker, the learner, the ladder's
@@ -3512,12 +3512,12 @@ would score well on parity and badly on the thing anyone cares about.</p>
   never touches calibration data. The direction is <code>RoyaleLearn -&gt; RoyaleGym -&gt; RoyaleSim</code>.</li>
 </ul>
 <h2 id="what-the-references-contributed">What the references contributed<a class="headerlink" href="#what-the-references-contributed" title="Permanent link">&para;</a></h2>
-<p>rlgym-ppo's <code>ppo/</code> subpackage sat in <code>royalelearn/</code> while the harness was designed. It was a
-reference for what a working RLGym-PPO learner looks like, and we removed it when the harness
-landed. It was never a foundation: its modules are bound to Rocket League's action layout.
-<code>docs/harness-spec.md</code> records the decisions worth keeping from them, with their reasons, and
-names them beside the ones we did not keep. <code>rlgym_ppo</code> is not a dependency of this package
-and will not become one.</p>
+<p>An existing open-source PPO package sat in <code>royalelearn/</code> while the harness was designed, as a
+reference for what a working learner looks like, and we removed it when the harness landed. It
+was never a foundation: its modules were bound to another game's action layout.
+<code>docs/harness-spec.md</code> records the decisions worth keeping from the references, with their
+reasons, and names them beside the ones we did not keep. No such package is a dependency of this
+one.</p>
 <h2 id="what-is-open">What is open<a class="headerlink" href="#what-is-open" title="Permanent link">&para;</a></h2>
 <p>The harness runs: <code>royalelearn train</code> collects rollouts, updates, rates, checkpoints, and
 <code>royalelearn resume</code> continues a run from what it wrote. What is not settled is written down

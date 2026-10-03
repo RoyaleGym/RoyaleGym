@@ -5400,10 +5400,8 @@ field, so that the code can be written from it without further design decisions.
 <p>Every number here is either <strong>[M]</strong> measured with its source named, or <strong>[A]</strong> derived by arithmetic
 from measured numbers, with the arithmetic shown. Nothing here is a menu: where two defensible
 choices existed, one was taken and the reason is given.</p>
-<p>Where this page says <em>the references</em>, it means the three learners this family already has:
-<a href="https://github.com/AechPro/rlgym-ppo">rlgym-ppo</a>, rlgym-learn with rlgym-learn-algos, and
-<a href="https://github.com/Rolv-Arild/rocket-learn">rocket-learn</a>. Their decisions are copied where they are
-right, and named where they are not.</p>
+<p>Where this page says <em>the references</em>, it means existing open-source PPO learners for other games.
+Their decisions are copied where they are right, and named where they are not.</p>
 <p>Terms, fixed once and used throughout:</p>
 <table>
 <thead>
@@ -5762,7 +5760,7 @@ start-up refuses <code>rollout.overlap = true</code>.</p>
 <p>Two consequences, stated so nobody re-derives them:</p>
 <ul>
 <li><strong>The learner is the bottleneck on this machine, by about 2.5×.</strong> Rollout capacity is ~3 300
-  timesteps/s against an update capacity of ~1 330. That inverts the usual RLGym situation and it is
+  timesteps/s against an update capacity of ~1 330. That inverts the usual situation and it is
   why <code>K = 3</code> and not 32, and why the network is 430 k parameters and not 4 M.</li>
 <li><strong>"The harness is never the bottleneck" is an invariant with a number:</strong> rollout capacity ≥ 2 ×
   update capacity on every shipped profile. <code>royalelearn bench</code> prints both, the run logs
@@ -5919,7 +5917,7 @@ a policy that would not settle.</p>
 <code>value_estimator.py</code>, <code>experience_buffer.py</code>, <code>ppo_learner.py</code>, the <code>SEED_CLASSES</code> machinery in
 <code>__init__.py</code>, <code>NOTICE</code>, <code>LICENSE-APACHE-2.0</code>, the <code>[tool.ruff] extend-exclude</code> list, and the seed
 assertions in <code>tests/test_package.py</code>. <code>pyproject.toml</code>'s <code>license</code> becomes <code>{ text = "MIT" }</code>.
-<code>docs/design.md</code> loses its "The rlgym-ppo seed modules" section and gains one sentence recording that
+<code>docs/design.md</code> loses its section on the seed modules and gains one sentence recording that
 they were a reference and were removed when the harness landed.</p>
 <hr />
 <h2 id="4-the-abcs">4. The ABCs<a class="headerlink" href="#4-the-abcs" title="Permanent link">&para;</a></h2>
@@ -8668,8 +8666,8 @@ of this layer.</p>
 <p>TrueSkill is rejected explicitly. It is online only, so it cannot refit history; its sigma shrinks
 monotonically and needs an artificial floor to stop the rating freezing; and at the floor the
 converged interval is about <strong>plus or minus 92 Elo</strong>, worse than a hundred games of direct
-head-to-head. Every one of those compromises exists because a Rocket League evaluation game is a real
-match in a real client. Here an evaluation battle costs a fraction of a second and is seed
+head-to-head. Every one of those compromises exists because, in the references' game, an evaluation
+game is a real match in a real client. Here an evaluation battle costs a fraction of a second and is seed
 reproducible, so the compromises should not be inherited along with the mechanism.</p>
 <p><code>rating_above_v0</code> is reported alongside the anchored rating, so the headline curve reads as "Elo above
 the initial random policy" while the gauge itself is a permanent scripted anchor that exists before
