@@ -45,7 +45,7 @@ earning from. (In your own code, the last step's `info` of a battle has the same
 
 Every reward function has one method you must write, and two you can:
 
-```py
+```python
 # Required. Called once per seat after every step. Return that seat's reward.
 #   team:    the seat being scored: 0 is Blue, 1 is Red
 #   prev:    the battle before the step

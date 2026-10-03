@@ -216,7 +216,7 @@ Not yet. You can watch it play against other bots, or against itself.
 Watch it play, and test it against the simple bots that come with RoyaleGym. Save this as
 `how_good.py` next to `quickstart.py` and run `python how_good.py`. It takes a few minutes:
 
-```py
+```python title="how_good.py"
 from royalegym import CallableOpponent, evaluate, ladder
 from royalelearn import Learner
 

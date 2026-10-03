@@ -98,7 +98,7 @@ while that ability can be used. `make_env(heroes=[...])` turns the buttons on fo
 
 Every action parser has these methods:
 
-```py
+```python
 # Called once when the environment is made. Read what you need from the engine here.
 def bind(self, engine): ...
 

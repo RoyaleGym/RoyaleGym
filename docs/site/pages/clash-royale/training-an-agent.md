@@ -15,7 +15,7 @@ A reward function looks at the battle after each step and pays the bot for what 
 are three small ones to start from. It's tidiest to put them in a file of their own, say
 `rewards.py`, and import them into your training script, but they can live anywhere.
 
-```python
+```python title="rewards.py"
 from royalegym import EntityKind, RewardFunction, to_own
 
 
@@ -62,7 +62,7 @@ together, each with a weight. Keep the win itself the biggest part: the others a
 help the bot find its way to a win, and if a hint pays more than winning, the bot will chase
 the hint instead.
 
-```py
+```python title="my_bot.py"
 def build_env():
     from royalegym import ClashParallelEnv, RustEngine
     from royalegym import DefaultStateMutator, SpatialObsBuilder, TileActionParser
@@ -98,7 +98,7 @@ def build_env():
 Then the trainer. It's the quickstart's, except that the bot plays against copies of itself, it
 saves to `runs/my_bot`, and it saves the finished bot at the end:
 
-```py
+```python title="my_bot.py"
 if __name__ == "__main__":
     from royalelearn import Learner
 
@@ -223,7 +223,7 @@ To watch a bot after training, load it from its `save_dir`, play a battle with i
 
 Put this in its own file, such as `watch_my_bot.py`, next to `my_bot.py`:
 
-```py
+```python title="watch_my_bot.py"
 from royalegym import play_battle
 from royalelearn import Learner
 

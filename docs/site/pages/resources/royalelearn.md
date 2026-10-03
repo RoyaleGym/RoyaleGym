@@ -5,7 +5,7 @@ You give it a function that builds your environment, and it trains a bot on it w
 plays many battles at once, learns on your graphics card, saves checkpoints as it goes, and
 carries on from the last one if you stop and start again.
 
-```py
+```python
 from royalelearn import Learner
 
 learner = Learner(build_env, save_dir="runs/my_bot")
@@ -105,7 +105,7 @@ checkpoint's folder.
 returns a move. `folder` can be a run's `save_dir` (its newest checkpoint), one checkpoint folder,
 or a folder written by `learner.save(folder)`:
 
-```py
+```python
 from royalegym import make_env, play_battle
 from royalelearn import Learner
 

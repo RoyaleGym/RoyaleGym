@@ -19,7 +19,7 @@ It can also make a bot from scratch by copying another bot's moves: see
 
 Train a first bot (the teacher), save it, then start a second bot (the student) from it:
 
-```py
+```python
 from royalegym import make_env
 from royaleimitate import save_actor
 from royalelearn import Learner

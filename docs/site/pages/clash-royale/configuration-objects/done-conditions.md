@@ -30,7 +30,7 @@ itself, after three minutes plus at most two of overtime, so most bots never nee
 
 Every done condition has one method you must write, and one you can:
 
-```py
+```python
 # Required. Called once per step: is the battle over as of `state`?
 def is_done(self, state): ...
 
@@ -85,7 +85,7 @@ TowerDownCondition
     Give yours a `config()` method that returns its constructor's arguments as a dict, with one
     entry per argument, so it can. For a condition made with `__init__(self, max_seconds)`:
 
-    ```py
+    ```python
     def config(self):
         return {"max_seconds": self.max_seconds}
     ```

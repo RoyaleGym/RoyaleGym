@@ -13,7 +13,7 @@ It comes with the [install line](../../install.md#5-install-royalegym) and adds 
 
 Turn on `viser=True` in the trainer:
 
-```py
+```python
 learner = Learner(build_env, viser=True, save_dir="runs/my_bot")
 ```
 
@@ -83,7 +83,7 @@ script that steps one environment, never in a `build_env` you train with `Learne
 builds many environments, and only one can stream at a time. With the trainer, use
 `viser=True` instead.
 
-```py
+```python
 from royalegym import ClashParallelEnv, RustEngine
 from royalegym.viser import ViserPublisher
 

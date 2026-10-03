@@ -69,7 +69,7 @@ can't train on it.
 
 Every observation builder has these methods:
 
-```py
+```python
 # Called once when the environment is made. The engine and the action parser are ready.
 def bind(self, engine, action_parser): ...
 

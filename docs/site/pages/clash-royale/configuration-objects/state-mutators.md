@@ -68,7 +68,7 @@ For example, to practise endings, start each battle between one and two and a ha
 with 3 to 10 elixir and the towers at 40 to 100% health (4824 and 3052 are the king's and a
 princess tower's full health):
 
-```py
+```python
     state_mutator = MidGameStateMutator(
         tick_range=(1200, 3000), elixir_milli_range=(3000, 10000),
         max_tower_hp=(4824, 3052), tower_hp_percent=(40, 100), decks=[deck, deck],
@@ -86,7 +86,7 @@ whole start of a battle, and `WeightedStateMutator` picks between them.
 
 A state mutator has one method:
 
-```py
+```python
 # Called before every battle. `rng` is a numpy random generator, seeded by env.reset(seed=...).
 # `cards` is the engine's card list. Return a MatchSetup describing the start.
 def build(self, rng, cards): ...

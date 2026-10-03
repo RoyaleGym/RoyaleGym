@@ -46,7 +46,7 @@ print([name for name, opponent in ladder()])
 
 An opponent needs just one method:
 
-```py
+```python
 # Pick a move for one seat. `obs` is what that seat sees, `mask` its legal moves,
 # and `rng` a numpy random generator. Return the move's number (0 waits).
 def act(self, obs, mask, rng): ...

@@ -27,7 +27,7 @@ same battles, with the same deck and the same observation, as the one you're clo
 
 Make a file called `clone_my_bot.py`:
 
-```py
+```python title="clone_my_bot.py"
 from royalegym import make_env
 from royaleimitate import clone, record
 from royalelearn import Learner
@@ -59,7 +59,7 @@ Here is what each line does:
 
 To clone a bot you trained, pass it instead of `"push"`:
 
-```py
+```python
     teacher = Learner.load_policy("runs/my_bot")
     demos = record(learner, teacher, "runs/demos", battles=200)
 ```
@@ -68,7 +68,7 @@ To clone a bot you trained, pass it instead of `"push"`:
 
 The clone loads like any bot you trained. Make `watch_clone.py` next to `clone_my_bot.py`:
 
-```py
+```python title="watch_clone.py"
 from royalegym import play_battle
 from royalelearn import Learner
 
@@ -96,7 +96,7 @@ To see how good it is, test it against the scripted bots the way the FAQ's
 Your clone can go on learning with reinforcement learning, starting from what it copied instead
 of from nothing. Make `train_from_clone.py` next to the others:
 
-```py
+```python title="train_from_clone.py"
 from royaleimitate.artifacts import artifact_digest
 from royalelearn import Learner
 

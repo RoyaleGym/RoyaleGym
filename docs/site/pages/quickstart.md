@@ -35,7 +35,7 @@ Now copy the whole file below (the copy button is in its top right corner), past
 editor, and save (Ctrl+S, or Cmd+S on a Mac). Because you made it from the terminal, it's
 already in the right folder with the right name.
 
-```py
+```python title="quickstart.py"
 --8<-- "examples/quickstart.py"
 ```
 
@@ -185,7 +185,7 @@ watch the whole thing. Make a second file, `watch.py`, the same way as in step 1
 (`notepad watch.py` on Windows, `touch watch.py` and `open -e watch.py` on a Mac,
 `nano watch.py` on Linux), and paste this into it:
 
-```py
+```python title="watch.py"
 import random
 
 from royalegym import play_battle
@@ -215,14 +215,14 @@ at the bottom. Run `watch.py` again for a new battle each time. If you change `s
 Open `quickstart.py` again (`notepad quickstart.py`, `open -e quickstart.py` or
 `nano quickstart.py`) and find this line in `build_env`:
 
-```py
+```python
     deck = ["Knight", "Archer", "Giant", "Minions", "Fireball", "Zap", "Cannon", "Musketeer"]
 ```
 
 Replace the eight names with yours. Keep each name inside quotes, with commas between them, and
 keep the spaces at the start of the line. For example, Hog 2.6:
 
-```py
+```python
     deck = ["HogRider", "Musketeer", "Cannon", "IceGolemite", "IceSpirits", "Skeletons", "Fireball", "Log"]
 ```
 
@@ -250,7 +250,7 @@ starting a new one. It says so in one line before it starts:
 Add a `forms` line under your deck, with one number per card in the same order: `0` the normal
 card, `1` its evolution, `2` its hero. Then pass it to `DefaultStateMutator`:
 
-```py
+```python
     deck = ["HogRider", "Musketeer", "Cannon", "IceGolemite", "IceSpirits", "Skeletons", "Fireball", "Log"]
     forms = [0, 1, 0, 0, 0, 1, 0, 0]  # evolved Musketeer and evolved Skeletons
 
@@ -259,13 +259,13 @@ card, `1` its evolution, `2` its hero. Then pass it to `DefaultStateMutator`:
 
 A hero has an ability button, so with a hero (a `2`) also change the action parser line to:
 
-```py
+```python
     action_parser = TileActionParser(ability_buttons=True)
 ```
 
 So your bot can see which of its cards are evolved, also change the observation line to:
 
-```py
+```python
     obs_builder = SpatialObsBuilder(evolutions=True)
 ```
 
@@ -286,7 +286,7 @@ cards that have one are in [Game Values](cheatsheets/game-values.md#evolutions-a
 The **reward** is how you tell your bot what you want. After every move it gets a score, and it
 learns to do whatever makes that score high. In `quickstart.py` it's these lines:
 
-```py
+```python
     reward_fn = CombinedReward([
         (WinLossReward(), 1.0),  # +1 for a win, -1 for a loss
         (CrownReward(), 0.2),    # for each crown taken, minus each crown lost
@@ -299,13 +299,13 @@ counts. For example, to also charge it for wasting elixir by sitting at 10, do t
 
 1. Add `ElixirLeakPenalty` to the end of the import line above, which becomes:
 
-    ```py
+    ```python
         from royalegym import CombinedReward, CrownReward, TowerHPReward, WinLossReward, ElixirLeakPenalty
     ```
 
 2. Add one line inside the brackets:
 
-    ```py
+    ```python
         reward_fn = CombinedReward([
             (WinLossReward(), 1.0),
             (CrownReward(), 0.2),
