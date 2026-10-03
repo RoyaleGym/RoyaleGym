@@ -110,17 +110,19 @@ def test_a_shield_is_summed_and_scaled_like_hp_on_both_sides():
 
 def test_rage_and_cold_are_matched_by_a_member_of_the_family():
     state, a = _board()
-    p, q = _at(a, 4, 20), _at(a, 12, 6)
+    raged, slowed, both = _at(a, 4, 20), _at(a, 14, 22), _at(a, 12, 6)
     s = _with(state, [
-        _unit(100, RED, p, buffs=[("Rage", 3000)]),
-        _unit(101, RED, p, buffs=[(SLOW, 1200), ("Poison", 500)]),
-        _unit(102, BLUE, q, buffs=[("Rage|SomeLaterRage", 800), (SLOW + "|Later", 100)]),
+        _unit(100, RED, raged, buffs=[("Rage", 3000)]),
+        _unit(101, RED, slowed, buffs=[(SLOW, 1200), ("Poison", 500)]),
+        _unit(102, BLUE, both, buffs=[("Rage|SomeLaterRage", 800), (SLOW + "|Later", 100)]),
     ])
     blue = status_channels(s.entities, BLUE, a)
-    assert blue[3][_tile(a, BLUE, p)] == 1, "enemy raged"
-    assert blue[5][_tile(a, BLUE, p)] == 1, "enemy slowed"
-    assert blue[2][_tile(a, BLUE, q)] == 1, "own raged, the family grown by a member"
-    assert blue[4][_tile(a, BLUE, q)] == 1, "own slowed, the family grown by a member"
+    assert blue[3][_tile(a, BLUE, raged)] == 1, "enemy raged"
+    assert blue[3].sum() == 1, "the slowed unit is not raged"
+    assert blue[5][_tile(a, BLUE, slowed)] == 1, "enemy slowed"
+    assert blue[5].sum() == 1, "the raged unit is not slowed"
+    assert blue[2][_tile(a, BLUE, both)] == 1, "own raged, the family grown by a member"
+    assert blue[4][_tile(a, BLUE, both)] == 1, "own slowed, the family grown by a member"
     assert blue[2].sum() == 1
     assert blue[4].sum() == 1
 
