@@ -114,7 +114,7 @@ of the engine.
 | `state.players[team].crowns` | Crowns taken so far. |
 | `state.players[team].elixir_milli` | Elixir, in thousandths: 10 elixir is `10_000`. |
 | `state.players[team].tower_hp`, `.tower_max_hp` | Health of the king tower, then the left and right princess towers. 0 means destroyed. |
-| `state.entities` | Every unit, building and tower: `team`, `kind`, `card_id`, `x`, `y`, `hp`, `max_hp`. |
+| `state.entities` | Every unit, building and tower: `team`, `kind`, `card_id` (the card whose play put it on the board), `x`, `y`, `hp`, `max_hp`. |
 | `state.game_over`, `state.winner` | Whether the battle is over, and who won (0 Blue, 1 Red, 2 a draw). |
 | `results` | Each card played this step: `team`, `card_id`, `x`, `y`, and `status`, which is 0 if the game accepted it. |
 

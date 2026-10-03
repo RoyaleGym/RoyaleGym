@@ -145,4 +145,5 @@ full health and 6 elixir.
 Positions are in the engine's own units, 18,000 to a tile, with Blue at the bottom. To see a
 position from one seat's side, use `to_own(arena, team, x, y)`.
 Card ids are only positions in the engine's card list: `engine.cards()[card_id].name` gives the
-name.
+name. A unit's `card_id` is the card whose play put it on the board: the Skeletons a Tombstone
+makes report the Tombstone, and an evolved or hero unit reports its base card.
