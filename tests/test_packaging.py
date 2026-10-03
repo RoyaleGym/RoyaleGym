@@ -275,8 +275,9 @@ def test_mock_engine_without_its_card_tables_says_how_to_go_on(monkeypatch, tmp_
 def test_the_imitate_extras_require_record_and_clone():
     """The site's basic-clone guide records, clones, and plays the clone with
     Learner.load_policy (royaleimitate 0.2.1). 0.2.3 keeps PublicLogMemory on the engine's
-    refill timer and starts a bot from a saved one when installed from a wheel."""
+    refill timer and starts a bot from a saved one when installed from a wheel. 0.2.5 with its
+    [replays] extra clones human players from the IL_Replay dataset (``from_replays``)."""
     extras = _extras()
     for extra in ("imitate", "all"):
         pins = [r for r in extras[extra] if r.startswith("royaleimitate")]
-        assert pins == ["royaleimitate>=0.2.3"], f"[{extra}]: {pins}"
+        assert pins == ["royaleimitate[replays]>=0.2.5"], f"[{extra}]: {pins}"

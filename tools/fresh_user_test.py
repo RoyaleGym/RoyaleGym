@@ -7,7 +7,8 @@ and a temporary HOME, it:
       or by name with --by-name (the line a user types), with royalesim and any sibling not yet
       on PyPI from WHEELS (--wheels DIR or a release page URL, pip --find-links)
   P3  proves isolation: every royale* package imports from the new venv's site-packages,
-      nothing from the checkout
+      nothing from the checkout; and what the extras must also bring (royaleimitate's
+      [replays]: pyarrow, huggingface_hub) imports too
   P4  copies examples/quickstart.py the way a user gets it (not imported), sets its size to a
       test's (SMALL, each literal exactly once; timestep_limit = --steps; a literal that is not
       a FAIL, not a long run) and runs it under a time limit; it must exit 0
@@ -53,6 +54,9 @@ SMALL = {
     "checkpoint_every=200_000,": "checkpoint_every=512,",
 }
 PACKAGES = ["royalesim", "royalegym", "royalelearn", "royaleviser", "royaleimitate"]
+#: What the extras must also bring: royaleimitate[replays] (from_replays, cloning human players
+#: from the IL_Replay dataset), which [all] and [imitate] require. Checked in P3 like the rest.
+EXTRA_IMPORTS = ["pyarrow", "huggingface_hub"]
 REPO = {
     "royalesim": "RoyaleSim",
     "royalegym": "RoyaleGym",
@@ -280,7 +284,8 @@ def main() -> int:
         phase("P2 install royalegym[all]", "PASS", " ".join(reqs)[:300], secs)
 
         # P3
-        code, out, secs = run([py, "-c", ISOLATION_SNIPPET % PACKAGES], env, work, 300)
+        snippet = ISOLATION_SNIPPET % (PACKAGES + EXTRA_IMPORTS)
+        code, out, secs = run([py, "-c", snippet], env, work, 300)
         try:
             info = json.loads(out.strip().splitlines()[-1])
         except Exception:

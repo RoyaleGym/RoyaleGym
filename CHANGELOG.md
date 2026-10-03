@@ -4,6 +4,13 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.6 (2026-10-03)
+
+### Added
+- Clone human players: `[imitate]` and `[all]` need `royaleimitate[replays]` 0.2.5, whose
+  `from_replays` turns human games from the public IL_Replay dataset into the rows `clone`
+  reads. It brings pyarrow and huggingface_hub with it.
+
 ## 0.1.5 (2026-10-02)
 
 ### Changed
