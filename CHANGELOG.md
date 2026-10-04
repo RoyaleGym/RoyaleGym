@@ -4,14 +4,20 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
-## Unreleased
+## 0.1.10 (2026-10-03)
+
+### Changed
+- royalesim 0.1.8: units report their build-up, a tunneller's landing point and the ticks left in
+  an ability, four more status bits (a Clone's copy, an ability winding up or running, fully
+  charged), and the catalogue states each card's evolution cycle.
 
 ### Added
 - `SpatialObsBuilder(card_status=True)`: every card's evolution and hero status, own and opponent.
   Your whole deck from the first frame, each card's form (per card and per hand slot), every
   evolved card's charge wherever it sits, and each ability button by its card. For the opponent,
   counted from the plays you have seen: which cards were played evolved or as heroes, each
-  card's evolution charge, a hero's used charge and a champion's cooldown. Off by default.
+  card's evolution charge, a hero's used charge and a champion's cooldown. Needs royalesim 0.1.8.
+  Off by default.
 - `PlayerState.deck` and `PlayerState.forms`: each side's deck and each card's form.
 - `SpatialObsBuilder(unit_actions=True)`: fourteen planes, own and opponent, of what units are
   doing: build-up (a Prince's charge, a Sparky's load, an Inferno's ramp), fully charged, winding up
