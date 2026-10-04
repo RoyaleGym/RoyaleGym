@@ -141,14 +141,22 @@ def main() -> int:
     )
     ap.add_argument("out", help="folder to put the wheels in (created; must be empty)")
     ap.add_argument(
-        "--sim-tag", help="the RoyaleSim release to take royalesim from (default: newest)"
+        "--sim-tag", help="the RoyaleSim release to take royalesim from (default: newest on PyPI)"
+    )
+    ap.add_argument(
+        "--root",
+        help="the folder holding the five repositories side by side (default: the folder this "
+        "checkout is in); lets a copy of this tool in a worktree stage from the main checkouts",
     )
     args = ap.parse_args()
     out = Path(args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
     if any(out.iterdir()):
         raise SystemExit(f"{out} is not empty: stage each release into a fresh folder")
-    here = Path(__file__).resolve().parents[1]
+    here = (
+        Path(args.root).resolve() / "RoyaleGym" if args.root
+        else Path(__file__).resolve().parents[1]
+    )
     rows = []
 
     sim = here.parent / "RoyaleSim"
