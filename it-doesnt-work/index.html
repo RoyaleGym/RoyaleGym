@@ -907,6 +907,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#training-takes-more-and-more-of-the-computers-memory-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training takes more and more of the computer's memory (Windows)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#training-is-very-slow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4070,6 +4081,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#training-takes-more-and-more-of-the-computers-memory-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training takes more and more of the computer's memory (Windows)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#training-is-very-slow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4426,6 +4448,17 @@ start a new one with a new <code>save_dir</code>.</p>
 <code>ppo_minibatch_size</code> in <code>quickstart.py</code>. A starting point: <code>1_024</code> for a card with 8 GB, <code>512</code>
 for 6 GB, <code>256</code> for 4 GB. The message calls it <code>ppo.minibatch_size</code>; it's the same setting. Leave
 <code>doctor.vram_headroom_mb</code> alone.</p>
+<h3 id="training-takes-more-and-more-of-the-computers-memory-windows">Training takes more and more of the computer's memory (Windows)<a class="headerlink" href="#training-takes-more-and-more-of-the-computers-memory-windows" title="Permanent link">&para;</a></h3>
+<p>On Windows, when the graphics card's memory is full, Windows lends the card some of the
+computer's own memory (RAM) instead of stopping. Over a long run, training could take gigabytes
+of it that way, and the whole computer slows down.</p>
+<p>RoyaleLearn 0.5.5 and newer stop at 80% of the card on Windows instead. Update it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pip install --upgrade royalelearn
+</code></pre></div>
+<p>If training then stops with <a href="#not-enough-graphics-memory">Not enough graphics memory</a>, lower
+<code>ppo_minibatch_size</code> as that entry says. To pick the limit yourself, add <code>vram_fraction</code> to the
+<code>Learner(...)</code> in <code>quickstart.py</code>: a share of the card, such as <code>vram_fraction=0.7</code>, or
+<code>vram_fraction=None</code> for no limit.</p>
 <h3 id="training-is-very-slow">Training is very slow<a class="headerlink" href="#training-is-very-slow" title="Permanent link">&para;</a></h3>
 <p>First check that PyTorch can see your graphics card (above).</p>
 <p>The battles take turns on one processor core, so the processor never shows near 100% in Task
@@ -4440,16 +4473,16 @@ or the viewer isn't installed. Run the install line from step 5 of
 <a href="../install/#5-install-royalegym">Install</a> again.</p>
 <h3 id="module-pygame-has-no-attribute-init"><code>module 'pygame' has no attribute 'init'</code><a class="headerlink" href="#module-pygame-has-no-attribute-init" title="Permanent link">&para;</a></h3>
 <p>You see this when you start the viewer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>AttributeError: module 'pygame' has no attribute 'init'
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>AttributeError: module 'pygame' has no attribute 'init'
 </code></pre></div>
 <p>You removed <code>pygame</code> after updating. The viewer now uses <code>pygame-ce</code>, and the two share one
 folder, so removing <code>pygame</code> took <code>pygame-ce</code>'s files with it. Put them back, with the virtual
 environment on:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>pip install --force-reinstall pygame-ce
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>pip install --force-reinstall pygame-ce
 </code></pre></div>
 <h3 id="the-viewer-window-stays-empty">The viewer window stays empty<a class="headerlink" href="#the-viewer-window-stays-empty" title="Permanent link">&para;</a></h3>
 <p>The terminal says:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
 </code></pre></div>
 <p>The viewer is waiting for a training run to watch. Start training in another terminal, with
 <code>viser=True</code> in your <code>Learner(...)</code>. The quickstart has it on already. The battle appears once
@@ -4471,7 +4504,7 @@ other run, or set <code>viser=False</code> in one of them. If you put a <code>Vi
   <code>royaleviser my_bot_battle.msgpack</code>.</li>
 <li>
 <p>Or make a video of it on the server (on Linux, add <code>SDL_VIDEODRIVER=dummy</code> in front):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
 </code></pre></div>
 </li>
 </ul>
