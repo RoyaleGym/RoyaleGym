@@ -3858,8 +3858,9 @@ share, and a built engine. It takes six stages. Do stages 1 to 5 in order, becau
 the one before it. Stage 6 is torch, and you only need it if you are going to train.</p>
 <p>These are Windows PowerShell commands. Paste one stage at a time rather than the whole section.
 If something goes wrong you will know which stage it was, which is most of the work of fixing it.</p>
-<p>Before you start you need three things already installed: Git, Python 3.12 to 3.14, and Rust
-1.80 or newer with cargo. The Rust one surprises people. Stage 4 compiles the battle engine, and
+<p>Before you start you need three things already installed: Git, Python 3.12, and Rust
+1.80 or newer with cargo. On Windows and macOS, 3.12.10 is the last Python 3.12 with a
+python.org installer. The Rust one surprises people. Stage 4 compiles the battle engine, and
 without cargo it stops there.</p>
 <p>The 1.80 is a promise this repo makes and cannot keep on its own: RoyaleLearn has no <code>Cargo.toml</code>,
 so nothing here checks your toolchain. What enforces it is RoyaleSim's manifest, which is where
@@ -3876,15 +3877,15 @@ RoyaleSim's is the one that decides and this line is the one that is wrong.</p>
 <p>You now have four folders inside <code>Royale</code>. Every stage below starts from <code>Royale</code> itself, so stay
 there.</p>
 <p>Stage 2 makes the virtual environment the four repos share and puts the build tools in it. The
-venv must be Python 3.12 to 3.14, so the first line picks that Python by name. The second line
-checks it: it must print 3.12, 3.13 or 3.14 before you go on. Every command after that names the venv's
+venv must be Python 3.12, so the first line picks that Python by name. The second line
+checks it: it must print 3.12 before you go on. Every command after that names the venv's
 Python. pip prints a wall of text as it downloads. That is normal.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>py -3.12 -m venv .venv
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>.venv\Scripts\python --version
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>.venv\Scripts\python -m pip install maturin pytest hypothesis ruff numpy msgspec
 </code></pre></div>
 <p>On macOS and Linux the first line is <code>python3.12 -m venv .venv</code>, and the check is
-<code>.venv/bin/python --version</code>. If plain <code>python --version</code> already prints 3.12, 3.13 or 3.14,
+<code>.venv/bin/python --version</code>. If plain <code>python --version</code> already prints 3.12,
 <code>python -m venv .venv</code> works too. An older Python compiles the engine for several minutes and is
 only refused at the install step.</p>
 <p>Stage 3 generates RoyaleSim's data tables into <code>RoyaleSim/data/derived/</code>. A clone carries only

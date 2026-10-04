@@ -3608,12 +3608,16 @@ line. To update it on Ubuntu, run <code>sudo ubuntu-drivers install</code>, then
 </div>
 <p>If <code>pip</code> prints a notice that "a new release of pip is available", you can ignore it.</p>
 <h2 id="5-install-royalegym">5. Install RoyaleGym<a class="headerlink" href="#5-install-royalegym" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.12
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip install "royalegym[all]"
 </code></pre></div>
 <p>Copy the whole line with the copy button, quotes included. <code>[all]</code> means "with every part": the
-engine, the environments, the trainer, the viewer and the extras. The <code>--find-links</code> part tells
-<code>pip</code> where to download them, because RoyaleGym isn't on PyPI (Python's package store) yet. You
-don't need Git or Rust.</p>
+engine, the environments, the trainer, the viewer and the extras. You don't need Git or Rust.</p>
+<div class="admonition note">
+<p class="admonition-title">An early release</p>
+<p>New versions come often while the engine is matched to the real game. For a project you want
+to keep the same, stay on the version you installed. To update later, see
+<a href="../faq/#what-happens-when-clash-royale-updates">What happens when Clash Royale updates?</a></p>
+</div>
 <p>You'll see a lot of <code>Downloading</code> and <code>Installing</code> lines. On Linux this step also downloads
 PyTorch, about 3 GB, so it can sit on one line for several minutes. It ends with a line that
 starts with <code>Successfully installed</code> and lists everything it installed, <code>royalegym</code> among them.</p>

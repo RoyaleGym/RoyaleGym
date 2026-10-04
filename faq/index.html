@@ -4250,7 +4250,11 @@ and it works out how to get there.</p>
 <p>No. The battles run in a copy of the game's battle engine, on your computer. You don't need the
 game, any game files or an account.</p>
 <h3 id="can-my-bot-play-the-real-game">Can my bot play the real game?<a class="headerlink" href="#can-my-bot-play-the-real-game" title="Permanent link">&para;</a></h3>
-<p>No. It trains in the simulator, and that's all it does.</p>
+<p>Not with anything from us. RoyaleGym is a simulator and a training framework: your bot trains and
+plays in it, on your own computer. If you want a bot of yours on the real ladder, that part is
+yours to build, and we don't publish tools for it or help with it.</p>
+<p>We show our own bots' ladder results as a benchmark of what a bot can do. You can play against
+them yourself: ask in the <a href="https://discord.gg/4D2BS5JBHP">Discord</a> for a 1v1.</p>
 <h3 id="will-this-get-me-banned">Will this get me banned?<a class="headerlink" href="#will-this-get-me-banned" title="Permanent link">&para;</a></h3>
 <p>RoyaleGym never touches the game, your account or Supercell's servers, so there's nothing to ban.</p>
 <h3 id="what-computer-do-i-need">What computer do I need?<a class="headerlink" href="#what-computer-do-i-need" title="Permanent link">&para;</a></h3>
@@ -4412,11 +4416,10 @@ everything it downloaded, PyTorch included, outside your folder. Then delete you
 folder. That removes RoyaleGym, PyTorch and your bots. If you don't need Python any more,
 uninstall it too (on Windows: Settings &gt; Apps &gt; Installed apps &gt; Python &gt; Uninstall).</p>
 <h3 id="what-happens-when-clash-royale-updates">What happens when Clash Royale updates?<a class="headerlink" href="#what-happens-when-clash-royale-updates" title="Permanent link">&para;</a></h3>
-<p>New cards and balance changes reach RoyaleGym in a new version of the engine. To update, find
-the newest version on the <a href="https://github.com/RoyaleGym/RoyaleGym/releases">Releases page</a>, and
-run this with that version in place of <code>v0.1.12</code> at the end. Updating from v0.1.1 or earlier? Run
-<code>pip uninstall -y pygame</code> first: the viewer now uses pygame-ce in its place.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.12
+<p>New cards and balance changes reach RoyaleGym in a new version of the engine. To update, run
+this. Updating from v0.1.1 or earlier? Run <code>pip uninstall -y pygame</code> first: the viewer now uses
+pygame-ce in its place.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <p>It updates all five RoyaleGym packages and the extras they need, and leaves your PyTorch alone. Your
 code keeps working, but a bot can't carry on training across an update: start a new one with a new <code>save_dir</code>.</p>

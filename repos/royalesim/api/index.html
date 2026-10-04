@@ -3425,11 +3425,10 @@
 <p>Most people never call RoyaleSim directly. RoyaleGym wraps it as an environment, and that is the place to start.
 This page is for people who want the engine itself.</p>
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>royalesim<span class="w"> </span>--find-links<span class="w"> </span>https://github.com/RoyaleGym/RoyaleSim/releases/expanded_assets/v0.1.1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>royalesim
 </code></pre></div>
-<p>Until the packages are on PyPI, the wheels come from the project's GitHub Releases page. The link names a release;
-for another one, change the tag at its end. They need no Rust. They run
-on CPython 3.10 and later, on Windows, Linux and macOS (RoyaleGym, which most people use, needs 3.12).</p>
+<p>Use Python 3.12. The wheels need no Rust, and there are wheels for Windows, Linux and macOS. Each release's wheels
+are also on the project's GitHub Releases page.</p>
 <h2 id="a-battle-in-a-few-lines">A battle in a few lines<a class="headerlink" href="#a-battle-in-a-few-lines" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">royalesim</span>
