@@ -4,6 +4,12 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.12 (2026-10-03)
+
+### Changed
+- royalesim 0.1.10: the Golden Knight's dash can be used once per deploy, as in the game. After it,
+  his button stays off for the rest of his life. Battles with him can end differently.
+
 ## 0.1.11 (2026-10-03)
 
 ### Changed
