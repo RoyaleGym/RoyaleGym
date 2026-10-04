@@ -34,7 +34,9 @@ def test_a_tag_push_publishes_nothing():
     assert "push" not in on
     assert "tags" not in on
     assert "workflow_dispatch" not in on, "a dispatch would publish around the gate"
-    assert re.search(r"workflow_run:\s*\n\s*workflows: \[fresh-user\]\s*\n\s*types: \[completed\]", on)
+    assert re.search(
+        r"workflow_run:\s*\n\s*workflows: \[fresh-user\]\s*\n\s*types: \[completed\]", on
+    )
 
 
 def test_it_listens_to_the_workflow_fresh_user_yml_is():
