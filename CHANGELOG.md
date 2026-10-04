@@ -4,6 +4,13 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.13 (2026-10-04)
+
+### Changed
+- Every package is on PyPI: install with plain `pip install "royalegym[all]"`.
+- royalelearn 0.5.5: on Windows a CUDA run uses at most 80% of the card by default
+  (`Learner(vram_fraction=...)`), so training no longer slows down by spilling into system RAM.
+
 ## 0.1.12 (2026-10-03)
 
 ### Changed
