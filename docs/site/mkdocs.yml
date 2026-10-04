@@ -220,6 +220,7 @@ extra_css:
 # The header's repository box adds up the stars and forks of every public RoyaleGym repository.
 extra_javascript:
   - javascripts/org-stats.js
+  - javascripts/discord-online.js
 
 not_in_nav: |
   /unverified.md

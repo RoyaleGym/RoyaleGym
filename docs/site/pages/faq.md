@@ -1,7 +1,7 @@
 # FAQ
 
 The questions everyone asks. No question is too basic: if yours isn't here, ask on
-[Discord](https://discord.gg/4D2BS5JBHP). If you're looking at an error message, go to
+[Discord](https://discord.gg/4D2BS5JBHP)<span data-discord-online=" ({n} online now)" hidden></span>. If you're looking at an error message, go to
 [It Doesn't Work](it-doesnt-work.md) instead.
 
 ## The Basics

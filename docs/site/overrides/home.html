@@ -43,6 +43,9 @@
       <span class="rg-card__title">{{ title }}</span>
     </span>
     <span class="rg-card__text">{{ text }}</span>
+    {%- if "discord" in href %}
+    <span class="rg-card__live" data-discord-online="● {n} online now" hidden></span>
+    {%- endif %}
   </a>
 {%- endmacro %}
 
