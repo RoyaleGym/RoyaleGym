@@ -40,11 +40,10 @@ def test_the_readme_opens_with_the_logo_then_install_then_try_it():
     install, try_it = text.index("## Install"), text.index("## Try it")
     assert install < try_it
     section = text[install:try_it]
-    assert re.search(
-        r'pip install "royalegym\[all\]" --find-links '
-        r"https://github\.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v\d+\.\d+\.\d+",
-        section,
-    ), "the Install section lost its line"
+    assert re.search(r'^\s*pip install "royalegym\[all\]"$', section, re.M), (
+        "the Install section lost its line"
+    )
+    assert "--find-links" not in section, "the Install section still points at a release page"
     assert "```python" in text[try_it:], "Try it has no program"
 
 

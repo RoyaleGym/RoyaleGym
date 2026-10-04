@@ -376,7 +376,9 @@ def test_the_engine_missing_message_says_how_to_install_it() -> None:
     assert 'pip install "royalegym[all]"' in install
     assert INSTALL_PAGE in msg
     page = (REPO / "docs" / "site" / "pages" / "install.md").read_text(encoding="utf-8")
-    assert 'pip install "royalegym[all]" --find-links' in page, "the install page lost its line"
+    plain = re.search(r'^pip install "royalegym\[all\]"$', page, re.M)
+    assert plain, "the install page lost its line"
+    assert "--find-links" not in page, "the install page still points at a release page, not PyPI"
     assert BUILD_PAGE in msg
     page = (REPO / BUILD_PAGE).read_text(encoding="utf-8")
     assert "maturin develop --release" in page
