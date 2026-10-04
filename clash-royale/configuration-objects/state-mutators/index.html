@@ -990,6 +990,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="The Ones That Come With RoyaleGym">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-from-a-saved-moment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Starting From a Saved Moment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3384,6 +3401,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="The Ones That Come With RoyaleGym">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-from-a-saved-moment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Starting From a Saved Moment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3492,8 +3526,8 @@ itself, <code>1</code> its evolution, <code>2</code> its hero.</p>
 <td>With units already on the board, for drills like "defend this push".</td>
 </tr>
 <tr>
-<td><code>SnapshotStateMutator(blobs)</code></td>
-<td>From exact saved moments of earlier battles.</td>
+<td><code>SnapshotStateMutator(bank)</code></td>
+<td>From exact saved moments of earlier battles, picked by weight and seat.</td>
 </tr>
 <tr>
 <td><code>DeckCurriculumStateMutator(deck, ...)</code></td>
@@ -3514,47 +3548,83 @@ princess tower's full health):</p>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="p">)</span>
 </code></pre></div>
 <p>That goes in place of the <code>state_mutator = ...</code> line in your quickstart's <code>build_env</code>, with
-<code>MidGameStateMutator</code> added to its imports. The scripted-board and snapshot starts are for
-advanced use; their arguments are in the <a href="../../../reference/royalegym/">API reference</a>.</p>
+<code>MidGameStateMutator</code> added to its imports. The scripted-board starts are for advanced use; their
+arguments are in the <a href="../../../reference/royalegym/">API reference</a>.</p>
+<h3 id="starting-from-a-saved-moment">Starting From a Saved Moment<a class="headerlink" href="#starting-from-a-saved-moment" title="Permanent link">&para;</a></h3>
+<p><code>env.snapshot()</code> saves a battle as it stands: the engine, and what each seat's observation
+remembers (its cycle, the elixir it has counted, the cards it has seen, the enemy's forms). A
+battle started from it shows each seat the observation it had, and goes on exactly as the original
+would with the same moves. That's a way to practise one situation over and over.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">ClashParallelEnv</span><span class="p">,</span> <span class="n">DefaultStateMutator</span><span class="p">,</span> <span class="n">RandomLegalOpponent</span><span class="p">,</span> <span class="n">RustEngine</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>                       <span class="n">SnapshotStateMutator</span><span class="p">,</span> <span class="n">save_snapshots</span><span class="p">)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">engine</span> <span class="o">=</span> <span class="n">RustEngine</span><span class="p">()</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">card_id</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()}</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">deck</span> <span class="o">=</span> <span class="p">[</span><span class="n">by_name</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archer"</span><span class="p">,</span> <span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>                             <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Zap"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">)]</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">env</span> <span class="o">=</span> <span class="n">ClashParallelEnv</span><span class="p">(</span><span class="n">engine</span><span class="o">=</span><span class="n">engine</span><span class="p">,</span> <span class="n">state_mutator</span><span class="o">=</span><span class="n">DefaultStateMutator</span><span class="p">(</span><span class="n">decks</span><span class="o">=</span><span class="p">[</span><span class="n">deck</span><span class="p">,</span> <span class="n">deck</span><span class="p">]))</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">obs</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">rng</span><span class="p">,</span> <span class="n">policy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">RandomLegalOpponent</span><span class="p">(</span><span class="n">noop_prob</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">120</span><span class="p">):</span>                                   <span class="c1"># play a minute</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="n">actions</span> <span class="o">=</span> <span class="p">{</span><span class="n">a</span><span class="p">:</span> <span class="n">policy</span><span class="o">.</span><span class="n">act</span><span class="p">(</span><span class="n">obs</span><span class="p">[</span><span class="n">a</span><span class="p">],</span> <span class="n">obs</span><span class="p">[</span><span class="n">a</span><span class="p">][</span><span class="s2">"action_mask"</span><span class="p">],</span> <span class="n">rng</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">agents</span><span class="p">}</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">actions</span><span class="p">)</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">moment</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">snapshot</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">"one minute in"</span><span class="p">)</span>             <span class="c1"># save the battle as it stands</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="n">obs</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">"snapshot"</span><span class="p">:</span> <span class="n">moment</span><span class="p">})</span>    <span class="c1"># start a new episode right there</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"starts at tick"</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">battle_state</span><span class="o">.</span><span class="n">tick</span><span class="p">)</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="n">save_snapshots</span><span class="p">(</span><span class="s2">"starts.bin"</span><span class="p">,</span> <span class="p">[</span><span class="n">moment</span><span class="p">])</span>                 <span class="c1"># a bank of starts, in a file</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="n">bank</span> <span class="o">=</span> <span class="n">SnapshotStateMutator</span><span class="p">(</span><span class="s2">"starts.bin"</span><span class="p">)</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="n">env2</span> <span class="o">=</span> <span class="n">ClashParallelEnv</span><span class="p">(</span><span class="n">engine</span><span class="o">=</span><span class="n">RustEngine</span><span class="p">(),</span> <span class="n">state_mutator</span><span class="o">=</span><span class="n">bank</span><span class="p">)</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="n">obs</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env2</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"drawn from the bank, tick"</span><span class="p">,</span> <span class="n">env2</span><span class="o">.</span><span class="n">battle_state</span><span class="o">.</span><span class="n">tick</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>starts at tick 1200
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>drawn from the bank, tick 1200
+</code></pre></div>
+<p>A snapshot can also carry a <code>seat</code> (the side the start is for) and <code>max_ticks</code> (end each episode
+after that many ticks). <code>SnapshotStateMutator(bank, weights={...}, seat="blue")</code> then draws from
+the bank by tag and by seat. The <a href="../../../reference/royalegym/">API reference</a> has every argument.</p>
 <p>You don't chain mutators one after another. A mutator describes the whole start of a battle, and
 <code>WeightedStateMutator</code> picks between them.</p>
 <h2 id="how-they-work">How They Work<a class="headerlink" href="#how-they-work" title="Permanent link">&para;</a></h2>
 <p>A state mutator has one method:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Called before every battle. `rng` is a numpy random generator, seeded by env.reset(seed=...).</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># `cards` is the engine's card list. Return a MatchSetup describing the start.</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">cards</span><span class="p">):</span> <span class="o">...</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Called before every battle. `rng` is a numpy random generator, seeded by env.reset(seed=...).</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># `cards` is the engine's card list. Return a MatchSetup describing the start.</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">cards</span><span class="p">):</span> <span class="o">...</span>
 </code></pre></div>
 <p>A <code>MatchSetup</code> holds the two decks as card ids, and optionally the starting clock, elixir,
 tower health and units on the board. <code>deck_ids(names, cards)</code> turns card names into ids.</p>
 <h2 id="creating-your-own">Creating Your Own<a class="headerlink" href="#creating-your-own" title="Permanent link">&para;</a></h2>
 <p>This one deals each side one of two decks at random, every battle:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">MatchSetup</span><span class="p">,</span> <span class="n">StateMutator</span><span class="p">,</span> <span class="n">deck_ids</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">TwoDecksMutator</span><span class="p">(</span><span class="n">StateMutator</span><span class="p">):</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="sd">"""Deals each side one of two decks at random, every battle."""</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">DECKS</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="p">[</span><span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archer"</span><span class="p">,</span> <span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span> <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Zap"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">],</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="p">[</span><span class="s2">"HogRider"</span><span class="p">,</span> <span class="s2">"Valkyrie"</span><span class="p">,</span> <span class="s2">"Skeletons"</span><span class="p">,</span> <span class="s2">"IceSpirits"</span><span class="p">,</span> <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Log"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">],</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="p">]</span>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">cards</span><span class="p">):</span>
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>        <span class="n">blue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DECKS</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>        <span class="n">red</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DECKS</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
-<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        <span class="k">return</span> <span class="n">MatchSetup</span><span class="p">(</span><span class="n">decks</span><span class="o">=</span><span class="p">[</span><span class="n">deck_ids</span><span class="p">(</span><span class="n">blue</span><span class="p">,</span> <span class="n">cards</span><span class="p">),</span> <span class="n">deck_ids</span><span class="p">(</span><span class="n">red</span><span class="p">,</span> <span class="n">cards</span><span class="p">)])</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">MatchSetup</span><span class="p">,</span> <span class="n">StateMutator</span><span class="p">,</span> <span class="n">deck_ids</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">TwoDecksMutator</span><span class="p">(</span><span class="n">StateMutator</span><span class="p">):</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="sd">"""Deals each side one of two decks at random, every battle."""</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">DECKS</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>        <span class="p">[</span><span class="s2">"Knight"</span><span class="p">,</span> <span class="s2">"Archer"</span><span class="p">,</span> <span class="s2">"Giant"</span><span class="p">,</span> <span class="s2">"Minions"</span><span class="p">,</span> <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Zap"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">],</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>        <span class="p">[</span><span class="s2">"HogRider"</span><span class="p">,</span> <span class="s2">"Valkyrie"</span><span class="p">,</span> <span class="s2">"Skeletons"</span><span class="p">,</span> <span class="s2">"IceSpirits"</span><span class="p">,</span> <span class="s2">"Fireball"</span><span class="p">,</span> <span class="s2">"Log"</span><span class="p">,</span> <span class="s2">"Cannon"</span><span class="p">,</span> <span class="s2">"Musketeer"</span><span class="p">],</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="p">]</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">cards</span><span class="p">):</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>        <span class="n">blue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DECKS</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>        <span class="n">red</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DECKS</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>        <span class="k">return</span> <span class="n">MatchSetup</span><span class="p">(</span><span class="n">decks</span><span class="o">=</span><span class="p">[</span><span class="n">deck_ids</span><span class="p">(</span><span class="n">blue</span><span class="p">,</span> <span class="n">cards</span><span class="p">),</span> <span class="n">deck_ids</span><span class="p">(</span><span class="n">red</span><span class="p">,</span> <span class="n">cards</span><span class="p">)])</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">env</span> <span class="o">=</span> <span class="n">make_env</span><span class="p">(</span><span class="n">state_mutator</span><span class="o">=</span><span class="n">TwoDecksMutator</span><span class="p">())</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">names</span> <span class="o">=</span> <span class="p">{</span><span class="n">card</span><span class="o">.</span><span class="n">card_id</span><span class="p">:</span> <span class="n">card</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">card</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()}</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="nb">print</span><span class="p">([</span><span class="n">names</span><span class="p">[</span><span class="n">card</span><span class="p">]</span> <span class="k">for</span> <span class="n">card</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">battle_state</span><span class="o">.</span><span class="n">players</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">hand</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">env</span> <span class="o">=</span> <span class="n">make_env</span><span class="p">(</span><span class="n">state_mutator</span><span class="o">=</span><span class="n">TwoDecksMutator</span><span class="p">())</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">names</span> <span class="o">=</span> <span class="p">{</span><span class="n">card</span><span class="o">.</span><span class="n">card_id</span><span class="p">:</span> <span class="n">card</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">card</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()}</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="nb">print</span><span class="p">([</span><span class="n">names</span><span class="p">[</span><span class="n">card</span><span class="p">]</span> <span class="k">for</span> <span class="n">card</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">battle_state</span><span class="o">.</span><span class="n">players</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">hand</span><span class="p">])</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>['Skeletons', 'Log', 'HogRider', 'Musketeer']
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>['IceSpirits', 'HogRider', 'Valkyrie', 'Skeletons']
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>['Fireball', 'Giant', 'Knight', 'Musketeer']
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>['Skeletons', 'Log', 'HogRider', 'Musketeer']
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>['IceSpirits', 'HogRider', 'Valkyrie', 'Skeletons']
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>['Fireball', 'Giant', 'Knight', 'Musketeer']
 </code></pre></div>
 <p>The same seed always gives the same start, so a battle can be repeated exactly.</p>
 
