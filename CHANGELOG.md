@@ -4,6 +4,13 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.11 (2026-10-03)
+
+### Changed
+- royalesim 0.1.9: the engine reports each side's deck and each card's form, so
+  `PlayerState.deck` / `PlayerState.forms`, and `SpatialObsBuilder(card_status=True)`, also work
+  for a battle restored with `load_state`.
+
 ## 0.1.10 (2026-10-03)
 
 ### Changed

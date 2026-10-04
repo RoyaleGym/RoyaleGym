@@ -49,7 +49,7 @@ def test_every_piece_names_a_minimum_so_an_upgrade_moves_it():
             if _names([req]) & set(PIECES.values()):
                 assert ">=" in req, f"[{extra}] names {req!r} with no minimum version"
     floors = sorted(r for r in extras["all"] if _names([r]) & {"royalesim", "royaleviser"})
-    assert floors == ["royalesim>=0.1.8", "royaleviser[media]>=0.1.1"], floors
+    assert floors == ["royalesim>=0.1.9", "royaleviser[media]>=0.1.1"], floors
 
 
 def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():

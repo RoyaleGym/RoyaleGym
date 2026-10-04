@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "royalegym"
-version = "0.1.10"
+version = "0.1.11"
 description = "RoyaleGym: reinforcement-learning environments for Clash Royale, over the RoyaleSim battle engine"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -20,7 +20,7 @@ dependencies = [
 # The engine (a prebuilt wheel; it carries its own data). The package imports without it
 # (MockEngine is the pure-Python reference), and RustEngine() and make_env() say how to
 # install it.
-sim = ["royalesim>=0.1.8"]
+sim = ["royalesim>=0.1.9"]
 # The learner, with PyTorch, which trains on a CPU.
 learn = ["royalelearn[torch]>=0.5.4"]
 # The viewer: watch a battle live or from a saved file.
@@ -30,7 +30,7 @@ imitate = ["royaleimitate[replays]>=0.2.6"]
 # Every piece names a minimum, so `pip install --upgrade "royalegym[all]"` moves each one
 # (pip upgrades a dependency only when a requirement forces it).
 all = [
-    "royalesim>=0.1.8",
+    "royalesim>=0.1.9",
     "royalelearn[torch]>=0.5.4",
     "royaleviser[media]>=0.1.1",
     "royaleimitate[replays]>=0.2.6",
