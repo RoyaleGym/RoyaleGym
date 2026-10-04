@@ -348,10 +348,11 @@ On Windows, when the graphics card's memory is full, Windows lends the card some
 computer's own memory (RAM) instead of stopping. Over a long run, training could take gigabytes
 of it that way, and the whole computer slows down.
 
-RoyaleLearn 0.5.5 and newer stop at 80% of the card on Windows instead. Update it:
+RoyaleLearn 0.5.5 and newer stop at 80% of the card on Windows instead. Update RoyaleGym, which
+brings it:
 
 ```
-pip install --upgrade royalelearn
+pip install --upgrade "royalegym[all]"
 ```
 
 If training then stops with [Not enough graphics memory](#not-enough-graphics-memory), lower
