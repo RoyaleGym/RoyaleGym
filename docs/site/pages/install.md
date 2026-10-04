@@ -206,7 +206,7 @@ If `pip` prints a notice that "a new release of pip is available", you can ignor
 ## 5. Install RoyaleGym
 
 ```
-pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.9
+pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.10
 ```
 
 Copy the whole line with the copy button, quotes included. `[all]` means "with every part": the
