@@ -18,11 +18,14 @@ there is no ``MutatorSequence``. Variations on a start are subclasses of
 from __future__ import annotations
 
 import difflib
+import os
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
+import msgspec
 import numpy as np
 
 from .protocol import (
@@ -40,9 +43,77 @@ from .protocol import (
 
 @dataclass(frozen=True)
 class Snapshot:
-    """An exact engine state to resume from (``Engine.save_state`` bytes)."""
+    """A moment of a battle to start an episode from.
+
+    ``blob`` is the engine's state (``Engine.save_state``). ``memory`` is what each seat's
+    observation remembered of the match at that moment (``ObsBuilder.save_memory``): with it,
+    the first observation after the reset is the one each seat had there, and the episode is
+    the battle going on. Without it (None), each seat's memory starts at the snapshot, as at
+    the start of a battle: the cards in hand and the bars are seen, and nothing played before
+    is known. ``ClashParallelEnv.snapshot()`` fills both.
+
+    ``seat`` is the seat the start is for (``BLUE`` or ``RED``; None for either), which
+    ``SnapshotStateMutator(seat=...)`` draws by. ``max_ticks`` caps an episode begun here, in
+    engine ticks (None: no cap). ``tag`` is a label, such as the kind of situation; it comes
+    back in the episode's last info as ``start_tag``.
+    """
 
     blob: bytes
+    memory: bytes | None = None
+    seat: int | None = None
+    max_ticks: int | None = None
+    tag: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.blob, bytes):
+            raise TypeError(f"Snapshot.blob must be bytes, not {type(self.blob).__name__}")
+        if self.memory is not None and not isinstance(self.memory, bytes):
+            raise TypeError(f"Snapshot.memory must be bytes or None, not {self.memory!r}")
+        if self.seat is not None and (isinstance(self.seat, bool) or self.seat not in TEAMS):
+            raise ValueError(f"Snapshot.seat must be BLUE (0), RED (1) or None, not {self.seat!r}")
+        check_max_ticks(self.max_ticks, "Snapshot.max_ticks")
+        if not isinstance(self.tag, str):
+            raise TypeError(f"Snapshot.tag must be a str, not {self.tag!r}")
+
+
+def check_max_ticks(value: Any, where: str = "max_ticks") -> int | None:
+    """``value`` as an episode cap in ticks: None, or a whole number above 0."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, np.integer)) or value <= 0:
+        raise ValueError(f"{where} must be a whole number of ticks above 0, or None: {value!r}")
+    return int(value)
+
+
+class _SnapshotBank(msgspec.Struct, forbid_unknown_fields=True):
+    format: str
+    version: int
+    snapshots: list[Snapshot]
+
+
+SNAPSHOT_BANK_FORMAT = "royalegym.snapshots"
+SNAPSHOT_BANK_VERSION = 1
+
+
+def save_snapshots(path: str | os.PathLike[str], snapshots: Sequence[Snapshot]) -> None:
+    """Write a bank of snapshots to one file (msgpack), for ``load_snapshots`` or
+    ``SnapshotStateMutator(path)``."""
+    bank = _SnapshotBank(SNAPSHOT_BANK_FORMAT, SNAPSHOT_BANK_VERSION, list(snapshots))
+    Path(path).write_bytes(msgspec.msgpack.encode(bank))
+
+
+def load_snapshots(path: str | os.PathLike[str]) -> list[Snapshot]:
+    """The snapshots ``save_snapshots`` wrote. Plain msgpack: loading a file runs no code."""
+    try:
+        bank = msgspec.msgpack.decode(Path(path).read_bytes(), type=_SnapshotBank)
+    except (msgspec.DecodeError, msgspec.ValidationError, TypeError, ValueError) as exc:
+        raise ValueError(f"{path} is not a snapshot bank: {exc}") from exc
+    if (bank.format, bank.version) != (SNAPSHOT_BANK_FORMAT, SNAPSHOT_BANK_VERSION):
+        raise ValueError(
+            f"{path} is a snapshot bank of format {bank.format!r} version {bank.version}; this "
+            f"royalegym reads {SNAPSHOT_BANK_FORMAT!r} version {SNAPSHOT_BANK_VERSION}"
+        )
+    return bank.snapshots
 
 
 class StateMutator(ABC):
@@ -252,18 +323,97 @@ class ScriptedBoardStateMutator(DefaultStateMutator):
 
 
 class SnapshotStateMutator(StateMutator):
-    """Resume from saved positions, sampled uniformly (e.g. mined from replays)."""
+    """Start each episode from a bank of saved moments (``Snapshot``), drawn by weight.
 
-    def __init__(self, blobs: Sequence[bytes]) -> None:
-        if not blobs:
+    ``snapshots``: ``Snapshot`` objects, plain engine-state bytes, or the path of a file
+    ``save_snapshots`` wrote (``config()`` then records the path, so a config file can name
+    the bank).
+
+    ``seat``: "either" draws from the whole bank; "blue" or "red" only from the starts made for
+    that seat (``Snapshot.seat``) and those made for either. A trainer that decides which seat
+    its learner plays before the reset passes that seat here, as it would to
+    ``DeckCurriculumStateMutator``. A start's seat also comes back in the reset's info as
+    ``start_seat``.
+
+    ``weights``: None draws uniformly; a list gives one weight per snapshot; a dict gives one
+    weight per ``Snapshot.tag``, and must name every tag in the bank and no other, so a typo
+    cannot drop a kind of start. ``set_weights`` changes them between episodes, to anneal a
+    mix without rebuilding the env.
+    """
+
+    def __init__(
+        self,
+        snapshots: Sequence[Snapshot | bytes] | str | os.PathLike[str],
+        *,
+        weights: Sequence[float] | Mapping[str, float] | None = None,
+        seat: str = "either",
+    ) -> None:
+        self.path: str | None = None
+        if isinstance(snapshots, (str, os.PathLike)):
+            self.path = os.fspath(snapshots)
+            items: list[Snapshot] = load_snapshots(self.path)
+        else:
+            items = [s if isinstance(s, Snapshot) else Snapshot(bytes(s)) for s in snapshots]
+        if not items:
             raise ValueError("SnapshotStateMutator needs at least one snapshot")
-        self.blobs = list(blobs)
+        if seat not in SEATS:
+            raise ValueError(f"seat must be one of {SEATS}, got {seat!r}")
+        self.snapshots = items
+        self.seat = seat
+        want = _TEAM_OF_SEAT.get(seat)
+        self._candidates = [
+            i for i, s in enumerate(items) if want is None or s.seat is None or s.seat == want
+        ]
+        if not self._candidates:
+            raise ValueError(f"no snapshot in this bank is for seat {seat!r} or for either seat")
+        self.set_weights(weights)
+
+    @property
+    def blobs(self) -> list[bytes]:
+        """The engine states, as the constructor took them before snapshots had more."""
+        return [s.blob for s in self.snapshots]
 
     def config(self) -> dict[str, object]:
-        return {"snapshots": len(self.blobs)}
+        weights: object = self.weights
+        if isinstance(weights, Mapping):
+            weights = dict(weights)
+        elif weights is not None:
+            weights = list(weights)
+        return {
+            "snapshots": self.path if self.path is not None else len(self.snapshots),
+            "seat": self.seat,
+            "weights": weights,
+        }
+
+    def set_weights(self, weights: Sequence[float] | Mapping[str, float] | None) -> None:
+        """Change the draw from the next episode on: all or nothing, like the constructor."""
+        n = len(self.snapshots)
+        if weights is None:
+            w = np.ones(n, dtype=np.float64)
+        elif isinstance(weights, Mapping):
+            tags = {s.tag for s in self.snapshots}
+            missing, unknown = sorted(tags - set(weights)), sorted(set(weights) - tags)
+            if missing or unknown:
+                raise ValueError(
+                    f"weights by tag must name every tag in the bank and no other: missing "
+                    f"{missing}, not in the bank {unknown}"
+                )
+            w = np.array([float(weights[s.tag]) for s in self.snapshots], dtype=np.float64)
+        else:
+            w = np.asarray(list(weights), dtype=np.float64)
+            if w.shape != (n,):
+                raise ValueError(f"weights must be one per snapshot ({n}), got {w.shape[0]}")
+        if not np.isfinite(w).all() or (w < 0).any():
+            raise ValueError("weights must be finite and non-negative")
+        p = w[self._candidates]
+        if p.sum() <= 0:
+            raise ValueError(f"every snapshot seat {self.seat!r} can draw has weight 0")
+        self.weights = weights
+        self._p = p / p.sum()
 
     def build(self, rng: np.random.Generator, cards: Sequence[CardInfo]) -> Snapshot:
-        return Snapshot(self.blobs[int(rng.integers(len(self.blobs)))])
+        pick = self._candidates[int(rng.choice(len(self._candidates), p=self._p))]
+        return self.snapshots[pick]
 
 
 class WeightedStateMutator(StateMutator):

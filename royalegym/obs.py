@@ -115,6 +115,7 @@ from dataclasses import asdict, dataclass
 from functools import lru_cache
 from typing import Any, NamedTuple
 
+import msgspec
 import numpy as np
 from gymnasium import spaces
 
@@ -149,6 +150,7 @@ from .protocol import (
     SpellState,
     TowerSlot,
     ability_row,
+    calibration_digest,
     card_is_spell,
     default_calibration,
     default_elixir_law,
@@ -1492,6 +1494,84 @@ def _write_hand(
 # ---------------------------------------------------------------------------
 
 
+#: The layout ``ObsBuilder.save_memory`` writes; a new number when it changes.
+MEMORY_FORMAT = 1
+#: What ``bind`` gives each memory from the catalogue, the calibration or the constructor. It is
+#: not memory, so it is not saved: the catalogue's names, the calibration digest and the command
+#: delay in the saved header say the two builders agree on it.
+MATCH_MEMORY_BOUND = ("num_cards", "law", "cost", "is_mirror")
+ENEMY_FORMS_BOUND = ("num_cards",)
+AIM_CLOCK_BOUND = ("after_ticks",)
+
+
+def _attrs(obj: Any, bound: Sequence[str]) -> dict[str, Any]:
+    """Every attribute of a memory object but the bound ones: all of it, so a field added later
+    is saved without anyone remembering to list it."""
+    return {k: v for k, v in vars(obj).items() if k not in bound}
+
+
+def _pack(x: Any) -> Any:
+    """A memory value as plain msgpack data, tagged so ``_unpack`` gives back the same types:
+    arrays with their dtype and shape, numpy scalars, tuples, sets and non-string dict keys."""
+    if isinstance(x, np.ndarray):
+        return {"nd": [x.dtype.str, list(x.shape), x.tolist()]}
+    if isinstance(x, np.generic):
+        return {"np": [x.dtype.str, x.item()]}
+    if x is None or isinstance(x, (bool, int, float, str)):
+        return x
+    if isinstance(x, tuple):
+        return {"tu": [_pack(v) for v in x]}
+    if isinstance(x, list):
+        return [_pack(v) for v in x]
+    if isinstance(x, (set, frozenset)):
+        return {"se": [_pack(v) for v in sorted(x)]}
+    if isinstance(x, dict):
+        return {"di": [[_pack(k), _pack(v)] for k, v in x.items()]}
+    raise TypeError(f"a memory holds a {type(x).__name__}, which save_memory cannot write")
+
+
+def _unpack(x: Any) -> Any:
+    if isinstance(x, list):
+        return [_unpack(v) for v in x]
+    if not isinstance(x, dict):
+        return x
+    ((tag, v),) = x.items()
+    if tag == "nd":
+        dtype, shape, data = v
+        return np.asarray(data, dtype=np.dtype(dtype)).reshape(shape)
+    if tag == "np":
+        return np.dtype(v[0]).type(v[1])
+    if tag == "tu":
+        return tuple(_unpack(i) for i in v)
+    if tag == "se":
+        return {_unpack(i) for i in v}
+    if tag == "di":
+        return {_unpack(k): _unpack(val) for k, val in v}
+    raise ValueError(f"a saved memory holds an unknown tag {tag!r}")
+
+
+def _check_saved(
+    objs: Mapping[int, Any], saved: Mapping[Any, Any], bound: Sequence[str], where: str
+) -> None:
+    """Refuse a saved part whose attributes are not exactly this builder's: a memory saved by
+    another version of this package, which would restore some fields and leave others."""
+    if sorted(saved) != sorted(objs):
+        raise ValueError(f"the saved {where} is for seats {sorted(saved)}, not {sorted(objs)}")
+    for team, obj in objs.items():
+        want, got = set(_attrs(obj, bound)), set(saved[team])
+        if want != got:
+            raise ValueError(
+                f"the saved {where} has fields {sorted(got - want)} this builder does not keep "
+                f"and lacks {sorted(want - got)}: it was saved by another version of royalegym"
+            )
+
+
+def _restore(objs: Mapping[int, Any], saved: Mapping[Any, Any]) -> None:
+    for team, obj in objs.items():
+        for key, value in saved[team].items():
+            setattr(obj, key, value)
+
+
 class ObsBuilder(ABC):
     """state -> observation dict. Always includes ``action_mask``."""
 
@@ -1610,6 +1690,103 @@ class ObsBuilder(ABC):
         fair set is that it is not an estimate.
         """
         return self.memory[team].exact
+
+    # -- saving the memory (a resume mid-battle) -------------------------------
+
+    def memory_state(self) -> dict[str, Any]:
+        """Everything this builder carries from one build to the next, by part.
+
+        ``save_memory`` writes it and ``load_memory`` puts it back. A builder that keeps more
+        across steps adds its part here and restores it in ``load_memory_state`` (calling
+        super in both), or a resume shows its policy that part as of a fresh start.
+        """
+        if not hasattr(self, "enemy_forms"):
+            raise RuntimeError("the builder has no memory yet: reset it first")
+        return {
+            "memory": {t: _attrs(m, MATCH_MEMORY_BOUND) for t, m in self.memory.items()},
+            "enemy_forms": {t: _attrs(f, ENEMY_FORMS_BOUND) for t, f in self.enemy_forms.items()},
+            # The forms are counted only with card_status on; a builder that shows them cannot
+            # restore a count nobody kept.
+            "forms_counted": bool(self.card_status),
+        }
+
+    def load_memory_state(self, parts: Mapping[str, Any]) -> None:
+        """Put back what ``memory_state`` returned, all of it or (on a refusal) none of it."""
+        if self.card_status and not parts.get("forms_counted"):
+            raise ValueError(
+                "this builder shows the enemy's evolutions and heroes (card_status=True), and "
+                "the saved memory never counted them: it was saved by a builder without "
+                "card_status. Save the snapshot with the builder you train on."
+            )
+        _check_saved(self.memory, parts["memory"], MATCH_MEMORY_BOUND, "match memory")
+        _check_saved(self.enemy_forms, parts["enemy_forms"], ENEMY_FORMS_BOUND, "enemy forms")
+        _restore(self.memory, parts["memory"])
+        _restore(self.enemy_forms, parts["enemy_forms"])
+
+    def save_memory(self) -> bytes:
+        """What each seat's observation remembers of the match, as bytes for ``load_memory``.
+
+        Taken when both seats have been shown the current state (as the env does after every
+        reset and step). Plain msgpack: loading it runs no code.
+        """
+        parts = self.memory_state()
+        ticks = {m.tick for m in self.memory.values()}
+        if len(ticks) != 1:
+            raise RuntimeError(
+                f"the seats' memories stand at ticks {sorted(ticks)}: build both seats' "
+                "observations of one state before saving"
+            )
+        return msgspec.msgpack.encode({
+            "format": MEMORY_FORMAT,
+            "cards": [c.name for c in self.cards],
+            "calibration": calibration_digest(self.calibration),
+            "command_delay": [int(d) for d in getattr(self, "command_delay", (0, 0))],
+            "tick": ticks.pop(),
+            "parts": _pack(parts),
+        })
+
+    def load_memory(self, blob: bytes, state: BattleState) -> None:
+        """Restore ``save_memory``'s bytes, after ``reset(state)``, where ``state`` is the battle
+        the memory was saved in, at the tick it was saved at (an engine that loaded the same
+        moment). The next build of ``state`` is then the observation each seat had there.
+
+        Refuses, by name, a memory saved on another catalogue (card ids are positions in it),
+        another calibration or command delay (the elixir counts would run on other laws), or at
+        another tick.
+        """
+        try:
+            saved = msgspec.msgpack.decode(blob)
+        except msgspec.DecodeError as exc:
+            raise ValueError(f"not a saved observation memory: {exc}") from exc
+        if not isinstance(saved, dict) or saved.get("format") != MEMORY_FORMAT:
+            raise ValueError(
+                f"not a saved observation memory of format {MEMORY_FORMAT}: "
+                f"{saved.get('format') if isinstance(saved, dict) else type(saved).__name__}"
+            )
+        names = [c.name for c in self.cards]
+        if saved["cards"] != names:
+            raise ValueError(
+                f"the memory was saved on a catalogue of {len(saved['cards'])} cards that is not "
+                f"this engine's ({len(names)}); card ids are positions in it, so every card it "
+                "counted would be another card here"
+            )
+        if saved["calibration"] != calibration_digest(self.calibration):
+            raise ValueError(
+                "the memory was saved under another calibration, whose elixir laws its counts "
+                "followed"
+            )
+        delay = [int(d) for d in getattr(self, "command_delay", (0, 0))]
+        if saved["command_delay"] != delay:
+            raise ValueError(
+                f"the memory was saved with command delay {saved['command_delay']} and this "
+                f"env runs {delay}; its counts date each play by its delay"
+            )
+        if saved["tick"] != state.tick:
+            raise ValueError(
+                f"the memory was saved at tick {saved['tick']} and the battle is at tick "
+                f"{state.tick}: load it into the state it was saved with"
+            )
+        self.load_memory_state(_unpack(saved["parts"]))
 
     def vector_layout(self) -> list[VectorField]:
         """The flat vector's fields, in order, for this builder's ``Reveal``."""
@@ -2444,6 +2621,26 @@ class SpatialObsBuilder(ObsBuilder):
         super().reset(state)
         if self._aim_clock is not None:
             self._aim_clock.reset()
+
+    def memory_state(self) -> dict[str, Any]:
+        out = super().memory_state()
+        clock = self._aim_clock
+        out["aim_clock"] = None if clock is None else _attrs(clock, AIM_CLOCK_BOUND)
+        return out
+
+    def load_memory_state(self, parts: Mapping[str, Any]) -> None:
+        clock, saved = self._aim_clock, parts.get("aim_clock")
+        if clock is not None:
+            if saved is None:
+                raise ValueError(
+                    "this builder dates the enemy's spells (spell_aim_after_ticks is set), and "
+                    "the saved memory never did: it was saved by a builder without "
+                    "spell_aim_after_ticks. Save the snapshot with the builder you train on."
+                )
+            _check_saved({0: clock}, {0: saved}, AIM_CLOCK_BOUND, "spell aim clock")
+        super().load_memory_state(parts)
+        if clock is not None:
+            _restore({0: clock}, {0: saved})
 
     def channel_names(self) -> list[str]:
         return [name for name, _ in self.channels]

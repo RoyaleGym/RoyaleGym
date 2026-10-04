@@ -105,6 +105,14 @@ the rename (2026-09-21) the same objects were `TerminalCondition` and `StateSett
 names, and the `terminal_conditions=` / `state_setter=` constructor arguments, still work as
 aliases.
 
+A `Snapshot` from `ClashParallelEnv.snapshot()` holds two things: the engine's state, and
+what each seat's observation remembers of the match (`ObsBuilder.save_memory`). The second
+matters because the observation is not a function of the state alone: the counted enemy
+elixir, the cycle and the cards seen come from the plays before. A reset from the snapshot
+restores both, so its first observation is the one each seat had, and the episode is the
+battle going on. A snapshot also names the seat it is for, an episode cap in ticks, and a tag.
+`SnapshotStateMutator` draws from a bank of them by weight and by seat.
+
 | Piece | Shipped implementations |
 |---|---|
 | `ObsBuilder` | `SpatialObsBuilder` (20-channel board + `mask_planes` + a `12n + 43`-float vector + the mask), `EntityListObsBuilder` |

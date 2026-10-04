@@ -109,6 +109,7 @@ from .state_mutator import (
     MidGameStateSetter,
     ScriptedBoardStateMutator,
     ScriptedBoardStateSetter,
+    Snapshot,
     SnapshotStateMutator,
     SnapshotStateSetter,
     StateMutator,
@@ -116,6 +117,8 @@ from .state_mutator import (
     WeightedStateMutator,
     WeightedStateSetter,
     deck_ids,
+    load_snapshots,
+    save_snapshots,
 )
 
 #: ``gym.make`` ids. The plain one takes whatever engine you pass and defaults to the
@@ -203,6 +206,7 @@ __all__ = [
     "ScriptedBoardStateMutator",
     "ScriptedBoardStateSetter",
     "SeatResult",
+    "Snapshot",
     "SnapshotStateMutator",
     "SnapshotStateSetter",
     "SpatialObsBuilder",
@@ -227,11 +231,13 @@ __all__ = [
     "evaluate",
     "fair_fields",
     "ladder",
+    "load_snapshots",
     "load_trace",
     "make_env",
     "make_gym_vec_env",
     "measure_variability",
     "play_battle",
+    "save_snapshots",
     "save_trace",
     "to_own",
     "verify_trace",

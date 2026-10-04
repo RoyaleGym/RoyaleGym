@@ -95,7 +95,7 @@ from .replay import ReplayRecorder
 from .reward import RewardFunction, TowerHPReward, default_reward
 from .rust_engine import RustEngine, core_available, core_import_message
 from .selfplay import NoopOpponent, Opponent
-from .state_mutator import DefaultStateMutator, Snapshot, StateMutator
+from .state_mutator import DefaultStateMutator, Snapshot, StateMutator, check_max_ticks
 from .viser import ViserPublisher, play_event
 
 AGENTS = ("blue", "red")
@@ -335,6 +335,10 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self._start_tick = 0
         self._leak_steps = dict.fromkeys(TEAMS, 0)
         self._term_sums: dict[int, dict[str, float]] = {t: {} for t in TEAMS}
+        # The episode's start: its tick cap, and the seat and tag a Snapshot start names.
+        self._max_ticks: int | None = None
+        self._start_seat: int | None = None
+        self._start_tag = ""
 
     # -- spaces -------------------------------------------------------------
 
@@ -398,6 +402,16 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self._state = state
         self.decision_ticks = max(1, -(-self.decision_ms // state.tick_ms))
         self.obs_builder.reset(state)
+        snapshot = init if isinstance(init, Snapshot) else None
+        if snapshot is not None and snapshot.memory is not None:
+            # What each seat had counted at the snapshot: the first build of this state is then
+            # the observation it had there (``snapshot()``).
+            self.obs_builder.load_memory(snapshot.memory, state)
+        # The episode's own length cap: a reset option, else the start's, else none.
+        cap = options.get("max_ticks", snapshot.max_ticks if snapshot is not None else None)
+        self._max_ticks = check_max_ticks(cap, "max_ticks")
+        self._start_seat = snapshot.seat if snapshot is not None else None
+        self._start_tag = snapshot.tag if snapshot is not None else ""
         self.reward_fn.reset(state)
         self.termination.reset(state)
         if self.truncation is not None:
@@ -416,6 +430,9 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             self.viser.publish(state, cards, self.engine.arena(), self._decks, **self._forms_kw())
         self._refresh(state)
         infos = {a: self._info(a, state, NO_COMMAND, terminal=False) for a in self.agents}
+        if self._start_seat is not None:
+            for info in infos.values():
+                info["start_seat"] = self._start_seat
         return dict(self._obs), infos
 
     def step(
@@ -463,7 +480,8 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
                 self._leak_steps[team] += 1
         terminated = self.termination.is_done(state)
         truncated = self.truncation is not None and self.truncation.is_done(state)
-        truncated = truncated and not terminated
+        capped = self._max_ticks is not None and state.tick - self._start_tick >= self._max_ticks
+        truncated = (truncated or capped) and not terminated
         status = {a: NO_COMMAND for a in self.agents}
         for agent, res in zip(owner, results, strict=True):
             status[agent] = res.status
@@ -626,7 +644,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         its shaping term optimised are the same number. Crowns alone cannot tell a
         tower left at 1 hp from a tower never touched, which is why it is here.
         """
-        return {
+        out = {
             "episode_steps": self._episode_steps,
             "episode_ticks": state.tick - self._start_tick,
             "own_crowns": state.players[team].crowns,
@@ -637,6 +655,36 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             "elixir_count_exact": _counts_are_exact(self.obs_builder, team),
             **{f"reward_sum/{k}": v for k, v in self._term_sums[team].items()},
         }
+        if self._start_tag:
+            # Which kind of start this episode was, so results can be split by it.
+            out["start_tag"] = self._start_tag
+        return out
+
+    def snapshot(
+        self, *, seat: int | None = None, max_ticks: int | None = None, tag: str = ""
+    ) -> Snapshot:
+        """This battle as it stands, as a start for later episodes.
+
+        It holds the engine's state and what each seat's observation remembers of the match so
+        far (``ObsBuilder.save_memory``). A reset from it (``reset(options={"snapshot": s})``,
+        or a ``SnapshotStateMutator`` bank) shows each seat the observation it has now, and the
+        battle goes on from there as this one would under the same actions. Load it into an env
+        built the same way: the same catalogue, calibration and command delay, and an
+        observation builder that keeps no memory this one did not (a builder with
+        ``card_status`` or ``spell_aim_after_ticks`` needs a snapshot taken with them).
+
+        ``seat``, ``max_ticks`` and ``tag`` are stored on the ``Snapshot`` (see there).
+        """
+        state = self.battle_state
+        if state.game_over:
+            raise ValueError("this battle is over, so nothing can be played from it")
+        return Snapshot(
+            self.engine.save_state(),
+            memory=self.obs_builder.save_memory(),
+            seat=seat,
+            max_ticks=max_ticks,
+            tag=tag,
+        )
 
     def config(self) -> dict[str, Any]:
         """What this env IS, as a JSON-able dict, for a checkpoint to record.

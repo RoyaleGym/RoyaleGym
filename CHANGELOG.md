@@ -4,6 +4,20 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## Unreleased
+
+### Added
+- Start episodes from saved moments of a battle. `ClashParallelEnv.snapshot()` saves the engine's
+  state and what each seat's observation remembers of the match (the cycle, the counted elixir,
+  the cards seen, the enemy's forms). A reset from it shows each seat the observation it had,
+  and the battle goes on exactly as the original would under the same actions.
+- `Snapshot` has a `seat`, a `max_ticks` and a `tag`. `max_ticks` (or the reset option
+  `max_ticks`) ends an episode as a truncation once that many ticks have passed. The reset's info
+  gives `start_seat` and the episode's last info gives `start_tag`.
+- `SnapshotStateMutator` draws from a bank by weight (one per snapshot, or one per tag) and by
+  seat (`seat="blue"` draws only the starts made for Blue or for either seat). It reads a bank
+  from a file: `save_snapshots` and `load_snapshots`.
+
 ## 0.1.13 (2026-10-04)
 
 ### Changed
