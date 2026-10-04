@@ -10,8 +10,13 @@ change the observation's shape; each such change is listed here.
 - royalesim 0.1.8: units report their build-up, a tunneller's landing point and the ticks left in
   an ability, four more status bits (a Clone's copy, an ability winding up or running, fully
   charged), and the catalogue states each card's evolution cycle.
+- `own_hp_frac` / `enemy_hp_frac` (`unit_status=True`) are now in thousandths, so every spatial
+  plane stores exactly as a whole number of thousandths.
+- MockEngine states no evolution cycle (`CardInfo.evo_cycle` None): it plays no evolutions.
 
 ### Added
+- `reveal` can be given as a dict of `Reveal`'s field names, so a JSON config can set it:
+  `"reveal": {"enemy_elixir": true}`. Unknown names are refused.
 - `SpatialObsBuilder(card_status=True)`: every card's evolution and hero status, own and opponent.
   Your whole deck from the first frame, each card's form (per card and per hand slot), every
   evolved card's charge wherever it sits, and each ability button by its card. For the opponent,
