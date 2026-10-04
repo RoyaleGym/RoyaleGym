@@ -128,11 +128,11 @@ def test_mount_uid_follows_level_and_reaches_the_viewer_only_for_a_rider():
     assert unit_dict(rider, name_of)["extra"]["mount"] == 88
 
 
-#: The ship35 columns (agreed with sim 2026-10-03), after mount_uid, in this order.
-SHIP35 = ("charge", "dest_x", "dest_y", "ability_ticks")
+#: The columns royalesim 0.1.8 added (agreed with sim 2026-10-03), after mount_uid, in order.
+ACTION_COLUMNS = ("charge", "dest_x", "dest_y", "ability_ticks")
 
 
-def test_the_ship35_columns_trail_mount_uid_and_read_as_not_reported_when_absent():
+def test_the_action_columns_trail_mount_uid_and_read_as_not_reported_when_absent():
     """2026-10-03, for the owner's rule that the bot sees what a human sees: a unit's charge
     (permille: a charge run-up, a Sparky's load, an Inferno's ramp), a tunneller's landing
     point, and the ticks left in an ability's windup or run. Every engine before them decodes
@@ -140,7 +140,7 @@ def test_the_ship35_columns_trail_mount_uid_and_read_as_not_reported_when_absent
     ability_ticks. Values all differ, so a column landing next door fails."""
     fields = EntityState.__struct_fields__
     at = fields.index("mount_uid")
-    assert fields[at + 1 :] == SHIP35
+    assert fields[at + 1 :] == ACTION_COLUMNS
     old = decode_entity([*LEGACY, *NEW, 5, 12, 88])
     assert (old.charge, old.dest_x, old.dest_y, old.ability_ticks) == (-1, -1, -1, -1)
     e = decode_entity([*LEGACY, *NEW, 5, 12, 88, 640, 9000, 27000, 31])
@@ -150,7 +150,7 @@ def test_the_ship35_columns_trail_mount_uid_and_read_as_not_reported_when_absent
     assert (none.charge, none.ability_ticks) == (0, 0), "an engine's 0 is not swallowed"
 
 
-def test_the_ship35_status_bits():
+def test_the_action_status_bits():
     from royalegym.protocol import (
         STATUS_ABILITY_ACTIVE,
         STATUS_CHARGED,
@@ -163,7 +163,7 @@ def test_the_ship35_status_bits():
     )
 
 
-def test_an_engine_with_the_ship35_columns_passes_the_field_order_check():
+def test_an_engine_with_the_action_columns_passes_the_field_order_check():
     from royalegym.rust_engine import check_field_order
 
     fields = list(EntityState.__struct_fields__)

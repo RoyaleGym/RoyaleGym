@@ -1,4 +1,4 @@
-"""What a unit is doing: ``SpatialObsBuilder(unit_actions=True)``, from RoyaleSim ship35's columns.
+"""What a unit is doing: ``SpatialObsBuilder(unit_actions=True)``, from royalesim 0.1.8's columns.
 
 Fourteen planes, own then enemy, per tile like the troop planes:
 - ``own_charge`` / ``enemy_charge``: the most build-up on the tile, permille / 1000 (a Prince's
@@ -14,8 +14,9 @@ Fourteen planes, own then enemy, per tile like the troop planes:
   on, from the first tick they are under (owner 2026-10-03: everything as soon as the engine
   has it, so no readability delay).
 
-An engine before ship35 reports none of this: its units say -1 ("not said") for charge, and the
-builder refuses it by name rather than draw zeros that read as "nothing charging".
+An engine before royalesim 0.1.8 reports none of this: its units say -1 ("not said") for
+charge, and the builder refuses it by name rather than draw zeros that read as "nothing
+charging".
 
 Off by default, appended after every other optional plane.
 
@@ -167,7 +168,7 @@ def test_an_engine_before_the_columns_is_refused():
         action_channels(state, BLUE, a)  # MockEngine reports no status
     old = msgspec.structs.replace(state, entities=[
         msgspec.structs.replace(e, status_flags=0) for e in state.entities
-    ])  # status reported, charge not: an engine before ship35
+    ])  # status reported, charge not: an engine before royalesim 0.1.8
     with pytest.raises(ValueError, match="does not report what units are doing"):
         action_channels(old, BLUE, a)
 
@@ -175,7 +176,7 @@ def test_an_engine_before_the_columns_is_refused():
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 def test_the_engine_reports_the_columns_or_the_flag_refuses_it():
     """ONE test for both kinds of engine, so it never skips where CI builds the engine: an
-    engine before ship35 is refused at the first build; one with it puts a Miner's landing
+    engine before royalesim 0.1.8 is refused at the first build; one with it puts a Miner's landing
     tile on the board from its first tick under."""
     from royalegym import ClashParallelEnv
 

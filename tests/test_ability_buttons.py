@@ -365,7 +365,7 @@ def test_a_champions_button_agrees_with_the_engine_through_a_press_and_its_coold
     offers it; the press is taken and paid, the button goes off while the ability runs and
     through the cooldown the row counts down, and comes back on. A champion's charge is never
     spent. The Boss Bandit, because she is the champion whose ability recharges: the Golden
-    Knight's dash became one use per deploy (RoyaleSim ship37, measured on the client), and so
+    Knight's dash became one use per deploy (royalesim 0.1.10, measured on the client), and so
     did the others'. Nothing here is hers but the name that deals her."""
     battle = _champion_battle("BossBandit")
     if battle is None:

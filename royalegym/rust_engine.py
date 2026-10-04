@@ -829,7 +829,7 @@ class RustEngine:
         self._decode_state = msgspec.json.Decoder(BattleState)
         self._reset_called = False
         # Each side's (deck, forms) from the last reset, for an engine whose state does not
-        # carry them (before RoyaleSim ship36). None after load_state: that battle's setup was
+        # carry them (before royalesim 0.1.9). None after load_state: that battle's setup was
         # never seen here, and a stale deck would be a wrong answer, not a missing one.
         self._setup_cards: list[tuple[list[int], list[int]]] | None = None
         #: Whether the last step's results carried the engine's RESOLVED deploy

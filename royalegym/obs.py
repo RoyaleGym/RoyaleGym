@@ -1297,7 +1297,7 @@ def _write_card_status(
     if not me.deck:
         raise ValueError(
             "card_status=True, but this engine does not report the deck (PlayerState.deck): "
-            "a battle restored with load_state on an engine before RoyaleSim ship36 has none. "
+            "a battle restored with load_state on an engine before royalesim 0.1.9 has none. "
             "Reset the battle, or use an engine that reports it."
         )
     deck_forms = dict(zip(me.deck, me.forms or [0] * len(me.deck), strict=True))
@@ -1813,7 +1813,7 @@ RAGE_BUFF = "Rage"
 SLOW_BUFF = "IceWizardSlowDown"
 
 #: The planes ``SpatialObsBuilder(unit_actions=True)`` adds, after the status planes: what a
-#: unit is doing, from RoyaleSim ship35's columns (``EntityState.charge``, ``dest_x`` /
+#: unit is doing, from royalesim 0.1.8's columns (``EntityState.charge``, ``dest_x`` /
 #: ``dest_y``, ``ability_ticks``) and status bits. A tunneller's landing tile shows from its
 #: first tick under (owner 2026-10-03: everything as soon as the engine has it).
 ACTION_SPATIAL_CHANNELS: list[tuple[str, str]] = [
@@ -2080,7 +2080,7 @@ def action_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
 
     Counted on the centre tile like ``entity_channels``; charge and ability ticks are the most
     on the tile, a tunneller is counted at its landing tile. Crown towers are in none of them.
-    An engine before RoyaleSim ship35 sends -1, "not said", for every unit's charge, and is
+    An engine before royalesim 0.1.8 sends -1, "not said", for every unit's charge, and is
     refused rather than read as a board where nothing charges. Module-level for plants.
     """
     acc = np.zeros((len(ACTION_SPATIAL_CHANNELS), arena.tiles_y, arena.tiles_x), dtype=np.int64)
@@ -2092,7 +2092,7 @@ def action_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
             raise ValueError(
                 "unit_actions=True, but this engine does not report what units are doing "
                 f"(entity uid {e.uid}: status_flags {e.status_flags}, charge {e.charge}). It "
-                "needs RoyaleSim ship35's charge, dest and ability_ticks columns; use an engine "
+                "needs royalesim 0.1.8's charge, dest and ability_ticks columns; use an engine "
                 "that sends them, or leave unit_actions off."
             )
         if e.kind in TOWER_KINDS:
@@ -2383,7 +2383,7 @@ class SpatialObsBuilder(ObsBuilder):
             if unstated:
                 raise ValueError(
                     "card_status=True counts the enemy's evolution charge with each card's "
-                    "evo_cycle (the catalogue's evo_cycle column, RoyaleSim ship35 on), and this "
+                    "evo_cycle (the catalogue's evo_cycle column, royalesim 0.1.8 on), and this "
                     f"engine states none for {len(unstated)} cards, e.g. {unstated[:3]}. Use an "
                     "engine that states it, or leave card_status off."
                 )

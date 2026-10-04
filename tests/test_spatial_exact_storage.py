@@ -61,10 +61,10 @@ def test_every_plane_of_a_played_battle_is_stored_exactly():
     """Every optional plane this engine supports, on, over a played battle."""
     from royalegym import make_env
 
-    ship35 = "charge" in getattr(_core, "ENTITY_FIELDS", ())
+    has_actions = "charge" in getattr(_core, "ENTITY_FIELDS", ())
     builder = SpatialObsBuilder(
         evolutions=True, spell_aim_after_ticks=0, heroes=True, unit_status=True,
-        unit_actions=ship35,
+        unit_actions=has_actions,
     )
     env = make_env(
         deck=["Skeletons", "Musketeer", "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap"],

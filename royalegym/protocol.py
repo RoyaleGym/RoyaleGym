@@ -396,7 +396,7 @@ class CardInfo(msgspec.Struct, frozen=True):
     # The BASIC plays before each evolved play of the card's evolution (Evo Skeletons 2): the
     # same number as the 4th value of a side's own ``evo`` rows, so the enemy's evolution
     # charge can be counted from its plays. 0 for a card with no evolution; None from an engine
-    # before the catalogue column (RoyaleSim ship35).
+    # before the catalogue column (royalesim 0.1.8).
     evo_cycle: int | None = None
 
 
@@ -554,7 +554,7 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # Battle.rider_states), asked for by the viser session so a viewer can draw a rider as a
     # rider. -1 for a unit that rides nothing, and for every engine before the column.
     mount_uid: int = -1
-    # Four more, agreed with sim for its ship35 (2026-10-03), for the rule that the bot sees
+    # Four more, sent from royalesim 0.1.8 (2026-10-03), for the rule that the bot sees
     # what a human sees. -1 here is "the engine did not say" for each; the engine's own
     # "none" is 0 for charge and ability_ticks, and -1 for the landing point.
     # charge: a unit's build-up in permille (a charge run-up, a Sparky's load, an Inferno's
@@ -574,7 +574,7 @@ STATUS_INVISIBLE = 2
 STATUS_EVOLVED = 8
 STATUS_HERO = 16
 STATUS_HIDDEN = 4
-#: Four more from sim's ship35: a Clone's copy; an ability winding up; an ability running (an
+#: Four more from royalesim 0.1.8: a Clone's copy; an ability winding up; an ability running (an
 #: Archer Queen's cloak, a Golden Knight's dash chain, a hero's running effect, ...); a unit
 #: fully charged (the Prince family).
 STATUS_CLONE = 32
@@ -690,7 +690,7 @@ class PlayerState(msgspec.Struct, frozen=True):
     pending_cost: int = 0
     # The side's whole deck, its 8 catalogue ids in setup (slot) order, and each card's FORM
     # parallel to it: 0 basic, 1 evolution, 2 hero. A player knows its own eight from the first
-    # frame. Empty from an engine that does not say. RoyaleSim ship36 sends both from the
+    # frame. Empty from an engine that does not say. royalesim 0.1.9 sends both from the
     # engine's own config; before it RustEngine fills them from the setup it was reset with.
     deck: list[int] = []
     forms: list[int] = []

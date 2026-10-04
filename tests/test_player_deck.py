@@ -6,7 +6,7 @@ memory's ``own_deck`` only deduces the deck from the cycle, so at tick 0 it hold
 
 - ``deck``: the side's 8 deck card ids; ``forms``: parallel to it, 0 basic, 1 evolution, 2 hero.
   Empty lists mean "the engine did not say".
-- RoyaleSim ship36 sends both from the engine's own config. Until then RustEngine fills them from
+- royalesim 0.1.9 sends both from the engine's own config. Until then RustEngine fills them from
   the MatchSetup it was reset with, and after ``load_state`` (a battle whose setup it never saw)
   it says nothing, rather than a stale deck.
 - MockEngine reports the setup's order after a reset, as RustEngine does (the cross-engine state
@@ -66,7 +66,7 @@ def test_rust_engine_reports_the_setups_deck_and_forms_or_nothing_after_a_load()
     eng.reset(3, MatchSetup(decks=[deck, deck], forms=[forms, forms]))
     eng.load_state(blob)
     after = eng.state().players[BLUE]
-    if after.deck:  # an engine that reports them itself (RoyaleSim ship36 on)
+    if after.deck:  # an engine that reports them itself (royalesim 0.1.9 on)
         assert (after.deck, after.forms) == (deck, [0] * 8)
     else:
         assert after.forms == [], "a loaded battle's setup is unknown here, so nothing is said"

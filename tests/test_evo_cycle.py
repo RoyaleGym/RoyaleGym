@@ -1,6 +1,6 @@
 """``CardInfo.evo_cycle``: the basic plays before each evolved play of a card's evolution.
 
-RoyaleSim's ship35 gives the catalogue a trailing "evo_cycle" column, the same number as the 4th
+royalesim 0.1.8 gives the catalogue a trailing "evo_cycle" column, the same number as the 4th
 value of a side's own evo rows (Evo Skeletons 2, Evo Barbarians 1), 0 for a card with no
 loadable evolution. It lets the enemy's evolution charge be counted from its plays, which until
 now could only be read for the own side's cards. None means "the engine did not say": an engine
