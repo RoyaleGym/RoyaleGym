@@ -414,6 +414,31 @@ def engine_cards_json_path() -> tuple[Path, str]:
     return DEFAULT_DATA_DIR / "derived" / "cards.json", "sibling checkout"
 
 
+def embedded_card_table() -> str | None:
+    """The card table compiled into the engine, when that is the one it reads; else None.
+
+    A wheel built elsewhere (PyPI's) carries its tables inside and reads no cards.json at
+    all: ``royalesim.card_table_source()`` says "embedded", and the table is
+    ``royalesim.EMBEDDED_CARDS_JSON``. An engine built in a checkout says "file:<path>" and
+    reads that file (``engine_cards_json_path``).
+    """
+    if _core is None:
+        return None
+    source = getattr(_core, "card_table_source", None)
+    if not callable(source) or source() != "embedded":
+        return None
+    text = getattr(_core, "EMBEDDED_CARDS_JSON", None)
+    return text if isinstance(text, str) and text else None
+
+
+@functools.cache
+def embedded_cards_stamp(text: str) -> tuple[str, str]:
+    """(FNV-1a 64 of the compiled table's bytes, its ``provenance.vintage``), once per process."""
+    provenance = json.loads(text).get("provenance")
+    vintage = provenance.get("vintage", "unknown") if isinstance(provenance, dict) else "unknown"
+    return fnv1a64(text.encode("utf-8")), str(vintage)
+
+
 # (path, size, mtime_ns) -> (FNV-1a 64, vintage). The hash is pure Python and costs
 # about half a second on a full card table, so it is paid once per version of a file.
 _CARDS_JSON_STAMPS: dict[tuple[str, int, int], tuple[str, str]] = {}
@@ -517,8 +542,14 @@ def catalogue_vintage_split(
             f"not a vintage check: MockEngine ships a thin slice and RustEngine's "
             f"default is every registered card in the table."
         )
-    engine_cards = engine_cards_json_path()[0] if _core is not None else None
-    vintage = engine_vintage if engine_vintage is not None else derived_cards_vintage(engine_cards)
+    compiled = embedded_card_table()
+    if engine_vintage is not None:
+        vintage = engine_vintage
+    elif compiled is not None:
+        vintage = embedded_cards_stamp(compiled)[1]
+    else:
+        engine_cards = engine_cards_json_path()[0] if _core is not None else None
+        vintage = derived_cards_vintage(engine_cards)
     if vintage == RAW_CARD_PACK_TABLE_VINTAGE:
         return None
     differences: dict[str, list[str]] = {}
@@ -713,11 +744,17 @@ class RustEngine:
         self.path_search = path_search
         self.ground_y_clamp = ground_y_clamp
         self.ground_deploy_point = ground_deploy_point
-        # The card table is read by the Battle below, from this file (module doc).
+        # The card table is read by the Battle below, from this file (module doc), or from
+        # the table compiled into a wheel built elsewhere, which reads no file and has none.
         # Stamped from disk on both sides of that read unless the engine reports it.
-        self.cards_json_path, self.cards_json_found_by = engine_cards_json_path()
+        self.embedded_cards = embedded_card_table()
+        self.cards_json_path: Path | None
+        if self.embedded_cards is not None:
+            self.cards_json_path, self.cards_json_found_by = None, "embedded"
+        else:
+            self.cards_json_path, self.cards_json_found_by = engine_cards_json_path()
         from_engine = any(hasattr(_core.Battle, n) for n in ENGINE_CARD_HASH_NAMES)
-        before = None if from_engine else self._disk_stamp()
+        before = None if from_engine or self.embedded_cards else self._disk_stamp()
         # By keyword and only when there are any: a build older than the core's keyword
         # still constructs a battle that overrides nothing.
         overrides: dict[str, Any] = (
@@ -743,10 +780,15 @@ class RustEngine:
         self._card_table = self._stamp_card_table(before)
         terr = territory_differences(self._battle, self._rules, self._arena, self.slot_of_k)
         if terr:
+            read = (
+                "the card table compiled into it"
+                if self.cards_json_path is None
+                else f"data/derived/cards.json in the checkout it was built in "
+                f"({self.cards_json_path})"
+            )
             raise RuntimeError(
                 "the Rust engine and the action mask disagree on troop territory. The "
-                "engine read data/derived/cards.json in the checkout it was built in "
-                f"({self.cards_json_path}); the mask reads the one under data_dir() "
+                f"engine read {read}; the mask reads the one under data_dir() "
                 f"({data_dir() / 'derived' / 'cards.json'}). Make them the same file: "
                 "point ROYALESIM_DATA_DIR at that checkout's data/ folder, or build the "
                 "engine in the checkout whose data you want:\n  " + "\n  ".join(terr)
@@ -1184,22 +1226,27 @@ class RustEngine:
         is "unknown" unless ``cards_json_path`` hashes to the same value;
         ``"disk_at_construction"`` when it was hashed from ``cards_json_path``, the
         file the engine reads, just before and just after the engine read it (a file
-        that changed in between is refused); ``"unavailable"`` when that file could
-        not be found, and then the other two are "" and "unknown".
+        that changed in between is refused); ``"embedded"`` when the engine reads the
+        table compiled into it (a wheel built elsewhere, ``embedded_card_table``) and it
+        was hashed from that; ``"unavailable"`` when the file could not be found, and
+        then the other two are "" and "unknown".
         """
         return dict(self._card_table)
 
     def _disk_stamp(self) -> tuple[str, str] | None:
         path = self.cards_json_path
-        return cards_json_stamp(path) if path.is_file() else None
+        return cards_json_stamp(path) if path is not None and path.is_file() else None
 
     def _stamp_card_table(self, before: tuple[str, str] | None) -> dict[str, str]:
         engine_hash = _engine_card_hash(self._battle)
-        disk = self._disk_stamp()
+        compiled = self.embedded_cards
+        disk = embedded_cards_stamp(compiled) if compiled is not None else self._disk_stamp()
         if engine_hash is not None:
-            # The file's vintage names the engine's table only if the file IS that table.
+            # The table's vintage names the engine's table only if it IS that table.
             vintage = disk[1] if disk is not None and disk[0] == engine_hash else "unknown"
             return _card_table(engine_hash, vintage, "engine")
+        if compiled is not None:
+            return _card_table(disk[0], disk[1], "embedded")
         if disk != before:
             raise RuntimeError(
                 f"{self.cards_json_path} changed while the engine was reading it, so "
@@ -1359,8 +1406,12 @@ def _rotation_probe_cached(args: tuple, kwargs: dict) -> list[str]:
     constructor that quietly resets what it just built is its own kind of trap.
     """
     # The card table too: it is read at construction, so it can change with no rebuild.
-    cards = engine_cards_json_path()[0]
-    table = cards_json_stamp(cards)[0] if cards.is_file() else ""
+    compiled = embedded_card_table()
+    if compiled is not None:
+        table = embedded_cards_stamp(compiled)[0]
+    else:
+        cards = engine_cards_json_path()[0]
+        table = cards_json_stamp(cards)[0] if cards.is_file() else ""
     cache_key = (RustEngine.build_digest(), table, repr(args), repr(sorted(kwargs.items())))
     if cache_key not in _PROBE_CACHE:
         _PROBE_CACHE[cache_key] = rotation_probe(RustEngine(*args, **kwargs))

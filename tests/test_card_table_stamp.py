@@ -12,7 +12,9 @@ WHAT IT CHECKS
        implementation written out here, separately, over the file's bytes.
     b. RustEngine stamps the file the engine read: the file's cards agree with the
        catalogue the engine reports, and ROYALESIM_DATA_DIR does not move the path.
-       The build directory is found in an extension with text before it.
+       The build directory is found in an extension with text before it. A wheel built
+       elsewhere (PyPI's) reads the table compiled into it and no file: its stamp is that
+       table's, "embedded", and every test here reads whichever table the engine read.
     c. Different bytes give a different stamp (a temp copy, the path lookup patched);
        a file that changes while the engine reads it is refused; an engine that
        reports its own hash is believed and says so, with the file's vintage only
@@ -86,6 +88,18 @@ def file_vintage(path: Path) -> str:
     return json.loads(path.read_text(encoding="utf-8"))["provenance"]["vintage"]
 
 
+def table_bytes(engine: RustEngine) -> bytes:
+    """The card table this engine read: the file in the checkout it was built in, or, for a
+    wheel built elsewhere (PyPI's), the table compiled into it, which is the only one there."""
+    if engine.cards_json_found_by == "embedded":
+        return rust_engine.embedded_card_table().encode("utf-8")
+    return engine.cards_json_path.read_bytes()
+
+
+def table_vintage(engine: RustEngine) -> str:
+    return json.loads(table_bytes(engine))["provenance"]["vintage"]
+
+
 @pytest.fixture(scope="module")
 def rust() -> RustEngine:
     if not core_available():
@@ -113,10 +127,9 @@ def test_fnv1a64_has_the_known_answers_royalesim_pins():
 @needs_core
 def test_rust_stamp_is_the_fnv1a64_of_the_file_the_engine_reads(rust):
     stamp = rust.card_table_stamp()
-    path = rust.cards_json_path
-    assert stamp["cards_json_fnv1a64"] == independent_fnv1a64(path.read_bytes())
-    assert stamp["cards_vintage"] == file_vintage(path)
-    assert stamp["cards_json_hash_source"] in ("engine", "disk_at_construction")
+    assert stamp["cards_json_fnv1a64"] == independent_fnv1a64(table_bytes(rust))
+    assert stamp["cards_vintage"] == table_vintage(rust)
+    assert stamp["cards_json_hash_source"] in ("engine", "disk_at_construction", "embedded")
     config = rust.config()
     assert {k: config[k] for k in stamp} == stamp, "config() carries the stamp"
 
@@ -127,7 +140,7 @@ def test_the_stamped_file_holds_the_catalogue_the_engine_reports(rust):
     loaded, so a stamp taken from any other file shows up here. The 2018 table and a
     newer one differ in the card set and in Goblins' count, so either way round a
     wrong file fails."""
-    doc = json.loads(rust.cards_json_path.read_text(encoding="utf-8"))
+    doc = json.loads(table_bytes(rust))
     by_name = {c["name"]: c for c in doc["cards"]}
     engine_cards = rust.cards()
     assert len(engine_cards) > 50, "the default catalogue is the whole table"
@@ -206,9 +219,10 @@ def test_the_build_directory_is_found_behind_other_text(tmp_path, monkeypatch):
 
 @needs_core
 def test_different_bytes_give_a_different_stamp(rust, tmp_path, monkeypatch):
-    real = rust.cards_json_path
-    raw = real.read_bytes()
-    vintage = file_vintage(real)
+    raw = table_bytes(rust)
+    vintage = table_vintage(rust)
+    # A file the engine reads: an engine that reads the table compiled into it has none.
+    monkeypatch.setattr(rust_engine, "embedded_card_table", lambda: None)
     edited = raw.replace(
         json.dumps(vintage).encode(), json.dumps(vintage + " (edited copy)").encode(), 1
     )
@@ -246,6 +260,8 @@ def test_a_file_that_changes_while_the_engine_reads_it_is_refused(tmp_path, monk
 
     monkeypatch.setattr(rust_engine, "_core", core_with_battle(RewritingBattle))
     monkeypatch.setattr(rust_engine, "engine_cards_json_path", lambda: (copy, "test"))
+    # A file the engine reads: an engine that reads the table compiled into it has none.
+    monkeypatch.setattr(rust_engine, "embedded_card_table", lambda: None)
     with pytest.raises(RuntimeError, match="changed while the engine was reading it"):
         RustEngine(card_names=SHARED)
 
@@ -256,7 +272,7 @@ def test_an_engine_that_reports_its_own_hash_is_believed(rust, monkeypatch, same
     """The engine's hash wins either way. The file's vintage is stated only when the
     file hashes to what the engine reported, because only then is it that table."""
     real = rust_engine._core.Battle
-    on_disk = independent_fnv1a64(rust.cards_json_path.read_bytes())
+    on_disk = independent_fnv1a64(table_bytes(rust))
     reported = int(on_disk, 16) if same_file else 0x0123456789ABCDEF
 
     class ReportingBattle:
@@ -277,9 +293,35 @@ def test_an_engine_that_reports_its_own_hash_is_believed(rust, monkeypatch, same
     stamp = RustEngine(card_names=SHARED).card_table_stamp()
     assert stamp == {
         "cards_json_fnv1a64": f"{reported:016x}",
-        "cards_vintage": file_vintage(rust.cards_json_path) if same_file else "unknown",
+        "cards_vintage": table_vintage(rust) if same_file else "unknown",
         "cards_json_hash_source": "engine",
     }
+
+
+@needs_core
+def test_an_engine_that_reads_its_compiled_table_stamps_that_table(monkeypatch):
+    """A wheel built elsewhere (PyPI's) reads the table compiled into it and no cards.json:
+    ``royalesim.card_table_source()`` says "embedded". Its stamp is that table's, and its
+    path is None rather than a sibling checkout's file it never read. Before, every PyPI
+    install stamped "unavailable", with no hash and no vintage, into every trace."""
+    real = rust_engine._core
+    names = {k: getattr(real, k) for k in dir(real) if not k.startswith("__")}
+    fake = types.SimpleNamespace(**{**names, "card_table_source": lambda: "embedded"})
+    monkeypatch.setattr(rust_engine, "_core", fake)
+    monkeypatch.setattr(rust_engine, "ENGINE_CARD_HASH_NAMES", ())
+    table = real.EMBEDDED_CARDS_JSON.encode("utf-8")
+    engine = RustEngine(card_names=SHARED)
+    assert engine.cards_json_found_by == "embedded"
+    assert engine.cards_json_path is None
+    assert engine.card_table_stamp() == {
+        "cards_json_fnv1a64": independent_fnv1a64(table),
+        "cards_vintage": json.loads(table)["provenance"]["vintage"],
+        "cards_json_hash_source": "embedded",
+    }
+    # An engine that reads a file is not taken for one with a compiled table.
+    file_source = types.SimpleNamespace(**{**names, "card_table_source": lambda: "file:x"})
+    monkeypatch.setattr(rust_engine, "_core", file_source)
+    assert rust_engine.embedded_card_table() is None
 
 
 def test_an_engine_hash_that_is_not_one_is_refused():
