@@ -360,14 +360,16 @@ def _champion_battle(name: str):
 
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 def test_a_champions_button_agrees_with_the_engine_through_a_press_and_its_cooldown():
-    """The Golden Knight (RoyaleSim's first champion) on both seats, every button, every tick:
-    the mask is on exactly when the engine takes the press. Each seat presses the first time
-    its mask offers it; the press is taken and paid, the button goes off while the chain runs
-    and through the cooldown the row counts down, and comes back on. A champion's charge is
-    never spent. Nothing here is the Golden Knight's but the name that deals it."""
-    battle = _champion_battle("GoldenKnight")
+    """A champion whose ability recharges, on both seats, every button, every tick: the mask is
+    on exactly when the engine takes the press. Each seat presses the first time its mask
+    offers it; the press is taken and paid, the button goes off while the ability runs and
+    through the cooldown the row counts down, and comes back on. A champion's charge is never
+    spent. The Boss Bandit, because she is the champion whose ability recharges: the Golden
+    Knight's dash became one use per deploy (RoyaleSim ship37, measured on the client), and so
+    did the others'. Nothing here is hers but the name that deals her."""
+    battle = _champion_battle("BossBandit")
     if battle is None:
-        pytest.skip("this engine has no champion button (the Golden Knight's)")
+        pytest.skip("this engine has no champion button (the Boss Bandit's)")
     eng, parser, champion = battle
     giant = next(c.card_id for c in eng.cards() if c.name == "Giant")
     t = eng.arena().subtile
@@ -377,6 +379,9 @@ def test_a_champions_button_agrees_with_the_engine_through_a_press_and_its_coold
     # with nothing in reach does next (wait for a target, or run to one) is the engine's
     # rule, and it has moved; this test reads only the rows, never how long the wait is.
     for card, (tx, ty) in ((champion, (3, 13)), (giant, (14, 14))):
+        cost = 1000 * eng.cards()[card].elixir
+        while min(p.elixir_milli for p in eng.state().players) < cost:
+            eng.step([], 1)  # both seats can pay it (her 6 and the Giant's 5 exceed one bar)
         state = eng.state()
         cmds = []
         for team in (BLUE, RED):
