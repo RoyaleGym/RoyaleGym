@@ -107,6 +107,14 @@ PORT_BUSY = (
     "Only one usage of each socket address",
 )
 
+#: Pages whose MockEngine programs need a RoyaleSim checkout, and that say so to the reader:
+#: MockEngine reads the 2018 tables from one, and an installed engine carries none. Run from
+#: the release wheels alone, such a block cannot run; it is reported unchecked with this
+#: reason, never as a pass, and the same error on any page not listed here still fails.
+NEEDS_CHECKOUT = {"build-from-source.md": "a RoyaleSim checkout (the page's Step 2)"}
+#: The start of MockEngine's refusal when that data is missing (mock_engine._load_cards).
+MOCK_DATA_MISSING = "MockEngine reads the 2018 card tables from"
+
 # Receives {"prefix": [...], "code": ...}: the prefix runs first with its output discarded.
 WORKER = r'''
 import contextlib, io, json, sys, traceback, warnings
@@ -231,8 +239,11 @@ def check_page(page: Path, text: str, engine: str | None, cwd: Path) -> Verdict:
             r, after = run(ran, body, cwd), " (runs only after the blocks above it)"
         if r["how"] != "ok":
             busy = next((n for n in PORT_BUSY if n in r["err"]), None)
+            checkout = NEEDS_CHECKOUT.get(page.name) if MOCK_DATA_MISSING in r["err"] else None
             if busy is not None:
                 unchecked.append(f"{where} binds a port something here already holds ({busy})")
+            elif checkout is not None:
+                unchecked.append(f"{where} needs {checkout}, and this run has none")
             elif expected is None:
                 lines.append(f"excerpt {where}: does not run, no output block under it")
             else:
@@ -526,3 +537,29 @@ def test_a_stamp_wrapped_across_a_line_is_still_a_stamp() -> None:
     assert STAMP.findall("run on engine\nbuild `0123456789abcdef` today") == ["0123456789abcdef"]
     page = PAGES / "cheatsheets" / "game-values.md"
     assert STAMP.findall(page.read_text(encoding="utf-8")), "game-values.md's stamp is not found"
+
+
+MISSING_DATA_PAGE = """```python
+raise FileNotFoundError(
+    "MockEngine reads the 2018 card tables from /x/csv_logic, and characters.csv is not there."
+)
+```
+
+```
+227 cards in the stand-in
+```
+"""
+
+
+def test_a_checkout_only_example_run_from_wheels_is_declared_not_failed(tmp_path: Path) -> None:
+    """build-from-source.md's MockEngine program needs a RoyaleSim checkout (its Step 2):
+    MockEngine reads the 2018 tables from one, and an installed engine carries none. Run from
+    the release wheels alone it cannot run, and that is reported as unchecked with the reason,
+    never as a pass. The same error on any other page is still a failure."""
+    page = tmp_path / "build-from-source.md"
+    v = check_page(page, MISSING_DATA_PAGE, None, tmp_path)
+    assert not v.failures, v.failures
+    assert len(v.unchecked) == 1, v.unchecked
+    assert "needs a RoyaleSim checkout" in v.unchecked[0], v.unchecked
+    other = check_page(tmp_path / "page.md", MISSING_DATA_PAGE, None, tmp_path)
+    assert len(other.failures) == 1, "on a page that does not need a checkout it must fail"
