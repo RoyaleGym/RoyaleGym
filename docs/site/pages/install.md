@@ -214,6 +214,11 @@ engine, the environments, the trainer, the viewer and the extras. The `--find-li
 `pip` where to download them, because RoyaleGym isn't on PyPI (Python's package store) yet. You
 don't need Git or Rust.
 
+!!! note "An early release"
+    New versions come often while the engine is matched to the real game. For a project you want
+    to keep the same, stay on the version you installed. To update later, see
+    [What happens when Clash Royale updates?](faq.md#what-happens-when-clash-royale-updates)
+
 You'll see a lot of `Downloading` and `Installing` lines. On Linux this step also downloads
 PyTorch, about 3 GB, so it can sit on one line for several minutes. It ends with a line that
 starts with `Successfully installed` and lists everything it installed, `royalegym` among them.

@@ -19,7 +19,12 @@ game, any game files or an account.
 
 ### Can my bot play the real game?
 
-No. It trains in the simulator, and that's all it does.
+Not with anything from us. RoyaleGym is a simulator and a training framework: your bot trains and
+plays in it, on your own computer. If you want a bot of yours on the real ladder, that part is
+yours to build, and we don't publish tools for it or help with it.
+
+We show our own bots' ladder results as a benchmark of what a bot can do. You can play against
+them yourself: ask in the [Discord](https://discord.gg/4D2BS5JBHP) for a 1v1.
 
 ### Will this get me banned?
 
