@@ -342,6 +342,23 @@ Close games and other programs that use the graphics card. If it still happens, 
 for 6 GB, `256` for 4 GB. The message calls it `ppo.minibatch_size`; it's the same setting. Leave
 `doctor.vram_headroom_mb` alone.
 
+### Training takes more and more of the computer's memory (Windows)
+
+On Windows, when the graphics card's memory is full, Windows lends the card some of the
+computer's own memory (RAM) instead of stopping. Over a long run, training could take gigabytes
+of it that way, and the whole computer slows down.
+
+RoyaleLearn 0.5.5 and newer stop at 80% of the card on Windows instead. Update it:
+
+```
+pip install --upgrade royalelearn
+```
+
+If training then stops with [Not enough graphics memory](#not-enough-graphics-memory), lower
+`ppo_minibatch_size` as that entry says. To pick the limit yourself, add `vram_fraction` to the
+`Learner(...)` in `quickstart.py`: a share of the card, such as `vram_fraction=0.7`, or
+`vram_fraction=None` for no limit.
+
 ### Training is very slow
 
 First check that PyTorch can see your graphics card (above).
