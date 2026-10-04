@@ -3887,6 +3887,10 @@ alive. So this section no longer explains a knockback divergence in a run.</p>
   37.1 % no towers, from the 2026-09-23 corpus run at build_digest d872d792711934c2, 67 of
   73 fixtures played). A tower with several units in range picks among them by a rule the engine
   does not yet reproduce, and the column counts the pick, not the damage.</li>
+<li>One corpus battle is limited by its recording, not by the engine: 20260918-130203.b2 has three unrecorded
+  2-elixir casts (t1282, t1862 and t2526; their effect is consistent with a Rage), from a reader that recorded no area
+  effects or opponent taps. Its lost unit-ticks after those casts are a gap in the recording. The battle stays in the
+  corpus and in every total, so the corpus is not made to look better than it is.</li>
 </ul>
 
 

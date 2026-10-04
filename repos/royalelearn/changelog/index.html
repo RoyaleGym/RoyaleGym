@@ -2871,6 +2871,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#058" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.8
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#057" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3452,6 +3474,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#058" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.8
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#057" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3642,6 +3686,17 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>doctor.vram_fraction</code> sets the GPU memory cap from a config: a share of the card in (0, 1],
+  or null for no cap. Unset, the constructor's <code>vram_fraction</code> decides, as before.</li>
+</ul>
+<h2 id="058">0.5.8<a class="headerlink" href="#058" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A CUDA run on Windows starts again: the memory cap named the device as <code>cuda</code> with no index,
+  which torch refuses, so every such run stopped at start-up since 0.5.5. It now names the
+  device's index, or the current device's.</li>
+</ul>
 <h2 id="057">0.5.7<a class="headerlink" href="#057" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>rollout.overlap</code> runs: the next iteration is collected on a second thread while the update

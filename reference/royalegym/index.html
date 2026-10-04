@@ -3375,6 +3375,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.embedded_card_table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;embedded_card_table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.embedded_cards_stamp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;embedded_cards_stamp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.rust_engine.cards_json_stamp" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7855,6 +7877,28 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;engine_cards_json_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.embedded_card_table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;embedded_card_table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.embedded_cards_stamp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;embedded_cards_stamp
       
     </span>
   </a>
@@ -13904,8 +13948,10 @@ hash of the table it loaded (<code>ENGINE_CARD_HASH_NAMES</code>), and then the 
 is "unknown" unless <code>cards_json_path</code> hashes to the same value;
 <code>"disk_at_construction"</code> when it was hashed from <code>cards_json_path</code>, the
 file the engine reads, just before and just after the engine read it (a file
-that changed in between is refused); <code>"unavailable"</code> when that file could
-not be found, and then the other two are "" and "unknown".</p>
+that changed in between is refused); <code>"embedded"</code> when the engine reads the
+table compiled into it (a wheel built elsewhere, <code>embedded_card_table</code>) and it
+was hashed from that; <code>"unavailable"</code> when the file could not be found, and
+then the other two are "" and "unknown".</p>
 
 
     </div>
@@ -14198,6 +14244,50 @@ what the engine reads. In order: the path the engine states, if it states one
 (<code>ENGINE_CARD_PATH_NAMES</code>), found by "engine"; the build directory compiled into
 the extension, "build checkout"; the sibling checkout of the documented layout,
 "sibling checkout", a fallback that is right only when the engine was built there.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.rust_engine.embedded_card_table" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">embedded_card_table</span><span class="p">()</span></code>
+
+<a href="#royalegym.rust_engine.embedded_card_table" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The card table compiled into the engine, when that is the one it reads; else None.</p>
+<p>A wheel built elsewhere (PyPI's) carries its tables inside and reads no cards.json at
+all: <code>royalesim.card_table_source()</code> says "embedded", and the table is
+<code>royalesim.EMBEDDED_CARDS_JSON</code>. An engine built in a checkout says "file:<path>" and
+reads that file (<code>engine_cards_json_path</code>).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.rust_engine.embedded_cards_stamp" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">embedded_cards_stamp</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-cached"><code>cached</code></small>
+  </span>
+
+<a href="#royalegym.rust_engine.embedded_cards_stamp" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>(FNV-1a 64 of the compiled table's bytes, its <code>provenance.vintage</code>), once per process.</p>
 
 
     </div>
