@@ -1796,8 +1796,8 @@ STATUS_SPATIAL_CHANNELS: list[tuple[str, str]] = [
     ("enemy_on_tower", "count of enemy units whose current target is a crown tower"),
     ("own_on_building", "count of own units whose target is a building, not a crown tower"),
     ("enemy_on_building", "count of enemy units whose target is a building, not a crown tower"),
-    ("own_hp_frac", "hp / max hp of the own unit with the most max hp in the tile, not towers"),
-    ("enemy_hp_frac", "hp / max hp of the enemy unit with the most max hp in the tile"),
+    ("own_hp_frac", "hp / max hp of the own unit with the most max hp in the tile, permille"),
+    ("enemy_hp_frac", "hp / max hp of the enemy unit with the most max hp in the tile, permille"),
     ("own_invisible", "count of own invisible units (STATUS_INVISIBLE), where they stand"),
     ("enemy_invisible", "count of enemy invisible units, where they stand"),
     ("own_underground", "count of own units tunnelling (STATUS_UNDERGROUND)"),
@@ -2067,7 +2067,11 @@ def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) ->
     out = acc.astype(np.float32)
     out[:2] = (acc[:2] / HP_SCALE).astype(np.float32)
     for (side, ty, tx), (_, _, hp, max_hp) in strongest.items():
-        out[10 + side, ty, tx] = np.float32(min(max(hp, 0), max_hp) / max_hp)
+        # In permille, rounded in integers and written as float32(q) / 1000: a plane that
+        # stores as uint16 x 1000 exactly (RoyaleImitate's shards refuse anything else), so a
+        # live bot reads what the clone trained on.
+        q = (2000 * min(max(hp, 0), max_hp) + max_hp) // (2 * max_hp)
+        out[10 + side, ty, tx] = np.float32(q) / np.float32(1000)
     return out
 
 
