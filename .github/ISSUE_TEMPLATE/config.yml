@@ -1,1 +1,11 @@
 blank_issues_enabled: true
+contact_links:
+  - name: FAQ
+    url: https://royalegym.github.io/RoyaleGym/faq/
+    about: Answers to the common questions.
+  - name: It Doesn't Work
+    url: https://royalegym.github.io/RoyaleGym/it-doesnt-work/
+    about: The common error messages and what to do about each.
+  - name: Discord
+    url: https://discord.gg/4D2BS5JBHP
+    about: Ask the community.
