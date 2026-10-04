@@ -543,12 +543,12 @@ def catalogue_vintage_split(
             f"default is every registered card in the table."
         )
     compiled = embedded_card_table()
+    engine_cards = None if compiled is not None or _core is None else engine_cards_json_path()[0]
     if engine_vintage is not None:
         vintage = engine_vintage
     elif compiled is not None:
         vintage = embedded_cards_stamp(compiled)[1]
     else:
-        engine_cards = engine_cards_json_path()[0] if _core is not None else None
         vintage = derived_cards_vintage(engine_cards)
     if vintage == RAW_CARD_PACK_TABLE_VINTAGE:
         return None
@@ -562,15 +562,24 @@ def catalogue_vintage_split(
     if not differences:
         return None
     detail = "; ".join(f"{f}: {', '.join(v[:4])}" for f, v in sorted(differences.items()))
+    if compiled is not None:
+        where = (
+            "this engine reads the card table compiled into it (a wheel built elsewhere), "
+            "so only an engine built in a RoyaleSim checkout whose "
+            "data/derived/cards.json is the 2018 table can run it"
+        )
+    else:
+        where = (
+            "it reads data/derived/cards.json in the RoyaleSim checkout it was built in "
+            f"({engine_cards or 'royalesim is not built'}), each time one is constructed, "
+            "and ROYALESIM_DATA_DIR does not move it. Regenerate that file with "
+            "`python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json` "
+            "in that checkout; no rebuild is needed"
+        )
     return (
         "the two engines are reading different card tables, so this comparison would "
         "measure the DATA and not the engines. A SKIP IS NOT A PASS -- to run it, the "
-        "engine's cards.json has to be the 2018 table: it reads data/derived/cards.json "
-        "in the RoyaleSim checkout it was built in "
-        f"({engine_cards or 'royalesim is not built'}), each time one is constructed, "
-        "and ROYALESIM_DATA_DIR does not move it. Regenerate that file with "
-        "`python tools/extract_cards.py --vintage 2018 --out data/derived/cards.json` "
-        "in that checkout; no rebuild is needed. cards.json vintage "
+        f"engine's cards.json has to be the 2018 table: {where}. cards.json vintage "
         f"{vintage!r} vs MockEngine's {RAW_CARD_PACK!r}. "
         f"Differences (rust/mock) -- {detail}"
     )
