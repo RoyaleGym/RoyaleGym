@@ -178,14 +178,15 @@ lists which.
 one has a status, from guess to measured, and nearly all of them say where they came from. You
 can change one and rebuild.
 
-**You want to help close the accuracy gap.** Measured at build `d872d792711934c2`, the two
-biggest sources are when a unit dies, 31.2% of what is left, and where multi-unit cards put
-their units, 29.4%. Both are open work.
+**You want to help close the accuracy gap.** Measured on royalesim 0.1.10, what is left on
+basic cards comes from attack timing, 37.6% of the misses, how units push each other apart on
+contact, 31.1%, and walking, 30.4%, as the scorer labels them. Champions and evolutions aren't
+scored on whole battles yet, which is open work of its own.
 
 That ranking is less stable than it looks, and the accuracy page explains why: each battle is
 counted against whatever went wrong FIRST in it, so correcting one cause reshuffles the rest.
-Contact was the second-biggest source until the spawn point was corrected and is now the
-smallest. Pick a cause because you can fix it, not because it is top of the table.
+Where multi-unit cards put their units topped an earlier run and now starts none. Pick a cause
+because you can fix it, not because it is top of the table.
 
 !!! warning "Rebuild after you change the constants or the arena"
     The engine compiles `data/calibration.json` and `data/derived/arena.json` into itself. So
@@ -246,13 +247,12 @@ worker and 65,200 on six. Treat those as an illustration: the same measurement o
 has moved by a factor of two inside one evening.
 
 What that means for you: overnight rather than a fortnight, on a laptop, for a run of the size
-people usually reach for. Nobody has trained a bot yet, so that is arithmetic on the battle rate
-rather than experience.
+people usually reach for. That is arithmetic on the battle rate.
 
 **Accuracy.** Real matches are replayed in the engine and compared tick by tick. The six towers
 are left out, because towers do not move and counting them flatters the result. Without them, a
-unit is within a quarter of a tile of where it really was 56.5% of the time, measured at build
-`d872d792711934c2`. Single units are much better than swarms, by a wide margin.
+unit is within a quarter of a tile of where it really was 98.8% of the time, measured on
+royalesim 0.1.10 over 67 recordings of 37 matches, with basic cards and one hero.
 
 The per-card figures used to be repeated here and are not any more. The same claim living on three
 pages meant fixing one of them left two wrong, twice over, and the numbers on this page were two
