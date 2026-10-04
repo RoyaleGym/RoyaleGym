@@ -110,7 +110,7 @@ SPELLS AND STATUS EFFECTS
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from typing import Any, NamedTuple
@@ -1511,6 +1511,21 @@ class ObsBuilder(ABC):
     def __init__(
         self, reveal: Reveal | None = None, calibration: Calibration | None = None
     ) -> None:
+        if isinstance(reveal, Mapping):
+            # A JSON config gives the reveal as a dict ("reveal": {"enemy_elixir": true}). A
+            # misspelt name would otherwise build the fair observation while the config says
+            # it reveals, so unknown names and non-booleans are refused by name.
+            known = set(Reveal.__dataclass_fields__)
+            unknown = sorted(set(reveal) - known)
+            if unknown:
+                raise ValueError(
+                    f"reveal names {unknown}, which Reveal does not have; its fields are "
+                    f"{sorted(known)}"
+                )
+            odd = sorted(k for k, v in reveal.items() if not isinstance(v, bool))
+            if odd:
+                raise ValueError(f"reveal's {odd} must be true or false: {dict(reveal)}")
+            reveal = Reveal(**reveal)
         if reveal is not None and not isinstance(reveal, Reveal):
             # The old constructors took ``reveal_enemy_elixir: bool`` in this
             # position. A bare True would otherwise be carried all the way to the
