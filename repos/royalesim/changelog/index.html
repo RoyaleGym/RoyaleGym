@@ -2197,6 +2197,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0111-2026-10-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.11 (2026-10-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0110-2026-10-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3408,6 +3419,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0111-2026-10-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.11 (2026-10-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0110-2026-10-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3556,6 +3578,17 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0111-2026-10-04">0.1.11 (2026-10-04)<a class="headerlink" href="#0111-2026-10-04" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The source package (sdist) now carries LICENSE, so PyPI accepts it.</li>
+<li>Battle logic: no change to how a battle plays by default. New per-client rules for replays of the 15.535.29 client
+  (chases, target keeping, load timers, Evo Electro Dragon and Evo Hunter timings, warps, Skeleton King souls, freeze
+  lengths), as measured in that client.</li>
+<li>A MIRRORED shuffle with per-card <code>levels</code> now keeps each card at its own level. Before, the levels stayed in the
+  setup's order while the shuffle moved the cards, so a card could play at another card's level.</li>
+<li><code>state_json()</code> players' <code>deck</code> and <code>forms</code> are the order the battle deals from: the setup's order, except under a
+  MIRRORED shuffle, which permutes both decks the same way (each card's form and level go with it).</li>
+</ul>
 <h2 id="0110-2026-10-03">0.1.10 (2026-10-03)<a class="headerlink" href="#0110-2026-10-03" title="Permanent link">&para;</a></h2>
 <ul>
 <li>No change to installing or calling the engine. Battle logic: the Golden Knight's ability is one use per deploy, like

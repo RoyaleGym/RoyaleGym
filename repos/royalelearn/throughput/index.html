@@ -3876,8 +3876,8 @@ command that had promised more than it did, so the promise went instead.</p>
 </table>
 <p><code>time/critic_pass</code> and <code>time/gae</code> are measured. Both run inside the update, before its first
 epoch, so their seconds are also inside <code>time/update</code>: read them as parts of it, not in addition
-to it. <code>time/overlap_saved</code> is in the schema but not written, because overlapped collection does
-not exist yet.</p>
+to it. <code>time/overlap_saved</code> is written with <code>rollout.overlap</code> on: the seconds the next batch's
+collection ran beside the update.</p>
 <p><code>time/residual</code> is the honest one to watch. Anything the harness spends that is not collection,
 update, checkpoint or gate shows up there as itself rather than being quietly absorbed.</p>
 <h2 id="the-three-profiles">The three profiles<a class="headerlink" href="#the-three-profiles" title="Permanent link">&para;</a></h2>
@@ -3990,9 +3990,10 @@ faster per transition. Nobody has measured the learning cost of any of these cha
 <p><strong>The lever that moves collection</strong> is workers times battles per worker, bounded by your memory
 and your cores. There are three workers in the <code>laptop</code> profile on a machine with eight threads,
 not thirty-two, because the learner is the bottleneck there.</p>
-<p><strong><code>rollout.overlap</code> is not built.</strong> It is meant to hide collection under the update, but the loop
-in <code>coordinator.py</code> collects and then updates. A config that turns it on is refused at start-up,
-and no profile turns it on. <code>time/overlap_saved</code> is not written.</p>
+<p><strong><code>rollout.overlap</code></strong> collects the next iteration on a second thread while the update trains on
+a copy of this one, from a snapshot of the actor taken before the update, so every batch after the
+first is one update behind the learner (<code>ppo/behaviour_lag_iterations</code>). It costs a second
+rectangle of memory, which the start-up memory check counts. No profile turns it on.</p>
 <h2 id="which-resource-is-biting">Which resource is biting<a class="headerlink" href="#which-resource-is-biting" title="Permanent link">&para;</a></h2>
 <p>Four candidates, and the metrics row tells them apart. All of these keys are in <code>metrics.jsonl</code> and
 on the console at the end of every iteration.</p>

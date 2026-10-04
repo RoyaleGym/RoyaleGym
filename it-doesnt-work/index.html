@@ -4452,8 +4452,9 @@ for 6 GB, <code>256</code> for 4 GB. The message calls it <code>ppo.minibatch_si
 <p>On Windows, when the graphics card's memory is full, Windows lends the card some of the
 computer's own memory (RAM) instead of stopping. Over a long run, training could take gigabytes
 of it that way, and the whole computer slows down.</p>
-<p>RoyaleLearn 0.5.5 and newer stop at 80% of the card on Windows instead. Update it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pip install --upgrade royalelearn
+<p>RoyaleLearn 0.5.5 and newer stop at 80% of the card on Windows instead. Update RoyaleGym, which
+brings it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <p>If training then stops with <a href="#not-enough-graphics-memory">Not enough graphics memory</a>, lower
 <code>ppo_minibatch_size</code> as that entry says. To pick the limit yourself, add <code>vram_fraction</code> to the

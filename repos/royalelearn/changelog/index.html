@@ -2871,6 +2871,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#057" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.7
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#056" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#055" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3430,6 +3452,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#057" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.7
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#056" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#055" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3598,6 +3642,23 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="057">0.5.7<a class="headerlink" href="#057" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>rollout.overlap</code> runs: the next iteration is collected on a second thread while the update
+  trains on a copy of this one. Its learner seats sample from a snapshot of the actor taken just
+  before the update, so each batch after the first is one update behind the learner it trains,
+  and the ratio check is made against that snapshot. Rows carry
+  <code>ppo/behaviour_lag_iterations</code> and <code>time/overlap_saved</code>. It needs a second rectangle of memory,
+  is off by default, and is refused under <code>determinism.tier</code> run_exact.</li>
+</ul>
+<h2 id="056">0.5.6<a class="headerlink" href="#056" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>net.trunk_stride</code>, an opt-in stride for the residual trunk (1 or 2, default 1). At 2 a
+  strided convolution after the stem runs the residual blocks at half the board's resolution in
+  each direction, and their output is upsampled and added to the stem's, so the heads still read
+  one feature per tile. At 1 nothing changes: the network, its weights and its architecture
+  digest are as before.</li>
+</ul>
 <h2 id="055">0.5.5<a class="headerlink" href="#055" title="Permanent link">&para;</a></h2>
 <ul>
 <li>On Windows a GPU run caps its memory at 80% of the card by default. Windows backs a full card

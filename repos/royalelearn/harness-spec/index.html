@@ -5706,9 +5706,8 @@ buys under about 10%, set it to 1 and spend the thread on a worker instead.</p>
 <p>The buffer row is <code>(T + obs.frame_stack) × R × row_bytes</code>: <code>T+1</code> cycles for the bootstrap row plus
 <code>frame_stack - 1</code> history cycles carried over from the previous iteration (section 9.1). At the laptop
 profile that is <code>229 × 192 × 14 163 B = 623 MB</code> (95 cards, 2026-09-22) <strong>[A]</strong>. The two larger profiles'
-figures are <code>115 × 1 536 × 14 163 B</code> and <code>115 × 3 072 × 14 163 B</code>. They were twice that while they
-asked for <code>rollout.overlap</code>, which bought a second rectangle; start-up has refused it since
-2026-09-22, because nothing honours it.</p>
+figures are <code>115 × 1 536 × 14 163 B</code> and <code>115 × 3 072 × 14 163 B</code>. <code>rollout.overlap</code> adds a second
+rectangle of the same size: the copy the update trains on while the workers fill the first.</p>
 <h3 id="23-the-laptop-budget">2.3 The laptop budget<a class="headerlink" href="#23-the-laptop-budget" title="Permanent link">&para;</a></h3>
 <p>Per iteration at the laptop profile: <code>T=228</code> cycles × <code>R=192</code> slots, of which <code>144</code> are learner rows,
 so <code>228 × 144 = 32 832</code> timesteps and <code>228 × 96 = 21 888</code> game-steps.</p>
@@ -5754,9 +5753,8 @@ so <code>228 × 144 = 32 832</code> timesteps and <code>228 × 96 = 21 888</code
 </tbody>
 </table>
 <p>At <code>determinism.tier = "run_exact"</code> subtract 10-20%: <strong>~680-720 timesteps/s</strong>, so 100 M timesteps is
-<strong>39-41 hours</strong>. Overlapped collection would hide the rollout under the update, for
-~1 100 timesteps/s and 25 hours, at the cost of a second buffer (623 MB, 95 cards). It is not built:
-start-up refuses <code>rollout.overlap = true</code>.</p>
+<strong>39-41 hours</strong>. Overlapped collection (<code>rollout.overlap</code>) hides the rollout under the
+update, at the cost of a second buffer (623 MB, 95 cards); no profile turns it on.</p>
 <p>Two consequences, stated so nobody re-derives them:</p>
 <ul>
 <li><strong>The learner is the bottleneck on this machine, by about 2.5×.</strong> Rollout capacity is ~3 300
@@ -6838,7 +6836,7 @@ harness exists to remove.</p>
 <td><code>overlap</code></td>
 <td><code>false</code></td>
 <td></td>
-<td>lag-1 collection under the update, for about 1.37x wall clock at the cost of a second buffer (623 MB at 95 cards). Not built: start-up refuses <code>true</code> (since 2026-09-22), and no profile sets it</td>
+<td>lag-1 collection under the update, at the cost of a second buffer (623 MB at 95 cards). Refused under <code>determinism.tier</code> run_exact; no profile sets it</td>
 </tr>
 <tr>
 <td><code>eval_workers</code></td>
@@ -9334,9 +9332,8 @@ invariant of section 2.3, warn under 1.5), <code>boundary_mb_per_second</code>, 
 blocked on workers that have not published, which rises when the workers cannot keep up; it is not a
 number about workers idling), <code>inference_ms_per_round</code>, <code>discarded_rows_frac</code>, <code>gpu_util_frac</code>.</p>
 <p><strong><code>time/</code></strong>: <code>iteration</code>, <code>collection</code>, <code>inference</code>, <code>env</code>, <code>codec</code>, <code>ipc</code>, <code>critic_pass</code>, <code>gae</code>,
-<code>update</code>, <code>checkpoint</code>, <code>gate</code>, <code>probe</code>, <code>residual</code>, and <code>overlap_saved</code> once there is an overlap
-to save anything (it was published as a hardcoded 0.0, which reads as "overlap saved nothing this
-iteration" rather than "there is no overlap", and is now absent). The ratio of collection to iteration is how you see
+<code>update</code>, <code>checkpoint</code>, <code>gate</code>, <code>probe</code>, <code>residual</code>, and <code>overlap_saved</code> with <code>rollout.overlap</code>
+on: the seconds the next batch's collection ran beside this update, and absent without it. The ratio of collection to iteration is how you see
 whether a run is environment-bound or learner-bound, and the residual is broken out because the
 reference's residual silently absorbs the four places it is actually slow.</p>
 <p><strong><code>ppo/</code></strong>: <code>policy_loss</code>, <code>value_loss</code>, <code>entropy</code>, <code>entropy_normalised</code>, <code>noop_entropy</code>, <code>kl</code>,
@@ -9818,22 +9815,19 @@ candidate was stored, where a failure could only end the run with its emergency 
 failure is raised before the learner moves, so the emergency save keeps the learner the last row
 describes. The row is written before the alarms read it because a halt checkpoints the learner that
 row describes, and the row has to be in <code>metrics.jsonl</code> by then (section 12.2).</p>
-<p><strong><code>rollout.overlap</code> is REFUSED as of 2026-09-22, and what follows describes what it would do
-rather than what it does.</strong> Half of it exists: <code>BatchedInference.begin_iteration</code> takes a
-<code>BehaviourSnapshot</code> and samples from it. The driver does not -- nothing passes one, there is no
-second thread, there is no second buffer, and <code>ppo/behaviour_lag_iterations</code> is in this sentence
-and in no schema. It was not a free thing to leave accepted: the preflight sizes TWO rectangles
-when it is set (<code>rollout/preflight.py</code>), so the <code>workstation</code> and <code>many_core</code> profiles shipped
-reserving twice the buffer memory for a feature that never ran, and that reservation is what the
-memory gate is checked against. <code>check_consistency</code> now says so instead. When the driver is
-built, delete this paragraph's first sentence and the refusal together.</p>
-<p>With <code>rollout.overlap = true</code> the collection of iteration <code>i</code> runs on a second thread and a second
-buffer while the update of iteration <code>i-1</code> runs on the default CUDA stream, against a
-<code>BehaviourSnapshot</code> of the actor taken at the iteration boundary. The lag is exactly one iteration by
-construction and the stored log-probs are the snapshot's, so the PPO ratio measures the true
-off-policyness and the clip bounds it. <code>ppo/behaviour_lag_iterations</code> is logged as 0 or 1 so the
-regime is visible in the run's config panel, and because sampling is driven by name-addressed uniforms
-the trajectory is identical either way.</p>
+<p>With <code>rollout.overlap = true</code> the workers keep writing the one rectangle they are attached to,
+and when a collection ends the update's rectangle takes a copy of it (<code>RectBuffer.copy_from</code>). The
+next iteration is then collected on a second thread, on a CUDA stream of its own, while the update
+trains on the copy; its learner seats sample from a <code>BehaviourSnapshot</code> of the actor taken just
+before the update, and its plan is drawn then, from the pool as it stands. The lag is exactly one
+iteration by construction and the stored log-probs are the snapshot's, so the PPO ratio measures
+the true off-policyness and the clip bounds it. The ratio invariant is asserted against the
+snapshot that sampled the batch, which is still the question it asks: do these bytes and this mask
+give back the stored log-probabilities. <code>ppo/behaviour_lag_iterations</code> is logged as 0 (the first
+batch, collected before any update) or 1, and <code>time/overlap_saved</code> is the seconds of collection
+that ran beside the update. A batch is collected ahead only when an iteration will train it; on
+<code>q</code> the one in flight is dropped, and a checkpoint does not hold it, so a resumed run collects it
+again. That is why <code>check_consistency</code> refuses overlap under <code>determinism.tier</code> run_exact.</p>
 <p>Invariants asserted once per iteration, before the update, each raising a named exception carrying the
 offending slot and cycle:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="k">assert</span> <span class="p">(</span><span class="n">round_counter</span> <span class="o">==</span> <span class="n">T</span> <span class="o">*</span> <span class="n">shards_per_worker</span><span class="p">)</span>

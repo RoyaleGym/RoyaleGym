@@ -3722,6 +3722,13 @@ training loop anneals the weights. That is why there is no <code>MutatorSequence
 the rename (2026-09-21) the same objects were <code>TerminalCondition</code> and <code>StateSetter</code>. Those
 names, and the <code>terminal_conditions=</code> / <code>state_setter=</code> constructor arguments, still work as
 aliases.</p>
+<p>A <code>Snapshot</code> from <code>ClashParallelEnv.snapshot()</code> holds two things: the engine's state, and
+what each seat's observation remembers of the match (<code>ObsBuilder.save_memory</code>). The second
+matters because the observation is not a function of the state alone: the counted enemy
+elixir, the cycle and the cards seen come from the plays before. A reset from the snapshot
+restores both, so its first observation is the one each seat had, and the episode is the
+battle going on. A snapshot also names the seat it is for, an episode cap in ticks, and a tag.
+<code>SnapshotStateMutator</code> draws from a bank of them by weight and by seat.</p>
 <table>
 <thead>
 <tr>
