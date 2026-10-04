@@ -664,6 +664,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#readtimeouterror-or-read-timed-out-while-downloading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ReadTimeoutError or Read timed out while downloading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pip-is-not-recognized" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3816,6 +3827,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#readtimeouterror-or-read-timed-out-while-downloading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ReadTimeoutError or Read timed out while downloading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pip-is-not-recognized" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4212,8 +4234,8 @@ whole, quotes included.</p>
 <p>You see something like:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ERROR: Package 'royalegym' requires a different Python: 3.11.9 not in '&gt;=3.12'
 </code></pre></div>
-<p>Your Python is too old. Install Python 3.14, 3.13 or 3.12 (step 1 of <a href="../install/">Install</a>),
-then make the virtual environment again (step 3).</p>
+<p>Your Python is too old. Install Python 3.12 (step 1 of <a href="../install/">Install</a>), then make the
+virtual environment again (step 3).</p>
 <h3 id="failed-to-build-pygame-or-no-version-of-pygame"><code>Failed to build 'pygame'</code>, or no version of <code>pygame</code><a class="headerlink" href="#failed-to-build-pygame-or-no-version-of-pygame" title="Permanent link">&para;</a></h3>
 <p>You see one of these in step 5, often after a wall of red text:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Failed to build 'pygame'
@@ -4228,37 +4250,44 @@ The viewer now uses <code>pygame-ce</code>, which does. Copy the install line fr
   2.2.2)</code>. PyTorch no longer makes a version for Intel Macs that RoyaleGym can use, so it doesn't
   install there. You need a Mac with Apple silicon, or a Windows or Linux computer.</li>
 <li><strong>Anywhere else</strong>, your Python is probably newer than PyTorch supports yet. Check with
-  <code>python --version</code>, install Python 3.14 (or 3.13 or 3.12), make the virtual environment again
-  (step 3), and repeat step 4.</li>
+  <code>python --version</code>, install Python 3.12, make the virtual environment again (step 3), and
+  repeat step 4.</li>
 </ul>
 <h3 id="could-not-find-a-version-that-satisfies-the-requirement-royalegym"><code>Could not find a version that satisfies the requirement royalegym</code><a class="headerlink" href="#could-not-find-a-version-that-satisfies-the-requirement-royalegym" title="Permanent link">&para;</a></h3>
-<p><code>pip</code> can't find a RoyaleGym for your Python. RoyaleGym needs Python 3.12, 3.13 or 3.14: run
-<code>python --version</code>, and if yours is older or newer, go back to step 1 of <a href="../install/">Install</a>.
+<p><code>pip</code> can't find a RoyaleGym for your Python. This guide uses Python 3.12: run
+<code>python --version</code>, and if it isn't 3.12, go back to step 1 of <a href="../install/">Install</a>.
 Check the name too: <code>royalegym</code>, with the quotes around <code>"royalegym[all]"</code>.</p>
+<h3 id="readtimeouterror-or-read-timed-out-while-downloading"><code>ReadTimeoutError</code> or <code>Read timed out</code> while downloading<a class="headerlink" href="#readtimeouterror-or-read-timed-out-while-downloading" title="Permanent link">&para;</a></h3>
+<p>The first install downloads PyTorch, about 2.5 GB, and on a slow connection <code>pip</code> can give up
+waiting. Run the same line again with <code>--timeout 120</code> at the end, which gives each read two
+minutes instead of fifteen seconds. For step 5 of <a href="../install/#5-install-royalegym">Install</a>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pip install "royalegym[all]" --timeout 120
+</code></pre></div>
+<p>Whatever already finished downloading isn't fetched again.</p>
 <h3 id="pip-is-not-recognized"><code>pip</code> is not recognized<a class="headerlink" href="#pip-is-not-recognized" title="Permanent link">&para;</a></h3>
 <p>Put <code>python -m</code> in front of <code>pip</code>: <code>python -m pip install ...</code> works the same as <code>pip install ...</code>.</p>
 <h2 id="when-you-run-something">When You Run Something<a class="headerlink" href="#when-you-run-something" title="Permanent link">&para;</a></h2>
 <h3 id="no-module-named-royalegym"><code>No module named 'royalegym'</code><a class="headerlink" href="#no-module-named-royalegym" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ModuleNotFoundError: No module named 'royalegym'
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>ModuleNotFoundError: No module named 'royalegym'
 </code></pre></div>
 <p>The virtual environment isn't on. Your prompt should start with <code>(venv)</code>. Go to your folder and
 turn it on:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">macOS and Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">cd </span><span class="n">royale</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="p">.\</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">Activate</span><span class="p">.</span><span class="n">ps1</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">cd </span><span class="n">royale</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="p">.\</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">Activate</span><span class="p">.</span><span class="n">ps1</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">cd</span><span class="w"> </span>royale
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>royale
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
 </code></pre></div>
 </div>
 </div>
 </div>
 <h3 id="cant-open-file-quickstartpy"><code>can't open file ... quickstart.py</code><a class="headerlink" href="#cant-open-file-quickstartpy" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>can't open file 'C:\Users\you\royale\quickstart.py': [Errno 2] No such file or directory
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>can't open file 'C:\Users\you\royale\quickstart.py': [Errno 2] No such file or directory
 </code></pre></div>
 <p>Python can't find the file. Either you're in a different folder, or the file has another name.</p>
 <ul>
@@ -4272,9 +4301,9 @@ turn it on:</p>
 <p>You ran <code>cd royale</code> while you were already in the <code>royale</code> folder. Nothing broke: your prompt
 already shows <code>royale</code>, so skip the <code>cd</code> line.</p>
 <h3 id="syntaxerror-indentationerror-or-nameerror-after-you-changed-the-file"><code>SyntaxError</code>, <code>IndentationError</code> or <code>NameError</code> after you changed the file<a class="headerlink" href="#syntaxerror-indentationerror-or-nameerror-after-you-changed-the-file" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>SyntaxError: invalid syntax
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>IndentationError: unexpected indent
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>NameError: name 'HogRider' is not defined
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>SyntaxError: invalid syntax
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>IndentationError: unexpected indent
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>NameError: name 'HogRider' is not defined
 </code></pre></div>
 <p>A change you made to <code>quickstart.py</code> broke how Python reads it. The message says which line.
 The usual causes:</p>
@@ -4292,7 +4321,7 @@ The usual causes:</p>
 <p>If you can't find it, copy the file from the <a href="../quickstart/">Quick Start</a> again and redo your
 change.</p>
 <h3 id="unexpected-character-after-line-continuation-character-on-line-1-mac"><code>unexpected character after line continuation character</code> on line 1 (Mac)<a class="headerlink" href="#unexpected-character-after-line-continuation-character-on-line-1-mac" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>SyntaxError: unexpected character after line continuation character
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>SyntaxError: unexpected character after line continuation character
 </code></pre></div>
 <p>TextEdit saved the file as formatted text, not plain text. Delete it with <code>rm quickstart.py</code>,
 then make it again with <code>touch quickstart.py</code> and <code>open -e quickstart.py</code>, and paste again. Or
@@ -4301,7 +4330,7 @@ in TextEdit, choose Format &gt; Make Plain Text before you save.</p>
 <p>The engine wasn't installed with RoyaleGym. Run the install line from step 5 of
 <a href="../install/#5-install-royalegym">Install</a> again.</p>
 <h3 id="names-which-this-engines-catalogue-of-cards-does-not-have"><code>names '...', which this engine's catalogue of ... cards does not have</code><a class="headerlink" href="#names-which-this-engines-catalogue-of-cards-does-not-have" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>ValueError: decks[0] names 'Archers', which this engine's catalogue of 136 cards does not have (close: Archer, SuperArcher, EliteArcher). A deck can only use cards engine.cards() lists.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>ValueError: decks[0] names 'Archers', which this engine's catalogue of 136 cards does not have (close: Archer, SuperArcher, EliteArcher). A deck can only use cards engine.cards() lists.
 </code></pre></div>
 <p>A card name in your deck is spelled the way the game shows it, not the way RoyaleGym writes it.
 Use one of the names after <code>close:</code>. Names have no spaces (only <code>Elixir Collector</code> keeps its
@@ -4309,8 +4338,8 @@ space), and a few differ: <code>Archer</code> is the Archers card, <code>Log</co
 <a href="../cheatsheets/game-values/#names-that-differ-from-the-game">Game Values</a>. Code that uses
 <code>make_env(deck=...)</code> says <code>no card named Archers</code> instead; the fix is the same.</p>
 <h3 id="has-no-evolution-that-loads-or-has-no-loadable-hero-form"><code>... has no evolution that loads</code> or <code>... has no loadable hero form</code><a class="headerlink" href="#has-no-evolution-that-loads-or-has-no-loadable-hero-form" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>ValueError: HogRider has no evolution that loads
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>ValueError: Log has no loadable hero form: the table carries none
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>ValueError: HogRider has no evolution that loads
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>ValueError: Log has no loadable hero form: the table carries none
 </code></pre></div>
 <p>That card has no evolution, or no hero, in RoyaleGym yet. In your <code>forms</code> line, change its <code>1</code>
 or <code>2</code> back to <code>0</code>, and play the normal card. (With <code>make_env</code>, take it out of <code>evolved=[...]</code>
@@ -4324,7 +4353,7 @@ left edge of your file. Not inside another function, and not a <code>lambda</cod
 me", and nothing is broken. Your bot keeps everything up to its last <code>checkpoint</code> line; run the
 same command again to carry on. Next time, press Ctrl+C once and wait: it saves before it stops.</p>
 <h3 id="holds-a-run-started-with-another-network-environment-or-opponent-setup"><code>holds a run started with another network, environment or opponent setup</code><a class="headerlink" href="#holds-a-run-started-with-another-network-environment-or-opponent-setup" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>runs\quickstart holds a run started with another network, environment or opponent setup, so this one cannot carry it on. Use the settings it was started with, or give this run another save_dir. What differs:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>runs\quickstart holds a run started with another network, environment or opponent setup, so this one cannot carry it on. Use the settings it was started with, or give this run another save_dir. What differs:
 </code></pre></div>
 <p>The bot in that folder was trained under something you've since changed, and it can't carry on
 under the new one. The usual causes: the opponent (<code>"random"</code> to <code>"self"</code>), <code>n_envs</code>, the network
@@ -4333,7 +4362,7 @@ or the software under it: a new graphics card setup, a new PyTorch, or a RoyaleG
 <p>Give <code>save_dir</code> a new name to start a new bot, or put back what you changed to carry on the old
 one. Your old bot stays in its folder either way.</p>
 <h3 id="already-holds-a-run"><code>already holds a run</code><a class="headerlink" href="#already-holds-a-run" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>runs\quickstart already holds a run (metric rows). A fresh start here would begin at iteration 1 and write over its checkpoints.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>runs\quickstart already holds a run (metric rows). A fresh start here would begin at iteration 1 and write over its checkpoints.
 </code></pre></div>
 <p>The run in that folder stopped before its first <code>checkpoint</code> line, so there's nothing to carry
 on. Delete the folder (<code>Remove-Item -Recurse runs\quickstart</code> in PowerShell,
@@ -4341,8 +4370,8 @@ on. Delete the folder (<code>Remove-Item -Recurse runs\quickstart</code> in Powe
 <p>If the message instead says <code>Pass resume=True to carry it on</code>, you set <code>resume=False</code> and the
 folder already has a bot in it. Give <code>save_dir</code> a new name, or remove <code>resume=False</code>.</p>
 <h3 id="holds-a-run-with-no-checkpoint-yet-or-is-not-a-saved-bot"><code>holds a run with no checkpoint yet</code> or <code>is not a saved bot</code><a class="headerlink" href="#holds-a-run-with-no-checkpoint-yet-or-is-not-a-saved-bot" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>runs\quickstart holds a run with no checkpoint yet: train it longer
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>runs\hog is not a saved bot, a run's folder or one of its checkpoints
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>runs\quickstart holds a run with no checkpoint yet: train it longer
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>runs\hog is not a saved bot, a run's folder or one of its checkpoints
 </code></pre></div>
 <p><code>watch.py</code> couldn't load a bot. The first means training hasn't saved yet: let it run until it
 prints a <code>checkpoint</code> line, or stop it once with Ctrl+C, which saves. The second means the folder
@@ -4360,7 +4389,7 @@ new <code>save_dir</code>.</p>
 <h2 id="the-graphics-card">The Graphics Card<a class="headerlink" href="#the-graphics-card" title="Permanent link">&para;</a></h2>
 <h3 id="pytorch-cant-see-my-graphics-card">PyTorch can't see my graphics card<a class="headerlink" href="#pytorch-cant-see-my-graphics-card" title="Permanent link">&para;</a></h3>
 <p>The trainer prints:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>No GPU that torch can use was found, so this trains on the CPU, which is much slower. With an NVIDIA card, install torch with CUDA (see Install).
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>No GPU that torch can use was found, so this trains on the CPU, which is much slower. With an NVIDIA card, install torch with CUDA (see Install).
 </code></pre></div>
 <p><strong>On a Mac, this is normal.</strong> A Mac has no NVIDIA card, so it always trains on the processor.
 Don't run the commands below on a Mac.</p>
@@ -4370,8 +4399,8 @@ Don't run the commands below on a Mac.</p>
 <div class="tabbed-block">
 <p>This almost always means the wrong PyTorch got installed. Swap it for the one that uses
 your card:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">-y</span> <span class="n">torch</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">-y</span> <span class="n">torch</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
 </code></pre></div>
 <p>Still not working? Update your NVIDIA driver with the NVIDIA App or from
 <a href="https://www.nvidia.com/drivers">nvidia.com/drivers</a>, then restart your computer.</p>
@@ -4383,15 +4412,15 @@ Ubuntu, run <code>sudo ubuntu-drivers install</code>, then restart.</p>
 </div>
 </div>
 <p>Check that this now prints <code>True</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>python -c "import torch; print(torch.cuda.is_available())"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>python -c "import torch; print(torch.cuda.is_available())"
 </code></pre></div>
 <p>GTX 10-series and older cards don't work with this PyTorch, so on those it trains on the
 processor. After you fix the graphics card, a bot you started on the processor can't carry on:
 start a new one with a new <code>save_dir</code>.</p>
 <h3 id="not-enough-graphics-memory">Not enough graphics memory<a class="headerlink" href="#not-enough-graphics-memory" title="Permanent link">&para;</a></h3>
 <p>You see this when training starts, or it stops with <code>CUDA out of memory</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>one minibatch of 2048 peaked at ... MB of device memory and only ... MB was free
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>torch.OutOfMemoryError: CUDA out of memory.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>one minibatch of 2048 peaked at ... MB of device memory and only ... MB was free
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>torch.OutOfMemoryError: CUDA out of memory.
 </code></pre></div>
 <p>Close games and other programs that use the graphics card. If it still happens, lower
 <code>ppo_minibatch_size</code> in <code>quickstart.py</code>. A starting point: <code>1_024</code> for a card with 8 GB, <code>512</code>
@@ -4411,16 +4440,16 @@ or the viewer isn't installed. Run the install line from step 5 of
 <a href="../install/#5-install-royalegym">Install</a> again.</p>
 <h3 id="module-pygame-has-no-attribute-init"><code>module 'pygame' has no attribute 'init'</code><a class="headerlink" href="#module-pygame-has-no-attribute-init" title="Permanent link">&para;</a></h3>
 <p>You see this when you start the viewer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>AttributeError: module 'pygame' has no attribute 'init'
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>AttributeError: module 'pygame' has no attribute 'init'
 </code></pre></div>
 <p>You removed <code>pygame</code> after updating. The viewer now uses <code>pygame-ce</code>, and the two share one
 folder, so removing <code>pygame</code> took <code>pygame-ce</code>'s files with it. Put them back, with the virtual
 environment on:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pip install --force-reinstall pygame-ce
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>pip install --force-reinstall pygame-ce
 </code></pre></div>
 <h3 id="the-viewer-window-stays-empty">The viewer window stays empty<a class="headerlink" href="#the-viewer-window-stays-empty" title="Permanent link">&para;</a></h3>
 <p>The terminal says:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
 </code></pre></div>
 <p>The viewer is waiting for a training run to watch. Start training in another terminal, with
 <code>viser=True</code> in your <code>Learner(...)</code>. The quickstart has it on already. The battle appears once
@@ -4442,7 +4471,7 @@ other run, or set <code>viser=False</code> in one of them. If you put a <code>Vi
   <code>royaleviser my_bot_battle.msgpack</code>.</li>
 <li>
 <p>Or make a video of it on the server (on Linux, add <code>SDL_VIDEODRIVER=dummy</code> in front):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
 </code></pre></div>
 </li>
 </ul>

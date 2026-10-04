@@ -3449,15 +3449,15 @@ right-click in PowerShell on Windows, Cmd+V on a Mac, Ctrl+Shift+V in a Linux te
 box has several lines, do them one at a time.</p>
 <p>If anything goes wrong, look up the message on <a href="../it-doesnt-work/">It Doesn't Work</a>.</p>
 <h2 id="1-install-python">1. Install Python<a class="headerlink" href="#1-install-python" title="Permanent link">&para;</a></h2>
-<p>You need <strong>Python 3.12, 3.13 or 3.14</strong>. The newest, 3.14, is a good choice.</p>
+<p>You need <strong>Python 3.12</strong>. This guide and its fixes are written for it, so use 3.12 even if you
+already have a newer Python: it installs beside the other one.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">macOS</label><label for="__tabbed_1_3">Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ol>
-<li>Go to <a href="https://www.python.org/downloads/windows/">python.org/downloads/windows</a>.</li>
-<li>Under <strong>Stable Releases</strong>, find the newest <strong>Python 3.14</strong> (or 3.13 or 3.12) and click
-   <strong>Download Windows installer (64-bit)</strong>. If a version newer than 3.14 is listed above it,
-   skip that one.</li>
+<li>Go to the <a href="https://www.python.org/downloads/release/python-31210/">Python 3.12.10 page</a>.
+   3.12.10 is the last 3.12 with a Windows installer.</li>
+<li>Under <strong>Files</strong> near the bottom, click <strong>Windows installer (64-bit)</strong>.</li>
 <li>Run the installer. On its first screen, <strong>tick "Add python.exe to PATH"</strong> at the bottom.
    Leave the other box as it is.</li>
 <li>Click <strong>Install Now</strong>. When it finishes, you can ignore the "Disable path length limit"
@@ -3469,9 +3469,9 @@ Uninstall) and run the installer again.</p>
 <div class="tabbed-block">
 <p>You need a Mac with Apple silicon (M1 or newer). On a Mac with an Intel processor, the
 PyTorch that RoyaleGym needs no longer installs.</p>
-<p>Go to <a href="https://www.python.org/downloads/macos/">python.org/downloads/macos</a>, download the
-<strong>macOS 64-bit universal2 installer</strong> for the newest Python 3.14 (or 3.13 or 3.12), and run it.
-Skip anything newer than 3.14.</p>
+<p>Go to the <a href="https://www.python.org/downloads/release/python-31210/">Python 3.12.10 page</a>, and
+under <strong>Files</strong> download the <strong>macOS 64-bit universal2 installer</strong> and run it. 3.12.10 is the
+last 3.12 with a Mac installer.</p>
 </div>
 <div class="tabbed-block">
 <p>Open a terminal (Ctrl+Alt+T on Ubuntu). On Ubuntu 24.04, which comes with Python 3.12, run:</p>
@@ -3479,8 +3479,8 @@ Skip anything newer than 3.14.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>python3-venv<span class="w"> </span>python3-pip
 </code></pre></div>
 <p><code>sudo</code> asks for your password, and nothing shows while you type it. That's normal. Older
-versions of Ubuntu come with an older Python: install Python 3.12, 3.13 or 3.14 with your
-package manager first, or upgrade Ubuntu.</p>
+versions of Ubuntu come with an older Python: install Python 3.12 with your package manager
+first, or upgrade to Ubuntu 24.04.</p>
 </div>
 </div>
 </div>
@@ -3490,28 +3490,26 @@ package manager first, or upgrade Ubuntu.</p>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>Press the Windows key, type <code>PowerShell</code>, and press Enter. Then check Python:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">python</span> <span class="p">-</span><span class="n">-version</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">py</span> <span class="p">-</span><span class="n">3</span><span class="p">.</span><span class="n">12</span> <span class="p">-</span><span class="n">-version</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
 <p>Press Cmd+Space, type <code>Terminal</code>, and press Enter. Then check Python:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3<span class="w"> </span>--version
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3.12<span class="w"> </span>--version
 </code></pre></div>
 </div>
 <div class="tabbed-block">
 <p>Open your terminal app. Then check Python:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python3<span class="w"> </span>--version
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python3.12<span class="w"> </span>--version
 </code></pre></div>
 </div>
 </div>
 </div>
-<p>You should see something like:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Python 3.14.8
+<p>You should see <code>Python 3.12</code> and a last number, such as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Python 3.12.10
 </code></pre></div>
-<p>3.12 and 3.13 are fine too. If it shows another version, you have more than one Python and the
-terminal found the wrong one first. Name the version in step 3 instead, for example
-<code>py -3.14 -m venv venv</code> on Windows or <code>python3.14 -m venv venv</code> on a Mac or Linux. After that, inside the virtual
-environment, plain <code>python</code> is the right one.</p>
+<p>If it says the command isn't found, or shows another version, go back to step 1. The next step
+names 3.12 the same way, so a newer Python on your computer doesn't get in the way.</p>
 <h2 id="3-make-a-folder-for-your-bot">3. Make a Folder for Your Bot<a class="headerlink" href="#3-make-a-folder-for-your-bot" title="Permanent link">&para;</a></h2>
 <p>This makes a folder called <code>royale</code> and a <strong>virtual environment</strong> inside it. A virtual
 environment is a private copy of Python just for this project, so nothing you install here
@@ -3529,7 +3527,7 @@ virtual environment on. Without it, you get a red "running scripts is disabled" 
 <p>Then make the folder and the virtual environment:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">mkdir</span> <span class="n">royale</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">cd </span><span class="n">royale</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">python</span> <span class="n">-m</span> <span class="n">venv</span> <span class="n">venv</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">py</span> <span class="p">-</span><span class="n">3</span><span class="p">.</span><span class="n">12</span> <span class="n">-m</span> <span class="n">venv</span> <span class="n">venv</span>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">.\</span><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">Activate</span><span class="p">.</span><span class="n">ps1</span>
 </code></pre></div>
 <p><code>mkdir</code> prints a small table, and the <code>venv</code> line prints nothing for a few seconds. That's
@@ -3538,14 +3536,14 @@ normal.</p>
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>mkdir<span class="w"> </span>royale
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">cd</span><span class="w"> </span>royale
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>python3.12<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
 </code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>mkdir<span class="w"> </span>royale
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">cd</span><span class="w"> </span>royale
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>python3.12<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
 </code></pre></div>
 </div>

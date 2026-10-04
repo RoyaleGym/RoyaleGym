@@ -3746,7 +3746,7 @@
 everything, prebuilt. This page is for working on the engine itself, or on more than one of the
 repositories at once.</p>
 <p align="center">
-  <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
+  <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&logo=python&logoColor=white">
   <img alt="Rust 1.80+" src="https://img.shields.io/badge/rust-1.80+-DEA584?style=flat-square&logo=rust&logoColor=white">
   <img alt="Recipe with a debug build: run from fresh clones, 2026-09-22" src="https://img.shields.io/badge/recipe%2C%20debug%20build-run%20from%20fresh%20clones-2ea043?style=flat-square">
   <img alt="Release build: run from fresh clones on a 4-CPU Linux machine on 2026-09-27, 163 seconds and about 1 GB of memory" src="https://img.shields.io/badge/release%20build-163%20s%20on%204--CPU%20Linux%2C%202026--09--27-2ea043?style=flat-square">
@@ -3758,7 +3758,7 @@ environment shared by all of them, and a compiled engine you can run battles in.
 short list of commands to check that it worked, with the output you should see.</p>
 <h2 id="what-you-need-first">What you need first<a class="headerlink" href="#what-you-need-first" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Python 3.12 or newer.</strong> Older versions are not supported. An older Python compiles the
+<li><strong>Python 3.12.</strong> Older versions are not supported. An older Python compiles the
   engine for several minutes and is only refused at the install step, so Step 1 checks the
   version first.</li>
 <li><strong>Rust 1.80 or newer, with cargo.</strong> Get it from <a href="https://rustup.rs">rustup.rs</a>. This is only
@@ -3822,9 +3822,9 @@ and the CPU torch line in Step 4.</p>
 </div>
 </div>
 </div>
-<p>The <code>--version</code> line must print 3.12 or newer before you build. An older Python compiles the
-engine for several minutes and is only refused at the install step. If <code>python --version</code>
-already prints 3.12 or newer, <code>python -m venv .venv</code> works too.</p>
+<p>The <code>--version</code> line must print 3.12 before you build. An older Python compiles the engine for
+several minutes and is only refused at the install step. If <code>python --version</code> already prints
+3.12, <code>python -m venv .venv</code> works too.</p>
 <p>Optional: <a href="https://github.com/RoyaleGym/RoyaleImitate">RoyaleImitate</a> adds imitation learning to
 RoyaleLearn. Its README has its own two install lines.</p>
 <p>You should end up with this:</p>

@@ -1524,10 +1524,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#one-unit-is-close-a-crowd-is-not" class="md-nav__link">
+  <a href="#single-units-and-swarms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One unit is close. A crowd is not
+        Single units and swarms
       
     </span>
   </a>
@@ -1539,6 +1539,17 @@
     <span class="md-ellipsis">
       
         What goes wrong first
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#matched-recently" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Matched recently
       
     </span>
   </a>
@@ -3384,10 +3395,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#one-unit-is-close-a-crowd-is-not" class="md-nav__link">
+  <a href="#single-units-and-swarms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One unit is close. A crowd is not
+        Single units and swarms
       
     </span>
   </a>
@@ -3399,6 +3410,17 @@
     <span class="md-ellipsis">
       
         What goes wrong first
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#matched-recently" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Matched recently
       
     </span>
   </a>
@@ -3466,23 +3488,37 @@
 <h1 id="how-accurate-is-the-engine">How accurate is the engine<a class="headerlink" href="#how-accurate-is-the-engine" title="Permanent link">&para;</a></h1>
 <p align="center">
   <img alt="Measured" src="https://img.shields.io/badge/accuracy-measured%2C%20not%20guessed-0b7285?style=flat-square">
-  <img alt="Position within a quarter tile, towers left out" src="https://img.shields.io/badge/position%20match%2C%20no%20towers-56.5%25-orange?style=flat-square">
-  <img alt="Hitpoints exact, towers left out" src="https://img.shields.io/badge/hitpoints%20exact%2C%20no%20towers-79.5%25-2ea043?style=flat-square">
-  <img alt="Corpus" src="https://img.shields.io/badge/corpus-73%20recorded%20battles%2C%2067%20played-555?style=flat-square">
-  <img alt="Moving" src="https://img.shields.io/badge/expect%20it%20to-keep%20moving-8957e5?style=flat-square">
+  <img alt="Position within a quarter tile, towers left out" src="https://img.shields.io/badge/position%20match%2C%20no%20towers-98.8%25-2ea043?style=flat-square">
+  <img alt="Hitpoints exact, towers left out" src="https://img.shields.io/badge/hitpoints%20exact%2C%20no%20towers-99.3%25-2ea043?style=flat-square">
+  <img alt="Corpus" src="https://img.shields.io/badge/corpus-73%20recordings%20of%2040%20matches-555?style=flat-square">
+  <img alt="76 basic cards and one hero" src="https://img.shields.io/badge/cards-76%20basic%20%2B%201%20hero-orange?style=flat-square">
 </p>
 
 <p>You get a number, and you get the list of things the number is hiding. This page is the short
 version. It says how close the engine is to the real game, where it is closest, where it is
-worst, and what a bot author should do about that.</p>
-<p>The short answer: good, not perfect, and measured.</p>
+furthest, and what a bot author should do about that.</p>
+<p>The short answer: very close on the battles it's measured on, and those use basic cards and one hero.</p>
 <h2 id="how-it-is-checked">How it is checked<a class="headerlink" href="#how-it-is-checked" title="Permanent link">&para;</a></h2>
-<p>Real matches are recorded. The same match is then replayed in the engine, and every unit's
-position and hitpoints are compared against the recording, on every tick. A tick is 50 ms of
-game time, so a three minute battle is 3,600 comparisons per unit.</p>
-<p>There are 73 recorded battles behind the numbers below, all from one run of the engine at build
-<code>d872d792711934c2</code>. 67 of them play. 27 are scored from start to finish, and the other 40 up to
-the first card that engine could not play yet. The last 6 do not play at all.</p>
+<p>Real matches are recorded. The same match is then replayed in the engine, given only the
+recorded card plays, decks, card levels and towers, and every unit's position and hitpoints are
+compared against the recording, on every tick. A tick is 50 ms of game time, so a three minute
+battle is 3,600 comparisons per unit.</p>
+<p>The numbers below are from one run on royalesim 0.1.10 (RoyaleSim commit <code>8e6d7cc</code>, engine build
+<code>04a8183e395b1e31</code>), scored on 2026-10-03, over 73 recordings of 40 matches (31 matches were
+recorded from both sides). 67 recordings play, covering 37 matches, and all 67 are scored from start
+to finish. The other 6 start in the middle of a battle. The percentages are over recordings, so a
+match recorded from both sides counts twice.</p>
+<div class="admonition warning">
+<p class="admonition-title">What these numbers cover</p>
+<ul>
+<li><strong>Basic cards, and one hero.</strong> The recordings use 76 basic cards and one hero (the Hero
+  Musketeer, played 3 times), and no champions or evolutions, so those aren't measured here.</li>
+<li><strong>Battles the work has seen.</strong> These are the recordings every change to the engine has
+  been checked against for weeks. The numbers say how well the engine agrees with them, not
+  how it does on battles it was never checked against. No figure for new battles is
+  published yet.</li>
+</ul>
+</div>
 <div class="admonition note">
 <p class="admonition-title">You cannot re-run this one yourself</p>
 <p>The recordings of real matches are private, so the accuracy measurement is not something a
@@ -3498,131 +3534,137 @@ This one you cannot.</p>
 <th>how often the engine agrees</th>
 <th>counting towers</th>
 <th>towers left out</th>
-<th>from the run at</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>a unit is within a quarter of a tile of where it really was</td>
-<td>85.1%</td>
-<td>56.5%</td>
-<td><code>d872d792711934c2</code></td>
+<td>99.5%</td>
+<td>98.8%</td>
 </tr>
 <tr>
 <td>a unit's hitpoints are exactly right</td>
-<td>80.8%</td>
-<td>79.5%</td>
-<td><code>d872d792711934c2</code></td>
+<td>98.8%</td>
+<td>99.3%</td>
 </tr>
 </tbody>
 </table>
-<p>Every figure in this table is from one run, at <code>d872d792711934c2</code>, over 73 recorded battles:
-270,972 unit-ticks without towers and 799,831 with them.</p>
-<p>The engine has changed since that run. On 2026-09-26 it switched nineteen rules to measured values,
-and seven more cards started to load (RoyaleSim <code>126992a</code>). No re-run on the new engine is published
-here yet, so read every number on this page as the number for build <code>d872d792711934c2</code>.</p>
-<p>The contrast between the rows is the useful part. When the spawner emission point was corrected on
-2026-09-22, position went from 49.4% to 56.5% and hitpoints went from 79.4% to 79.5% without
-towers, and from 81.7% to 80.8% with them. Correcting where a spawner puts its units changed where
-units stand and not how much damage they took, in both populations, and the towers-included figure
-moved slightly DOWN. A change that improves the thing it targets and leaves everything else roughly
-where it was is the shape you want; one that moves every number at once usually means something
-else moved too.</p>
+<p>That's 602,830 unit-ticks without towers and 1,556,259 with them, all from the run above.</p>
 <p>The right-hand column is the one to look at. Towers do not move and there are six of them in
 every battle, so counting them flatters the result. A tower that sits still is not evidence that
 the engine walks units correctly.</p>
 <p>"Within a quarter of a tile" is a tight bar. A tile is one square of the arena grid, the unit
 everything on the board is positioned in, so a quarter of one is a short distance. A unit can be
 in the right place to your eye and still be counted as a miss here.</p>
-<h2 id="one-unit-is-close-a-crowd-is-not">One unit is close. A crowd is not<a class="headerlink" href="#one-unit-is-close-a-crowd-is-not" title="Permanent link">&para;</a></h2>
+<p>The run this page showed before, on 2026-09-22/23 at engine build <code>d872d792711934c2</code>, gave 56.5%
+and 79.5% without towers. Don't read the two as one jump: that run scored only 270,972 unit-ticks,
+because 40 of its recordings stopped at the first card that engine couldn't play yet. Each figure
+belongs to its own run.</p>
+<h2 id="single-units-and-swarms">Single units and swarms<a class="headerlink" href="#single-units-and-swarms" title="Permanent link">&para;</a></h2>
 <div class="grid cards">
 <ul>
 <li>
 <p><strong>A Knight on its own</strong></p>
 <hr />
-<p>Within a quarter of a tile 72.9% of the time. While it walks to a tower untouched, it is on
-the game's own path, to a fiftieth of a tile, on 73.3% of those ticks. Close to solved.</p>
+<p>Within a quarter of a tile 97.9% of the time, and its hitpoints exactly right 98.9%. While
+it walks to a tower untouched, it is on the game's own path, to a fiftieth of a tile, on 98.3%
+of those ticks.</p>
 </li>
 <li>
 <p><strong>Goblins</strong></p>
 <hr />
-<p>40.6%. Cheap units arriving three or four at once are where the engine and the game come
-apart.</p>
+<p>Within a quarter of a tile 99.5% of the time, hitpoints exactly right 99.8%. Cheap units
+arriving three or four at once.</p>
 </li>
 <li>
 <p><strong>Skeletons</strong></p>
 <hr />
-<p>46.0%. Same story. The more bodies touching each other, the worse it gets.</p>
+<p>Within a quarter of a tile 98.6% of the time, hitpoints exactly right 99.7%. Many small
+bodies touching each other.</p>
 </li>
 </ul>
 </div>
-<p>So the gap is not spread evenly. It is almost all in swarms. Every figure in this section is
-from the run at build <code>d872d792711934c2</code>, over 73 recorded battles.</p>
+<p>Swarms were the weak spot of the earlier run (Goblins 40.6%, Skeletons 46.0% there). In this run
+they are as close as a single unit.</p>
 <h2 id="what-goes-wrong-first">What goes wrong first<a class="headerlink" href="#what-goes-wrong-first" title="Permanent link">&para;</a></h2>
-<p>The same run that produces the table above also reports what went wrong first in every battle.
-That is the useful table, because it says what to fix. Measured at build <code>d872d792711934c2</code>:</p>
+<p>The same run also reports what went wrong first in every recording that went wrong at all, which
+says what to look at next. The cause is the scorer's label for the first unit to drift more than a
+tile, not a diagnosis. Towers left out:</p>
 <table>
 <thead>
 <tr>
-<th>cause of the first divergence</th>
-<th>battles</th>
-<th>share of all the misses, in battles that went wrong this way first</th>
+<th>cause of the first divergence, as the scorer labels it</th>
+<th>recordings (matches)</th>
+<th>share of all the misses, in recordings that went wrong this way first</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>when a unit dies</td>
-<td>16</td>
-<td>31.2%</td>
-</tr>
-<tr>
-<td>where a spawner or a multi-unit card puts its units</td>
-<td>10</td>
-<td>29.4%</td>
-</tr>
-<tr>
 <td>attack timing</td>
-<td>10</td>
-<td>20.5%</td>
+<td>5 (3)</td>
+<td>37.6%</td>
 </tr>
 <tr>
 <td>how units push each other apart on contact</td>
-<td>12</td>
-<td>18.9%</td>
+<td>4 (2)</td>
+<td>31.1%</td>
+</tr>
+<tr>
+<td>walking</td>
+<td>5 (3)</td>
+<td>30.4%</td>
+</tr>
+<tr>
+<td>when a unit dies</td>
+<td>2 (1)</td>
+<td>0.6%</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Do not compare this table with the one it replaced.</strong> Contact was 31.0% and is now 18.9%;
-death was 21.9% and is now 31.2%. Contact did not improve. Each battle is counted against
-whatever went wrong FIRST in it, so correcting the largest cause changes the scene every other
-cause is measured on, and a row-by-row comparison of two runs measures nothing.</p>
-<p>19 of the 67 battles in the corpus never diverge at all, though most of those are short ones.</p>
-<p>These numbers are from the run at build <code>d872d792711934c2</code>, not the target. The target is that a swarm fight does not diverge
-either. Expect the table to move.</p>
+<p>51 of the 67 recordings, 28 of the 37 matches, never diverge at all; they hold the other 0.3% of
+the misses. Where units are put by a spawner or a multi-unit card,
+the top cause in the earlier run, no longer starts any battle's divergence.</p>
+<p><strong>Do not compare this table row by row with the one it replaced.</strong> Each battle is counted against
+whatever went wrong FIRST in it, so fixing one cause changes the scene every other cause is
+measured on.</p>
+<h2 id="matched-recently">Matched recently<a class="headerlink" href="#matched-recently" title="Permanent link">&para;</a></h2>
+<p>From RoyaleSim's changelog, 0.1.4 to 0.1.10, each change measured in the game. All of them are in
+the run above.</p>
+<ul>
+<li><strong>The end of a level overtime.</strong> Play stops, the board clears down to the crown towers, and the towers lose the
+  same health each tick until one falls. That tower's side loses (0.1.4).</li>
+<li><strong>Card levels.</strong> Each side, and each card in a deck, can have its own level, as in a real match (0.1.7).</li>
+<li><strong>Champions.</strong> A champion's ability is one use per deploy, except the Boss Bandit's (0.1.10).</li>
+<li><strong>What a unit reports.</strong> A unit's card is the card whose play put it on the board: a Tombstone's Skeletons report
+  the Tombstone (0.1.5).</li>
+<li><strong>What a player can see.</strong> A Prince's run-up and an Inferno's ramp, where a unit under ground will come up, how long
+  a hero's or champion's ability has left, a Clone's copy, and each side's deck and forms (0.1.8, 0.1.9).</li>
+<li><strong>Battle logic.</strong> Knockback and death pushback, kamikaze contact, troops' sight of crown towers, target ties, jump
+  landings, champion dashes, placement ties, and more in each release.</li>
+</ul>
 <h2 id="what-this-means-for-your-bot">What this means for your bot<a class="headerlink" href="#what-this-means-for-your-bot" title="Permanent link">&para;</a></h2>
 <p>Your bot learns the engine. It does not learn the game. Those are the same thing only where the
 engine is right.</p>
 <div class="admonition warning">
 <p class="admonition-title">This section is judgement, not measurement</p>
-<p>Nobody has trained a bot here and then tested it against the real game. The paragraphs below
-are what we expect from the table above, not something anyone has measured. When somebody
-does run that test, this section gets replaced with what actually happened.</p>
+<p>Our own bots, built with RoyaleGym, play the real ladder: the account went from about 300 to
+2,765 trophies in its first three days. That's one deck and a few bots, so it says a bot made
+here can win real matches, not which habits carry over. The paragraphs below are what we
+expect from the table above; we haven't published a measurement of them.</p>
 </div>
-<p>Where the engine is closest, a bot's habits should carry over. Pushing a single tank down a lane,
-choosing which lane, spending elixir at the right moment, defending a lone unit with a building:
-those lean on walking, routes and timing, and those are the parts measured closest to the game.</p>
-<p>Where the engine is furthest, they may not carry over. A bot that learns exactly how a pile of
-Skeletons flows around a Knight is learning a crowd behaviour that is 46.0% right. A habit built
-on that can be worth nothing, or worse than nothing, in a real match. That 46.0% is from the
-run at build <code>d872d792711934c2</code>.</p>
+<p>With basic cards, the engine and the game agree on almost every tick of the battles measured, so
+a bot's habits with those cards should carry over: pushing a tank down a lane, choosing which
+lane, spending elixir at the right moment, defending with a building.</p>
+<p>Champions and evolutions aren't in the measurement, and only one hero is. They are built from
+measurements of the game too, but nobody has scored whole battles with them yet, so what a bot
+learns about them is less certain.</p>
 <p>The practical version, three lines:</p>
 <ul>
-<li>Before you rely on a specific interaction, look at the table. If it lives in the swarm rows,
-  treat what your bot learns about it as a guess.</li>
+<li>If your deck uses champions, heroes or evolutions, treat what your bot learns about them as a
+  guess until they are measured.</li>
 <li>Do not tune a reward function against a single exact interaction. Reward the outcome, not the
   choreography.</li>
-<li>Check again in a month. The causes above are open work, and the numbers on this page are a
-  snapshot of build <code>d872d792711934c2</code>.</li>
+<li>Check again in a month. The numbers on this page are a snapshot of royalesim 0.1.10.</li>
 </ul>
 <h2 id="an-honest-summary">An honest summary<a class="headerlink" href="#an-honest-summary" title="Permanent link">&para;</a></h2>
 <p>This engine is not as accurate as running the real game, which is true by definition. What it
@@ -3632,8 +3674,8 @@ exactly how wrong it is and where.</p>
 <ul>
 <li><a href="../pieces/engine/">The engine</a> for what the engine does and how you drive it.</li>
 <li><a href="https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/replay-parity.md"><code>docs/replay-parity.md</code></a>
-  in RoyaleSim's own docs. That page has the per-card breakdown, what is scored, what is not
-  scored, and the exact commands. Everything on this page is a summary of it.</li>
+  in RoyaleSim's own docs, with the per-card breakdown, what is scored, what is not scored, and
+  the commands, for an earlier run.</li>
 <li><a href="../troubleshooting/">Troubleshooting</a> if something on your machine is not doing what this site
   says it should.</li>
 </ul>
