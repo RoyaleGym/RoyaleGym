@@ -5,7 +5,7 @@ everything, prebuilt. This page is for working on the engine itself, or on more 
 repositories at once.
 
 <p align="center">
-  <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
+  <img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&logo=python&logoColor=white">
   <img alt="Rust 1.80+" src="https://img.shields.io/badge/rust-1.80+-DEA584?style=flat-square&logo=rust&logoColor=white">
   <img alt="Recipe with a debug build: run from fresh clones, 2026-09-22" src="https://img.shields.io/badge/recipe%2C%20debug%20build-run%20from%20fresh%20clones-2ea043?style=flat-square">
   <img alt="Release build: run from fresh clones on a 4-CPU Linux machine on 2026-09-27, 163 seconds and about 1 GB of memory" src="https://img.shields.io/badge/release%20build-163%20s%20on%204--CPU%20Linux%2C%202026--09--27-2ea043?style=flat-square">
@@ -18,7 +18,7 @@ short list of commands to check that it worked, with the output you should see.
 
 ## What you need first
 
-- **Python 3.12 or newer.** Older versions are not supported. An older Python compiles the
+- **Python 3.12.** Older versions are not supported. An older Python compiles the
   engine for several minutes and is only refused at the install step, so Step 1 checks the
   version first.
 - **Rust 1.80 or newer, with cargo.** Get it from [rustup.rs](https://rustup.rs). This is only
@@ -90,9 +90,9 @@ layout is not optional.
     .venv/bin/python -m pip install maturin pytest hypothesis ruff numpy msgspec
     ```
 
-The `--version` line must print 3.12 or newer before you build. An older Python compiles the
-engine for several minutes and is only refused at the install step. If `python --version`
-already prints 3.12 or newer, `python -m venv .venv` works too.
+The `--version` line must print 3.12 before you build. An older Python compiles the engine for
+several minutes and is only refused at the install step. If `python --version` already prints
+3.12, `python -m venv .venv` works too.
 
 Optional: [RoyaleImitate](https://github.com/RoyaleGym/RoyaleImitate) adds imitation learning to
 RoyaleLearn. Its README has its own two install lines.

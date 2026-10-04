@@ -32,8 +32,7 @@ RoyaleGym never touches the game, your account or Supercell's servers, so there'
 
 ### What computer do I need?
 
-- Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.12, 3.13 or
-  3.14.
+- Windows 10 or 11, Linux, or a Mac with Apple silicon (M1 or newer), with Python 3.12.
 - About 5 GB of free disk space, most of it for PyTorch.
 - 16 GB of memory (RAM) or more. Training with the quickstart's settings can use around 10 GB.
 - To train at a useful speed, an NVIDIA graphics card: a GTX 16-series, an RTX 20-series, or

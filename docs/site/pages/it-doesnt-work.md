@@ -68,8 +68,8 @@ You see something like:
 ERROR: Package 'royalegym' requires a different Python: 3.11.9 not in '>=3.12'
 ```
 
-Your Python is too old. Install Python 3.14, 3.13 or 3.12 (step 1 of [Install](install.md)),
-then make the virtual environment again (step 3).
+Your Python is too old. Install Python 3.12 (step 1 of [Install](install.md)), then make the
+virtual environment again (step 3).
 
 ### `Failed to build 'pygame'`, or no version of `pygame`
 
@@ -90,8 +90,8 @@ The viewer now uses `pygame-ce`, which does. Copy the install line from step 5 o
   2.2.2)`. PyTorch no longer makes a version for Intel Macs that RoyaleGym can use, so it doesn't
   install there. You need a Mac with Apple silicon, or a Windows or Linux computer.
 - **Anywhere else**, your Python is probably newer than PyTorch supports yet. Check with
-  `python --version`, install Python 3.14 (or 3.13 or 3.12), make the virtual environment again
-  (step 3), and repeat step 4.
+  `python --version`, install Python 3.12, make the virtual environment again (step 3), and
+  repeat step 4.
 
 ### `Could not find a version that satisfies the requirement royalegym`
 

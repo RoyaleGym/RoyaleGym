@@ -15,7 +15,7 @@ battles, what it sees, the moves it can make, and a trainer.
 
     pip install "royalegym[all]"
 
-Python 3.12, 3.13 or 3.14. No Rust, no game files. On Windows with an NVIDIA card, install PyTorch first
+Python 3.12. No Rust, no game files. On Windows with an NVIDIA card, install PyTorch first
 ([Install](https://royalegym.github.io/RoyaleGym/install/), step 4).
 
 ## Try it

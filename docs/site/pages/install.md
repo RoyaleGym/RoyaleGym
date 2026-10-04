@@ -11,14 +11,14 @@ If anything goes wrong, look up the message on [It Doesn't Work](it-doesnt-work.
 
 ## 1. Install Python
 
-You need **Python 3.12, 3.13 or 3.14**. The newest, 3.14, is a good choice.
+You need **Python 3.12**. This guide and its fixes are written for it, so use 3.12 even if you
+already have a newer Python: it installs beside the other one.
 
 === "Windows"
 
-    1. Go to [python.org/downloads/windows](https://www.python.org/downloads/windows/).
-    2. Under **Stable Releases**, find the newest **Python 3.14** (or 3.13 or 3.12) and click
-       **Download Windows installer (64-bit)**. If a version newer than 3.14 is listed above it,
-       skip that one.
+    1. Go to the [Python 3.12.10 page](https://www.python.org/downloads/release/python-31210/).
+       3.12.10 is the last 3.12 with a Windows installer.
+    2. Under **Files** near the bottom, click **Windows installer (64-bit)**.
     3. Run the installer. On its first screen, **tick "Add python.exe to PATH"** at the bottom.
        Leave the other box as it is.
     4. Click **Install Now**. When it finishes, you can ignore the "Disable path length limit"
@@ -32,9 +32,9 @@ You need **Python 3.12, 3.13 or 3.14**. The newest, 3.14, is a good choice.
     You need a Mac with Apple silicon (M1 or newer). On a Mac with an Intel processor, the
     PyTorch that RoyaleGym needs no longer installs.
 
-    Go to [python.org/downloads/macos](https://www.python.org/downloads/macos/), download the
-    **macOS 64-bit universal2 installer** for the newest Python 3.14 (or 3.13 or 3.12), and run it.
-    Skip anything newer than 3.14.
+    Go to the [Python 3.12.10 page](https://www.python.org/downloads/release/python-31210/), and
+    under **Files** download the **macOS 64-bit universal2 installer** and run it. 3.12.10 is the
+    last 3.12 with a Mac installer.
 
 === "Linux"
 
@@ -46,8 +46,8 @@ You need **Python 3.12, 3.13 or 3.14**. The newest, 3.14, is a good choice.
     ```
 
     `sudo` asks for your password, and nothing shows while you type it. That's normal. Older
-    versions of Ubuntu come with an older Python: install Python 3.12, 3.13 or 3.14 with your
-    package manager first, or upgrade Ubuntu.
+    versions of Ubuntu come with an older Python: install Python 3.12 with your package manager
+    first, or upgrade to Ubuntu 24.04.
 
 ## 2. Open a Terminal
 
@@ -58,7 +58,7 @@ A terminal is the window where you type commands.
     Press the Windows key, type `PowerShell`, and press Enter. Then check Python:
 
     ```powershell
-    python --version
+    py -3.12 --version
     ```
 
 === "macOS"
@@ -66,7 +66,7 @@ A terminal is the window where you type commands.
     Press Cmd+Space, type `Terminal`, and press Enter. Then check Python:
 
     ```bash
-    python3 --version
+    python3.12 --version
     ```
 
 === "Linux"
@@ -74,19 +74,17 @@ A terminal is the window where you type commands.
     Open your terminal app. Then check Python:
 
     ```bash
-    python3 --version
+    python3.12 --version
     ```
 
-You should see something like:
+You should see `Python 3.12` and a last number, such as:
 
 ```text
-Python 3.14.8
+Python 3.12.10
 ```
 
-3.12 and 3.13 are fine too. If it shows another version, you have more than one Python and the
-terminal found the wrong one first. Name the version in step 3 instead, for example
-`py -3.14 -m venv venv` on Windows or `python3.14 -m venv venv` on a Mac or Linux. After that, inside the virtual
-environment, plain `python` is the right one.
+If it says the command isn't found, or shows another version, go back to step 1. The next step
+names 3.12 the same way, so a newer Python on your computer doesn't get in the way.
 
 ## 3. Make a Folder for Your Bot
 
@@ -112,7 +110,7 @@ clashes with anything else on your computer.
     ```powershell
     mkdir royale
     cd royale
-    python -m venv venv
+    py -3.12 -m venv venv
     .\venv\Scripts\Activate.ps1
     ```
 
@@ -124,7 +122,7 @@ clashes with anything else on your computer.
     ```bash
     mkdir royale
     cd royale
-    python3 -m venv venv
+    python3.12 -m venv venv
     source venv/bin/activate
     ```
 
@@ -133,7 +131,7 @@ clashes with anything else on your computer.
     ```bash
     mkdir royale
     cd royale
-    python3 -m venv venv
+    python3.12 -m venv venv
     source venv/bin/activate
     ```
 
