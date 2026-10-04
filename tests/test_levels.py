@@ -26,6 +26,7 @@ from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
     BLUE,
     DECK_SIZE,
+    HAND_SIZE,
     RED,
     DeployCommand,
     DeployStatus,
@@ -138,3 +139,42 @@ def test_the_engine_plays_per_side_levels_or_refuses_them_by_name():
     assert tilted[1] == same[1], "Red kept the engine's tower level"
     assert knights[BLUE] > knights[RED], f"Blue's Knight one level up is not stronger: {knights}"
     assert knights[RED] == same_knights[RED], "Red kept the engine's card level"
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+@pytest.mark.parametrize("shuffle", [ShuffleMode.INDEPENDENT, ShuffleMode.MIRRORED])
+def test_each_card_plays_at_its_own_level_whatever_the_shuffle(shuffle):
+    """Eight distinct levels, one per deck card: every unit a play puts down carries its own
+    card's level, on both sides. Under ShuffleMode.MIRRORED both decks are dealt in one shared
+    permutation, and the levels must travel with their cards (before royalesim 0.1.11 they
+    stayed in setup order there, so a card could play at another card's level)."""
+    eng = RustEngine()
+    if not HAS_LEVELS:
+        pytest.skip("this engine has no per-side levels")
+    ids = {c.name: c.card_id for c in eng.cards()}
+    names = ("Knight", "Archer", "Giant", "Minions", "Musketeer", "Valkyrie", "Barbarians",
+             "MiniPekka")
+    deck = [ids[n] for n in names]
+    base = eng.card_level
+    levels = [base - 3 + i for i in range(DECK_SIZE)]  # eight distinct levels
+    level_of = dict(zip(deck, levels, strict=True))
+    eng.reset(1, MatchSetup(decks=[deck, deck], shuffle=int(shuffle), levels=[levels, levels],
+                            elixir_milli=[10000, 10000],
+                            start_tick=eng.rules().deploy_lockout_ticks))
+    t = eng.arena().subtile
+    seen: dict[tuple[int, int], set[int]] = {}
+    for k in range(HAND_SIZE):
+        while min(p.elixir_milli for p in eng.state().players) < 6000:
+            eng.step([], 1)
+        cmds = []
+        for team in (BLUE, RED):
+            x, y = to_engine(eng.arena(), team, (2 + 4 * k) * t + t // 2, 9 * t + t // 2)
+            cmds.append(DeployCommand(team, k, x, y))
+        assert [r.status for r in eng.step(cmds, 1)] == [DeployStatus.OK] * 2
+        eng.step([], 30)
+        for e in eng.state().entities:
+            if e.tower_slot < 0 and e.card_id in level_of:
+                seen.setdefault((e.team, e.card_id), set()).add(e.level)
+    assert len(seen) >= 2 * HAND_SIZE - 1, seen
+    wrong = {key: lv for key, lv in seen.items() if lv != {level_of[key[1]]}}
+    assert not wrong, f"cards playing at another card's level: {wrong} (wanted {level_of})"
