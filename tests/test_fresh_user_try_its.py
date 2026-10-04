@@ -69,3 +69,24 @@ def test_the_gate_covers_every_sibling_with_a_program_and_names_the_cut():
     assert set(tool.SIBLING_TRY_ITS) == {"royalesim", "royalelearn", "royaleimitate"}
     assert "P8" in tool.__doc__
     assert "total_steps" in tool.__doc__
+
+
+def test_a_failed_install_is_blocked_only_when_the_engine_is_out_of_reach():
+    """Since every package is on PyPI, pip names royalesim on every normal download. Only an
+    engine pip cannot find, or would build from source with Rust, is BLOCKED; a timeout or any
+    other failure is a FAIL, and a timeout says so."""
+    tool = _tool()
+    downloading = (
+        "Collecting royalesim>=0.1.10\n  Downloading royalesim-0.1.10-cp310-abi3-win_amd64.whl"
+    )
+    assert tool.install_verdict(downloading + "\nTIMEOUT after 1800s", False) == (
+        "FAIL", ["pip was still running at the time limit: a slow download, or a hang"]
+    )
+    assert tool.install_verdict(downloading + "\nERROR: some other failure", False)[0] == "FAIL"
+    missing = "ERROR: No matching distribution found for royalesim>=0.1.10"
+    assert tool.install_verdict(missing, False)[0] == "BLOCKED"
+    source = (
+        "Collecting royalesim\n  Building wheel for royalesim (pyproject.toml)\n  maturin failed"
+    )
+    assert tool.install_verdict(source, False)[0] == "BLOCKED"
+    assert tool.install_verdict(missing, True)[0] == "FAIL", "with a wheels folder it is a FAIL"

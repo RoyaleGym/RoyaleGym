@@ -145,6 +145,23 @@ def clean_env(root: Path, venv: Path) -> dict:
     return env
 
 
+def install_verdict(out: str, wheels: bool) -> tuple[str, list[str]]:
+    """A failed P2's status and notes, from pip's output.
+
+    BLOCKED only when the engine itself is out of reach: PyPI has no royalesim for this
+    platform, so pip would build it from source, and a fresh user has no Rust. pip names
+    royalesim on every normal download too, so the name alone says nothing. A timeout is a FAIL
+    that says so: a slow download or a hang, not a missing package.
+    """
+    unreachable = "No matching distribution found for royalesim" in out or (
+        "royalesim" in out and ("maturin" in out or "cargo" in out or "Rust" in out)
+    )
+    notes = []
+    if "TIMEOUT after" in out:
+        notes.append("pip was still running at the time limit: a slow download, or a hang")
+    return ("BLOCKED" if (not wheels and unreachable) else "FAIL"), notes
+
+
 def find_links(where: str) -> str:
     """A release page URL as it is; a folder as an absolute path."""
     return where if where.startswith(("http://", "https://")) else str(Path(where).resolve())
@@ -257,9 +274,7 @@ def main() -> int:
         # P2
         reqs, notes = ["royalegym[all]" if args.by_name else f"{gym}[all]"], []
         if not args.wheels:
-            notes.append(
-                "no --wheels: royalesim has no prebuilt wheel source, and a fresh user has no Rust"
-            )
+            notes.append("no --wheels: every package comes from PyPI, as a user's plain line does")
         cmd = (
             [py, "-m", "pip", "install"]
             + (["--find-links", find_links(args.wheels)] if args.wheels else [])
@@ -267,7 +282,8 @@ def main() -> int:
         )
         code, out, secs = run(cmd, env, work, 1800)
         if code != 0:
-            status = "BLOCKED" if (not args.wheels and "royalesim" in out) else "FAIL"
+            status, why = install_verdict(out, bool(args.wheels))
+            notes += why
             if "does not provide the extra 'all'" in out or "provides no extra" in out.lower():
                 holes.append("royalegym has no [all] extra")
             phase(
