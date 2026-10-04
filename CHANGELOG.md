@@ -4,7 +4,7 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
-## Unreleased
+## 0.1.14 (2026-10-04)
 
 ### Added
 - Start episodes from saved moments of a battle. `ClashParallelEnv.snapshot()` saves the engine's
@@ -17,6 +17,12 @@ change the observation's shape; each such change is listed here.
 - `SnapshotStateMutator` draws from a bank by weight (one per snapshot, or one per tag) and by
   seat (`seat="blue"` draws only the starts made for Blue or for either seat). It reads a bank
   from a file: `save_snapshots` and `load_snapshots`.
+
+### Fixed
+- royalesim 0.1.11: with `ShuffleMode.MIRRORED` and per-card `levels`, each card now plays at its
+  own level. Before, the levels stayed in setup order while the cards were shuffled, so a card
+  could play at another card's level. A new test plays all eight cards on both sides and checks
+  every unit's level.
 
 ## 0.1.13 (2026-10-04)
 
