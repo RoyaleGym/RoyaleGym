@@ -60,7 +60,7 @@ itself, `1` its evolution, `2` its hero.
 | `DefaultStateMutator(decks=...)` | From the first second, with the decks you give, or random ones. |
 | `MidGameStateMutator(...)` | Partway through, with random elixir and tower damage. Good for practising endings. |
 | `ScriptedBoardStateMutator(spawns=...)` | With units already on the board, for drills like "defend this push". |
-| `SnapshotStateMutator(blobs)` | From exact saved moments of earlier battles. |
+| `SnapshotStateMutator(bank)` | From exact saved moments of earlier battles, picked by weight and seat. |
 | `DeckCurriculumStateMutator(deck, ...)` | With your deck on one or both sides, against a pool of other decks. |
 | `WeightedStateMutator([(mutator, weight), ...])` | From one of several mutators, picked at random by weight each battle. |
 
@@ -76,8 +76,51 @@ princess tower's full health):
 ```
 
 That goes in place of the `state_mutator = ...` line in your quickstart's `build_env`, with
-`MidGameStateMutator` added to its imports. The scripted-board and snapshot starts are for
-advanced use; their arguments are in the [API reference](../../reference/royalegym.md).
+`MidGameStateMutator` added to its imports. The scripted-board starts are for advanced use; their
+arguments are in the [API reference](../../reference/royalegym.md).
+
+### Starting From a Saved Moment
+
+`env.snapshot()` saves a battle as it stands: the engine, and what each seat's observation
+remembers (its cycle, the elixir it has counted, the cards it has seen, the enemy's forms). A
+battle started from it shows each seat the observation it had, and goes on exactly as the original
+would with the same moves. That's a way to practise one situation over and over.
+
+```python
+import numpy as np
+from royalegym import (ClashParallelEnv, DefaultStateMutator, RandomLegalOpponent, RustEngine,
+                       SnapshotStateMutator, save_snapshots)
+
+engine = RustEngine()
+by_name = {c.name: c.card_id for c in engine.cards()}
+deck = [by_name[n] for n in ("Knight", "Archer", "Giant", "Minions",
+                             "Fireball", "Cannon", "Zap", "Musketeer")]
+env = ClashParallelEnv(engine=engine, state_mutator=DefaultStateMutator(decks=[deck, deck]))
+obs, info = env.reset(seed=0)
+rng, policy = np.random.default_rng(0), RandomLegalOpponent(noop_prob=0.7)
+for _ in range(120):                                   # play a minute
+    actions = {a: policy.act(obs[a], obs[a]["action_mask"], rng) for a in env.agents}
+    obs, reward, terminated, truncated, info = env.step(actions)
+
+moment = env.snapshot(tag="one minute in")             # save the battle as it stands
+obs, info = env.reset(options={"snapshot": moment})    # start a new episode right there
+print("starts at tick", env.battle_state.tick)
+
+save_snapshots("starts.bin", [moment])                 # a bank of starts, in a file
+bank = SnapshotStateMutator("starts.bin")
+env2 = ClashParallelEnv(engine=RustEngine(), state_mutator=bank)
+obs, info = env2.reset(seed=1)
+print("drawn from the bank, tick", env2.battle_state.tick)
+```
+
+```
+starts at tick 1200
+drawn from the bank, tick 1200
+```
+
+A snapshot can also carry a `seat` (the side the start is for) and `max_ticks` (end each episode
+after that many ticks). `SnapshotStateMutator(bank, weights={...}, seat="blue")` then draws from
+the bank by tag and by seat. The [API reference](../../reference/royalegym.md) has every argument.
 
 You don't chain mutators one after another. A mutator describes the whole start of a battle, and
 `WeightedStateMutator` picks between them.
