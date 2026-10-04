@@ -1,6 +1,6 @@
 # The fresh-user test: a clean venv in a clean folder installs royalegym[all] the way a newcomer would, runs
 # examples/quickstart.py, records a battle and opens it in the viewer headless. Nightly, on all three OSes.
-# RoyaleSim comes from its latest GitHub release's wheels. Until a package is on PyPI, its wheel is built from its
+# The main step installs RoyaleSim from its latest GitHub release's wheels and builds each sibling from its
 # public repo into the same folder (pip --find-links). A missing prerequisite reports BLOCKED, which is not a pass.
 name: fresh-user
 
@@ -68,6 +68,16 @@ jobs:
           python "$GITHUB_WORKSPACE/tools/fresh_user_test.py" --gym "$RUNNER_TEMP/released" --by-name \
             --wheels "https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/$TAG" \
             --steps 2000 --timeout 1200 --report "$GITHUB_WORKSPACE/fresh-user-release-${{ matrix.os }}-py${{ matrix.python }}.json"
+      # The line the docs give since every package is on PyPI: plain `pip install "royalegym[all]"`,
+      # by name, with NO wheels folder and no release page, so pip takes all five from PyPI. It
+      # runs the quickstart and README of the latest release tag, checked out by the step above.
+      - name: the PyPI install line (by name, no --find-links)
+        if: always()
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          python "$GITHUB_WORKSPACE/tools/fresh_user_test.py" --gym "$RUNNER_TEMP/released" --by-name \
+            --steps 2000 --timeout 1200 --report "$GITHUB_WORKSPACE/fresh-user-pypi-${{ matrix.os }}-py${{ matrix.python }}.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
