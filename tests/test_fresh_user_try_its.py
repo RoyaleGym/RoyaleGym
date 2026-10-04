@@ -90,3 +90,16 @@ def test_a_failed_install_is_blocked_only_when_the_engine_is_out_of_reach():
     )
     assert tool.install_verdict(source, False)[0] == "BLOCKED"
     assert tool.install_verdict(missing, True)[0] == "FAIL", "with a wheels folder it is a FAIL"
+
+
+def test_an_install_of_another_royalegym_version_is_refused():
+    """``--expect-version``: the PyPI leg names the release it tests, and pip giving any other
+    royalegym (an older one, before the release is published) fails P3 instead of testing the
+    wrong package and reporting PASS."""
+    tool = _tool()
+    assert tool.version_check({"royalegym": "0.1.14", "royalesim": "0.1.11"}, "0.1.14") is None
+    assert tool.version_check({"royalegym": "0.1.12"}, None) is None
+    why = tool.version_check({"royalegym": "0.1.12", "royalesim": "0.1.11"}, "0.1.14")
+    assert "0.1.12" in why
+    assert "0.1.14" in why
+    assert "0.1.14" in tool.version_check({}, "0.1.14")

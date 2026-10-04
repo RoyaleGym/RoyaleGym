@@ -1,34 +1,76 @@
-# Publish this package to PyPI from a version tag, with PyPI's trusted publishing (no API token).
-# The upload job runs in the `pypi` environment, which waits for the owner's approval.
-# PyPI's pending publisher for this project names this file (`pypi.yml`) and that environment.
+# Publish this package to PyPI once a release has passed its fresh-user gate, with PyPI's trusted
+# publishing (no API token). Nobody approves an upload by hand: the gate is the approval.
+#
+# THE PATH. A version tag publishes nothing by itself. The release is staged on its GitHub release
+# page and fresh-user.yml is dispatched for its tag (release_tag=vX.Y.Z). That run installs it on
+# three operating systems and three Pythons, three ways each, and succeeds only if every report is
+# PASS. When it does, this workflow runs: it reads the tag from the run's name ("fresh-user vX.Y.Z",
+# fresh-user.yml's run-name), builds that tag, checks the tag is "v" + the version in its tree, and
+# uploads. A nightly run, a run for no tag, or a failed run publishes nothing, and neither does a
+# version PyPI already has.
+#
+# PyPI's trusted publisher for this project names this file (`pypi.yml`) and the `pypi` environment.
 name: pypi
 
 on:
-  push:
-    tags: ['v*']
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "an existing version tag to publish, e.g. v0.1.1"
-        required: true
+  workflow_run:
+    workflows: [fresh-user]
+    types: [completed]
 
 permissions:
   contents: read
 
 jobs:
+  gate:
+    # A fresh-user run dispatched for one release tag, that passed on every leg.
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'workflow_dispatch'
+      && startsWith(github.event.workflow_run.display_title, 'fresh-user v')
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.which.outputs.tag }}
+      version: ${{ steps.which.outputs.version }}
+      publish: ${{ steps.which.outputs.publish }}
+    steps:
+      - id: which
+        name: the release the gate passed, and whether PyPI has it yet
+        shell: bash
+        env:
+          TITLE: ${{ github.event.workflow_run.display_title }}
+          RUN: ${{ github.event.workflow_run.html_url }}
+        run: |
+          TAG="${TITLE#fresh-user }"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "the gate run is named '$TITLE', which names no release tag: refusing" >&2
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if curl -sf -o /dev/null "https://pypi.org/pypi/royalegym/$VERSION/json"; then
+            echo "royalegym $VERSION is already on PyPI: nothing to publish (gate $RUN)"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "gate $RUN passed for $TAG: publishing royalegym $VERSION"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: gate
+    if: needs.gate.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: refs/tags/${{ needs.gate.outputs.tag }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: the tag must be "v" + the version in this tree
         shell: bash
         env:
-          TAG: ${{ inputs.tag || github.ref_name }}
+          TAG: ${{ needs.gate.outputs.tag }}
         run: |
           VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           if [ "$TAG" != "v$VERSION" ]; then
@@ -45,9 +87,9 @@ jobs:
           path: dist/
 
   pypi:
-    needs: build
-    # Off until the owner sets the repository variable PYPI_PUBLISH to true (Settings > Secrets and
-    # variables > Actions > Variables), once the PyPI side is ready. Until then a tag builds and stops.
+    needs: [gate, build]
+    # Publishing also needs the repository variable PYPI_PUBLISH set to true (Settings > Secrets and
+    # variables > Actions > Variables); without it a passed gate builds and stops.
     if: vars.PYPI_PUBLISH == 'true'
     runs-on: ubuntu-24.04
     environment: pypi
@@ -59,3 +101,27 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  installs:
+    # The upload, installed the way a reader installs it: by name from PyPI, into a fresh venv,
+    # then one battle. PyPI's index can lag an upload by minutes, so the install retries.
+    needs: [gate, pypi]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: pip install royalegym from PyPI by name
+        shell: bash
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: |
+          python -m venv "$RUNNER_TEMP/v"
+          PY="$RUNNER_TEMP/v/bin/python"
+          for i in $(seq 1 20); do
+            if "$PY" -m pip install -q "royalegym[sim]==$VERSION"; then break; fi
+            if [ "$i" -eq 20 ]; then echo "royalegym $VERSION did not install from PyPI" >&2; exit 1; fi
+            sleep 30
+          done
+          cd "$RUNNER_TEMP"
+          "$PY" -c "import royalegym; from royalegym import make_env; env = make_env(); env.reset(seed=1); env.step({'blue': 0, 'red': 0}); print('royalegym', royalegym.__version__, 'plays a battle')"

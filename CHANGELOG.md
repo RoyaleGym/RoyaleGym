@@ -18,6 +18,11 @@ change the observation's shape; each such change is listed here.
   seat (`seat="blue"` draws only the starts made for Blue or for either seat). It reads a bank
   from a file: `save_snapshots` and `load_snapshots`.
 
+### Changed
+- A release reaches PyPI once it passes its install test on Windows, macOS and Linux with
+  Python 3.12 to 3.14, and not before. That test also checks that pip installs the version
+  under test.
+
 ### Fixed
 - royalesim 0.1.11: with `ShuffleMode.MIRRORED` and per-card `levels`, each card now plays at its
   own level. Before, the levels stayed in setup order while the cards were shuffled, so a card

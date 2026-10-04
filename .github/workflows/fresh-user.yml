@@ -3,6 +3,9 @@
 # The main step installs RoyaleSim from its latest GitHub release's wheels and builds each sibling from its
 # public repo into the same folder (pip --find-links). A missing prerequisite reports BLOCKED, which is not a pass.
 name: fresh-user
+# The run's name says which release it tested. pypi.yml reads it: a run named "fresh-user vX.Y.Z"
+# that succeeds publishes that tag to PyPI, and a nightly run ("fresh-user") publishes nothing.
+run-name: ${{ inputs.release_tag && format('fresh-user {0}', inputs.release_tag) || 'fresh-user' }}
 
 on:
   workflow_dispatch:
@@ -70,14 +73,25 @@ jobs:
             --steps 2000 --timeout 1200 --report "$GITHUB_WORKSPACE/fresh-user-release-${{ matrix.os }}-py${{ matrix.python }}.json"
       # The line the docs give since every package is on PyPI: plain `pip install "royalegym[all]"`,
       # by name, with NO wheels folder and no release page, so pip takes all five from PyPI. It
-      # runs the quickstart and README of the latest release tag, checked out by the step above.
+      # runs the quickstart and README of the release tag checked out by the step above, and the
+      # royalegym pip installs must be that tag's version. A release reaches PyPI only after this
+      # gate passes (pypi.yml), so for a release PyPI does not have yet this step reports
+      # NOT-PUBLISHED and runs nothing; pypi.yml installs the release by name once it uploads it,
+      # and every nightly run tests the published line.
       - name: the PyPI install line (by name, no --find-links)
         if: always()
         shell: bash
         run: |
           cd "$RUNNER_TEMP"
+          REPORT="$GITHUB_WORKSPACE/fresh-user-pypi-${{ matrix.os }}-py${{ matrix.python }}.json"
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('released/pyproject.toml','rb'))['project']['version'])")
+          if ! curl -sf -o /dev/null "https://pypi.org/pypi/royalegym/$VERSION/json"; then
+            echo "royalegym $VERSION is not on PyPI yet: pypi.yml publishes it after this gate passes"
+            printf '{"verdict": "NOT-PUBLISHED", "version": "%s"}\n' "$VERSION" > "$REPORT"
+            exit 0
+          fi
           python "$GITHUB_WORKSPACE/tools/fresh_user_test.py" --gym "$RUNNER_TEMP/released" --by-name \
-            --steps 2000 --timeout 1200 --report "$GITHUB_WORKSPACE/fresh-user-pypi-${{ matrix.os }}-py${{ matrix.python }}.json"
+            --expect-version "$VERSION" --steps 2000 --timeout 1200 --report "$REPORT"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

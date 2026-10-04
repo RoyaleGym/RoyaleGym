@@ -180,6 +180,18 @@ def fetch_quickstart(gym: Path, dest: Path) -> str | None:
     return str(f)
 
 
+def version_check(versions: dict[str, str | None], expected: str | None) -> str | None:
+    """Why the royalegym pip installed is not the release under test, or None when it is (or when
+    no release was named). Before a release is published, a by-name install from PyPI gives the
+    previous version, and testing that would pass the wrong package."""
+    if expected is None:
+        return None
+    got = versions.get("royalegym")
+    if got != expected:
+        return f"pip installed royalegym {got}, and the release under test is {expected}"
+    return None
+
+
 TRACE_SNIPPET = r"""
 import sys, royalegym
 from royalegym import ClashParallelEnv
@@ -249,6 +261,11 @@ def main() -> int:
         "--by-name",
         action="store_true",
         help='install "royalegym[all]" by name from --wheels, not from the checkout',
+    )
+    ap.add_argument(
+        "--expect-version",
+        metavar="X.Y.Z",
+        help="the royalegym version the install must give; any other fails P3",
     )
     ap.add_argument("--report", help="write the results as JSON here")
     args = ap.parse_args()
@@ -329,6 +346,12 @@ def main() -> int:
                     f"royalesim.card_table_source() is {cts!r}, not 'embedded': "
                     "the install reads data from outside the wheel"
                 )
+        wrong = version_check(
+            {k: m.get("version") for k, m in info["mods"].items() if "error" not in m},
+            args.expect_version,
+        )
+        if wrong:
+            bad.append(wrong)
         leaked = [p for p in info["path"] if p and str(workspace).lower() in p.lower()]
         if leaked:
             bad.append(f"workspace on sys.path: {leaked}")
