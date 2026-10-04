@@ -2,12 +2,16 @@ r"""Stage the wheels for a RoyaleGym release page: everything `pip install "roya
 
     python tools/stage_release.py OUT_DIR [--sim-tag v0.1.0]
 
-- royalesim: the wheels attached to a RoyaleSim GitHub release (its newest v* tag, or --sim-tag),
-  downloaded with `gh`, unchanged.
-- royalegym, royalelearn, royaleviser, royaleimitate: each built from its repo's NEWEST v* tag,
-  never from main, so a wheel's version always names the code inside it. The repos are found next
-  to this checkout. A repo with no v* tag, or a tag that is not "v" + the version in that tagged
-  tree, is refused.
+- royalesim: the wheels attached to a RoyaleSim GitHub release (its newest v* tag on PyPI, or
+  --sim-tag), downloaded with `gh`, unchanged.
+- royalegym: built from its NEWEST v* tag, the release being staged (PyPI gets it only after the
+  fresh-user gate passes on this page).
+- royalelearn, royaleviser, royaleimitate: each built from its newest v* tag whose version is ON
+  PYPI, which is what `pip install "royalegym[all]"` installs. A newer tag PyPI does not have is
+  not released yet, and is left off the page (said on stderr).
+Never from main, so a wheel's version always names the code inside it. The repos are found next
+to this checkout. A repo with no v* tag, or a tag that is not "v" + the version in that tagged
+tree, is refused.
 
 It refuses a page whose royalegym [all] minimums are not exactly the versions it stages (so
 `pip install --upgrade "royalegym[all]"` moves every package), then prints one row per package
@@ -24,10 +28,14 @@ import sys
 import tarfile
 import tempfile
 import tomllib
+import urllib.error
+import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 
 ORG = "RoyaleGym"
-#: The pure-Python packages, by repo, built from their newest v* tag.
+#: The pure-Python packages, by repo: royalegym from its newest v* tag, the others from their newest
+#: v* tag on PyPI.
 BUILT = ("RoyaleGym", "RoyaleLearn", "RoyaleViser", "RoyaleImitate")
 
 
@@ -43,6 +51,32 @@ def newest_tag(repo: Path) -> str:
     if not tags:
         raise SystemExit(f"{repo.name} has no v* tag: tag the released commit first")
     return tags[0]
+
+
+def on_pypi(package: str, version: str) -> bool:
+    """Whether PyPI has ``package`` at ``version``."""
+    url = f"https://pypi.org/pypi/{package}/{version}/json"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            return response.status == 200
+    except urllib.error.HTTPError as ex:
+        if ex.code == 404:
+            return False
+        raise
+
+
+def newest_published_tag(
+    repo: Path, package: str, published: Callable[[str, str], bool] = on_pypi
+) -> str:
+    """The newest v* tag whose version PyPI has, newest first. Raises if none is."""
+    tags = git(repo, "tag", "-l", "v*", "--sort=-v:refname").splitlines()
+    if not tags:
+        raise SystemExit(f"{repo.name} has no v* tag: tag the released commit first")
+    for tag in tags:
+        if published(package, tag.removeprefix("v")):
+            return tag
+        print(f"{repo.name}: {tag} is not on PyPI, so this page leaves it out", file=sys.stderr)
+    raise SystemExit(f"{repo.name}: no v* tag of {package} is on PyPI")
 
 
 def version_at(repo: Path, tag: str) -> str:
@@ -119,7 +153,7 @@ def main() -> int:
 
     sim = here.parent / "RoyaleSim"
     git(sim, "fetch", "-q", "--tags", "origin")
-    sim_tag = args.sim_tag or newest_tag(sim)
+    sim_tag = args.sim_tag or newest_published_tag(sim, "royalesim")
     subprocess.run(
         [
             "gh",
@@ -147,7 +181,7 @@ def main() -> int:
     for name in BUILT:
         repo = here if name == "RoyaleGym" else here.parent / name
         git(repo, "fetch", "-q", "--tags", "origin")
-        tag = newest_tag(repo)
+        tag = newest_tag(repo) if name == "RoyaleGym" else newest_published_tag(repo, name.lower())
         version = check_tag(repo, tag)
         build(repo, tag, out)
         rows.append(
