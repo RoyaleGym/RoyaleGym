@@ -57,6 +57,10 @@
 /* In the mobile menu the links sit in a row above the GitHub box. */
 .md-nav__source .rg-social { padding: 0.6rem 0.8rem 0; }
 
+/* The live count on the home page's Discord card (javascripts/discord-online.js, from the server's widget). */
+.rg-card__live { font-size: 0.7rem; font-weight: 600; color: #1f7a45; }
+[data-md-color-scheme="slate"] .rg-card__live { color: #57f287; }
+
 /* ---------- banner ---------- */
 
 .rg-hero {
