@@ -4,6 +4,19 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.15 (2026-10-04)
+
+### Fixed
+- royalelearn 0.5.8: training on an NVIDIA card on Windows starts again. From 0.5.5 to 0.5.7 every
+  such run stopped at start-up. `pip install --upgrade "royalegym[all]"` brings the fix.
+- An install from PyPI now records which card table its engine uses. The engine there carries its
+  table inside, and `RustEngine.card_table_stamp()` (in `config()` and in every saved battle)
+  said "unavailable". It now gives that table's hash and version, marked "embedded".
+
+### Changed
+- royalesim 0.1.12: a Hunter's pellets reach a building's whole square, and the engine draws the
+  Hunter's random delays the way the game does. Battles with a Hunter can end differently.
+
 ## 0.1.14 (2026-10-04)
 
 ### Added
