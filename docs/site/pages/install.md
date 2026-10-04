@@ -206,13 +206,11 @@ If `pip` prints a notice that "a new release of pip is available", you can ignor
 ## 5. Install RoyaleGym
 
 ```
-pip install "royalegym[all]" --find-links https://github.com/RoyaleGym/RoyaleGym/releases/expanded_assets/v0.1.12
+pip install "royalegym[all]"
 ```
 
 Copy the whole line with the copy button, quotes included. `[all]` means "with every part": the
-engine, the environments, the trainer, the viewer and the extras. The `--find-links` part tells
-`pip` where to download them, because RoyaleGym isn't on PyPI (Python's package store) yet. You
-don't need Git or Rust.
+engine, the environments, the trainer, the viewer and the extras. You don't need Git or Rust.
 
 !!! note "An early release"
     New versions come often while the engine is matched to the real game. For a project you want

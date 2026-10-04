@@ -95,9 +95,9 @@ The viewer now uses `pygame-ce`, which does. Copy the install line from step 5 o
 
 ### `Could not find a version that satisfies the requirement royalegym`
 
-`pip` can't find RoyaleGym. It isn't on PyPI yet, so `pip install "royalegym[all]"` on its own
-doesn't work: the line needs its `--find-links` part. Copy the whole install line from step 5 of
-[Install](install.md#5-install-royalegym) with its copy button.
+`pip` can't find a RoyaleGym for your Python. RoyaleGym needs Python 3.12, 3.13 or 3.14: run
+`python --version`, and if yours is older or newer, go back to step 1 of [Install](install.md).
+Check the name too: `royalegym`, with the quotes around `"royalegym[all]"`.
 
 ### `pip` is not recognized
 
@@ -184,8 +184,7 @@ in TextEdit, choose Format > Make Plain Text before you save.
 ### `The battle engine ... is not installed`
 
 The engine wasn't installed with RoyaleGym. Run the install line from step 5 of
-[Install](install.md#5-install-royalegym) again. If the message shows a `pip` line of its own,
-don't use that one: it lacks the `--find-links` part.
+[Install](install.md#5-install-royalegym) again.
 
 ### `names '...', which this engine's catalogue of ... cards does not have`
 
