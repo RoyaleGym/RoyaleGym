@@ -342,13 +342,28 @@ Close games and other programs that use the graphics card. If it still happens, 
 for 6 GB, `256` for 4 GB. The message calls it `ppo.minibatch_size`; it's the same setting. Leave
 `doctor.vram_headroom_mb` alone.
 
+### `Expected a torch.device with a specified index` (Windows)
+
+Training stops as it starts, before the first battle:
+
+```text
+ValueError: Expected a torch.device with a specified index or an integer, but got:cuda
+```
+
+RoyaleLearn 0.5.5 to 0.5.7 stopped every training run on a Windows NVIDIA card this way.
+RoyaleLearn 0.5.8 fixes it. Update RoyaleGym, which brings it:
+
+```
+pip install --upgrade "royalegym[all]"
+```
+
 ### Training takes more and more of the computer's memory (Windows)
 
 On Windows, when the graphics card's memory is full, Windows lends the card some of the
 computer's own memory (RAM) instead of stopping. Over a long run, training could take gigabytes
 of it that way, and the whole computer slows down.
 
-RoyaleLearn 0.5.5 and newer stop at 80% of the card on Windows instead. Update RoyaleGym, which
+RoyaleLearn 0.5.8 and newer stop at 80% of the card on Windows instead. Update RoyaleGym, which
 brings it:
 
 ```
