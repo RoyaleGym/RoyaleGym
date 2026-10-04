@@ -95,8 +95,8 @@ The viewer now uses `pygame-ce`, which does. Copy the install line from step 5 o
 
 ### `Could not find a version that satisfies the requirement royalegym`
 
-`pip` can't find a RoyaleGym for your Python. RoyaleGym needs Python 3.12, 3.13 or 3.14: run
-`python --version`, and if yours is older or newer, go back to step 1 of [Install](install.md).
+`pip` can't find a RoyaleGym for your Python. This guide uses Python 3.12: run
+`python --version`, and if it isn't 3.12, go back to step 1 of [Install](install.md).
 Check the name too: `royalegym`, with the quotes around `"royalegym[all]"`.
 
 ### `ReadTimeoutError` or `Read timed out` while downloading
