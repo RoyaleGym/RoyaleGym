@@ -655,6 +655,13 @@ def allowed_disagreements(rust, mock) -> set[str]:
     return KNOWN_STATE_DISAGREEMENTS | footprint_allowance(rust, mock) | MOCK_UNREPORTED
 
 
+def _deck_pairs(player: PlayerState) -> list[tuple[int, int]] | None:
+    """A side's deck as its (card, form) pairs in card order; None when forms do not pair up."""
+    if len(player.forms) != len(player.deck):
+        return None
+    return sorted(zip(player.deck, player.forms, strict=True))
+
+
 def state_disagreements(rust, mock, seed: int, setup: MatchSetup) -> set[str]:
     rust.reset(seed, setup)
     mock.reset(seed, setup)
@@ -673,8 +680,14 @@ def state_disagreements(rust, mock, seed: int, setup: MatchSetup) -> set[str]:
             out.add(f"state.{f}")
     for pr, pm in zip(r.players, m.players, strict=True):
         for f in PlayerState.__struct_fields__:
-            if getattr(pr, f) != getattr(pm, f):
+            if f not in ("deck", "forms") and getattr(pr, f) != getattr(pm, f):
                 out.add(f"player.{f}")
+        # A deck is its eight cards and each card's form: the order means nothing to a player,
+        # and royalesim 0.1.9 gives a MIRRORED side's deck in its shuffled order.
+        if sorted(pr.deck) != sorted(pm.deck):
+            out.add("player.deck")
+        elif _deck_pairs(pr) != _deck_pairs(pm):
+            out.add("player.forms")
     key = lambda e: (e.team, e.kind, e.tower_slot, e.card_id, e.x, e.y)  # noqa: E731
     er, em = sorted(r.entities, key=key), sorted(m.entities, key=key)
     if [key(e) for e in er] != [key(e) for e in em]:
@@ -782,6 +795,40 @@ def test_a_catalogue_field_the_mock_does_not_state_is_silence_not_a_disagreement
     assert "card.evo_cycle" in wrong - MOCK_UNREPORTED, (
         f"PLANT DID NOT LAND: a mock stating cycle 0 against 2 was filed as silence: {wrong}"
     )
+
+
+def _decks_as(engine, decks):
+    """``engine`` with each side's PlayerState.deck/forms replaced by ``decks``' pairs."""
+    real_state = engine.state
+
+    def state():
+        s = real_state()
+        players = [
+            msgspec.structs.replace(p, deck=[c for c, _ in pairs], forms=[f for _, f in pairs])
+            for p, pairs in zip(s.players, decks, strict=True)
+        ]
+        return msgspec.structs.replace(s, players=players)
+
+    engine.state = state
+    return engine
+
+
+def test_a_deck_is_compared_as_its_cards_and_their_forms_not_their_order():
+    """Under ShuffleMode.MIRRORED royalesim 0.1.9 reports a side's deck in its shuffled order,
+    under the other modes in the setup's; MockEngine always gives the setup's. The order means
+    nothing to a player (and nothing here reads it), so two engines agree on a deck when they
+    agree on its eight cards and each card's form. A different card, or a card in another
+    form, is still a disagreement."""
+    setup = SETUPS["opening"]
+    pairs = [(c, 0) for c in range(8)]
+    plain = MockEngine(card_names=SHARED)
+    turned = _decks_as(MockEngine(card_names=SHARED), [pairs[::-1], pairs[3:] + pairs[:3]])
+    assert "player.deck" not in state_disagreements(turned, plain, 1, setup)
+    assert "player.forms" not in state_disagreements(turned, plain, 1, setup)
+    swapped = _decks_as(MockEngine(card_names=SHARED), [[*pairs[:7], (8, 0)], pairs])
+    assert "player.deck" in state_disagreements(swapped, MockEngine(card_names=SHARED), 1, setup)
+    reformed = _decks_as(MockEngine(card_names=SHARED), [[(0, 1), *pairs[1:]], pairs])
+    assert "player.forms" in state_disagreements(reformed, MockEngine(card_names=SHARED), 1, setup)
 
 
 def test_midgame_setup_awards_crowns_and_wakes_kings(rust):

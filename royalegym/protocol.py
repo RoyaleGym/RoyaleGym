@@ -688,10 +688,12 @@ class PlayerState(msgspec.Struct, frozen=True):
     # Empty and 0 with no delay, and from an engine before them.
     pending: list[list[int]] = []
     pending_cost: int = 0
-    # The side's whole deck, its 8 catalogue ids in setup (slot) order, and each card's FORM
-    # parallel to it: 0 basic, 1 evolution, 2 hero. A player knows its own eight from the first
-    # frame. Empty from an engine that does not say. royalesim 0.1.9 sends both from the
-    # engine's own config; before it RustEngine fills them from the setup it was reset with.
+    # The side's whole deck, its 8 catalogue ids, and each card's FORM parallel to it: 0 basic,
+    # 1 evolution, 2 hero. A player knows its own eight from the first frame. Read the pair as a
+    # set of (card, form): the order is the setup's, except that royalesim gives a side dealt
+    # under ShuffleMode.MIRRORED in its shuffled order. Empty from an engine that does not say.
+    # royalesim 0.1.9 sends both from the engine's own config; before it RustEngine fills them
+    # from the setup it was reset with.
     deck: list[int] = []
     forms: list[int] = []
 
