@@ -4,7 +4,9 @@ RoyaleSim's ship35 gives the catalogue a trailing "evo_cycle" column, the same n
 value of a side's own evo rows (Evo Skeletons 2, Evo Barbarians 1), 0 for a card with no
 loadable evolution. It lets the enemy's evolution charge be counted from its plays, which until
 now could only be read for the own side's cards. None means "the engine did not say": an engine
-before the column. MockEngine's 2018 game had no evolutions, so it says 0 for every card.
+before the column, and MockEngine, which models no evolutions and so states no cycle. (It once
+said 0, "no evolution", which is a claim about the card, and the 2018 cross-engine row caught it
+disagreeing with an engine that does state the card's cycle.)
 
 SKIPS
     The engine test skips only without the engine. With one, it checks the column's values or
@@ -27,8 +29,8 @@ def test_the_field_trails_card_info_and_defaults_to_not_said():
     assert CardInfo(0, "x", 1, 0, 1, 0, False, 1).evo_cycle is None
 
 
-def test_mock_engine_says_no_card_evolves():
-    assert {c.evo_cycle for c in MockEngine().cards()} == {0}
+def test_mock_engine_states_no_cycle():
+    assert {c.evo_cycle for c in MockEngine().cards()} == {None}
 
 
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))

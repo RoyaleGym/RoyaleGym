@@ -639,7 +639,9 @@ def footprint_allowance(rust, mock) -> set[str]:
 #: their own prefix. ``state_disagreements`` files a difference here only where the
 #: mock's value is still the "not reported" default, so this cannot excuse a mock that
 #: sends a real value and gets it wrong: that is filed as ``entity.<field>`` and fails.
-MOCK_UNREPORTED = {f"unreported.{f}" for f in mock_engine_module.UNREPORTED_ENTITY_FIELDS}
+MOCK_UNREPORTED = {f"unreported.{f}" for f in mock_engine_module.UNREPORTED_ENTITY_FIELDS} | {
+    f"unreported.card.{f}" for f in mock_engine_module.UNREPORTED_CARD_FIELDS
+}
 ENTITY_DEFAULTS = dict(
     zip(
         EntityState.__struct_fields__[-len(EntityState.__struct_defaults__) :],
@@ -660,7 +662,11 @@ def state_disagreements(rust, mock, seed: int, setup: MatchSetup) -> set[str]:
     out = set()
     for a, b in zip(rust.cards(), mock.cards(), strict=True):
         for f in CardInfo.__struct_fields__:
-            if getattr(a, f) != getattr(b, f):
+            if getattr(a, f) == getattr(b, f):
+                continue
+            if f in mock_engine_module.UNREPORTED_CARD_FIELDS and getattr(b, f) is None:
+                out.add(f"unreported.card.{f}")
+            else:
                 out.add(f"card.{f}")
     for f in BattleState.__struct_fields__:
         if f not in ("players", "entities") and getattr(r, f) != getattr(m, f):
@@ -746,6 +752,35 @@ def test_the_unreported_allowance_covers_silence_and_not_a_wrong_value():
     )
     assert "entity.attack_phase" in wrong - MOCK_UNREPORTED, (
         f"PLANT DID NOT LAND: a mock sending phase 0 against 2 was filed as silence: {wrong}"
+    )
+
+
+def _stating(engine, **fields):
+    """``engine`` with every catalogue card stating ``fields``: an engine that states them."""
+    real_cards = engine.cards
+
+    def cards():
+        return [msgspec.structs.replace(c, **fields) for c in real_cards()]
+
+    engine.cards = cards
+    return engine
+
+
+def test_a_catalogue_field_the_mock_does_not_state_is_silence_not_a_disagreement():
+    """MockEngine models no evolutions, so it states no evo_cycle (None). An engine that does
+    state it (RoyaleSim 0.1.8) is not in disagreement with that silence, and the comparison
+    files it apart. A mock stating a WRONG cycle is a disagreement and fails."""
+    setup = SETUPS["opening"]
+    stating = _stating(MockEngine(card_names=SHARED), evo_cycle=2)
+    silent = state_disagreements(stating, MockEngine(card_names=SHARED), 1, setup)
+    assert "unreported.card.evo_cycle" in silent, silent
+    assert "card.evo_cycle" not in silent, silent
+    assert "unreported.card.evo_cycle" in MOCK_UNREPORTED
+    wrong = state_disagreements(
+        stating, _stating(MockEngine(card_names=SHARED), evo_cycle=0), 1, setup
+    )
+    assert "card.evo_cycle" in wrong - MOCK_UNREPORTED, (
+        f"PLANT DID NOT LAND: a mock stating cycle 0 against 2 was filed as silence: {wrong}"
     )
 
 

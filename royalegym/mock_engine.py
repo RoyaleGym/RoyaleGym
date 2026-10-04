@@ -175,6 +175,12 @@ UNREPORTED_ENTITY_FIELDS: tuple[str, ...] = (
     "ability_ticks",
 )
 
+# CardInfo fields this engine never states: they stay None, "not said". It models no
+# evolutions, so it has no cycle to state; 0 would claim the card has no evolution, which the
+# 2018 cross-engine row caught disagreeing with an engine that states the card's real cycle.
+# tests/test_rust_engine.py lets the two differ on these only while this engine says None.
+UNREPORTED_CARD_FIELDS: tuple[str, ...] = ("evo_cycle",)
+
 # The card subset the mock supports. A mock design choice (a spread of placement
 # types, air/ground, splash, building-targeters), not a physics constant.
 MOCK_CARD_NAMES: tuple[str, ...] = (
@@ -750,7 +756,7 @@ class MockEngine:
                 else "SPELL"
             ),
             champion=False,  # the 2018 game had none
-            evo_cycle=0,  # nor evolutions
+            evo_cycle=None,  # it models no evolutions, so it states no cycle
         )
         self._cards.append(_CardTpl(info=info, unit=unit, spell=spell))
 
