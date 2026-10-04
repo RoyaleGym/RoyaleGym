@@ -99,6 +99,18 @@ The viewer now uses `pygame-ce`, which does. Copy the install line from step 5 o
 `python --version`, and if yours is older or newer, go back to step 1 of [Install](install.md).
 Check the name too: `royalegym`, with the quotes around `"royalegym[all]"`.
 
+### `ReadTimeoutError` or `Read timed out` while downloading
+
+The first install downloads PyTorch, about 2.5 GB, and on a slow connection `pip` can give up
+waiting. Run the same line again with `--timeout 120` at the end, which gives each read two
+minutes instead of fifteen seconds. For step 5 of [Install](install.md#5-install-royalegym):
+
+```
+pip install "royalegym[all]" --timeout 120
+```
+
+Whatever already finished downloading isn't fetched again.
+
 ### `pip` is not recognized
 
 Put `python -m` in front of `pip`: `python -m pip install ...` works the same as `pip install ...`.
