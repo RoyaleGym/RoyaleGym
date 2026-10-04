@@ -3539,6 +3539,14 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 <td>Shields, units under a Rage or slowed by cold, and units already locked on a crown tower.</td>
 </tr>
 <tr>
+<td><code>SpatialObsBuilder(card_status=True)</code></td>
+<td>Each card's evolution and hero status: all of yours from the start, and the opponent's as you see them played.</td>
+</tr>
+<tr>
+<td><code>SpatialObsBuilder(unit_actions=True)</code></td>
+<td>What units are doing: charging, winding up or using an ability, Clone copies, and where a tunneller will come up.</td>
+</tr>
+<tr>
 <td><code>SpatialObsBuilder(reveal=Reveal(...))</code></td>
 <td>Hidden information, such as the opponent's real elixir. For experiments only.</td>
 </tr>

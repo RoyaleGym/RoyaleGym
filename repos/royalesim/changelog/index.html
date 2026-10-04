@@ -2197,6 +2197,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#018-2026-10-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.8 (2026-10-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#017-2026-10-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3375,6 +3386,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#018-2026-10-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.8 (2026-10-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#017-2026-10-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3490,6 +3512,19 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="018-2026-10-03">0.1.8 (2026-10-03)<a class="headerlink" href="#018-2026-10-03" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>state_json()</code>: each entity row gains four values after <code>mount_uid</code> (27 in all): <code>charge</code>, the build-up a player
+  watches in permille (a Prince's run-up, an Inferno's ramp; 0 when none); <code>dest_x</code> and <code>dest_y</code>, where a unit under
+  ground will come up (-1 when it is not tunnelling); and <code>ability_ticks</code>, the ticks left in a hero's or champion's
+  ability where that has a fixed end (0 otherwise).</li>
+<li><code>status_flags</code> gains bit 5 (a Clone's copy), bit 6 (an ability winding up), bit 7 (an ability active: the Archer
+  Queen's cloak, the Golden Knight's dash chain, the Monk's deflect and the rest) and bit 8 (fully charged).</li>
+<li><code>catalogue_json()</code>: each card row gains a 13th value, <code>evo_cycle</code>, the plays before each evolved play of the card's
+  evolution (0 for a card with none), so the opponent's evolution charge can be counted from the plays you see.</li>
+<li>RoyaleGym reads the new values from commit e1fca68 on. An older RoyaleGym refuses this engine, because its rows are
+  longer than it knows.</li>
+</ul>
 <h2 id="017-2026-10-03">0.1.7 (2026-10-03)<a class="headerlink" href="#017-2026-10-03" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Each side, and each card in a deck, can have its own level, as in a real match. <code>Battle.reset</code> takes

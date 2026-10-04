@@ -1909,6 +1909,34 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.EnemyForms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EnemyForms
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" EnemyForms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.EnemyForms.seed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;seed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.Variability" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2125,6 +2153,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.card_status_layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;card_status_layout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.vector_offsets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2250,6 +2289,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;status_channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.action_channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;action_channels
       
     </span>
   </a>
@@ -6230,6 +6280,34 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.EnemyForms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EnemyForms
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" EnemyForms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.EnemyForms.seed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;seed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.Variability" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6446,6 +6524,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.card_status_layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;card_status_layout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.vector_offsets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6571,6 +6660,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;status_channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.action_channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;action_channels
       
     </span>
   </a>
@@ -9882,6 +9982,76 @@ against MockEngine and RustEngine, tick by tick, in tests/test_fair_fields.py.</
 
 
 
+<h3 id="royalegym.obs.EnemyForms" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <code>EnemyForms</code>
+
+
+<a href="#royalegym.obs.EnemyForms" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>What a player counts about the enemy's evolutions and heroes, from the plays it sees.</p>
+<p>Per enemy card: whether it has been played in its evolution form or its hero form, and
+its BASIC plays since its last evolved play (the engine's own counter, <code>PlayerState.evo</code>'s
+second column, counted from outside). A play's form is the form of the units it puts down:
+each step, the enemy units new this step are matched by card id to the plays the memory
+saw this step (<code>MatchMemory.foe_recent</code>). A play that puts down no unit (a spell) counts
+as basic. <code>see</code> must follow <code>MatchMemory.observe</code> on the same state.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.obs.EnemyForms.seed" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">seed</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">memory</span><span class="p">)</span></code>
+
+<a href="#royalegym.obs.EnemyForms.seed" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Start of a match, beside <code>MatchMemory.seed</code>: the units on the board are not plays.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h3 id="royalegym.obs.Variability" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <code>Variability</code>
 
@@ -10402,7 +10572,7 @@ the same numbers, so their order cannot be seen.
 
 
 <h3 id="royalegym.obs.vector_layout" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_layout</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_layout</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.vector_layout" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -10424,6 +10594,10 @@ same reason: <code>own_hand_evolved</code> and <code>own_next_evolved</code>, an
 <code>evolution_progress</code> also <code>own_hand_evo_progress</code>. They are fair because the
 client shows the charge on a player's own cards. The enemy's charge is not shown, so
 nothing here reads it.</p>
+<p><code>card_status</code> (off by default) appends <code>CARD_STATUS_FIELDS</code> after those: every card's
+evolution and hero status, own and enemy (owner 2026-10-03). The own ones are what a player
+knows of its deck; the enemy's are counted from the plays it has seen, as a good player
+does, and never name a card the enemy has not played.</p>
 
 
     </div>
@@ -10434,7 +10608,7 @@ nothing here reads it.</p>
 
 
 <h3 id="royalegym.obs.vector_fields" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_fields</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_fields</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.vector_fields" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -10451,8 +10625,26 @@ nothing here reads it.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="royalegym.obs.card_status_layout" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">card_status_layout</span><span class="p">(</span><span class="n">n</span><span class="p">)</span></code>
+
+<a href="#royalegym.obs.card_status_layout" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The <code>card_status</code> fields, in order: per card id [n] unless a size says otherwise.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="royalegym.obs.vector_offsets" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_offsets</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_offsets</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.vector_offsets" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -10557,7 +10749,7 @@ vector. They are views of one buffer, laid out in that order.</p>
 
 
 <h3 id="royalegym.obs.build_vector" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">build_vector</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">max_mana</span><span class="p">,</span> <span class="n">reveal</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">build_vector</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">max_mana</span><span class="p">,</span> <span class="n">reveal</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">enemy_forms</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.build_vector" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -10565,6 +10757,8 @@ vector. They are views of one buffer, laid out in that order.</p>
     <div class="doc doc-contents ">
 
         <p>The flat vector of <code>vector_layout</code>. <code>memory</code> must already have seen <code>state</code>.</p>
+<p><code>card_status</code> needs <code>enemy_forms</code>, the seat's <code>EnemyForms</code>, already moved to
+<code>state</code>.</p>
 <p>The fields a player's own view decides are <code>fair_fields</code>' (both write them through
 <code>_write_fair</code>); this adds the four the board decides and any reveal, each at its
 <code>vector_layout</code> slot in one float32 buffer, and clips once.</p>
@@ -10634,7 +10828,7 @@ separately, and their variability says nothing about the representation.</p>
 
 
 <h3 id="royalegym.obs.spatial_channels" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">spatial_channels</span><span class="p">(</span><span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">spell_aim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">heroes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">unit_status</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">spatial_channels</span><span class="p">(</span><span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">spell_aim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">heroes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">unit_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">unit_actions</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.spatial_channels" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -10642,9 +10836,9 @@ separately, and their variability says nothing about the representation.</p>
     <div class="doc doc-contents ">
 
         <p>The spatial channels: the fair ones, then the evolved-unit pair, the readable enemy spell
-targets, the hero planes and the unit status planes when asked for, then the revealed ones.
-Each optional block is appended after the ones before it, so turning one on moves no
-existing plane.</p>
+targets, the hero planes, the unit status planes and the unit action planes when asked for,
+then the revealed ones. Each optional block is appended after the ones before it, so
+turning one on moves no existing plane.</p>
 
 
     </div>
@@ -10767,6 +10961,28 @@ the invisible, underground or hidden bit. Crown towers are in none of them.
 An engine that does not report status bits is refused, as <code>evolved_channels</code> refuses it:
 such an engine predates the shield and buff fields too, and their defaults (no shield, no
 buffs) would read as an answer. Module-level so a test can plant a defect in it.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.obs.action_channels" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">action_channels</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">)</span></code>
+
+<a href="#royalegym.obs.action_channels" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>float32 [14, tiles_y, tiles_x], seen by <code>team</code>: <code>ACTION_SPATIAL_CHANNELS</code>.</p>
+<p>Counted on the centre tile like <code>entity_channels</code>; charge and ability ticks are the most
+on the tile, a tunneller is counted at its landing tile. Crown towers are in none of them.
+An engine before RoyaleSim ship35 sends -1, "not said", for every unit's charge, and is
+refused rather than read as a board where nothing charges. Module-level for plants.</p>
 
 
     </div>
