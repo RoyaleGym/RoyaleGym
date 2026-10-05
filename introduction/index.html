@@ -699,14 +699,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../clash-royale/training-an-agent/" class="md-nav__link">
+      <a href="../clash-royale/cloning-a-bot/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Training an Agent
+    Cloning a Bot
   
 
     
@@ -727,14 +727,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../clash-royale/cloning-a-bot/" class="md-nav__link">
+      <a href="../clash-royale/training-an-agent/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cloning a Bot
+    Training an Agent
   
 
     
@@ -3376,9 +3376,12 @@
 
 
 <h1 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h1>
-<p><strong>RoyaleGym lets you make a Clash Royale bot on your own computer.</strong> Your bot plays practice
-battles, thousands of them, and slowly learns to win. You decide what it gets rewarded for. It
-works out the rest by trial and error.</p>
+<p><strong>RoyaleGym lets you make a Clash Royale bot on your own computer.</strong> A bot learns in two ways.
+It can copy people: it studies thousands of real games and learns to make the moves the players
+made. That's called cloning. Or it can learn by trial and error: it plays practice battles,
+thousands of them, and gets rewarded for what you choose.</p>
+<p>Trial and error alone, starting from nothing, is slow, and it doesn't get a bot far. So for a bot
+that plays like a person, plan to start by cloning.</p>
 <p><img alt="What a battle looks like in the viewer: both hands, both elixir bars, and the arena with every unit" src="../media/viewer.png" width="100%" /></p>
 <h2 id="quick-answers">Quick Answers<a class="headerlink" href="#quick-answers" title="Permanent link">&para;</a></h2>
 <p><strong>Do I need the game or a phone?</strong>
@@ -3397,9 +3400,12 @@ fun. The <a href="../faq/#what-computer-do-i-need">FAQ</a> has the details.</p>
 No. If you can copy a file, run it, and change a line of Python, you can train a bot. The
 <a href="../quickstart/">Quick Start</a> walks you through it.</p>
 <p><strong>How long until my bot is good?</strong>
-There's no fixed answer. It depends on your graphics card, your settings and what you reward.
-Bots for games like this usually train for many hours, often days, before they play well. Your
-first run is about watching it learn, not about getting a strong bot.</p>
+It depends on how it learns. A bot that starts from nothing and learns only by trial and error,
+like the one in the <a href="../quickstart/">Quick Start</a>, learns to beat a bot that plays at random. On
+one computer it seldom gets much further, even after days. To see a bot that plays like a person,
+start by <a href="../clash-royale/cloning-a-bot/">cloning human players</a>. You can then train the clone
+further by trial and error, but that's harder than it sounds, and it can make the bot worse: test
+the new bot the same way you tested the clone, and compare.</p>
 <p><strong>Is it free?</strong>
 Yes. It's open source, under the MIT license.</p>
 <p><strong>Is it the real game?</strong>
@@ -3409,16 +3415,19 @@ to change when it does.</p>
 <h2 id="what-youll-do">What You'll Do<a class="headerlink" href="#what-youll-do" title="Permanent link">&para;</a></h2>
 <ol>
 <li><a href="../install/">Install it</a>. About ten minutes, most of it waiting for downloads.</li>
-<li><a href="../quickstart/">Run the Quick Start</a>. One file that trains a bot and shows you its progress.</li>
+<li><a href="../quickstart/">Run the Quick Start</a>. One file that trains a bot from nothing, so you see how
+   training works and what its numbers mean.</li>
 <li><a href="../quickstart/#5-watch-it-play">Watch your bot play</a> in the viewer.</li>
 <li>Change something, like <a href="../quickstart/#8-use-your-own-deck">its deck</a> or
    <a href="../quickstart/#9-change-what-it-learns">what it's rewarded for</a>, and train again.</li>
+<li><a href="../clash-royale/cloning-a-bot/">Clone human players</a>. A bot that copies the moves people
+   made in real games. This is where a bot that plays like a person starts.</li>
 </ol>
 <p>Stuck? Look in the <a href="../faq/">FAQ</a> and <a href="../it-doesnt-work/">It Doesn't Work</a>. Still stuck? Ask on
 <a href="https://discord.gg/cuPQwyB7pd">Discord</a>. Nobody minds beginner questions there.</p>
 <h2 id="whats-inside">What's Inside<a class="headerlink" href="#whats-inside" title="Permanent link">&para;</a></h2>
-<p>You install one thing, <code>royalegym[all]</code>, and it brings these along. You'll mostly use the first two
-by name.</p>
+<p>You install one thing, <code>royalegym[all]</code>, and it brings these along. In your own files you'll
+mostly name three of them: RoyaleGym, RoyaleLearn and RoyaleImitate.</p>
 <div class="grid cards">
 <ul>
 <li>
@@ -3444,7 +3453,8 @@ by name.</p>
 <li>
 <p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z"/></svg></span> <strong><a href="../resources/royaleimitate/">RoyaleImitate</a></strong></p>
 <hr />
-<p>Optional. Starts a new bot from one you already trained.</p>
+<p>Clones a bot: it copies human players from real games, or another bot, so your bot
+starts out playing like them.</p>
 </li>
 </ul>
 </div>

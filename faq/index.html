@@ -686,6 +686,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#should-i-clone-a-bot-or-train-one-from-nothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Should I clone a bot or train one from nothing?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#how-do-i-watch-it-play" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1130,14 +1141,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../clash-royale/training-an-agent/" class="md-nav__link">
+      <a href="../clash-royale/cloning-a-bot/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Training an Agent
+    Cloning a Bot
   
 
     
@@ -1158,14 +1169,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../clash-royale/cloning-a-bot/" class="md-nav__link">
+      <a href="../clash-royale/training-an-agent/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cloning a Bot
+    Training an Agent
   
 
     
@@ -3899,6 +3910,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#should-i-clone-a-bot-or-train-one-from-nothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Should I clone a bot or train one from nothing?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#how-do-i-watch-it-play" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4243,9 +4265,10 @@
 <a href="../it-doesnt-work/">It Doesn't Work</a> instead.</p>
 <h2 id="the-basics">The Basics<a class="headerlink" href="#the-basics" title="Permanent link">&para;</a></h2>
 <h3 id="what-is-this">What is this?<a class="headerlink" href="#what-is-this" title="Permanent link">&para;</a></h3>
-<p>A way to make a Clash Royale bot on your own computer. Your bot plays thousands of practice
-battles and learns from them. You decide what it's rewarded for, like winning or taking towers,
-and it works out how to get there.</p>
+<p>A way to make a Clash Royale bot on your own computer. Your bot can copy real players, from
+thousands of real games. It can also learn by trial and error in practice battles, rewarded for
+what you choose, like winning or taking towers. For a bot that plays like a person, start by
+copying players: see <a href="../clash-royale/cloning-a-bot/">Cloning a Bot</a>.</p>
 <h3 id="do-i-need-the-game-or-a-phone">Do I need the game or a phone?<a class="headerlink" href="#do-i-need-the-game-or-a-phone" title="Permanent link">&para;</a></h3>
 <p>No. The battles run in a copy of the game's battle engine, on your computer. You don't need the
 game, any game files or an account.</p>
@@ -4291,9 +4314,20 @@ jumps up and down from line to line, so look at the trend over 20 lines or more.
 zero because the random bot waits 9 moves out of 10, and near +3 your bot beats it 3-0 almost
 every time. Every column is explained in <a href="../quickstart/#3-what-youll-see">What You'll See</a>.</p>
 <h3 id="how-long-until-my-bot-is-any-good">How long until my bot is any good?<a class="headerlink" href="#how-long-until-my-bot-is-any-good" title="Permanent link">&para;</a></h3>
-<p>There's no fixed answer. It depends on your graphics card, your settings and your reward. Bots
-for games like this usually need many hours of training, often days, before they play well.
-Leave it running overnight, and watch it play now and then to see how it's doing.</p>
+<p>It depends on how it learns. The Quick Start's bot starts from nothing and learns only by trial
+and error. It learns to beat a bot that plays at random, and on one computer it seldom gets much
+further, even after days. To see a bot that plays like a person, start by
+<a href="../clash-royale/cloning-a-bot/">cloning human players</a>: your bot copies the moves people made in
+real games.</p>
+<p>You can then train the clone further by trial and error. That's harder than it sounds, and it
+can make the bot worse as well as better. So test the new bot against the scripted bots the same
+way you tested the clone, and compare the two (see
+<a href="#how-do-i-know-how-good-my-bot-is">How do I know how good my bot is?</a>).</p>
+<h3 id="should-i-clone-a-bot-or-train-one-from-nothing">Should I clone a bot or train one from nothing?<a class="headerlink" href="#should-i-clone-a-bot-or-train-one-from-nothing" title="Permanent link">&para;</a></h3>
+<p>Do the <a href="../quickstart/">Quick Start</a> first: training from nothing is the best way to learn how
+RoyaleGym works. Then, for a bot that plays like a person, start it from a clone, not from
+nothing. A bot that learns only by trial and error, from nothing, doesn't get far. A clone starts
+out playing like the players it copied.</p>
 <h3 id="how-do-i-watch-it-play">How do I watch it play?<a class="headerlink" href="#how-do-i-watch-it-play" title="Permanent link">&para;</a></h3>
 <p>While it trains, open a second terminal, turn on the virtual environment and run <code>royaleviser</code>.
 A window shows one of its battles live. See <a href="../quickstart/#5-watch-it-play">Watch It Play</a>.</p>
@@ -4357,7 +4391,7 @@ lines. See <a href="../quickstart/#9-change-what-it-learns">Change What It Learn
 <h3 id="what-do-all-the-settings-in-learner-mean">What do all the settings in <code>Learner(...)</code> mean?<a class="headerlink" href="#what-do-all-the-settings-in-learner-mean" title="Permanent link">&para;</a></h3>
 <p>Each line in <code>quickstart.py</code> has a short comment. The <a href="../resources/royalelearn/">RoyaleLearn</a>
 page lists every setting and its default, and the <a href="../cheatsheets/rl-terms/">terms page</a> explains
-the words. You can train a good bot without touching most of them.</p>
+the words. You can leave most of them at their defaults.</p>
 <h3 id="how-do-i-make-training-faster">How do I make training faster?<a class="headerlink" href="#how-do-i-make-training-faster" title="Permanent link">&para;</a></h3>
 <p>First make sure PyTorch can see your graphics card (see
 <a href="../it-doesnt-work/#pytorch-cant-see-my-graphics-card">It Doesn't Work</a>).</p>
@@ -4412,7 +4446,9 @@ behave the same. Some details are still being matched, and the engine keeps impr
 <h3 id="how-do-i-remove-everything">How do I remove everything?<a class="headerlink" href="#how-do-i-remove-everything" title="Permanent link">&para;</a></h3>
 <p>First, with the virtual environment on, run <code>pip cache purge</code>: <code>pip</code> keeps its own copy of
 everything it downloaded, PyTorch included, outside your folder. Then delete your <code>royale</code>
-folder. That removes RoyaleGym, PyTorch and your bots. If you don't need Python any more,
+folder. That removes RoyaleGym, PyTorch and your bots. If you cloned human players, also delete
+the <code>.cache\huggingface</code> folder in your user folder (<code>~/.cache/huggingface</code> on a Mac or Linux):
+the downloaded games are there. If you don't need Python any more,
 uninstall it too (on Windows: Settings &gt; Apps &gt; Installed apps &gt; Python &gt; Uninstall).</p>
 <h3 id="what-happens-when-clash-royale-updates">What happens when Clash Royale updates?<a class="headerlink" href="#what-happens-when-clash-royale-updates" title="Permanent link">&para;</a></h3>
 <p>New cards and balance changes reach RoyaleGym in a new version of the engine. To update, run

@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://royalegym.github.io/RoyaleGym/clash-royale/training-an-agent/">
       
       
-        <link rel="prev" href="../../overview/">
+        <link rel="prev" href="../cloning-a-bot/">
       
       
-        <link rel="next" href="../cloning-a-bot/">
+        <link rel="next" href="../configuration-objects/">
       
       
         
@@ -616,6 +616,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloning-a-bot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloning a Bot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -787,34 +815,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cloning-a-bot/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Cloning a Bot
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -3523,6 +3523,12 @@
 <p>This guide builds on the <a href="../../quickstart/">Quick Start Guide</a>. We'll write our own reward
 functions, give the trainer more to work with, let the bot play against itself, and watch it
 play. Along the way it explains what the trainer is doing and what its numbers mean.</p>
+<p>The examples here train from nothing, because that's the simplest way to show each setting. For a
+bot that plays like a person, start from a <a href="../cloning-a-bot/">clone of human players</a> instead.
+The rewards, opponents and training settings on this page work the same way for a bot that starts
+from a clone. Only the network (<code>trunk_channels</code>, <code>trunk_blocks</code>), what the bot sees and the moves
+it can make must match the clone's, so make the clone with the same <code>build_env</code> and <code>Learner</code>
+settings you'll train with.</p>
 <h2 id="a-better-agent">A Better Agent<a class="headerlink" href="#a-better-agent" title="Permanent link">&para;</a></h2>
 <p>If you followed <a href="../../install/">Install</a>, you have everything this page uses, the viewer
 included.</p>
@@ -3707,8 +3713,9 @@ your graphics card. More battles at once keeps the graphics card busier, until y
 </tbody>
 </table>
 <p>Against <code>"random"</code>, a bot can get good at beating a bad player and stop there. Against
-itself, it always has an opponent at its own level, which is how game-playing bots usually
-get strong.</p>
+itself, it always has an opponent at its own level, so it doesn't stop at beating a bad player.
+But on one computer, self-play from nothing still doesn't get far: for a bot that plays like a
+person, start it from a <a href="../cloning-a-bot/">clone</a>.</p>
 <h2 id="custom-decks">Custom Decks<a class="headerlink" href="#custom-decks" title="Permanent link">&para;</a></h2>
 <p>Change the deck by changing the eight names. Give each side its own deck by passing two lists,
 Blue's first:</p>
@@ -3793,7 +3800,7 @@ whether or not you use wandb.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../overview/" class="md-footer__link md-footer__link--prev" aria-label="Previous: How It Fits Together">
+          <a href="../cloning-a-bot/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Cloning a Bot">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3803,20 +3810,20 @@ whether or not you use wandb.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                How It Fits Together
+                Cloning a Bot
               </div>
             </div>
           </a>
         
         
           
-          <a href="../cloning-a-bot/" class="md-footer__link md-footer__link--next" aria-label="Next: Cloning a Bot">
+          <a href="../configuration-objects/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Cloning a Bot
+                Overview
               </div>
             </div>
             <div class="md-footer__button md-icon">

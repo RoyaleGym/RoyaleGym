@@ -4,12 +4,14 @@
 > battle engine, Rust with Python bindings), RoyaleGym (the environment, built from configuration
 > objects: StateMutator, ObsBuilder, ActionParser, RewardFunction, termination and truncation
 > DoneConditions), RoyaleLearn (the PPO trainer), RoyaleViser (the viewer) and RoyaleImitate
-> (record battles and clone a bot from them, warm start from a trained bot, and a penalty that
-> keeps a new bot near it). Install everything with `pip install "royalegym[all]"`
-> (Python 3.12). On Windows, install CUDA PyTorch first with
-> `pip install torch --index-url https://download.pytorch.org/whl/cu128`. Training assumes an
-> NVIDIA GPU; Macs need Apple silicon. The engine's battle logic is still being matched to the
-> real game; the Python APIs are meant to stay put.
+> (clone a bot from human games in the public IL_Replay dataset or from a teacher bot's
+> battles, warm start from a trained bot, and a penalty that keeps a new bot near it). Install
+> everything with `pip install "royalegym[all]"` (Python 3.12). On Windows, install CUDA PyTorch
+> first with `pip install torch --index-url https://download.pytorch.org/whl/cu128`. Training
+> assumes an NVIDIA GPU; Macs need Apple silicon. The engine's battle logic is still being matched
+> to the real game; the Python APIs are meant to stay put. Reinforcement learning from nothing
+> does not get a bot far: for a bot that plays like a person, start from a clone of human players
+> (Cloning a Bot), then train it further.
 
 RoyaleSim and RoyaleViser also have an AGENTS.md at their repository root with their layout,
 build and test commands, and the rules their tests enforce.
@@ -26,6 +28,7 @@ build and test commands, and the rules their tests enforce.
 
 ## Clash Royale
 
+- [Cloning a Bot](https://royalegym.github.io/RoyaleGym/clash-royale/cloning-a-bot/): clone human players from IL_Replay games (from_replays, clone), test the clone, train from it; or clone a scripted bot or your own (record)
 - [Training an Agent](https://royalegym.github.io/RoyaleGym/clash-royale/training-an-agent/): custom rewards, every trainer setting, self-play, decks, watching, wandb
 - [Configuration Objects](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/): what each swappable part of a battle does
 - [Action Parsers](https://royalegym.github.io/RoyaleGym/clash-royale/configuration-objects/action-parsers/): the 2305 moves, the action mask, ability buttons, writing one
@@ -46,7 +49,7 @@ build and test commands, and the rules their tests enforce.
 - [RoyaleSim](https://royalegym.github.io/RoyaleGym/resources/royalesim/): the engine, determinism, driving it directly
 - [RoyaleLearn](https://royalegym.github.io/RoyaleGym/resources/royalelearn/): every Learner setting with its default, checkpoints, using a trained bot
 - [RoyaleViser](https://royalegym.github.io/RoyaleGym/resources/royaleviser/): the viewer
-- [RoyaleImitate](https://royalegym.github.io/RoyaleGym/resources/royaleimitate/): warm start and stay-close training
+- [RoyaleImitate](https://royalegym.github.io/RoyaleGym/resources/royaleimitate/): cloning human players or a bot, warm start and stay-close training
 - [royalegym API](https://royalegym.github.io/RoyaleGym/reference/royalegym/)
 - [royalelearn API](https://royalegym.github.io/RoyaleGym/reference/royalelearn/)
 - [royaleviser API](https://royalegym.github.io/RoyaleGym/reference/royaleviser/)

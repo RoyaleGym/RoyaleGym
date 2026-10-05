@@ -617,14 +617,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../clash-royale/training-an-agent/" class="md-nav__link">
+      <a href="../../clash-royale/cloning-a-bot/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Training an Agent
+    Cloning a Bot
   
 
     
@@ -645,14 +645,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../clash-royale/cloning-a-bot/" class="md-nav__link">
+      <a href="../../clash-royale/training-an-agent/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cloning a Bot
+    Training an Agent
   
 
     
@@ -3332,19 +3332,20 @@
 
 
 <h1 id="royaleimitate">RoyaleImitate<a class="headerlink" href="#royaleimitate" title="Permanent link">&para;</a></h1>
-<p><a href="https://github.com/RoyaleGym/RoyaleImitate">RoyaleImitate</a> is an optional add-on to
-RoyaleLearn. It does two things:</p>
+<p><a href="https://github.com/RoyaleGym/RoyaleImitate">RoyaleImitate</a> works with RoyaleLearn and comes with
+<code>royalegym[all]</code>. It does three things:</p>
 <ul>
-<li><strong>Warm start.</strong> A new bot starts from the weights of a bot you already trained, instead of
-  from nothing.</li>
+<li><strong>Clone.</strong> It makes a new bot that copies human players from real games, or another bot's
+  moves. That's where a bot that plays like a person starts: see
+  <a href="../../clash-royale/cloning-a-bot/">Cloning a Bot</a>.</li>
+<li><strong>Warm start.</strong> A new bot starts from the weights of a bot you already have, such as a clone,
+  instead of from nothing.</li>
 <li><strong>Stay close.</strong> While the new bot learns, a penalty keeps its moves close to that other bot's,
   so it doesn't forget what it already knew.</li>
 </ul>
-<p>That's useful when you change something about your setup, such as the reward, and want to keep
-what an earlier bot learned instead of starting over. Leave RoyaleImitate out and RoyaleLearn
-works exactly the same without it.</p>
-<p>It can also make a bot from scratch by copying another bot's moves: see
-<a href="../../clash-royale/cloning-a-bot/">Cloning a Bot</a>.</p>
+<p>Warm start and stay close are useful when you train a clone further, or change something about
+your setup, such as the reward, and want to keep what an earlier bot learned instead of starting
+over. A run that uses none of them trains exactly as it would without RoyaleImitate.</p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
 <p>Train a first bot (the teacher), save it, then start a second bot (the student) from it:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>

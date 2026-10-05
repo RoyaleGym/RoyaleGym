@@ -804,14 +804,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../clash-royale/training-an-agent/" class="md-nav__link">
+      <a href="../clash-royale/cloning-a-bot/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Training an Agent
+    Cloning a Bot
   
 
     
@@ -832,14 +832,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../clash-royale/cloning-a-bot/" class="md-nav__link">
+      <a href="../clash-royale/training-an-agent/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Cloning a Bot
+    Training an Agent
   
 
     
@@ -3588,6 +3588,14 @@
 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
 <p>In this guide you'll train your first bot, watch it play, and then change its deck and what it
 learns. Install RoyaleGym first: see <a href="../install/">Install</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">What to expect from this bot</p>
+<p>This bot starts from nothing and learns by trial and error. That's the best way to see how
+training works, but don't expect it to play well. It learns to beat a bot that plays at
+random, and from nothing it seldom gets much further. For a bot that plays like a person,
+go on to <a href="../clash-royale/cloning-a-bot/">clone human players</a> when you've finished this
+page.</p>
+</div>
 <h2 id="1-make-the-quickstart-file">1. Make the Quickstart File<a class="headerlink" href="#1-make-the-quickstart-file" title="Permanent link">&para;</a></h2>
 <p>In your terminal, in the <code>royale</code> folder with <code>(venv)</code> showing, open a new empty file in a text
 editor:</p>
@@ -3763,9 +3771,9 @@ with "No GPU that torch can use was found". No warning means it's on the graphic
 watch it work in Task Manager &gt; Performance &gt; GPU on Windows, or with <code>nvidia-smi</code> in another
 terminal on Linux. On a Mac you always see the warning, because a Mac has no NVIDIA card.</p>
 <h2 id="4-how-long-should-i-leave-it">4. How Long Should I Leave It?<a class="headerlink" href="#4-how-long-should-i-leave-it" title="Permanent link">&para;</a></h2>
-<p>As long as you like. There's no point where it's "done": it keeps slowly getting better, and you
-can stop and carry on whenever you want. Bots for games like this usually need many hours of
-training before they play well.</p>
+<p>As long as you like. There's no point where it's "done", and you can stop and carry on whenever
+you want. After an hour or two, look at the trend in <code>crowns</code> over the last 20 lines or more.
+Leaving it for days won't turn it into a good player: for that, <a href="../clash-royale/cloning-a-bot/">start from a clone</a>.</p>
 <p>In the quickstart, your bot plays a bot that makes random moves. A high <code>crowns</code> number means it
 beats that random bot, which is a start but not the same as being good. Once <code>crowns</code> stays high,
 your bot has learned most of what the random bot can teach it. Then try <code>opponent="self"</code>, so it
@@ -3936,6 +3944,8 @@ instead.</p>
 RoyaleGym, and how to write your own, are on <a href="../clash-royale/configuration-objects/reward-functions/">Reward Functions</a>.</p>
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../clash-royale/cloning-a-bot/">Cloning a Bot</a>: a bot that copies human players from real
+  games. Go here next for a bot that plays like a person.</li>
 <li><a href="../faq/">FAQ</a>: the questions everyone asks.</li>
 <li><a href="../it-doesnt-work/">It Doesn't Work</a>: error messages and what to do about them.</li>
 <li><a href="../clash-royale/training-an-agent/">Training an Agent</a>: when you're ready to go further.</li>
