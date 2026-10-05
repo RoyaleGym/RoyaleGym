@@ -49,7 +49,7 @@ def test_every_piece_names_a_minimum_so_an_upgrade_moves_it():
             if _names([req]) & set(PIECES.values()):
                 assert ">=" in req, f"[{extra}] names {req!r} with no minimum version"
     floors = sorted(r for r in extras["all"] if _names([r]) & {"royalesim", "royaleviser"})
-    assert floors == ["royalesim>=0.1.12", "royaleviser[media]>=0.1.1"], floors
+    assert floors == ["royalesim>=0.1.13", "royaleviser[media]>=0.1.2"], floors
 
 
 def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
@@ -65,7 +65,7 @@ def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
     extras = _extras()
     for extra in ("learn", "all"):
         pins = [r for r in extras[extra] if r.startswith("royalelearn")]
-        assert pins == ["royalelearn[torch]>=0.5.8"], f"[{extra}]: {pins}"
+        assert pins == ["royalelearn[torch]>=0.5.9"], f"[{extra}]: {pins}"
 
 
 def test_the_engine_data_comes_from_the_installed_engine(monkeypatch, tmp_path):

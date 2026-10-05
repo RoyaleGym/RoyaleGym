@@ -4,6 +4,20 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## 0.1.16 (2026-10-05)
+
+### Fixed
+- A battle with an evolved card no longer crashes the viewer. The engine sends four values per
+  evolution row and RoyaleGym's viewer feed read three, so watching such a battle live stopped
+  with "too many values to unpack". royaleviser 0.1.2 fixes the same in playing back a saved
+  battle.
+
+### Changed
+- royalesim 0.1.13: a unit already doomed by the shots in flight is judged by homing shots only,
+  and a ranged unit does not fire at a target that has moved well beyond its reach. Battles can
+  end differently.
+- royalelearn 0.5.9: `doctor.vram_fraction` sets the GPU memory cap from a config.
+
 ## 0.1.15 (2026-10-04)
 
 ### Fixed
