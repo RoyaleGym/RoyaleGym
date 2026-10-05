@@ -1,7 +1,7 @@
 # FAQ
 
 The questions everyone asks. No question is too basic: if yours isn't here, ask on
-[Discord](https://discord.gg/4D2BS5JBHP)<span data-discord-online=" ({n} online now)" hidden></span>. If you're looking at an error message, go to
+[Discord](https://discord.gg/cuPQwyB7pd)<span data-discord-online=" ({n} online now)" hidden></span>. If you're looking at an error message, go to
 [It Doesn't Work](it-doesnt-work.md) instead.
 
 ## The Basics
@@ -24,7 +24,7 @@ plays in it, on your own computer. If you want a bot of yours on the real ladder
 yours to build, and we don't publish tools for it or help with it.
 
 We show our own bots' ladder results as a benchmark of what a bot can do. You can play against
-them yourself: ask in the [Discord](https://discord.gg/4D2BS5JBHP) for a 1v1.
+them yourself: ask in the [Discord](https://discord.gg/cuPQwyB7pd) for a 1v1.
 
 ### Will this get me banned?
 

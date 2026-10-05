@@ -208,7 +208,7 @@ extra:
   # In the header, beside the GitHub box (overrides/partials/source.html), which is the GitHub link.
   header_social:
     - icon: fontawesome/brands/discord
-      link: https://discord.gg/4D2BS5JBHP
+      link: https://discord.gg/cuPQwyB7pd
       name: The project Discord
     - icon: simple/kofi
       link: https://ko-fi.com/jinxthecat

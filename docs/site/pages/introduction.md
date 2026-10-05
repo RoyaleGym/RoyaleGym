@@ -50,7 +50,7 @@ to change when it does.
    [what it's rewarded for](quickstart.md#9-change-what-it-learns), and train again.
 
 Stuck? Look in the [FAQ](faq.md) and [It Doesn't Work](it-doesnt-work.md). Still stuck? Ask on
-[Discord](https://discord.gg/4D2BS5JBHP). Nobody minds beginner questions there.
+[Discord](https://discord.gg/cuPQwyB7pd). Nobody minds beginner questions there.
 
 ## What's Inside
 

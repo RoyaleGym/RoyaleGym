@@ -198,7 +198,7 @@ environments.
 ## Two design decisions you may disagree with
 
 They are written down so you can argue with them in
-[the Discord](https://discord.gg/4D2BS5JBHP) rather than guess at them.
+[the Discord](https://discord.gg/cuPQwyB7pd) rather than guess at them.
 
 **There is deliberately no quick version first.** No throwaway trainer, no baseline learner to
 tide people over. The layers underneath were finished to a standard, and a half-finished harness

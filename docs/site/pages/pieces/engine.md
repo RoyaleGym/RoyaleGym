@@ -282,4 +282,4 @@ The engine has its own docs, and they go far deeper than this page.
 - [`docs/replay-parity.md`](https://github.com/RoyaleGym/RoyaleSim/blob/main/docs/replay-parity.md)
   for the full accuracy table and how it is produced.
 
-Engine questions and calibration work happen in [the Discord](https://discord.gg/4D2BS5JBHP).
+Engine questions and calibration work happen in [the Discord](https://discord.gg/cuPQwyB7pd).
