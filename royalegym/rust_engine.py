@@ -924,6 +924,13 @@ class RustEngine:
     def cards(self) -> Sequence[CardInfo]:
         return self._cards
 
+    def unit_types(self) -> list[str] | None:
+        """The unit-type vocabulary ``EntityState.unit_type`` indexes: every unit name the
+        loaded card table can put on the board, sorted by name (``Battle.unit_types_json``,
+        royalesim 0.1.17 on). None from an engine that does not say unit types."""
+        fn = getattr(self._battle, "unit_types_json", None)
+        return None if fn is None else [str(n) for n in json.loads(fn())]
+
     def arena(self) -> Arena:
         return self._arena
 

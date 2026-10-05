@@ -244,6 +244,26 @@ concatenates. So the flag is off by default on BOTH sides, and turning it on is 
 coordinated change rather than a switch. The cost is worth paying: the alternative was a
 card id stored as a scaled half, which fails silently, and silent is worse than work.
 
+### `unit_ids`, uint8 `[2, 32, 18]` (behind its own flag, default off)
+
+`card_ids` names the card that PRODUCED each unit. A summon carries its producer's card, so
+the Witch's skeletons read "Witch", Tombstone's read "Tombstone", and one kind of unit sits
+under every card that makes it. `SpatialObsBuilder(unit_identity=True)` adds `unit_ids`: the
+unit's OWN type on each tile, own plane then enemy plane, as `card_ids` lays them out.
+
+| | |
+|---|---|
+| key | `unit_ids`, its own key beside `card_ids` (it does not need it) |
+| values | 0 = empty; `1 + u` for unit type `u`, an index into `engine.unit_types()` |
+| vocabulary | every unit name the loaded card table can put on the board, crown towers included, sorted by name (royalesim 0.1.17 on) |
+| ties | the lowest uid, as in `card_ids`, so both keys describe the same unit on each tile |
+| pinning | `config()` records `unit_names`; a builder given `unit_names` refuses an engine whose vocabulary differs |
+| refused | an engine that says no vocabulary (MockEngine), and a unit whose type is not said (-1) |
+
+Like `card_ids`, the key holds category ids, not amounts: a network embeds it rather than
+scaling it. A trace header carries the vocabulary as `unit_types`, and every frame's entity
+rows carry `unit_type`, so a viewer can name each unit by type.
+
 
 ## 3c. Queued: positional channels (NOT built)
 

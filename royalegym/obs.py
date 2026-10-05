@@ -2418,6 +2418,46 @@ def card_id_planes(
     return out
 
 
+#: ``unit_ids`` value for a tile nothing stands on. A unit type ``u`` (an index into
+#: ``Engine.unit_types()``, crown towers included) is written as ``UNIT_ID_OFFSET + u``.
+UNIT_ID_EMPTY = 0
+UNIT_ID_OFFSET = 1
+
+
+def unit_id_planes(
+    entities: Sequence[EntityState], team: int, arena: Arena, num_units: int
+) -> np.ndarray:
+    """uint8 [2, tiles_y, tiles_x], seen by ``team``: plane 0 own, plane 1 enemy.
+
+    Which UNIT TYPE stands on each tile (``EntityState.unit_type``, the game's characters row),
+    where ``card_ids`` says which CARD produced it. A summon carries its producer's card id, so
+    the Witch's skeletons read "Witch" there and "Skeleton" here, as Tombstone's and Graveyard's
+    do: one type under every producer, and the producer kept beside it.
+
+    Ties go to the lowest uid, as in ``card_id_planes``, so the two planes describe the same
+    entity cell for cell. An entity whose type is not said (-1) or lies outside the vocabulary
+    is refused: either would be drawn as some other type. Module-level so a test can plant a
+    defect in it.
+    """
+    out = np.zeros((2, arena.tiles_y, arena.tiles_x), dtype=np.uint8)
+    for e in sorted(entities, key=lambda ent: ent.uid):
+        ox, oy = to_own(arena, team, e.x, e.y)
+        tx = min(max(ox // arena.subtile, 0), arena.tiles_x - 1)
+        ty = min(max(oy // arena.subtile, 0), arena.tiles_y - 1)
+        plane = 0 if e.team == team else 1
+        if out[plane, ty, tx] != UNIT_ID_EMPTY:
+            continue  # a lower uid already holds this tile
+        if not 0 <= e.unit_type < num_units:
+            raise ValueError(
+                f"entity uid {e.uid} (kind {e.kind}, card {e.card_id}) has unit_type "
+                f"{e.unit_type}, outside the {num_units}-type vocabulary"
+                + (" (-1: the engine does not say it)" if e.unit_type == -1 else "")
+                + ", so unit_ids has no index for it"
+            )
+        out[plane, ty, tx] = UNIT_ID_OFFSET + e.unit_type
+    return out
+
+
 #: The ``spell_ids`` planes, in order (``SpatialObsBuilder(spell_identity=True)``).
 SPELL_ID_PLANES = ("own_at", "enemy_at", "own_aim", "enemy_aim_seen")
 
@@ -2493,6 +2533,8 @@ class SpatialObsBuilder(ObsBuilder):
         unit_status: bool = False,
         card_status: bool = False,
         unit_actions: bool = False,
+        unit_identity: bool = False,
+        unit_names: Sequence[str] | None = None,
     ) -> None:
         super().__init__(reveal, calibration)
         self.card_status = bool(card_status)
@@ -2532,6 +2574,13 @@ class SpatialObsBuilder(ObsBuilder):
                 "card_identity=True"
             )
         self._pinned_card_names = list(card_names) if card_names is not None else None
+        self.unit_identity = bool(unit_identity)
+        if unit_names is not None and not self.unit_identity:
+            raise ValueError(
+                "unit_names pins the unit_ids vocabulary, which only exists with "
+                "unit_identity=True"
+            )
+        self._pinned_unit_names = list(unit_names) if unit_names is not None else None
 
     def _check_card_names(self) -> list[str]:
         """The catalogue's names, or a refusal if they are not the ones pinned."""
@@ -2552,6 +2601,32 @@ class SpatialObsBuilder(ObsBuilder):
                 "rather than reinterpreting."
             )
         return names
+
+    def _check_unit_names(self, engine: Engine) -> list[str]:
+        """The engine's unit-type vocabulary, or a refusal: none said, or not the one pinned."""
+        said = getattr(engine, "unit_types", None)
+        names = said() if callable(said) else None
+        if names is None:
+            raise ValueError(
+                f"unit_identity=True needs each unit's type, and {type(engine).__name__} does "
+                "not say a unit type vocabulary (Engine.unit_types(), royalesim 0.1.17 on). "
+                "Use an engine that says it, or leave unit_identity off."
+            )
+        pinned = self._pinned_unit_names
+        if pinned is not None and pinned != list(names):
+            i = next(
+                (k for k, (x, y) in enumerate(zip(pinned, names, strict=False)) if x != y),
+                min(len(pinned), len(names)),
+            )
+            was = pinned[i] if i < len(pinned) else "<end>"
+            now = names[i] if i < len(names) else "<end>"
+            raise ValueError(
+                f"unit_ids was built for a vocabulary that has {was!r} at id {i}; this engine "
+                f"has {now!r} there ({len(pinned)} pinned names, {len(names)} said). Unit ids "
+                "are positional, so every unit_ids value from here on would name another unit "
+                "than the checkpoint learned. Refusing rather than reinterpreting."
+            )
+        return list(names)
 
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
@@ -2615,6 +2690,20 @@ class SpatialObsBuilder(ObsBuilder):
                     shape=(len(SPELL_ID_PLANES), a.tiles_y, a.tiles_x),
                     dtype=np.uint8,
                 )
+        if self.unit_identity:
+            self.unit_names = self._check_unit_names(engine)
+            self.num_units = len(self.unit_names)
+            self.unit_vocab = self.num_units + UNIT_ID_OFFSET
+            top = int(np.iinfo(np.uint8).max)
+            if self.unit_vocab - 1 > top:
+                raise ValueError(
+                    f"unit_ids needs {self.unit_vocab} values for {self.num_units} unit types "
+                    f"and uint8 holds {top + 1}; widening the dtype is a storage decision for "
+                    "every consumer of this key, so it is refused here rather than made silently"
+                )
+            entries["unit_ids"] = spaces.Box(
+                0, self.unit_vocab - 1, shape=(2, a.tiles_y, a.tiles_x), dtype=np.uint8
+            )
         self._space = spaces.Dict(entries)
 
     def reset(self, state: BattleState) -> None:
@@ -2703,6 +2792,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["spell_ids"] = spell_id_planes(
                 state, team, self.arena, self.num_cards, self._aim_clock
             )
+        if self.unit_identity:
+            out["unit_ids"] = unit_id_planes(state.entities, team, self.arena, self.num_units)
         return out
 
     def config(self) -> dict[str, Any]:
@@ -2728,6 +2819,11 @@ class SpatialObsBuilder(ObsBuilder):
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
             out["card_names"] = list(names)
+        if self.unit_identity:
+            out["unit_identity"] = True
+            out["unit_names"] = list(
+                getattr(self, "unit_names", None) or self._pinned_unit_names or []
+            )
         return out
 
 

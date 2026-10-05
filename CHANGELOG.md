@@ -4,6 +4,15 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## Unreleased
+
+### Added
+- `SpatialObsBuilder(unit_identity=True)` adds `unit_ids`: the type of each unit on the board,
+  beside `card_ids`, which names the card that produced it. A skeleton reads "Skeleton" whether
+  the Witch, a Tombstone or a Graveyard made it. Off by default, so existing observations and
+  configs do not change. Needs royalesim 0.1.17, which says each unit's type
+  (`EntityState.unit_type`, `RustEngine.unit_types()`); saved battles record the type list.
+
 ## 0.1.17 (2026-10-05)
 
 ### Fixed

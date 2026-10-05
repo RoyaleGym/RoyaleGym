@@ -173,6 +173,7 @@ UNREPORTED_ENTITY_FIELDS: tuple[str, ...] = (
     "dest_x",
     "dest_y",
     "ability_ticks",
+    "unit_type",
 )
 
 # CardInfo fields this engine never states: they stay None, "not said". It models no

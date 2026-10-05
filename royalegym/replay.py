@@ -149,6 +149,10 @@ class TraceHeader(msgspec.Struct):
     # an overridden engine plays other battles on the same binary. {} = none, which is also
     # what a trace from before 2026-09-26 decodes with.
     calibration_overrides: dict[str, str] = {}
+    # The unit-type vocabulary ``EntityState.unit_type`` indexes (``Engine.unit_types()``,
+    # royalesim 0.1.17 on), so a reader names each unit by type. [] = not said: MockEngine, an
+    # older engine, and every trace from before 2026-10-05.
+    unit_types: list[str] = []
 
 
 class TraceResult(msgspec.Struct):
@@ -200,6 +204,13 @@ def _engine_identity_fields(engine: Engine) -> dict[str, str]:
     if identity is None:
         return {}
     return {k: str(v) for k, v in identity().items() if k in ENGINE_IDENTITY_FIELDS}
+
+
+def _unit_types(engine: Engine) -> list[str]:
+    """The engine's unit-type vocabulary for the header, [] when it says none."""
+    said = getattr(engine, "unit_types", None)
+    names = said() if callable(said) else None
+    return list(names) if names is not None else []
 
 
 def _override_fields(engine: Engine) -> dict[str, dict[str, str]]:
@@ -294,6 +305,7 @@ class ReplayRecorder:
             **_card_table_fields(engine),
             **_engine_identity_fields(engine),
             **_override_fields(engine),
+            unit_types=_unit_types(engine),
         )
         self.trace = Trace(header=header, steps=[], frames=[_frame(engine)])
         self._open = True

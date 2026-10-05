@@ -140,7 +140,8 @@ def test_the_action_columns_trail_mount_uid_and_read_as_not_reported_when_absent
     ability_ticks. Values all differ, so a column landing next door fails."""
     fields = EntityState.__struct_fields__
     at = fields.index("mount_uid")
-    assert fields[at + 1 :] == ACTION_COLUMNS
+    # Right after mount_uid; columns added later (unit_type, 2026-10-05) trail them.
+    assert fields[at + 1 : at + 1 + len(ACTION_COLUMNS)] == ACTION_COLUMNS
     old = decode_entity([*LEGACY, *NEW, 5, 12, 88])
     assert (old.charge, old.dest_x, old.dest_y, old.ability_ticks) == (-1, -1, -1, -1)
     e = decode_entity([*LEGACY, *NEW, 5, 12, 88, 640, 9000, 27000, 31])
