@@ -2871,10 +2871,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#unreleased" class="md-nav__link">
+  <a href="#059" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unreleased
+        0.5.9
       
     </span>
   </a>
@@ -3474,10 +3474,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#unreleased" class="md-nav__link">
+  <a href="#059" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unreleased
+        0.5.9
       
     </span>
   </a>
@@ -3686,10 +3686,15 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
-<h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="059">0.5.9<a class="headerlink" href="#059" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>doctor.vram_fraction</code> sets the GPU memory cap from a config: a share of the card in (0, 1],
   or null for no cap. Unset, the constructor's <code>vram_fraction</code> decides, as before.</li>
+<li>The ratio check's tolerance follows the precision the forwards ran at: float32 on a GPU allowed
+  TF32 (the default outside <code>determinism.tier</code> run_exact) is checked at 5e-3, or at
+  <code>ppo.ratio_atol["tf32"]</code> when a config names it, instead of float32's 1e-4.</li>
+<li>When the start-up memory probe runs out of memory under the cap, the message says so and names
+  what to change.</li>
 </ul>
 <h2 id="058">0.5.8<a class="headerlink" href="#058" title="Permanent link">&para;</a></h2>
 <ul>

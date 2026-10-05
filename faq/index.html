@@ -4420,8 +4420,13 @@ this. Updating from v0.1.1 or earlier? Run <code>pip uninstall -y pygame</code> 
 pygame-ce in its place.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
-<p>It updates all five RoyaleGym packages and the extras they need, and leaves your PyTorch alone. Your
-code keeps working, but a bot can't carry on training across an update: start a new one with a new <code>save_dir</code>.</p>
+<p>It updates RoyaleGym, brings the other four packages up to at least the versions that release
+needs, and leaves your PyTorch alone. The engine can update between RoyaleGym releases. This gets
+the newest one:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip install --upgrade royalesim
+</code></pre></div>
+<p>Your code keeps working, but a bot can't carry on training across an update: start a new one with
+a new <code>save_dir</code>.</p>
 
 
 
