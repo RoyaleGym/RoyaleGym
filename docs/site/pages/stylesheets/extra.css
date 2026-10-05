@@ -45,13 +45,18 @@
 }
 
 /* The project's links beside the GitHub box (overrides/partials/source.html). From 60em the header shows the box;
-   it grows to fit the icons and its own text instead of Material's fixed 11.7rem. */
-.rg-social { display: flex; align-items: center; gap: 0.9rem; }
-.rg-social__link { display: block; color: inherit; opacity: 0.85; transition: opacity 0.25s; }
-.rg-social__link:hover, .rg-social__link:focus { opacity: 1; }
-.rg-social__link svg { display: block; width: 1.2rem; height: 1.2rem; fill: currentcolor; }
+   it grows to fit the icons and its own text instead of Material's fixed 11.7rem.
+   Owner, 2026-10-05: they matched neither the GitHub icon's size and spacing nor the bar's hover. So, like every other
+   control in the bar, they fade to 0.7 on hover. Discord and Ko-fi are wide marks: in the GitHub icon's 1.2rem box
+   they drew about 0.93rem tall beside its 1.14rem round mark, so their box is 1.4rem (about 1.09rem tall). And the
+   three marks sit 1.2rem apart: the gap between the links, and the box's 0.6rem gap plus the GitHub icon's own 0.6rem
+   margin before its mark. */
+.rg-social { display: flex; align-items: center; gap: 1.2rem; }
+.rg-social__link { display: block; color: inherit; transition: opacity 0.25s; }
+.rg-social__link:hover, .rg-social__link:focus { opacity: 0.7; }
+.rg-social__link svg { display: block; width: 1.4rem; height: 1.4rem; fill: currentcolor; }
 @media screen and (min-width: 60em) {
-  .md-header__source { display: flex; align-items: center; gap: 1.2rem; width: auto; max-width: none; }
+  .md-header__source { display: flex; align-items: center; gap: 0.6rem; width: auto; max-width: none; }
   .md-header__source .md-source__repository { max-width: none; }
 }
 /* In the mobile menu the links sit in a row above the GitHub box. */
