@@ -94,8 +94,9 @@ The `--version` line must print 3.12 before you build. An older Python compiles 
 several minutes and is only refused at the install step. If `python --version` already prints
 3.12, `python -m venv .venv` works too.
 
-Optional: [RoyaleImitate](https://github.com/RoyaleGym/RoyaleImitate) adds imitation learning to
-RoyaleLearn. Its README has its own two install lines.
+[RoyaleImitate](https://github.com/RoyaleGym/RoyaleImitate) is what clones human players or a bot
+(see [Cloning a Bot](clash-royale/cloning-a-bot.md)): you need it to clone. Its README has its own
+two install lines.
 
 You should end up with this:
 

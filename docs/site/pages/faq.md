@@ -8,9 +8,10 @@ The questions everyone asks. No question is too basic: if yours isn't here, ask 
 
 ### What is this?
 
-A way to make a Clash Royale bot on your own computer. Your bot plays thousands of practice
-battles and learns from them. You decide what it's rewarded for, like winning or taking towers,
-and it works out how to get there.
+A way to make a Clash Royale bot on your own computer. Your bot can copy real players, from
+thousands of real games. It can also learn by trial and error in practice battles, rewarded for
+what you choose, like winning or taking towers. For a bot that plays like a person, start by
+copying players: see [Cloning a Bot](clash-royale/cloning-a-bot.md).
 
 ### Do I need the game or a phone?
 
@@ -78,9 +79,23 @@ every time. Every column is explained in [What You'll See](quickstart.md#3-what-
 
 ### How long until my bot is any good?
 
-There's no fixed answer. It depends on your graphics card, your settings and your reward. Bots
-for games like this usually need many hours of training, often days, before they play well.
-Leave it running overnight, and watch it play now and then to see how it's doing.
+It depends on how it learns. The Quick Start's bot starts from nothing and learns only by trial
+and error. It learns to beat a bot that plays at random, and on one computer it seldom gets much
+further, even after days. To see a bot that plays like a person, start by
+[cloning human players](clash-royale/cloning-a-bot.md): your bot copies the moves people made in
+real games.
+
+You can then train the clone further by trial and error. That's harder than it sounds, and it
+can make the bot worse as well as better. So test the new bot against the scripted bots the same
+way you tested the clone, and compare the two (see
+[How do I know how good my bot is?](#how-do-i-know-how-good-my-bot-is)).
+
+### Should I clone a bot or train one from nothing?
+
+Do the [Quick Start](quickstart.md) first: training from nothing is the best way to learn how
+RoyaleGym works. Then, for a bot that plays like a person, start it from a clone, not from
+nothing. A bot that learns only by trial and error, from nothing, doesn't get far. A clone starts
+out playing like the players it copied.
 
 ### How do I watch it play?
 
@@ -175,7 +190,7 @@ lines. See [Change What It Learns](quickstart.md#9-change-what-it-learns), and
 
 Each line in `quickstart.py` has a short comment. The [RoyaleLearn](resources/royalelearn.md)
 page lists every setting and its default, and the [terms page](cheatsheets/rl-terms.md) explains
-the words. You can train a good bot without touching most of them.
+the words. You can leave most of them at their defaults.
 
 ### How do I make training faster?
 
@@ -252,7 +267,9 @@ Most cards you can use in ladder battles. The list is in
 
 First, with the virtual environment on, run `pip cache purge`: `pip` keeps its own copy of
 everything it downloaded, PyTorch included, outside your folder. Then delete your `royale`
-folder. That removes RoyaleGym, PyTorch and your bots. If you don't need Python any more,
+folder. That removes RoyaleGym, PyTorch and your bots. If you cloned human players, also delete
+the `.cache\huggingface` folder in your user folder (`~/.cache/huggingface` on a Mac or Linux):
+the downloaded games are there. If you don't need Python any more,
 uninstall it too (on Windows: Settings > Apps > Installed apps > Python > Uninstall).
 
 ### What happens when Clash Royale updates?

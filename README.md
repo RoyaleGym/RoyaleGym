@@ -7,7 +7,10 @@
 <p align="center"><img alt="APIs: Gymnasium and PettingZoo" src="https://img.shields.io/badge/APIs-Gymnasium%20%2B%20PettingZoo-0b7285?style=flat-square"> <img alt="Engine: Rust, deterministic" src="https://img.shields.io/badge/engine-Rust%2C%20deterministic-DEA584?style=flat-square&logo=rust&logoColor=white"> <img alt="Tick: 50 ms, 20 per second" src="https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square"> <img alt="Action space: 2305 moves" src="https://img.shields.io/badge/action%20space-2305%20moves-555?style=flat-square"></p>
 
 **Make a Clash Royale bot in Python.** You write what your bot should want; this gives it the
-battles, what it sees, the moves it can make, and a trainer.
+battles, what it sees, the moves it can make, and a trainer. For a bot that plays like a person,
+start by cloning human players from real games
+([Cloning a Bot](https://royalegym.github.io/RoyaleGym/clash-royale/cloning-a-bot/)): a bot that
+learns only by trial and error, from nothing, doesn't get far.
 
 <p align="center"><img src="docs/site/pages/media/whole-battle.gif" width="100%" alt="A whole battle between two random players, shown in the viewer"></p>
 
@@ -34,6 +37,7 @@ follow the [Quick Start](https://royalegym.github.io/RoyaleGym/quickstart/): it 
 ## Next
 
 - Quick Start, guides and FAQ: [the docs](https://royalegym.github.io/RoyaleGym/)
+- A bot that copies human players: [Cloning a Bot](https://royalegym.github.io/RoyaleGym/clash-royale/cloning-a-bot/)
 - How it works inside (Advanced): [architecture](https://royalegym.github.io/RoyaleGym/repos/royalegym/architecture/)
 - Questions: [Discord](https://discord.gg/cvRu4nEGXY)
 

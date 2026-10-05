@@ -3,6 +3,13 @@
 In this guide you'll train your first bot, watch it play, and then change its deck and what it
 learns. Install RoyaleGym first: see [Install](install.md).
 
+!!! note "What to expect from this bot"
+    This bot starts from nothing and learns by trial and error. That's the best way to see how
+    training works, but don't expect it to play well. It learns to beat a bot that plays at
+    random, and from nothing it seldom gets much further. For a bot that plays like a person,
+    go on to [clone human players](clash-royale/cloning-a-bot.md) when you've finished this
+    page.
+
 ## 1. Make the Quickstart File
 
 In your terminal, in the `royale` folder with `(venv)` showing, open a new empty file in a text
@@ -97,9 +104,9 @@ terminal on Linux. On a Mac you always see the warning, because a Mac has no NVI
 
 ## 4. How Long Should I Leave It?
 
-As long as you like. There's no point where it's "done": it keeps slowly getting better, and you
-can stop and carry on whenever you want. Bots for games like this usually need many hours of
-training before they play well.
+As long as you like. There's no point where it's "done", and you can stop and carry on whenever
+you want. After an hour or two, look at the trend in `crowns` over the last 20 lines or more.
+Leaving it for days won't turn it into a good player: for that, [start from a clone](clash-royale/cloning-a-bot.md).
 
 In the quickstart, your bot plays a bot that makes random moves. A high `crowns` number means it
 beats that random bot, which is a start but not the same as being good. Once `crowns` stays high,
@@ -323,6 +330,8 @@ RoyaleGym, and how to write your own, are on [Reward Functions](clash-royale/con
 
 ## Next
 
+- [Cloning a Bot](clash-royale/cloning-a-bot.md): a bot that copies human players from real
+  games. Go here next for a bot that plays like a person.
 - [FAQ](faq.md): the questions everyone asks.
 - [It Doesn't Work](it-doesnt-work.md): error messages and what to do about them.
 - [Training an Agent](clash-royale/training-an-agent.md): when you're ready to go further.

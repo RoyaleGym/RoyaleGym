@@ -1,19 +1,19 @@
 # RoyaleImitate
 
-[RoyaleImitate](https://github.com/RoyaleGym/RoyaleImitate) is an optional add-on to
-RoyaleLearn. It does two things:
+[RoyaleImitate](https://github.com/RoyaleGym/RoyaleImitate) works with RoyaleLearn and comes with
+`royalegym[all]`. It does three things:
 
-- **Warm start.** A new bot starts from the weights of a bot you already trained, instead of
-  from nothing.
+- **Clone.** It makes a new bot that copies human players from real games, or another bot's
+  moves. That's where a bot that plays like a person starts: see
+  [Cloning a Bot](../clash-royale/cloning-a-bot.md).
+- **Warm start.** A new bot starts from the weights of a bot you already have, such as a clone,
+  instead of from nothing.
 - **Stay close.** While the new bot learns, a penalty keeps its moves close to that other bot's,
   so it doesn't forget what it already knew.
 
-That's useful when you change something about your setup, such as the reward, and want to keep
-what an earlier bot learned instead of starting over. Leave RoyaleImitate out and RoyaleLearn
-works exactly the same without it.
-
-It can also make a bot from scratch by copying another bot's moves: see
-[Cloning a Bot](../clash-royale/cloning-a-bot.md).
+Warm start and stay close are useful when you train a clone further, or change something about
+your setup, such as the reward, and want to keep what an earlier bot learned instead of starting
+over. A run that uses none of them trains exactly as it would without RoyaleImitate.
 
 ## Example
 

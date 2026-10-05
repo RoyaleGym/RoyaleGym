@@ -4,6 +4,13 @@ This guide builds on the [Quick Start Guide](../quickstart.md). We'll write our 
 functions, give the trainer more to work with, let the bot play against itself, and watch it
 play. Along the way it explains what the trainer is doing and what its numbers mean.
 
+The examples here train from nothing, because that's the simplest way to show each setting. For a
+bot that plays like a person, start from a [clone of human players](cloning-a-bot.md) instead.
+The rewards, opponents and training settings on this page work the same way for a bot that starts
+from a clone. Only the network (`trunk_channels`, `trunk_blocks`), what the bot sees and the moves
+it can make must match the clone's, so make the clone with the same `build_env` and `Learner`
+settings you'll train with.
+
 ## A Better Agent
 
 If you followed [Install](../install.md), you have everything this page uses, the viewer
@@ -174,8 +181,9 @@ your graphics card. More battles at once keeps the graphics card busier, until y
 | `"self"` | About half its battles against itself, a third against older versions of itself, and the rest against simple scripted bots. |
 
 Against `"random"`, a bot can get good at beating a bad player and stop there. Against
-itself, it always has an opponent at its own level, which is how game-playing bots usually
-get strong.
+itself, it always has an opponent at its own level, so it doesn't stop at beating a bad player.
+But on one computer, self-play from nothing still doesn't get far: for a bot that plays like a
+person, start it from a [clone](cloning-a-bot.md).
 
 ## Custom Decks
 

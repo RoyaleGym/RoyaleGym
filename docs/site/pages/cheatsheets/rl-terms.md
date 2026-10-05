@@ -85,6 +85,13 @@ rewards soon. Close to 1 means it plans further ahead.
 **Self-play.** Training against copies of your own bot, so it always has an opponent at its own
 level.
 
+**Cloning** (imitation learning, or behaviour cloning). Teaching a bot by example: it learns to
+make the moves someone else made in the same situations, such as human players in real games.
+See [Cloning a Bot](../clash-royale/cloning-a-bot.md).
+
+**Warm start.** Starting training from a bot that already plays, such as a clone, instead of from
+nothing.
+
 **Reward shaping.** Small extra rewards that give hints along the way, like paying for tower
 damage, on top of the reward you really care about: winning.
 

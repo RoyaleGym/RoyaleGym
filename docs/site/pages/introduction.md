@@ -1,8 +1,12 @@
 # Introduction
 
-**RoyaleGym lets you make a Clash Royale bot on your own computer.** Your bot plays practice
-battles, thousands of them, and slowly learns to win. You decide what it gets rewarded for. It
-works out the rest by trial and error.
+**RoyaleGym lets you make a Clash Royale bot on your own computer.** A bot learns in two ways.
+It can copy people: it studies thousands of real games and learns to make the moves the players
+made. That's called cloning. Or it can learn by trial and error: it plays practice battles,
+thousands of them, and gets rewarded for what you choose.
+
+Trial and error alone, starting from nothing, is slow, and it doesn't get a bot far. So for a bot
+that plays like a person, plan to start by cloning.
 
 ![What a battle looks like in the viewer: both hands, both elixir bars, and the arena with every unit](media/viewer.png){ width="100%" }
 
@@ -29,9 +33,12 @@ No. If you can copy a file, run it, and change a line of Python, you can train a
 [Quick Start](quickstart.md) walks you through it.
 
 **How long until my bot is good?**
-There's no fixed answer. It depends on your graphics card, your settings and what you reward.
-Bots for games like this usually train for many hours, often days, before they play well. Your
-first run is about watching it learn, not about getting a strong bot.
+It depends on how it learns. A bot that starts from nothing and learns only by trial and error,
+like the one in the [Quick Start](quickstart.md), learns to beat a bot that plays at random. On
+one computer it seldom gets much further, even after days. To see a bot that plays like a person,
+start by [cloning human players](clash-royale/cloning-a-bot.md). You can then train the clone
+further by trial and error, but that's harder than it sounds, and it can make the bot worse: test
+the new bot the same way you tested the clone, and compare.
 
 **Is it free?**
 Yes. It's open source, under the MIT license.
@@ -44,18 +51,21 @@ to change when it does.
 ## What You'll Do
 
 1. [Install it](install.md). About ten minutes, most of it waiting for downloads.
-2. [Run the Quick Start](quickstart.md). One file that trains a bot and shows you its progress.
+2. [Run the Quick Start](quickstart.md). One file that trains a bot from nothing, so you see how
+   training works and what its numbers mean.
 3. [Watch your bot play](quickstart.md#5-watch-it-play) in the viewer.
 4. Change something, like [its deck](quickstart.md#8-use-your-own-deck) or
    [what it's rewarded for](quickstart.md#9-change-what-it-learns), and train again.
+5. [Clone human players](clash-royale/cloning-a-bot.md). A bot that copies the moves people
+   made in real games. This is where a bot that plays like a person starts.
 
 Stuck? Look in the [FAQ](faq.md) and [It Doesn't Work](it-doesnt-work.md). Still stuck? Ask on
 [Discord](https://discord.gg/cuPQwyB7pd). Nobody minds beginner questions there.
 
 ## What's Inside
 
-You install one thing, `royalegym[all]`, and it brings these along. You'll mostly use the first two
-by name.
+You install one thing, `royalegym[all]`, and it brings these along. In your own files you'll
+mostly name three of them: RoyaleGym, RoyaleLearn and RoyaleImitate.
 
 <div class="grid cards" markdown>
 
@@ -87,7 +97,8 @@ by name.
 
     ---
 
-    Optional. Starts a new bot from one you already trained.
+    Clones a bot: it copies human players from real games, or another bot, so your bot
+    starts out playing like them.
 
 </div>
 
