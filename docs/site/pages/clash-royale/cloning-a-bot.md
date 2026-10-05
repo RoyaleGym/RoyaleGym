@@ -100,6 +100,22 @@ royal_giant = ["RoyalGiant", "Fisherman", "Hunter", "Ghost", "ElectroSpirit", "S
 `BarbLog` is the Barbarian Barrel, `Snowball` the Giant Snowball and `Ghost` the Royal Ghost; the
 [names that differ](../cheatsheets/game-values.md#names-that-differ-from-the-game) are all listed.
 
+Without anything more, your clone learns from every deck in the matches: a generalist. To make one
+that specialises in your deck, copy only the matches where a player played it. Change the
+`from_replays` line in `clone_humans.py`, and give `build_env` the same eight cards:
+
+```python
+    mine = {"HogRider", "Musketeer", "Cannon", "IceGolemite", "IceSpirits", "Skeletons", "Fireball", "Log"}
+    demos = from_replays(learner, "runs/my-deck-demos", matches=1000,
+                         keep=lambda match: mine in map(set, match.decks))
+```
+
+`keep` sees each match's two decks (`match.decks`, in the engine's card names) and keeps the match
+when one of them is your eight cards. The summary counts the others as `not kept`. Your deck is in
+far fewer matches than all decks together, so it reads, and downloads, much more of the dataset to
+find 1,000 of them. If you already made a clone, give this one new folders too, as below. `keep`
+needs royaleimitate 0.2.8 or newer: `pip install --upgrade royaleimitate` updates it.
+
 `matches=1000` is how many matches it copies. More matches take longer to replay and to clone,
 and take more disk space.
 
