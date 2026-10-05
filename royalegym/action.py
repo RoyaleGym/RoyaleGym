@@ -851,6 +851,10 @@ class GridActionParser(ActionParser):
         # real calibration arm, so this needs no special case for MockEngine.
         if state.tick < self.oracle.rules.deploy_lockout_ticks:
             return mask
+        # THE TIEBREAK'S FREEZE: a level overtime has run out and the drain decides the match;
+        # the engine refuses every play and press GAME_OVER before ``game_over`` is set.
+        if self.oracle.rules.plays_stopped(state):
+            return mask
         player = state.players[team]
         if player.pending and self.hold_while_pending:
             return mask

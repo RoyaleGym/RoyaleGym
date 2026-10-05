@@ -98,6 +98,26 @@ def test_a_play_is_open_at_t5999_and_refused_from_t6000(make):
     assert statuses == {DeployStatus.GAME_OVER}, statuses
 
 
+def test_the_mask_offers_no_play_from_t6000(make):
+    """The mask knows the freeze: at t6000 it agrees with the engine on every action of both
+    seats (it offers only the no-op), and at t5999 it still offers plays. Before, it read only
+    ``game_over``, which the drain sets later, so a policy obeying its mask had every play of
+    the tiebreak refused GAME_OVER: in a training run with a command delay, about one battle in
+    fifty ended in a tied level overtime, and each such play stopped the run."""
+    from royalegym.action import TileActionParser, mask_disagreements
+
+    eng = _board(make(), 5999)
+    parser = TileActionParser()
+    parser.bind(eng)
+    assert parser.action_mask(eng.state(), BLUE)[1:].any(), "t5999: no play offered"
+    eng = _board(make(), 6000)
+    parser.bind(eng)
+    s = eng.state()
+    for team in (BLUE, RED):
+        assert mask_disagreements(eng, parser, s, team) == [], team
+        assert parser.action_mask(s, team).sum() == 1, "only the no-op"
+
+
 def test_the_board_clears_at_the_head_of_t6002_and_the_towers_stand_unchanged(make):
     eng = _board(make(), 5990)
     for team in (BLUE, RED):

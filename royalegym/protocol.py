@@ -1166,6 +1166,12 @@ class DeployRules(msgspec.Struct, frozen=True):
     troop_building_taps: str = "not_relocated"
     spell_as_deploy_taps: str = "spell_point"
     live_bottle_taps: str = "not_blocked"
+    # match.OVERTIME_TIEBREAK: under "client_hp_drain" no play is accepted once a level
+    # overtime has run out, while the drain decides the match (``plays_stopped``). The mask
+    # reads it because ``game_over`` comes later, at the drain's end, and a mask that waits
+    # for it offers every play of the tiebreak while the engine refuses them all GAME_OVER.
+    # Trailing and defaulted to "", the rule of an engine that states none: no freeze.
+    overtime_tiebreak: str = ""
 
     @classmethod
     def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
@@ -1226,6 +1232,10 @@ class DeployRules(msgspec.Struct, frozen=True):
                 f"spells.ILLEGAL_SPELL_TAP={spell_tap!r}: the mask implements 'refuse' only"
             )
         try:
+            tiebreak = str(calibration.value("match.OVERTIME_TIEBREAK"))
+        except KeyError:
+            tiebreak = ""
+        try:
             lockout = int(calibration.value("match.DEPLOY_LOCKOUT_TICKS"))
         except KeyError:
             lockout = 0
@@ -1258,12 +1268,25 @@ class DeployRules(msgspec.Struct, frozen=True):
             troop_building_taps=building_taps,
             spell_as_deploy_taps=spell_taps,
             live_bottle_taps=bottle_taps,
+            overtime_tiebreak=tiebreak,
         )
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:
         """The closed NoDeploySize rect of a crown tower in ``slot`` centred at (cx, cy)."""
         w, h = self.king_no_deploy_size if slot == TowerSlot.KING else self.princess_no_deploy_size
         return cx - w // 2, cy - h // 2, cx + w // 2, cy + h // 2
+
+    def plays_stopped(self, state: BattleState) -> bool:
+        """Whether the engine accepts no play now although the match is not over: a level
+        overtime has run out under the client's drain tiebreak (state.rs ``tiebreak_frozen``,
+        MockEngine ``_past_level_overtime``; measured on client 16.402, no play lands from
+        t6000). The engine refuses every play and press then with GAME_OVER."""
+        return (
+            self.overtime_tiebreak == "client_hp_drain"
+            and state.overtime
+            and not state.game_over
+            and state.tick >= state.regular_ticks + state.overtime_ticks
+        )
 
     def tower_rects(self, arena: Arena, owner: int) -> list[Rect]:
         """[TowerSlot] -> the rect of ``owner``'s tower at its ARENA centre, alive or not."""

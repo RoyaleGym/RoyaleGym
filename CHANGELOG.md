@@ -4,6 +4,14 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+## Unreleased
+
+### Fixed
+- The action mask offers no play once a tied level overtime has run out. The engine accepts no
+  play from that moment while the tiebreak decides the match, but the mask waited for the
+  match to be over and kept offering every card, so each play in the tiebreak was refused.
+  A training run that checks the engine accepted every play the mask allowed stopped there.
+
 ## 0.1.16 (2026-10-05)
 
 ### Fixed
