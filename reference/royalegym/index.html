@@ -2384,6 +2384,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.unit_id_planes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unit_id_planes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.spell_id_planes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3164,6 +3175,17 @@
   
     <nav class="md-nav" aria-label=" RustEngine">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.RustEngine.unit_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unit_types
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#royalegym.rust_engine.RustEngine.set_command_delay_ticks" class="md-nav__link">
@@ -6893,6 +6915,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.unit_id_planes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unit_id_planes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.spell_id_planes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7673,6 +7706,17 @@
   
     <nav class="md-nav" aria-label=" RustEngine">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.RustEngine.unit_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unit_types
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#royalegym.rust_engine.RustEngine.set_command_delay_ticks" class="md-nav__link">
@@ -11425,6 +11469,32 @@ spell's catalogue id, because that is what the engine reports for them.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="royalegym.obs.unit_id_planes" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">unit_id_planes</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">,</span> <span class="n">num_units</span><span class="p">)</span></code>
+
+<a href="#royalegym.obs.unit_id_planes" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>uint8 [2, tiles_y, tiles_x], seen by <code>team</code>: plane 0 own, plane 1 enemy.</p>
+<p>Which UNIT TYPE stands on each tile (<code>EntityState.unit_type</code>, the game's characters row),
+where <code>card_ids</code> says which CARD produced it. A summon carries its producer's card id, so
+the Witch's skeletons read "Witch" there and "Skeleton" here, as Tombstone's and Graveyard's
+do: one type under every producer, and the producer kept beside it.</p>
+<p>Ties go to the lowest uid, as in <code>card_id_planes</code>, so the two planes describe the same
+entity cell for cell. An entity whose type is not said (-1) or lies outside the vocabulary
+is refused: either would be drawn as some other type. Module-level so a test can plant a
+defect in it.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="royalegym.obs.spell_id_planes" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">spell_id_planes</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">,</span> <span class="n">num_cards</span><span class="p">,</span> <span class="n">clock</span><span class="p">)</span></code>
 
@@ -13761,6 +13831,26 @@ about game fidelity.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.rust_engine.RustEngine.unit_types" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">unit_types</span><span class="p">()</span></code>
+
+<a href="#royalegym.rust_engine.RustEngine.unit_types" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The unit-type vocabulary <code>EntityState.unit_type</code> indexes: every unit name the
+loaded card table can put on the board, sorted by name (<code>Battle.unit_types_json</code>,
+royalesim 0.1.17 on). None from an engine that does not say unit types.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 

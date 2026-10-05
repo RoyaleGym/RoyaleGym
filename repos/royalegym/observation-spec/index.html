@@ -2407,6 +2407,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="3b. card_ids, uint8 [2, 32, 18], SpatialObsBuilder only (behind a flag, default off)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit_ids-uint8-2-32-18-behind-its-own-flag-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unit_ids, uint8 [2, 32, 18] (behind its own flag, default off)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3533,6 +3550,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="3b. card_ids, uint8 [2, 32, 18], SpatialObsBuilder only (behind a flag, default off)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit_ids-uint8-2-32-18-behind-its-own-flag-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unit_ids, uint8 [2, 32, 18] (behind its own flag, default off)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4073,6 +4107,48 @@ a field, and so does every site that constructs one; and the stem does the looku
 concatenates. So the flag is off by default on BOTH sides, and turning it on is a
 coordinated change rather than a switch. The cost is worth paying: the alternative was a
 card id stored as a scaled half, which fails silently, and silent is worse than work.</p>
+<h3 id="unit_ids-uint8-2-32-18-behind-its-own-flag-default-off"><code>unit_ids</code>, uint8 <code>[2, 32, 18]</code> (behind its own flag, default off)<a class="headerlink" href="#unit_ids-uint8-2-32-18-behind-its-own-flag-default-off" title="Permanent link">&para;</a></h3>
+<p><code>card_ids</code> names the card that PRODUCED each unit. A summon carries its producer's card, so
+the Witch's skeletons read "Witch", Tombstone's read "Tombstone", and one kind of unit sits
+under every card that makes it. <code>SpatialObsBuilder(unit_identity=True)</code> adds <code>unit_ids</code>: the
+unit's OWN type on each tile, own plane then enemy plane, as <code>card_ids</code> lays them out.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>key</td>
+<td><code>unit_ids</code>, its own key beside <code>card_ids</code> (it does not need it)</td>
+</tr>
+<tr>
+<td>values</td>
+<td>0 = empty; <code>1 + u</code> for unit type <code>u</code>, an index into <code>engine.unit_types()</code></td>
+</tr>
+<tr>
+<td>vocabulary</td>
+<td>every unit name the loaded card table can put on the board, crown towers included, sorted by name (royalesim 0.1.17 on)</td>
+</tr>
+<tr>
+<td>ties</td>
+<td>the lowest uid, as in <code>card_ids</code>, so both keys describe the same unit on each tile</td>
+</tr>
+<tr>
+<td>pinning</td>
+<td><code>config()</code> records <code>unit_names</code>; a builder given <code>unit_names</code> refuses an engine whose vocabulary differs</td>
+</tr>
+<tr>
+<td>refused</td>
+<td>an engine that says no vocabulary (MockEngine), and a unit whose type is not said (-1)</td>
+</tr>
+</tbody>
+</table>
+<p>Like <code>card_ids</code>, the key holds category ids, not amounts: a network embeds it rather than
+scaling it. A trace header carries the vocabulary as <code>unit_types</code>, and every frame's entity
+rows carry <code>unit_type</code>, so a viewer can name each unit by type.</p>
 <h2 id="3c-queued-positional-channels-not-built">3c. Queued: positional channels (NOT built)<a class="headerlink" href="#3c-queued-positional-channels-not-built" title="Permanent link">&para;</a></h2>
 <p>Recorded so the reasoning survives, including the part of it that was WRONG, because the
 wrong version is the one a reader is likely to re-derive.</p>
