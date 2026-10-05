@@ -11,6 +11,7 @@ from royalegym import viser as viser_mod
 from royalegym.env import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import MatchSetup
+from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 from royalegym.viser import ViserPublisher
 
 sources = pytest.importorskip("royaleviser.sources")
@@ -131,7 +132,7 @@ def test_the_special_forms_rows_decode_as_the_viewer_reads_them() -> None:
     # engine appends (card_id, cooldown_ticks): the viewer's four columns either way.
     blue = msgspec.structs.replace(
         state.players[0], abilities=[[1, 0, 2], [0, 0, 1, ids["Knight"], 40]],
-        evo=[[ids["Cannon"], 2, 1]],
+        evo=[[ids["Cannon"], 2, 1, 3]],
     )
     state = msgspec.structs.replace(state, players=[blue, state.players[1]])
     names = {c.card_id: c.name for c in eng.cards()}
@@ -152,6 +153,33 @@ def test_the_special_forms_rows_decode_as_the_viewer_reads_them() -> None:
     d["players"][0]["evo"] = [[ids["Cannon"], 2, 1]]
     with pytest.raises(msgspec.ValidationError):
         model.decode_frame(msgspec.msgpack.encode(d))
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_a_battle_with_an_evolution_reaches_the_viewer_with_the_engines_own_rows() -> None:
+    """The engine's ``evo`` rows, untouched: [card, plays, next evolved, cycle length], four
+    columns since RoyaleSim d925aa8 (2026-10-01). The test above builds its row by hand, and
+    with three columns it hid that ``frame_dict`` unpacked three: every battle with an
+    evolved card crashed the live viewer, on every published release, until 0.1.16."""
+    import msgspec
+
+    eng = RustEngine()
+    ids = {c.name: c.card_id for c in eng.cards()}
+    deck = [ids[n] for n in ("Skeletons", "Barbarians", "Knight", "Archer", "Giant",
+                             "Minions", "Fireball", "Zap")]
+    forms = [[1, 1, 0, 0, 0, 0, 0, 0], [0] * 8]
+    eng.reset(1, MatchSetup(decks=[deck, deck], forms=forms))
+    state = eng.state()
+    rows = state.players[0].evo
+    assert [len(r) for r in rows] == [4, 4], f"the engine's evo rows changed shape: {rows}"
+    names = {c.card_id: c.name for c in eng.cards()}
+    d = viser_mod.frame_dict(
+        state, names.__getitem__, eng.arena().subtile, [deck, deck], forms=forms
+    )
+    frame = model.decode_frame(msgspec.msgpack.encode(d))
+    assert model.problems(frame) == []
+    assert sorted(r[0] for r in frame.players[0].evo) == ["Barbarians", "Skeletons"]
+    assert [tuple(r[1:]) for r in frame.players[0].evo] == [tuple(r[1:3]) for r in rows]
 
 
 def test_the_publisher_can_send_a_busy_battle_frame_on_every_os():

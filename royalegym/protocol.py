@@ -669,8 +669,9 @@ class PlayerState(msgspec.Struct, frozen=True):
     # it, off cooldown, not mid-ability); spent 1 once a hero's one charge is used (a
     # champion's stays 0). Empty from an engine without heroes or champions.
     abilities: list[list[int]] = []
-    # [card_id, plays since its last evolved play, 1 when its next play is evolved] per
-    # evolved deck card, in deck order. Empty from an engine without evolutions.
+    # [card_id, plays since its last evolved play, 1 when its next play is evolved, the basic
+    # plays its evolution needs (RoyaleSim d925aa8 on)] per evolved deck card, in deck order.
+    # Empty from an engine without evolutions.
     evo: list[list[int]] = []
     # What playing each hand slot costs right now, in elixir, -1 where no play resolves
     # (a Mirror with nothing to copy). A Mirror costs the card it copies plus its own.

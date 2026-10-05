@@ -223,7 +223,8 @@ def player_dict(
         "tower_hp": list(p.tower_hp),
         "tower_max_hp": list(p.tower_max_hp),
         "king_active": p.king_active,
-        "evo": [[name_of(c), plays, nxt] for c, plays, nxt in p.evo],
+        # The viewer reads three columns; the engine sends a fourth, the cycle length.
+        "evo": [[name_of(c), plays, nxt] for c, plays, nxt, *_ in p.evo],
         "abilities": [
             [
                 name_of(b.card_id) if b.card_id != EMPTY_CARD
