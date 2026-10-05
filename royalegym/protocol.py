@@ -566,9 +566,10 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     dest_y: int = -1
     ability_ticks: int = -1
     # The entity's OWN unit type (royalesim 0.1.17 on): an index into ``Engine.unit_types()``,
-    # the game's characters row, where ``card_id`` is the card that PRODUCED it. The Witch's,
-    # Tombstone's and Graveyard's skeletons all carry the one Skeleton index; towers carry their
-    # own rows. -1: not said (MockEngine, an older engine).
+    # the game's characters row, where ``card_id`` is the card that PRODUCED it. The Witch's and
+    # Tombstone's skeletons carry the one Skeleton index; a summon the data gives a row of its own
+    # (the Graveyard's) keeps that row (``obs.SAME_UNIT_ALIASES`` can merge it). Towers carry
+    # their own rows. -1: not said (MockEngine, an older engine).
     unit_type: int = -1
 
 

@@ -109,10 +109,13 @@ SPELLS AND STATUS EFFECTS
 
 from __future__ import annotations
 
+import hashlib
+import json
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from functools import lru_cache
+from types import MappingProxyType
 from typing import Any, NamedTuple
 
 import msgspec
@@ -2423,16 +2426,38 @@ def card_id_planes(
 UNIT_ID_EMPTY = 0
 UNIT_ID_OFFSET = 1
 
+#: Rows of the game's characters table that are ONE unit to a player: the same stats and the
+#: same behaviour, only the producer differs (which ``card_ids`` keeps). With
+#: ``SpatialObsBuilder(unit_aliases=SAME_UNIT_ALIASES)`` each is written as its base type; off
+#: by default. tests/test_unit_ids.py checks that every pair is still stat-identical in the
+#: engine's card table, so a data build that splits one fails rather than mixing two units.
+#: Evolution rows stay apart: their behaviour differs outside the stats.
+SAME_UNIT_ALIASES: Mapping[str, str] = MappingProxyType({
+    "Graveyard_rework_Skeleton": "Skeleton",
+    "SkeletonKingSkeleton": "Skeleton",
+    "GoblinCurseGoblin": "Goblin",
+    "DeliveryRecruit": "Recruit",
+    "TriWizard": "Wizard",
+    "Ghost_EV1_Summon_Right": "Ghost_EV1_Summon_Left",
+    "ThreeMusketeer_Rework_Character_3": "ThreeMusketeer_Rework_Character_1",
+})
+
 
 def unit_id_planes(
-    entities: Sequence[EntityState], team: int, arena: Arena, num_units: int
+    entities: Sequence[EntityState],
+    team: int,
+    arena: Arena,
+    num_units: int,
+    lookup: np.ndarray | None = None,
 ) -> np.ndarray:
     """uint8 [2, tiles_y, tiles_x], seen by ``team``: plane 0 own, plane 1 enemy.
 
     Which UNIT TYPE stands on each tile (``EntityState.unit_type``, the game's characters row),
     where ``card_ids`` says which CARD produced it. A summon carries its producer's card id, so
-    the Witch's skeletons read "Witch" there and "Skeleton" here, as Tombstone's and Graveyard's
-    do: one type under every producer, and the producer kept beside it.
+    the Witch's skeletons read "Witch" there and "Skeleton" here, as Tombstone's do: one type
+    under every producer, and the producer kept beside it. A summon the game's data gives a row
+    of its own (the Graveyard's skeleton) keeps that row unless ``lookup`` maps it to its base
+    (``SAME_UNIT_ALIASES``, ``SpatialObsBuilder(unit_aliases=...)``).
 
     Ties go to the lowest uid, as in ``card_id_planes``, so the two planes describe the same
     entity cell for cell. An entity whose type is not said (-1) or lies outside the vocabulary
@@ -2454,9 +2479,50 @@ def unit_id_planes(
                 + (" (-1: the engine does not say it)" if e.unit_type == -1 else "")
                 + ", so unit_ids has no index for it"
             )
-        out[plane, ty, tx] = UNIT_ID_OFFSET + e.unit_type
+        u = int(lookup[e.unit_type]) if lookup is not None else e.unit_type
+        out[plane, ty, tx] = UNIT_ID_OFFSET + u
     return out
 
+
+
+def unit_vocabulary(
+    names: Sequence[str], aliases: Mapping[str, str] | None
+) -> tuple[list[str], np.ndarray | None]:
+    """The ``unit_ids`` vocabulary under ``aliases``, and the engine-index -> vocabulary-index
+    lookup (None without aliases). An aliased name is written as its base and drops out of the
+    vocabulary; the rest keep the engine's order. Refuses, by name, an alias or a base the
+    engine does not have, a base that is itself an alias (a chain) and a name aliased to
+    itself."""
+    if not aliases:
+        return list(names), None
+    known = set(names)
+    for alias, base in aliases.items():
+        for name in (alias, base):
+            if name not in known:
+                raise ValueError(
+                    f"unit_aliases names {name!r}, which this engine's unit types lack"
+                )
+        if alias == base:
+            raise ValueError(f"unit_aliases maps {alias!r} to itself")
+        if base in aliases:
+            raise ValueError(
+                f"unit_aliases makes a chain: {alias!r} -> {base!r} -> {aliases[base]!r}; "
+                "map each alias straight to its base"
+            )
+    vocab = [n for n in names if n not in aliases]
+    at = {n: i for i, n in enumerate(vocab)}
+    lookup = np.array([at[aliases.get(n, n)] for n in names], dtype=np.int64)
+    return vocab, lookup
+
+
+def unit_ids_digest(names: Sequence[str], aliases: Mapping[str, str] | None) -> str:
+    """16 hex digits naming the ``unit_ids`` vocabulary: the engine's unit names and the aliases
+    applied to them. Two observations whose digests differ number their units differently."""
+    blob = json.dumps(
+        {"names": list(names), "aliases": sorted((aliases or {}).items())},
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 #: The ``spell_ids`` planes, in order (``SpatialObsBuilder(spell_identity=True)``).
 SPELL_ID_PLANES = ("own_at", "enemy_at", "own_aim", "enemy_aim_seen")
@@ -2535,6 +2601,7 @@ class SpatialObsBuilder(ObsBuilder):
         unit_actions: bool = False,
         unit_identity: bool = False,
         unit_names: Sequence[str] | None = None,
+        unit_aliases: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(reveal, calibration)
         self.card_status = bool(card_status)
@@ -2581,6 +2648,11 @@ class SpatialObsBuilder(ObsBuilder):
                 "unit_identity=True"
             )
         self._pinned_unit_names = list(unit_names) if unit_names is not None else None
+        if unit_aliases is not None and not self.unit_identity:
+            raise ValueError(
+                "unit_aliases merges unit_ids types, which only exist with unit_identity=True"
+            )
+        self.unit_aliases = dict(sorted(unit_aliases.items())) if unit_aliases else None
 
     def _check_card_names(self) -> list[str]:
         """The catalogue's names, or a refusal if they are not the ones pinned."""
@@ -2693,7 +2765,11 @@ class SpatialObsBuilder(ObsBuilder):
         if self.unit_identity:
             self.unit_names = self._check_unit_names(engine)
             self.num_units = len(self.unit_names)
-            self.unit_vocab = self.num_units + UNIT_ID_OFFSET
+            self.unit_vocabulary, self._unit_lookup = unit_vocabulary(
+                self.unit_names, self.unit_aliases
+            )
+            self.unit_ids_digest = unit_ids_digest(self.unit_names, self.unit_aliases)
+            self.unit_vocab = len(self.unit_vocabulary) + UNIT_ID_OFFSET
             top = int(np.iinfo(np.uint8).max)
             if self.unit_vocab - 1 > top:
                 raise ValueError(
@@ -2793,7 +2869,9 @@ class SpatialObsBuilder(ObsBuilder):
                 state, team, self.arena, self.num_cards, self._aim_clock
             )
         if self.unit_identity:
-            out["unit_ids"] = unit_id_planes(state.entities, team, self.arena, self.num_units)
+            out["unit_ids"] = unit_id_planes(
+                state.entities, team, self.arena, self.num_units, self._unit_lookup
+            )
         return out
 
     def config(self) -> dict[str, Any]:
@@ -2824,6 +2902,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["unit_names"] = list(
                 getattr(self, "unit_names", None) or self._pinned_unit_names or []
             )
+            if self.unit_aliases:
+                out["unit_aliases"] = dict(self.unit_aliases)
         return out
 
 

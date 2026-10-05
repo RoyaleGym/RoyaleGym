@@ -16,9 +16,13 @@ change the observation's shape; each such change is listed here.
 ### Added
 - `SpatialObsBuilder(unit_identity=True)` adds `unit_ids`: the type of each unit on the board,
   beside `card_ids`, which names the card that produced it. A skeleton reads "Skeleton" whether
-  the Witch, a Tombstone or a Graveyard made it. Off by default, so existing observations and
-  configs do not change. Needs royalesim 0.1.17, which says each unit's type
-  (`EntityState.unit_type`, `RustEngine.unit_types()`); saved battles record the type list.
+  the Witch or a Tombstone made it. Off by default, so existing observations and configs do not
+  change. Needs royalesim 0.1.17, which says each unit's type (`EntityState.unit_type`,
+  `RustEngine.unit_types()`); saved battles record the type list.
+- `unit_aliases`: write a unit the game's data keeps on a row of its own as its base type, when
+  the two are the same unit to a player. `obs.SAME_UNIT_ALIASES` lists seven such rows (the
+  Graveyard's skeleton is a Skeleton, a Tri-Wizard a Wizard, ...); a test checks each pair
+  still has identical stats. `builder.unit_ids_digest` names the vocabulary the ids count in.
 
 ## 0.1.17 (2026-10-05)
 

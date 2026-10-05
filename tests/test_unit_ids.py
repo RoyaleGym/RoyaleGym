@@ -11,6 +11,8 @@ dealt by the Goblins card and by the Goblin Barrel are one type under two produc
 
 from __future__ import annotations
 
+import json
+
 import msgspec
 import numpy as np
 import pytest
@@ -20,6 +22,7 @@ from royalegym.mock_engine import MockEngine
 from royalegym.obs import UNIT_ID_EMPTY, UNIT_ID_OFFSET, SpatialObsBuilder, unit_id_planes
 from royalegym.protocol import BLUE, RED, EntityKind, ShuffleMode
 from royalegym.replay import ReplayRecorder
+from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
 from royalegym.state_mutator import DefaultStateMutator
 
 DECK = ["Goblins", "GoblinBarrel", "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap"]
@@ -204,3 +207,118 @@ def test_unit_type_is_the_last_entity_column_and_not_said_by_default() -> None:
     assert old.unit_type == -1
     new = msgspec.convert([*row[:-1], 17], EntityState)
     assert new.unit_type == 17
+
+
+class SplitBarrelMock(UnitTypedMock):
+    """The Barrel's goblins on a row of their own, as the game's data gives some summons."""
+
+    def unit_types(self) -> list[str]:
+        return sorted([*UNITS, "BarrelGoblin"])
+
+    def state(self):
+        s = MockEngine.state(self)
+        names = {c.card_id: c.name for c in self.cards()}
+        vocab = self.unit_types()
+
+        def typed(e):
+            if e.kind == EntityKind.KING_TOWER:
+                unit = "KingTower"
+            elif e.kind == EntityKind.PRINCESS_TOWER:
+                unit = "PrincessTower"
+            elif names[e.card_id] == "GoblinBarrel":
+                unit = "BarrelGoblin"
+            else:
+                unit = UNIT_OF[names[e.card_id]]
+            return msgspec.structs.replace(e, unit_type=vocab.index(unit))
+
+        return msgspec.structs.replace(s, entities=[typed(e) for e in s.entities])
+
+
+def _goblin_values(env) -> dict[str, set[int]]:
+    """unit_ids values under Blue's Goblins and Goblin Barrel goblins, after both are played."""
+    env.reset(seed=3)
+    while env.battle_state.tick < env.engine.rules().deploy_lockout_ticks:
+        env.step({"blue": 0, "red": 0})
+    ids = {c.name: c.card_id for c in env.engine.cards()}
+    seen: dict[str, set[int]] = {}
+    for _ in range(80):
+        hand = env.battle_state.players[BLUE].hand
+        for name, x in (("Goblins", 3), ("GoblinBarrel", 14)):
+            if ids[name] in hand and env.battle_state.players[BLUE].elixir_milli >= 3000:
+                _play(env, name, x, 10)
+        env.step({"blue": 0, "red": 0})
+        obs = env._obs["blue"]
+        for card in ("Goblins", "GoblinBarrel"):
+            where = obs["card_ids"][0] == 2 + ids[card]
+            if where.any():
+                seen.setdefault(card, set()).update(obs["unit_ids"][0][where].tolist())
+        if len(seen) == 2:
+            return seen
+    return seen
+
+
+def test_an_alias_writes_a_row_as_its_base_type() -> None:
+    """Without aliases the Barrel's own row is its own type; with the alias it is a Goblin, and
+    the vocabulary drops the aliased name."""
+    apart = _goblin_values(_env(engine=SplitBarrelMock()))
+    assert apart["Goblins"] != apart["GoblinBarrel"], apart
+    env = _env(engine=SplitBarrelMock(), unit_aliases={"BarrelGoblin": "Goblin"})
+    merged = _goblin_values(env)
+    assert merged["Goblins"] == merged["GoblinBarrel"], merged
+    builder = env.obs_builder
+    assert builder.unit_vocabulary == UNITS
+    assert int(env.observation_space("blue")["unit_ids"].high.max()) + 1 == (
+        len(UNITS) + UNIT_ID_OFFSET
+    )
+    assert builder.config()["unit_aliases"] == {"BarrelGoblin": "Goblin"}
+    assert builder.config()["unit_names"] == sorted([*UNITS, "BarrelGoblin"])
+
+
+def test_the_digest_names_the_effective_vocabulary() -> None:
+    plain = _env(engine=SplitBarrelMock()).obs_builder.unit_ids_digest
+    merged = _env(engine=SplitBarrelMock(), unit_aliases={"BarrelGoblin": "Goblin"})
+    again = _env(engine=SplitBarrelMock(), unit_aliases={"BarrelGoblin": "Goblin"})
+    assert merged.obs_builder.unit_ids_digest == again.obs_builder.unit_ids_digest
+    assert merged.obs_builder.unit_ids_digest != plain
+    assert len(plain) == 16
+
+
+def test_a_bad_alias_map_is_refused() -> None:
+    for aliases, word in (
+        ({"Nobody": "Goblin"}, "Nobody"),
+        ({"BarrelGoblin": "Nobody"}, "Nobody"),
+        ({"BarrelGoblin": "Goblin", "Goblin": "Knight"}, "chain"),
+        ({"Goblin": "Goblin"}, "itself"),
+    ):
+        with pytest.raises(ValueError, match=word):
+            _env(engine=SplitBarrelMock(), unit_aliases=aliases)
+    with pytest.raises(ValueError, match="unit_identity"):
+        SpatialObsBuilder(unit_aliases={"BarrelGoblin": "Goblin"})
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_every_shipped_alias_pair_has_identical_stats_in_the_engines_table() -> None:
+    """SAME_UNIT_ALIASES merges rows that are one unit to a player: identical stats in the card
+    table the engine reads. A data build that makes a pair differ fails here, rather than the
+    planes quietly mixing two units under one id. Bookkeeping fields (the row's own name, where
+    its numbers came from) are not stats."""
+    from royalegym.obs import SAME_UNIT_ALIASES
+    from royalegym.rust_engine import RustEngine, embedded_card_table
+
+    eng = RustEngine()
+    text = embedded_card_table()
+    if text is None:
+        text = eng.cards_json_path.read_text(encoding="utf-8")
+    units = json.loads(text)["units"]
+    missing = sorted({n for pair in SAME_UNIT_ALIASES.items() for n in pair} - set(units))
+    if missing:
+        pytest.skip(
+            f"SKIPPED, NOT PASSED: this card table ({json.loads(text)['provenance']['vintage']}) "
+            f"has no rows {missing[:4]}: the aliases name the 15.535 table's rows"
+        )
+    bookkeeping = {"name", "damage_source", "overlays", "raw", "source_table"}
+    for alias, base in SAME_UNIT_ALIASES.items():
+        a = {k: v for k, v in units[alias].items() if k not in bookkeeping}
+        b = {k: v for k, v in units[base].items() if k not in bookkeeping}
+        differ = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+        assert differ == [], f"{alias} -> {base}: the rows differ on {differ}"

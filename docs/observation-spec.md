@@ -259,6 +259,7 @@ unit's OWN type on each tile, own plane then enemy plane, as `card_ids` lays the
 | ties | the lowest uid, as in `card_ids`, so both keys describe the same unit on each tile |
 | pinning | `config()` records `unit_names`; a builder given `unit_names` refuses an engine whose vocabulary differs |
 | refused | an engine that says no vocabulary (MockEngine), and a unit whose type is not said (-1) |
+| aliases | `unit_aliases=` writes a row as its base type when the two are one unit to a player (`obs.SAME_UNIT_ALIASES`: seven rows, e.g. the Graveyard's skeleton as Skeleton); the aliased names leave the vocabulary, and `config()` records the map |
 
 Like `card_ids`, the key holds category ids, not amounts: a network embeds it rather than
 scaling it. A trace header carries the vocabulary as `unit_types`, and every frame's entity
