@@ -265,5 +265,13 @@ pygame-ce in its place.
 pip install --upgrade "royalegym[all]"
 ```
 
-It updates all five RoyaleGym packages and the extras they need, and leaves your PyTorch alone. Your
-code keeps working, but a bot can't carry on training across an update: start a new one with a new `save_dir`.
+It updates RoyaleGym, brings the other four packages up to at least the versions that release
+needs, and leaves your PyTorch alone. The engine can update between RoyaleGym releases. This gets
+the newest one:
+
+```
+pip install --upgrade royalesim
+```
+
+Your code keeps working, but a bot can't carry on training across an update: start a new one with
+a new `save_dir`.
