@@ -8013,7 +8013,8 @@ and the deck unknown (a BattleState does not expose them), <code>winner</code>/<
     <div class="doc doc-contents ">
 
         <p>A PlayerState's special-form rows in the viewer's shape (<code>model.Player</code>), names for ids.</p>
-<p>The engine's layout (RoyaleSim state_json): <code>evo</code> rows [card_id, plays, next_evolved];
+<p>The engine's layout (RoyaleSim state_json): <code>evo</code> rows [card_id, plays, next_evolved,
+cycle length] (the fourth since RoyaleSim d925aa8; the viewer reads the first three);
 <code>abilities</code> rows [available, spent, cost], one per button (heroes in deck order, then the
 champion), to which the champion build appends [card_id, cooldown_ticks]. Read BY INDEX,
 so a row of three and a row of five both convert: the card's name from its card_id where the

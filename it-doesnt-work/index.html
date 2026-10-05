@@ -1012,6 +1012,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#too-many-values-to-unpack-with-an-evolved-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        too many values to unpack with an evolved card
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#no-window-appears-at-all" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4197,6 +4208,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#too-many-values-to-unpack-with-an-evolved-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        too many values to unpack with an evolved card
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#no-window-appears-at-all" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4527,6 +4549,15 @@ doesn't save battles, so the viewer opened a training log instead. Save a battle
 <p>Only one training run at a time can stream to the viewer, and another one already is. Stop the
 other run, or set <code>viser=False</code> in one of them. If you put a <code>ViserPublisher</code> in your
 <code>build_env</code>, take it out and use <code>viser=True</code> on the <code>Learner</code> instead.</p>
+<h3 id="too-many-values-to-unpack-with-an-evolved-card"><code>too many values to unpack</code> with an evolved card<a class="headerlink" href="#too-many-values-to-unpack-with-an-evolved-card" title="Permanent link">&para;</a></h3>
+<p>A deck has an evolved card, and the viewer is open. Training stops with this, and so does
+opening a saved battle that has an evolved card:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>ValueError: too many values to unpack (expected 3)
+</code></pre></div>
+<p>Without the viewer open, training isn't affected. RoyaleGym 0.1.16 and RoyaleViser 0.1.2 fix it.
+Update RoyaleGym, which brings both:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>pip install --upgrade "royalegym[all]"
+</code></pre></div>
 <h3 id="no-window-appears-at-all">No window appears at all<a class="headerlink" href="#no-window-appears-at-all" title="Permanent link">&para;</a></h3>
 <p>The viewer needs a screen. On a computer with no screen, such as a server you reach over SSH:</p>
 <ul>
@@ -4535,7 +4566,7 @@ other run, or set <code>viser=False</code> in one of them. If you put a <code>Vi
   <code>royaleviser my_bot_battle.msgpack</code>.</li>
 <li>
 <p>Or make a video of it on the server (on Linux, add <code>SDL_VIDEODRIVER=dummy</code> in front):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
 </code></pre></div>
 </li>
 </ul>
