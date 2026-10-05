@@ -277,6 +277,24 @@ You have RoyaleGym 0.1.3, where starting a bot from a saved one (RoyaleImitate's
 didn't work from a normal install. 0.1.4 fixes it: update with the line in
 [What happens when Clash Royale updates?](faq.md#what-happens-when-clash-royale-updates)
 
+### `the engine refused ... command(s) the mask allowed`
+
+Training stops with a long error message that ends like this:
+
+```text
+royalelearn.coordinator.DeployRefused: the engine refused 1 command(s) the mask allowed (cycle 412, slot 7)
+```
+
+RoyaleGym 0.1.16 and older let your bot try to play cards after a tied overtime ran out, while
+the tiebreak decided the match. The game takes no plays then, so the engine refused them, and
+training stopped. RoyaleGym 0.1.17 fixes it. Update:
+
+```
+pip install --upgrade "royalegym[all]"
+```
+
+A bot can't carry on training across an update, so start it again with a new `save_dir`.
+
 ### The computer gets very slow, or runs out of memory
 
 Training uses a lot of memory (RAM): the quickstart's settings can use around 10 GB, and more on
