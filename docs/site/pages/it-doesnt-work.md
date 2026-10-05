@@ -434,6 +434,22 @@ Only one training run at a time can stream to the viewer, and another one alread
 other run, or set `viser=False` in one of them. If you put a `ViserPublisher` in your
 `build_env`, take it out and use `viser=True` on the `Learner` instead.
 
+### `too many values to unpack` with an evolved card
+
+A deck has an evolved card, and the viewer is open. Training stops with this, and so does
+opening a saved battle that has an evolved card:
+
+```text
+ValueError: too many values to unpack (expected 3)
+```
+
+Without the viewer open, training isn't affected. RoyaleGym 0.1.16 and RoyaleViser 0.1.2 fix it.
+Update RoyaleGym, which brings both:
+
+```
+pip install --upgrade "royalegym[all]"
+```
+
 ### No window appears at all
 
 The viewer needs a screen. On a computer with no screen, such as a server you reach over SSH:
