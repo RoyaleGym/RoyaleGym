@@ -857,6 +857,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#the-engine-refused-commands-the-mask-allowed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        the engine refused ... command(s) the mask allowed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-computer-gets-very-slow-or-runs-out-of-memory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4053,6 +4064,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#the-engine-refused-commands-the-mask-allowed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        the engine refused ... command(s) the mask allowed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-computer-gets-very-slow-or-runs-out-of-memory" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4446,6 +4468,16 @@ name in <code>watch.py</code> is wrong: use the same name as <code>save_dir</cod
 <p>You have RoyaleGym 0.1.3, where starting a bot from a saved one (RoyaleImitate's <code>warm_start</code>)
 didn't work from a normal install. 0.1.4 fixes it: update with the line in
 <a href="../faq/#what-happens-when-clash-royale-updates">What happens when Clash Royale updates?</a></p>
+<h3 id="the-engine-refused-commands-the-mask-allowed"><code>the engine refused ... command(s) the mask allowed</code><a class="headerlink" href="#the-engine-refused-commands-the-mask-allowed" title="Permanent link">&para;</a></h3>
+<p>Training stops with a long error message that ends like this:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>royalelearn.coordinator.DeployRefused: the engine refused 1 command(s) the mask allowed (cycle 412, slot 7)
+</code></pre></div>
+<p>RoyaleGym 0.1.16 and older let your bot try to play cards after a tied overtime ran out, while
+the tiebreak decided the match. The game takes no plays then, so the engine refused them, and
+training stopped. RoyaleGym 0.1.17 fixes it. Update:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>pip install --upgrade "royalegym[all]"
+</code></pre></div>
+<p>A bot can't carry on training across an update, so start it again with a new <code>save_dir</code>.</p>
 <h3 id="the-computer-gets-very-slow-or-runs-out-of-memory">The computer gets very slow, or runs out of memory<a class="headerlink" href="#the-computer-gets-very-slow-or-runs-out-of-memory" title="Permanent link">&para;</a></h3>
 <p>Training uses a lot of memory (RAM): the quickstart's settings can use around 10 GB, and more on
 a computer without a graphics card. Close other big programs. If it still runs out, make it
@@ -4455,7 +4487,7 @@ new <code>save_dir</code>.</p>
 <h2 id="the-graphics-card">The Graphics Card<a class="headerlink" href="#the-graphics-card" title="Permanent link">&para;</a></h2>
 <h3 id="pytorch-cant-see-my-graphics-card">PyTorch can't see my graphics card<a class="headerlink" href="#pytorch-cant-see-my-graphics-card" title="Permanent link">&para;</a></h3>
 <p>The trainer prints:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>No GPU that torch can use was found, so this trains on the CPU, which is much slower. With an NVIDIA card, install torch with CUDA (see Install).
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>No GPU that torch can use was found, so this trains on the CPU, which is much slower. With an NVIDIA card, install torch with CUDA (see Install).
 </code></pre></div>
 <p><strong>On a Mac, this is normal.</strong> A Mac has no NVIDIA card, so it always trains on the processor.
 Don't run the commands below on a Mac.</p>
@@ -4465,8 +4497,8 @@ Don't run the commands below on a Mac.</p>
 <div class="tabbed-block">
 <p>This almost always means the wrong PyTorch got installed. Swap it for the one that uses
 your card:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">-y</span> <span class="n">torch</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">-y</span> <span class="n">torch</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
 </code></pre></div>
 <p>Still not working? Update your NVIDIA driver with the NVIDIA App or from
 <a href="https://www.nvidia.com/drivers">nvidia.com/drivers</a>, then restart your computer.</p>
@@ -4478,15 +4510,15 @@ Ubuntu, run <code>sudo ubuntu-drivers install</code>, then restart.</p>
 </div>
 </div>
 <p>Check that this now prints <code>True</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>python -c "import torch; print(torch.cuda.is_available())"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>python -c "import torch; print(torch.cuda.is_available())"
 </code></pre></div>
 <p>GTX 10-series and older cards don't work with this PyTorch, so on those it trains on the
 processor. After you fix the graphics card, a bot you started on the processor can't carry on:
 start a new one with a new <code>save_dir</code>.</p>
 <h3 id="not-enough-graphics-memory">Not enough graphics memory<a class="headerlink" href="#not-enough-graphics-memory" title="Permanent link">&para;</a></h3>
 <p>You see this when training starts, or it stops with <code>CUDA out of memory</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>one minibatch of 2048 peaked at ... MB of device memory and only ... MB was free
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>torch.OutOfMemoryError: CUDA out of memory.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>one minibatch of 2048 peaked at ... MB of device memory and only ... MB was free
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>torch.OutOfMemoryError: CUDA out of memory.
 </code></pre></div>
 <p>Close games and other programs that use the graphics card. If it still happens, lower
 <code>ppo_minibatch_size</code> in <code>quickstart.py</code>. A starting point: <code>1_024</code> for a card with 8 GB, <code>512</code>
@@ -4494,11 +4526,11 @@ for 6 GB, <code>256</code> for 4 GB. The message calls it <code>ppo.minibatch_si
 <code>doctor.vram_headroom_mb</code> alone.</p>
 <h3 id="expected-a-torchdevice-with-a-specified-index-windows"><code>Expected a torch.device with a specified index</code> (Windows)<a class="headerlink" href="#expected-a-torchdevice-with-a-specified-index-windows" title="Permanent link">&para;</a></h3>
 <p>Training stops as it starts, before the first battle:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>ValueError: Expected a torch.device with a specified index or an integer, but got:cuda
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>ValueError: Expected a torch.device with a specified index or an integer, but got:cuda
 </code></pre></div>
 <p>RoyaleLearn 0.5.5 to 0.5.7 stopped every training run on a Windows NVIDIA card this way.
 RoyaleLearn 0.5.8 fixes it. Update RoyaleGym, which brings it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>pip install --upgrade "royalegym[all]"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <h3 id="training-takes-more-and-more-of-the-computers-memory-windows">Training takes more and more of the computer's memory (Windows)<a class="headerlink" href="#training-takes-more-and-more-of-the-computers-memory-windows" title="Permanent link">&para;</a></h3>
 <p>On Windows, when the graphics card's memory is full, Windows lends the card some of the
@@ -4506,7 +4538,7 @@ computer's own memory (RAM) instead of stopping. Over a long run, training could
 of it that way, and the whole computer slows down.</p>
 <p>RoyaleLearn 0.5.8 and newer stop at 80% of the card on Windows instead. Update RoyaleGym, which
 brings it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>pip install --upgrade "royalegym[all]"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <p>If training then stops with <a href="#not-enough-graphics-memory">Not enough graphics memory</a>, lower
 <code>ppo_minibatch_size</code> as that entry says. To pick the limit yourself, add <code>vram_fraction</code> to the
@@ -4526,16 +4558,16 @@ or the viewer isn't installed. Run the install line from step 5 of
 <a href="../install/#5-install-royalegym">Install</a> again.</p>
 <h3 id="module-pygame-has-no-attribute-init"><code>module 'pygame' has no attribute 'init'</code><a class="headerlink" href="#module-pygame-has-no-attribute-init" title="Permanent link">&para;</a></h3>
 <p>You see this when you start the viewer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>AttributeError: module 'pygame' has no attribute 'init'
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>AttributeError: module 'pygame' has no attribute 'init'
 </code></pre></div>
 <p>You removed <code>pygame</code> after updating. The viewer now uses <code>pygame-ce</code>, and the two share one
 folder, so removing <code>pygame</code> took <code>pygame-ce</code>'s files with it. Put them back, with the virtual
 environment on:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>pip install --force-reinstall pygame-ce
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>pip install --force-reinstall pygame-ce
 </code></pre></div>
 <h3 id="the-viewer-window-stays-empty">The viewer window stays empty<a class="headerlink" href="#the-viewer-window-stays-empty" title="Permanent link">&para;</a></h3>
 <p>The terminal says:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
 </code></pre></div>
 <p>The viewer is waiting for a training run to watch. Start training in another terminal, with
 <code>viser=True</code> in your <code>Learner(...)</code>. The quickstart has it on already. The battle appears once
@@ -4552,11 +4584,11 @@ other run, or set <code>viser=False</code> in one of them. If you put a <code>Vi
 <h3 id="too-many-values-to-unpack-with-an-evolved-card"><code>too many values to unpack</code> with an evolved card<a class="headerlink" href="#too-many-values-to-unpack-with-an-evolved-card" title="Permanent link">&para;</a></h3>
 <p>A deck has an evolved card, and the viewer is open. Training stops with this, and so does
 opening a saved battle that has an evolved card:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>ValueError: too many values to unpack (expected 3)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>ValueError: too many values to unpack (expected 3)
 </code></pre></div>
 <p>Without the viewer open, training isn't affected. RoyaleGym 0.1.16 and RoyaleViser 0.1.2 fix it.
 Update RoyaleGym, which brings both:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>pip install --upgrade "royalegym[all]"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <h3 id="no-window-appears-at-all">No window appears at all<a class="headerlink" href="#no-window-appears-at-all" title="Permanent link">&para;</a></h3>
 <p>The viewer needs a screen. On a computer with no screen, such as a server you reach over SSH:</p>
@@ -4566,7 +4598,7 @@ Update RoyaleGym, which brings both:</p>
   <code>royaleviser my_bot_battle.msgpack</code>.</li>
 <li>
 <p>Or make a video of it on the server (on Linux, add <code>SDL_VIDEODRIVER=dummy</code> in front):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
 </code></pre></div>
 </li>
 </ul>
