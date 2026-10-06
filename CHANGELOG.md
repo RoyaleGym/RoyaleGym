@@ -5,7 +5,7 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.18 (2026-10-06)
 
 ### Fixed
 - The action mask offers an ability button only when the engine would take the press. Some
@@ -26,6 +26,11 @@ change the observation's shape; each such change is listed here.
 - `SpatialObsBuilder(button_index=True)` adds each own ability button's card and status by its
   INDEX (`own_button_cards` and three `*_by_index` fields), the index the action space presses.
   Which card a button is follows the deck order, and the card-keyed fields could not say it.
+
+### Changed
+- royalesim 0.1.17 says each unit's own type (`EntityState.unit_type`), which `unit_ids` reads,
+  and an ability button's ready flag is now the engine's own answer.
+- royalelearn 0.5.10 and royaleimitate 0.2.9 store and read `unit_ids`.
 
 ## 0.1.17 (2026-10-05)
 

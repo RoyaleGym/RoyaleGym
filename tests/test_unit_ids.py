@@ -322,3 +322,83 @@ def test_every_shipped_alias_pair_has_identical_stats_in_the_engines_table() -> 
         b = {k: v for k, v in units[base].items() if k not in bookkeeping}
         differ = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
         assert differ == [], f"{alias} -> {base}: the rows differ on {differ}"
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_the_engine_names_each_unit_by_its_own_type() -> None:
+    """On RustEngine (royalesim 0.1.17 on): the Witch's skeletons and the Skeletons card's give
+    one unit type with two producers, and the towers give their own rows. The vocabulary is
+    sorted, and every entity's type lies inside it."""
+    from royalegym.protocol import DeployCommand, DeployStatus, MatchSetup
+    from royalegym.rust_engine import RustEngine
+    from royalegym.state_mutator import deck_ids
+
+    eng = RustEngine()
+    names = eng.unit_types()
+    assert names == sorted(names)
+    assert {"Skeleton", "KingTower", "PrincessTower"} <= set(names)
+    deck = deck_ids(["Witch", "Skeletons", "Knight", "Archer", "Giant", "Minions", "Fireball",
+                     "Zap"], eng.cards())
+    eng.reset(1, MatchSetup(decks=[deck, deck], shuffle=0, elixir_milli=[10000, 10000],
+                            start_tick=eng.rules().deploy_lockout_ticks))
+    arena = eng.arena()
+    t = arena.subtile
+    for slot, x_tile in ((0, 4), (1, 13)):  # the Witch, then the Skeletons
+        cmd = DeployCommand(BLUE, slot, x_tile * t + t // 2, 8 * t + t // 2)
+        assert eng.step([cmd], 1)[0].status == DeployStatus.OK
+    ids = {c.name: c.card_id for c in eng.cards()}
+    producers: dict[str, set[int]] = {}
+    for _ in range(400):  # the Witch summons her first skeletons a few seconds in
+        eng.step([], 5)
+        for e in eng.state().entities:
+            assert 0 <= e.unit_type < len(names), e
+            producers.setdefault(names[e.unit_type], set()).add(e.card_id)
+        if {ids["Witch"], ids["Skeletons"]} <= producers.get("Skeleton", set()):
+            break
+    assert {ids["Witch"], ids["Skeletons"]} <= producers["Skeleton"], producers
+    kinds = {names[e.unit_type] for e in eng.state().entities if e.kind in (
+        EntityKind.KING_TOWER, EntityKind.PRINCESS_TOWER)}
+    assert kinds == {"KingTower", "PrincessTower"}
+    builder = SpatialObsBuilder(card_identity=True, unit_identity=True)
+    env = ClashParallelEnv(eng, obs_builder=builder,
+                           state_mutator=DefaultStateMutator(decks=[deck, deck]))
+    obs, _ = env.reset(seed=1)
+    assert env.observation_space("blue")["unit_ids"].contains(obs["blue"]["unit_ids"])
+    assert builder.config()["unit_names"] == names
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_the_graveyards_skeletons_are_skeletons_only_through_the_alias_map() -> None:
+    """On RustEngine: a cast Graveyard's skeletons read their own data row in raw ``unit_ids``
+    and Skeleton with ``unit_aliases=SAME_UNIT_ALIASES`` (Train's ruling: the same unit to a
+    player)."""
+    from royalegym.obs import SAME_UNIT_ALIASES
+    from royalegym.protocol import ShuffleMode
+    from royalegym.rust_engine import RustEngine
+    from royalegym.state_mutator import deck_ids
+
+    if "Graveyard_rework_Skeleton" not in (RustEngine().unit_types() or []):
+        pytest.skip("SKIPPED, NOT PASSED: this card table has no Graveyard_rework_Skeleton row")
+    names = ["Graveyard", "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap", "Musketeer"]
+    read = {}
+    for label, aliases in (("raw", None), ("aliased", SAME_UNIT_ALIASES)):
+        eng = RustEngine()
+        deck = deck_ids(names, eng.cards())
+        builder = SpatialObsBuilder(card_identity=True, unit_identity=True, unit_aliases=aliases)
+        env = ClashParallelEnv(eng, obs_builder=builder, state_mutator=DefaultStateMutator(
+            decks=[deck, deck], shuffle=ShuffleMode.NONE))
+        env.reset(seed=1)
+        while env.battle_state.tick < eng.rules().deploy_lockout_ticks + 200:
+            env.step({"blue": 0, "red": 0})
+        parser = env.action_parser
+        cast = 1 + 26 * parser.nx + 9  # hand slot 0 (the Graveyard), enemy half, own frame
+        assert env.action_masks("blue")[cast]
+        env.step({"blue": cast, "red": 0})
+        graveyard = {c.name: c.card_id for c in eng.cards()}["Graveyard"]
+        seen: set[int] = set()
+        for _ in range(40):
+            env.step({"blue": 0, "red": 0})
+            obs = env._obs["blue"]
+            seen |= set(obs["unit_ids"][0][obs["card_ids"][0] == 2 + graveyard].tolist())
+        read[label] = sorted(builder.unit_vocabulary[v - UNIT_ID_OFFSET] for v in seen)
+    assert read == {"raw": ["Graveyard_rework_Skeleton"], "aliased": ["Skeleton"]}, read
