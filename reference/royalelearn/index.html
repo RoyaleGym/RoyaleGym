@@ -1646,6 +1646,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalelearn.config.button_head_of" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;button_head_of
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalelearn.config.trunk_stride_of" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6154,6 +6165,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalelearn.config.button_head_of" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;button_head_of
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalelearn.config.trunk_stride_of" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9650,6 +9672,24 @@ place (<code>config.geometry</code>).</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="royalelearn.config.button_head_of" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">button_head_of</span><span class="p">(</span><span class="n">net</span><span class="p">)</span></code>
+
+<a href="#royalelearn.config.button_head_of" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p><code>net.button_head</code>, with an unset one read as "index".</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="royalelearn.config.trunk_stride_of" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">trunk_stride_of</span><span class="p">(</span><span class="n">net</span><span class="p">)</span></code>
 
@@ -10568,9 +10608,12 @@ alone does not say which commit.</p>
 
     <div class="doc doc-contents ">
 
-        <p><code>"cuda:&lt;name&gt;:sm_86"</code> or <code>"cpu:&lt;machine&gt;"</code>.</p>
+        <p><code>"cuda:&lt;name&gt;:sm_86"</code>, <code>"rocm:&lt;name&gt;:gfx1100"</code>, <code>"zluda:&lt;name&gt;:sm_86"</code> or
+<code>"cpu:&lt;machine&gt;"</code>.</p>
 <p>The device is in the identity because a different GPU is a different set of kernels, and
-run-exactness is promised within a device class rather than across all of them.</p>
+run-exactness is promised within a device class rather than across all of them. An AMD card
+on torch's ROCm build is named by its architecture, the part of <code>gcnArchName</code> before any
+feature flags; on ZLUDA, which reports a made-up NVIDIA capability, it is marked as such.</p>
 
 
     </div>

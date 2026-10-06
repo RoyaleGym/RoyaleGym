@@ -2483,6 +2483,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ability-buttons-by-index-button_index-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ability buttons by index (button_index, off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-builder-is-stateful" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3626,6 +3637,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ability-buttons-by-index-button_index-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ability buttons by index (button_index, off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-builder-is-stateful" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4144,6 +4166,10 @@ unit's OWN type on each tile, own plane then enemy plane, as <code>card_ids</cod
 <td>refused</td>
 <td>an engine that says no vocabulary (MockEngine), and a unit whose type is not said (-1)</td>
 </tr>
+<tr>
+<td>aliases</td>
+<td><code>unit_aliases=</code> writes a row as its base type when the two are one unit to a player (<code>obs.SAME_UNIT_ALIASES</code>: seven rows, e.g. the Graveyard's skeleton as Skeleton); the aliased names leave the vocabulary, and <code>config()</code> records the map</td>
+</tr>
 </tbody>
 </table>
 <p>Like <code>card_ids</code>, the key holds category ids, not amounts: a network embeds it rather than
@@ -4499,6 +4525,18 @@ would be to read it. A training run that wants the guarantee can assert <code>ex
   else is 1. "Everything else" is the whole catalogue until eight distinct cards have
   been seen, at which point their deck is known and the answer narrows to it.</li>
 </ul>
+<h3 id="ability-buttons-by-index-button_index-off-by-default">Ability buttons by index (<code>button_index</code>, off by default)<a class="headerlink" href="#ability-buttons-by-index-button_index-off-by-default" title="Permanent link">&para;</a></h3>
+<p>The action space presses button k, and the mask's tail says whether button k is ready, but the
+card-status button fields are keyed by card. Which card button k is follows the deck order: two
+heroes dealt in the other order swap buttons. <code>SpatialObsBuilder(button_index=True)</code> appends,
+for K = the parser's buttons:</p>
+<ul>
+<li><code>own_button_cards</code>: button k's card, one-hot [K x (n+1)] like <code>own_hand_cards</code>; n = no button.</li>
+<li><code>own_button_available_by_index</code>, <code>own_button_spent_by_index</code>,
+  <code>own_button_cooldown_by_index</code> [K]: the same status as the card-keyed fields, per index.</li>
+</ul>
+<p>They come after the card-status fields and before any reveal field, so with the switch off no
+offset moves. Read them through <code>vector_offsets()</code> by name.</p>
 <h3 id="the-builder-is-stateful">The builder is stateful<a class="headerlink" href="#the-builder-is-stateful" title="Permanent link">&para;</a></h3>
 <p>These features make the builder carry a <code>MatchMemory</code> per seat. Two guards keep one
 episode out of the next. <code>ObsBuilder.reset(state)</code>, which the env calls, re-seeds both

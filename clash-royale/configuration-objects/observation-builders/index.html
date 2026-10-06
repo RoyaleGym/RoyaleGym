@@ -3547,6 +3547,14 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 <td>What units are doing: charging, winding up or using an ability, Clone copies, and where a tunneller will come up.</td>
 </tr>
 <tr>
+<td><code>SpatialObsBuilder(unit_identity=True)</code></td>
+<td>What each unit is, as its own <code>unit_ids</code> grid: a skeleton reads Skeleton whether the Witch or a Tombstone made it. <code>card_ids</code> says which card it came from.</td>
+</tr>
+<tr>
+<td><code>SpatialObsBuilder(button_index=True)</code></td>
+<td>Each of your ability buttons in the order the actions press them: which card it belongs to, and whether it's ready, used or cooling down.</td>
+</tr>
+<tr>
 <td><code>SpatialObsBuilder(reveal=Reveal(...))</code></td>
 <td>Hidden information, such as the opponent's real elixir. For experiments only.</td>
 </tr>

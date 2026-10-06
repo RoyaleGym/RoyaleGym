@@ -4474,7 +4474,10 @@ didn't work from a normal install. 0.1.4 fixes it: update with the line in
 </code></pre></div>
 <p>RoyaleGym 0.1.16 and older let your bot try to play cards after a tied overtime ran out, while
 the tiebreak decided the match. The game takes no plays then, so the engine refused them, and
-training stopped. RoyaleGym 0.1.17 fixes it. Update:</p>
+training stopped. RoyaleGym 0.1.17 fixes it.</p>
+<p>RoyaleGym 0.1.17 and older also let your bot press the Hero Mega Minion's ability too early. It's
+ready only a while after the hero appears, and only while it has a target. RoyaleGym 0.1.18 fixes
+it. Update:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <p>A bot can't carry on training across an update, so start it again with a new <code>save_dir</code>.</p>

@@ -3464,6 +3464,11 @@ the card actually went down. Ask first with
 <code>check_deploy(team, slot, x, y)</code>, which returns the same reason without playing.</p>
 <p><strong>State.</strong> <code>state_json()</code> returns the whole battle as JSON bytes: towers, units, spells, hands, elixir and the tick.
 <code>state_hash()</code> is one number for the whole state. Two runs with the same seed and commands give the same hash.</p>
+<p><strong>Units.</strong> Each unit is a list of values in <code>ENTITY_FIELDS</code> order. <code>card_id</code> is the card that put the unit down, so a
+Witch's Skeletons report the Witch. <code>unit_type</code> is the unit itself: an index into <code>unit_types_json()</code>, a sorted list of
+unit names. Every Skeleton has the same <code>unit_type</code>, whichever card made it. The list is the same for every Battle
+built on one card table. <code>unit_types_digest()</code> is a short hash of it, so you can tell when a new table changes the
+numbering.</p>
 <p><strong>Saving.</strong> <code>save()</code> returns bytes, and <code>load(blob)</code> restores them into a Battle with the same cards.</p>
 <p><strong>Play delay.</strong> <code>set_command_delay_ticks(blue, red)</code> makes a play land that many ticks after it is sent, like the
 real client. <code>pending_commands()</code> lists what is waiting.</p>
@@ -3491,6 +3496,10 @@ real client. <code>pending_commands()</code> lists what is waiting.</p>
 <tr>
 <td><code>DEPLOY_REASONS</code></td>
 <td>Names for the reason codes a command returns.</td>
+</tr>
+<tr>
+<td><code>ENTITY_FIELDS</code></td>
+<td>Names for the values in each unit's row of <code>state_json()</code>, in order.</td>
 </tr>
 <tr>
 <td><code>HAND_SIZE</code>, <code>ABILITY_BUTTONS</code></td>

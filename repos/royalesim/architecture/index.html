@@ -3743,10 +3743,15 @@ The crate itself has no Python dependency and builds alone.</p>
   selects the frame-planned arm and <code>ground_y_clamp="deploy_column_range_own_frame"</code> the own-frame
   summon clamp (see "Selectable model arms"); each defaults to the ledger's value,
   <code>pathfinding.PATH_SEARCH</code> and <code>formation.GROUND_Y_CLAMP</code>.</li>
-<li><strong>Units and their levels.</strong> Each entity row of <code>state_json()</code> carries <code>level</code> second to last,
-  before <code>mount_uid</code> (the unit a rider rides, -1 for any other entity). <code>level</code> is the unified level
+<li><strong>Units and their levels.</strong> Each entity row of <code>state_json()</code> ends with <code>level</code>, <code>mount_uid</code> (the
+  unit a rider rides, -1 for any other entity), <code>charge</code>, <code>dest_x</code>, <code>dest_y</code>, <code>ability_ticks</code> and
+  <code>unit_type</code> (<code>ENTITY_FIELDS</code> names them all). <code>level</code> is the unified level
   the entity plays at: a played unit's card level, a Mirror's copy one above it, a Clone's copy the
-  Clone's, a unit another unit puts down its parent's, a crown tower its tower level.
+  Clone's, a unit another unit puts down its parent's, a crown tower its tower level. <code>card_id</code> is the
+  card that put the unit down; <code>unit_type</code> is the unit's own record, an index into
+  <code>unit_types_json()</code>. That list holds every troop and building unit name in the loaded card table,
+  towers included, sorted, so one unit type has one id whichever card made it, and
+  <code>unit_types_digest()</code> (FNV-1a 64 of the list's JSON) tells two tables' numberings apart.
   <code>unit_hitpoints(card_id, level)</code> lists every unit a card puts on the board, as (role, unit name,
   hitpoints) at the level each one takes. The card's own row comes first; the other roles are
   <code>second_summon</code>, <code>spawn</code>, <code>death_spawn</code> and <code>release</code> (<code>royalesim.UNIT_ROLES</code>). So a unit that
