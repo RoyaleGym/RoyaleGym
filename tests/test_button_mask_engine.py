@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 
 from royalegym.action import TileActionParser, mask_disagreements
-from royalegym.protocol import BLUE, HAND_SIZE, DeployCommand, DeployStatus, MatchSetup, ability_row
+from royalegym.protocol import BLUE, HAND_SIZE, DeployCommand, DeployStatus, MatchSetup
 from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 from royalegym.state_mutator import deck_ids
 
@@ -41,12 +41,16 @@ def test_the_mask_agrees_with_the_engine_on_the_warp_button() -> None:
     for _ in range(300):
         s = eng.state()
         assert mask_disagreements(eng, parser, s, BLUE) == [], s.tick
-        rows = s.players[BLUE].abilities
-        if rows and ability_row(rows[0]).available:
+        if s.players[BLUE].abilities:
             verdict = eng.check_deploy(DeployCommand(BLUE, HAND_SIZE, 0, 0))
             waited += verdict == DeployStatus.ABILITY_NOT_READY
             taken += verdict == DeployStatus.OK
         if taken:
             break
         eng.step([], 1)
-    assert waited, "vacuous: the row never called the button available while the engine waited"
+    # The window must be reached: the engine refusing the press while the hero stands (its
+    # warp waits for a while after the hero appears, and for a target, which this board never
+    # gives it). Before royalesim 0.1.17 the row called the button available through that
+    # window and the mask, which read the row, offered it; from 0.1.17 the row is the engine's
+    # own verdict. The mask must agree with the engine on every tick either way.
+    assert waited, "vacuous: the engine never refused the press while the hero stood"
