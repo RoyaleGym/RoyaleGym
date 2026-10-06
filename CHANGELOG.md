@@ -23,6 +23,9 @@ change the observation's shape; each such change is listed here.
   the two are the same unit to a player. `obs.SAME_UNIT_ALIASES` lists seven such rows (the
   Graveyard's skeleton is a Skeleton, a Tri-Wizard a Wizard, ...); a test checks each pair
   still has identical stats. `builder.unit_ids_digest` names the vocabulary the ids count in.
+- `SpatialObsBuilder(button_index=True)` adds each own ability button's card and status by its
+  INDEX (`own_button_cards` and three `*_by_index` fields), the index the action space presses.
+  Which card a button is follows the deck order, and the card-keyed fields could not say it.
 
 ## 0.1.17 (2026-10-05)
 

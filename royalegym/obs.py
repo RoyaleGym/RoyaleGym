@@ -222,6 +222,7 @@ def vector_layout(
     evolutions: bool = False,
     evolution_progress: bool = False,
     card_status: bool = False,
+    button_slots: int = 0,
 ) -> list[VectorField]:
     """The flat vector, field by field, in order. THE definition of the layout.
 
@@ -246,6 +247,11 @@ def vector_layout(
     evolution and hero status, own and enemy (owner 2026-10-03). The own ones are what a player
     knows of its deck; the enemy's are counted from the plays it has seen, as a good player
     does, and never name a card the enemy has not played.
+
+    ``button_slots`` (0, off, by default; ``SpatialObsBuilder(button_index=True)`` sets the
+    parser's button count K) appends ``BUTTON_INDEX_FIELDS`` after those: each own ability
+    button's card and status BY INDEX k, which the card-keyed fields above cannot say. It is
+    the index the action space presses (the mask's tail), so a network can read button k whole.
     """
     rev = reveal or Reveal()
     n = num_cards
@@ -330,6 +336,8 @@ def vector_layout(
         )
     if card_status:
         fields.extend(card_status_layout(n))
+    if button_slots:
+        fields.extend(button_index_layout(n, button_slots))
     if rev.enemy_hand:
         fields.append(
             VectorField(
@@ -364,12 +372,14 @@ def vector_fields(
     evolutions: bool = False,
     evolution_progress: bool = False,
     card_status: bool = False,
+    button_slots: int = 0,
 ) -> list[tuple[str, int]]:
     """``(description, size)`` per field, in order. The suite checks the sizes add up."""
     return [
         (f"{f.key}: {f.doc}", f.size)
         for f in vector_layout(
-            num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status
+            num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
+            button_slots,
         )
     ]
 
@@ -413,6 +423,32 @@ def card_status_layout(n: int) -> list[VectorField]:
 CARD_STATUS_FIELDS = tuple(f.key for f in card_status_layout(1))
 
 
+def button_index_layout(n: int, k: int) -> list[VectorField]:
+    """The ``button_index`` fields, in order: own ability button k's card and status, K = k."""
+    return [
+        VectorField(
+            "own_button_cards",
+            k * (n + 1),
+            f"own button k's card one-hot [{k} x (n+1)], like own_hand_cards; n = no button",
+        ),
+        VectorField(
+            "own_button_available_by_index", k, f"own button k would be taken but for elixir [{k}]"
+        ),
+        VectorField(
+            "own_button_spent_by_index", k, f"own button k's one hero charge is used [{k}]"
+        ),
+        VectorField(
+            "own_button_cooldown_by_index",
+            k,
+            f"own button k's cooldown left / {COOLDOWN_SCALE:.0f} ticks [{k}]",
+        ),
+    ]
+
+
+#: The ``button_index`` field names, in order (``SpatialObsBuilder(button_index=True)``).
+BUTTON_INDEX_FIELDS = tuple(f.key for f in button_index_layout(1, 1))
+
+
 def vector_offsets(
     num_cards: int,
     reveal: Reveal | None = None,
@@ -420,12 +456,14 @@ def vector_offsets(
     evolutions: bool = False,
     evolution_progress: bool = False,
     card_status: bool = False,
+    button_slots: int = 0,
 ) -> dict[str, slice]:
     """``key -> slice`` into the flat vector, so nothing has to count slots by hand."""
     out: dict[str, slice] = {}
     at = 0
     for f in vector_layout(
-        num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status
+        num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
+        button_slots,
     ):
         out[f.key] = slice(at, at + f.size)
         at += f.size
@@ -1141,13 +1179,14 @@ def _vector_slots(
     evolutions: bool = False,
     evolution_progress: bool = False,
     card_status: bool = False,
+    button_slots: int = 0,
 ) -> tuple[dict[str, slice], int]:
     """``vector_offsets`` and the vector's width, cached and read-only.
 
     The layout is a function of these alone, and ``vector_layout`` is the one
     definition of it.
     """
-    flags = (enemy_last_card, evolutions, evolution_progress, card_status)
+    flags = (enemy_last_card, evolutions, evolution_progress, card_status, button_slots)
     off = vector_offsets(num_cards, reveal, *flags)
     return off, sum(f.size for f in vector_layout(num_cards, reveal, *flags))
 
@@ -1164,6 +1203,7 @@ def build_vector(
     evolution_progress: bool = False,
     card_status: bool = False,
     enemy_forms: EnemyForms | None = None,
+    button_slots: int = 0,
 ) -> np.ndarray:
     """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``.
 
@@ -1177,7 +1217,8 @@ def build_vector(
     me, foe = state.players[team], state.players[1 - team]
     num_cards = len(cards)
     off, width = _vector_slots(
-        num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status
+        num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
+        button_slots,
     )
     vec = np.zeros(width, dtype=np.float32)
     # Each own slot priced as the engine prices it (a Mirror: its copy plus one), where the
@@ -1209,6 +1250,8 @@ def build_vector(
         if enemy_forms is None:
             raise ValueError("card_status needs the seat's EnemyForms (enemy_forms=)")
         _write_card_status(vec, off, me, foe, cards, enemy_forms)
+    if button_slots:
+        _write_button_index(vec, off, me, num_cards, button_slots)
     if reveal.enemy_deck:
         deck = vec[off["enemy_deck"]]
         for c in (*foe.hand, foe.next_card):
@@ -1288,6 +1331,31 @@ class EnemyForms:
                 self.basic_since[card] = 0
             else:
                 self.basic_since[card] += 1
+
+
+def _write_button_index(
+    out: np.ndarray, off: dict[str, slice], me: PlayerState, num_cards: int, k: int
+) -> None:
+    """The ``button_index`` fields: own button i's card (one-hot, ``num_cards`` = no button),
+    available, spent and cooldown, for i < ``k``. Module-level so a test can plant a defect."""
+    cards = out[off["own_button_cards"]].reshape(k, num_cards + 1)
+    available = out[off["own_button_available_by_index"]]
+    spent = out[off["own_button_spent_by_index"]]
+    cooldown = out[off["own_button_cooldown_by_index"]]
+    for i in range(k):
+        if i >= len(me.abilities):
+            cards[i, num_cards] = 1.0
+            continue
+        row = ability_row(me.abilities[i])
+        if row.card_id == EMPTY_CARD:
+            raise ValueError(
+                "button_index names each button's card (PlayerState.abilities' fourth column), "
+                f"and this engine's row for button {i} does not: {list(me.abilities[i])}"
+            )
+        cards[i, row.card_id] = 1.0
+        available[i] = float(bool(row.available))
+        spent[i] = float(bool(row.spent))
+        cooldown[i] = min(1.0, max(0, row.cooldown_ticks) / COOLDOWN_SCALE)
 
 
 def _write_card_status(
@@ -1590,6 +1658,14 @@ class ObsBuilder(ABC):
     #: Whether the vector carries ``CARD_STATUS_FIELDS``. Only SpatialObsBuilder's
     #: ``card_status`` turns it on.
     card_status: bool = False
+    #: Whether the vector carries ``BUTTON_INDEX_FIELDS`` (each own button k's card and status).
+    #: Only SpatialObsBuilder's ``button_index`` turns it on; K is the parser's button count.
+    button_index: bool = False
+
+    @property
+    def button_slots(self) -> int:
+        """K for the ``button_index`` fields: the parser's buttons when on, else 0."""
+        return int(getattr(self, "ability_buttons", 0)) if self.button_index else 0
 
     def __init__(
         self, reveal: Reveal | None = None, calibration: Calibration | None = None
@@ -1659,6 +1735,11 @@ class ObsBuilder(ABC):
         self.memory = {t: MatchMemory(self.num_cards, self.law) for t in TEAMS}
         for m in self.memory.values():
             m.bind(self.cards)
+        if self.button_index and not self.ability_buttons:
+            raise ValueError(
+                "button_index names each ability button's card by index, and this action parser "
+                "has no ability buttons; build it with TileActionParser(ability_buttons=True)"
+            )
         self.vec_size = sum(f.size for f in self.vector_layout())
 
     def reset(self, state: BattleState) -> None:
@@ -1795,14 +1876,14 @@ class ObsBuilder(ABC):
         """The flat vector's fields, in order, for this builder's ``Reveal``."""
         return vector_layout(
             self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
-            self.evolution_progress, self.card_status,
+            self.evolution_progress, self.card_status, self.button_slots,
         )
 
     def vector_offsets(self) -> dict[str, slice]:
         """``key -> slice`` into the flat vector this builder writes."""
         return vector_offsets(
             self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
-            self.evolution_progress, self.card_status,
+            self.evolution_progress, self.card_status, self.button_slots,
         )
 
     def channel_names(self) -> list[str]:
@@ -1884,6 +1965,8 @@ class ObsBuilder(ABC):
             forms.see(state, team, memory)
             extra["card_status"] = True
             extra["enemy_forms"] = forms
+        if self.button_slots:
+            extra["button_slots"] = self.button_slots
         return build_vector(
             state, team, self.cards, self.max_mana, self.reveal, memory, **extra
         )
@@ -2602,8 +2685,10 @@ class SpatialObsBuilder(ObsBuilder):
         unit_identity: bool = False,
         unit_names: Sequence[str] | None = None,
         unit_aliases: Mapping[str, str] | None = None,
+        button_index: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
+        self.button_index = bool(button_index)
         self.card_status = bool(card_status)
         self.unit_actions = bool(unit_actions)
         self.card_identity = bool(card_identity)
@@ -2893,6 +2978,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["card_status"] = True
         if self.unit_actions:
             out["unit_actions"] = True
+        if self.button_index:
+            out["button_index"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []

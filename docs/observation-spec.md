@@ -411,6 +411,20 @@ A card played goes to the back of an 8-card cycle. Hand is positions 1–4,
   else is 1. "Everything else" is the whole catalogue until eight distinct cards have
   been seen, at which point their deck is known and the answer narrows to it.
 
+### Ability buttons by index (`button_index`, off by default)
+
+The action space presses button k, and the mask's tail says whether button k is ready, but the
+card-status button fields are keyed by card. Which card button k is follows the deck order: two
+heroes dealt in the other order swap buttons. `SpatialObsBuilder(button_index=True)` appends,
+for K = the parser's buttons:
+
+* `own_button_cards`: button k's card, one-hot [K x (n+1)] like `own_hand_cards`; n = no button.
+* `own_button_available_by_index`, `own_button_spent_by_index`,
+  `own_button_cooldown_by_index` [K]: the same status as the card-keyed fields, per index.
+
+They come after the card-status fields and before any reveal field, so with the switch off no
+offset moves. Read them through `vector_offsets()` by name.
+
 ### The builder is stateful
 
 These features make the builder carry a `MatchMemory` per seat. Two guards keep one
