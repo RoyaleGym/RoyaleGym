@@ -564,4 +564,4 @@ is the reminder to go back and redo Step 3.
 
 [Your first bot](quickstart.md){ .md-button .md-button--primary }
 [Back to the Introduction](introduction.md){ .md-button }
-[Ask in the Discord](https://discord.gg/cuPQwyB7pd){ .md-button }
+[Ask in the Discord](https://discord.gg/we3z5SWdNj){ .md-button }

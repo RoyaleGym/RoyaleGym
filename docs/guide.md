@@ -4,7 +4,7 @@
   <img alt="License" src="https://img.shields.io/github/license/RoyaleGym/RoyaleGym?style=flat-square&color=555">
   <img alt="Python" src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white">
   <a href="../docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-in--repo-8957e5?style=flat-square&logo=readthedocs&logoColor=white"></a>
-  <a href="https://discord.gg/cvRu4nEGXY"><img alt="Discord" src="https://img.shields.io/discord/1551699576304705647?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2"></a>
+  <a href="https://discord.gg/8BxaHHVT2u"><img alt="Discord" src="https://img.shields.io/discord/1534663823204552886?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2"></a>
   <img alt="Last commit" src="https://img.shields.io/github/last-commit/RoyaleGym/RoyaleGym?style=flat-square&color=555">
 </p>
 
@@ -545,7 +545,7 @@ The project's Discord is the front door for the whole family: bot creators, engi
 training runs.
 
 <p align="center">
-  <a href="https://discord.gg/cvRu4nEGXY"><img alt="Join the Discord" src="https://img.shields.io/badge/Discord-join%20the%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+  <a href="https://discord.gg/8BxaHHVT2u"><img alt="Join the Discord" src="https://img.shields.io/badge/Discord-join%20the%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
 </p>
 
 Issues and pull requests on this repo are welcome too.

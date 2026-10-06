@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  var WIDGET = "https://discord.com/api/guilds/1551699576304705647/widget.json";
+  var WIDGET = "https://discord.com/api/guilds/1534663823204552886/widget.json";
   var KEY = "royalegym.discord-online";
   var MAX_AGE_MS = 10 * 60 * 1000;
   var online = null;

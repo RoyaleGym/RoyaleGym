@@ -3,7 +3,7 @@
 <p align="center">
   <img alt="Errors covered" src="https://img.shields.io/badge/errors%20covered-11-0b7285?style=flat-square">
   <img alt="Messages" src="https://img.shields.io/badge/messages-quoted%20from%20real%20runs-2ea043?style=flat-square">
-  <a href="https://discord.gg/cuPQwyB7pd"><img alt="Discord" src="https://img.shields.io/badge/stuck%3F-ask%20in%20the%20Discord-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
+  <a href="https://discord.gg/we3z5SWdNj"><img alt="Discord" src="https://img.shields.io/badge/stuck%3F-ask%20in%20the%20Discord-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
 </p>
 
 Eleven things go wrong. The first seven come in roughly the order a new install meets them.
@@ -436,7 +436,7 @@ two lines at the top of this page. Those two say more about a broken install tha
 description.
 
 <p align="center">
-  <a href="https://discord.gg/cuPQwyB7pd"><img alt="Join the Discord" src="https://img.shields.io/badge/Discord-join%20the%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+  <a href="https://discord.gg/we3z5SWdNj"><img alt="Join the Discord" src="https://img.shields.io/badge/Discord-join%20the%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
 </p>
 
 - [Install](install.md) for the whole setup from an empty folder.

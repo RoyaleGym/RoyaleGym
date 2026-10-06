@@ -1,7 +1,7 @@
 # It Doesn't Work
 
 Find the message you see, then do what it says underneath. The messages are grouped by when
-they happen. If yours isn't here, ask on [Discord](https://discord.gg/cuPQwyB7pd)<span data-discord-online=" ({n} online now)" hidden></span> and paste the
+they happen. If yours isn't here, ask on [Discord](https://discord.gg/we3z5SWdNj)<span data-discord-online=" ({n} online now)" hidden></span> and paste the
 **whole** message, plus the command you ran.
 
 ## While Installing

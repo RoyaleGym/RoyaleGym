@@ -60,7 +60,7 @@ to change when it does.
    made in real games. This is where a bot that plays like a person starts.
 
 Stuck? Look in the [FAQ](faq.md) and [It Doesn't Work](it-doesnt-work.md). Still stuck? Ask on
-[Discord](https://discord.gg/cuPQwyB7pd). Nobody minds beginner questions there.
+[Discord](https://discord.gg/we3z5SWdNj). Nobody minds beginner questions there.
 
 ## What's Inside
 
