@@ -792,6 +792,11 @@ class GridActionParser(ActionParser):
         self.buildable_misses = 0
         # Whether a MOVED troop tap lands is the engine's too (``moved_taps_that_land``).
         self._judge = engine if self.oracle.troop_taps_relocate else None
+        # Whether a BUTTON the row calls usable takes a press is the engine's too: some wait on
+        # more than the row carries (the Hero Mega Minion's warp: a while after the hero
+        # appears, and only with a target). One check per such button, from the live battle.
+        check = getattr(engine, "check_deploy", None)
+        self._button_judge = check if callable(check) and self.ability_buttons else None
         self._landed: dict[tuple[Any, ...], np.ndarray] = {}
         self.landed_hits = 0
         self.landed_misses = 0
@@ -871,6 +876,11 @@ class GridActionParser(ActionParser):
             b = ability_row(row)
             usable = b.available and not b.spent and bar >= b.cost * 1000
             usable = usable and (1, HAND_SIZE + k) not in waiting
+            if usable and self._button_judge is not None:
+                # The engine's own check, for what the row does not carry; like ``buildable``
+                # it reads the engine's CURRENT battle, the one the env masks.
+                press = DeployCommand(team, HAND_SIZE + k, 0, 0)
+                usable = self._button_judge(press) == DeployStatus.OK
             mask[self.n_tile_actions + k] = int(usable)
         for slot, card_id in enumerate(player.hand):
             if card_id == EMPTY_CARD:

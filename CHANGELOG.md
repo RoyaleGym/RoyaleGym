@@ -4,7 +4,14 @@ All notable changes to RoyaleGym. The format follows [Keep a Changelog](https://
 and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a minor version may
 change the observation's shape; each such change is listed here.
 
+
 ## Unreleased
+
+### Fixed
+- The action mask offers an ability button only when the engine would take the press. Some
+  buttons wait on more than their row shows: the Hero Mega Minion's warp is ready only a while
+  after the hero appears, and only while it has a target. The mask offered it from the first
+  tick, and the engine refused it.
 
 ### Added
 - `SpatialObsBuilder(unit_identity=True)` adds `unit_ids`: the type of each unit on the board,

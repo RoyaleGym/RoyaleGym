@@ -97,6 +97,10 @@ def test_the_mask_reads_each_buttons_row_on_both_seats():
     eng = _three_buttons()
     parser = TileActionParser(ability_buttons=True)
     parser.bind(eng)
+    # The rows alone: the state below is made up, and the engine's own check (which the mask
+    # also asks, of the live battle) has never seen these heroes. That check is graded against
+    # a real battle in tests/test_button_mask_engine.py.
+    parser._button_judge = None
     eng.reset(1, MatchSetup(decks=[list(range(8)), list(range(8))]))
     state = eng.state()
     rows = {
