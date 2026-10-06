@@ -287,7 +287,11 @@ royalelearn.coordinator.DeployRefused: the engine refused 1 command(s) the mask 
 
 RoyaleGym 0.1.16 and older let your bot try to play cards after a tied overtime ran out, while
 the tiebreak decided the match. The game takes no plays then, so the engine refused them, and
-training stopped. RoyaleGym 0.1.17 fixes it. Update:
+training stopped. RoyaleGym 0.1.17 fixes it.
+
+RoyaleGym 0.1.17 and older also let your bot press the Hero Mega Minion's ability too early. It's
+ready only a while after the hero appears, and only while it has a target. RoyaleGym 0.1.18 fixes
+it. Update:
 
 ```
 pip install --upgrade "royalegym[all]"
