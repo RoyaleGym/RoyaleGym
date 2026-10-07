@@ -449,7 +449,10 @@ class CombinedReward(RewardFunction):
     def from_config(cls, config: Mapping[str, Any]) -> CombinedReward:
         """The reward ``config()`` describes. Also takes the ``{"class", "params"}`` record
         ``ClashParallelEnv.config()`` keeps under ``"reward_fn"``. Each term is rebuilt by its
-        own ``from_config`` where it has one, else by its constructor with its settings."""
+        own ``from_config`` where it has one, else by its constructor with its settings.
+
+        IT IMPORTS THE MODULE EVERY DOTTED TERM NAME NAMES. Call it on records you wrote or
+        trust, never on one someone else sent: importing a module runs its code."""
         if "class" in config and "params" in config:
             config = config["params"]
         terms: list[tuple[RewardFunction, float]] = []
