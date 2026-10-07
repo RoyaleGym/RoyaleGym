@@ -20,6 +20,10 @@ change the observation's shape; each such change is listed here.
   (`Engine.status_bits()`); with an older engine nothing changes.
 
 ### Added
+- `CombinedReward.from_config` rebuilds a combined reward from its `config()`. A term from
+  outside `royalegym.reward` is now named in that record by its full dotted path, so a term of
+  your own that shares a name with one of this package's comes back as yours. This package's
+  terms keep their bare names, so existing records are unchanged.
 - `SpatialObsBuilder(effect_identity=True)`, with `spell_identity`: `spell_ids` grows from 4
   planes to 8. Spell cards' objects stay in the first four; the objects troops' and buildings'
   units leave (an Evo Cannon's bombs, a death bomb, an Evo Firecracker's fireworks) move to

@@ -30,9 +30,11 @@ POSITION
 
 from __future__ import annotations
 
+import importlib
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from fractions import Fraction
+from typing import Any
 
 from .protocol import (
     HAND_SIZE,
@@ -386,6 +388,33 @@ class IllegalActionPenalty(RewardFunction):
         return -float(sum(1 for r in results if r.team == team and r.status != 0))
 
 
+def _term_name(term: RewardFunction) -> str:
+    cls = type(term)
+    return cls.__name__ if cls.__module__ == __name__ else f"{cls.__module__}.{cls.__qualname__}"
+
+
+def _term_class(name: str) -> type[RewardFunction]:
+    """A term's class from its name in ``CombinedReward.config()``: a bare name is this
+    module's, a dotted one is imported (the longest importable module prefix, then attributes)."""
+    if "." not in name:
+        found = globals().get(name)
+        if not (isinstance(found, type) and issubclass(found, RewardFunction)):
+            raise ValueError(f"royalegym.reward has no reward term {name!r}")
+        return found
+    parts = name.split(".")
+    for cut in range(len(parts) - 1, 0, -1):
+        try:
+            obj: Any = importlib.import_module(".".join(parts[:cut]))
+        except ImportError:
+            continue
+        for attr in parts[cut:]:
+            obj = getattr(obj, attr)
+        if not (isinstance(obj, type) and issubclass(obj, RewardFunction)):
+            raise ValueError(f"{name} is not a reward term")
+        return obj
+    raise ValueError(f"no module of {name!r} imports")
+
+
 class CombinedReward(RewardFunction):
     """Weighted sum of terms. ``last_terms`` keeps each weighted term for logging.
 
@@ -406,12 +435,31 @@ class CombinedReward(RewardFunction):
         return self.last_terms.get(team, {})
 
     def config(self) -> dict[str, object]:
+        """Each term's class, weight and settings. A term of this module is named by its bare
+        class name, as every record so far has it; any other by its full dotted path, so a
+        user's own term that shares a name with one of these is rebuilt as itself."""
         return {
             "terms": [
-                {"class": type(t).__name__, "weight": w, "params": t.config()}
+                {"class": _term_name(t), "weight": w, "params": t.config()}
                 for t, w in self.terms
             ]
         }
+
+    @classmethod
+    def from_config(cls, config: Mapping[str, Any]) -> CombinedReward:
+        """The reward ``config()`` describes. Also takes the ``{"class", "params"}`` record
+        ``ClashParallelEnv.config()`` keeps under ``"reward_fn"``. Each term is rebuilt by its
+        own ``from_config`` where it has one, else by its constructor with its settings."""
+        if "class" in config and "params" in config:
+            config = config["params"]
+        terms: list[tuple[RewardFunction, float]] = []
+        for term in config.get("terms") or []:
+            term_cls = _term_class(str(term["class"]))
+            params = dict(term.get("params") or {})
+            rebuild = getattr(term_cls, "from_config", None)
+            built = rebuild(params) if callable(rebuild) else term_cls(**params)
+            terms.append((built, float(term.get("weight", 1.0))))
+        return cls(terms)
 
     def bind(self, engine: Engine) -> None:
         for t, _ in self.terms:
