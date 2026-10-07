@@ -47,7 +47,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 | `SpatialObsBuilder(card_identity=True)` | Which card each unit came from, as its own `card_ids` grid, and the last card the opponent played. |
 | `SpatialObsBuilder(evolutions=True)` | Which of your cards are evolved, and where evolved units stand. |
 | `SpatialObsBuilder(heroes=True)` | Where each side's heroes stand, and which of the opponent's heroes still have their ability to use. |
-| `SpatialObsBuilder(spell_identity=True)` | Which spell is where, as its own `spell_ids` grid: where each spell is now and where it lands. Needs `card_identity=True` and `spell_aim_after_ticks`. |
+| `SpatialObsBuilder(spell_identity=True)` | Which card made each live spell object, as its own `spell_ids` grid: a cast spell, or an effect a troop or building left (an evolution's fireworks or bombs, a death bomb). It shows where each one is now and where it lands. Needs `card_identity=True` and `spell_aim_after_ticks`. |
 | `SpatialObsBuilder(unit_status=True)` | Shields, units under a Rage or slowed by cold, and units already locked on a crown tower. |
 | `SpatialObsBuilder(card_status=True)` | Each card's evolution and hero status: all of yours from the start, and the opponent's as you see them played. |
 | `SpatialObsBuilder(unit_actions=True)` | What units are doing: charging, winding up or using an ability, Clone copies, and where a tunneller will come up. |

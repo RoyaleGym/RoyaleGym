@@ -193,10 +193,11 @@ change the observation's shape; each such change is listed here.
 - `SpatialObsBuilder(heroes=True)`: three planes, `own_hero`, `enemy_hero` and
   `enemy_hero_unspent`, where each side's hero units stand and which of the opponent's still have
   their one ability charge. Off by default.
-- `SpatialObsBuilder(spell_identity=True)`: a `spell_ids` key, uint8 [4, 32, 18], naming which spell
-  is where in the `card_ids` vocabulary: own and opponent spells at their centre tile, own spells at
-  their aim tile, and the opponent's at their aim tile once `spell_aim_after_ticks` allows. Needs
-  `card_identity=True` and `spell_aim_after_ticks`. Off by default.
+- `SpatialObsBuilder(spell_identity=True)`: a `spell_ids` key, uint8 [4, 32, 18], naming which card
+  made each live spell object, a cast spell or an effect a troop or building left, in the `card_ids`
+  vocabulary: own and opponent spell objects at their centre tile, own ones at their aim tile, and
+  the opponent's at their aim tile once `spell_aim_after_ticks` allows. Needs `card_identity=True`
+  and `spell_aim_after_ticks`. Off by default.
 - `SpatialObsBuilder(unit_status=True)`: eighteen planes, own and opponent: shield hp left, units
   under a Rage, units slowed by cold, units whose target is a crown tower or another building, the
   hp fraction of each tile's strongest unit, and invisible, tunnelling and hidden units. Off by
