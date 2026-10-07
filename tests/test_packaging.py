@@ -49,7 +49,7 @@ def test_every_piece_names_a_minimum_so_an_upgrade_moves_it():
             if _names([req]) & set(PIECES.values()):
                 assert ">=" in req, f"[{extra}] names {req!r} with no minimum version"
     floors = sorted(r for r in extras["all"] if _names([r]) & {"royalesim", "royaleviser"})
-    assert floors == ["royalesim>=0.1.17", "royaleviser[media]>=0.1.2"], floors
+    assert floors == ["royalesim>=0.1.20", "royaleviser[media]>=0.1.2"], floors
 
 
 def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
@@ -62,11 +62,12 @@ def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
     before. 0.5.5 caps a CUDA run's memory on Windows (``Learner(vram_fraction=...)``), so a full
     card is not backed by system RAM, and from 0.5.5 to 0.5.7 that cap named the device as plain
     ``cuda``, which torch refuses: every CUDA run on Windows stopped at start-up until 0.5.8.
-    0.5.10 stores and embeds ``unit_ids`` (``SpatialObsBuilder(unit_identity=True)``)."""
+    0.5.10 stores and embeds ``unit_ids`` (``SpatialObsBuilder(unit_identity=True)``), and
+    0.5.12 writes ``environment.json`` beside every saved bot (``Learner.load_env``)."""
     extras = _extras()
     for extra in ("learn", "all"):
         pins = [r for r in extras[extra] if r.startswith("royalelearn")]
-        assert pins == ["royalelearn[torch]>=0.5.10"], f"[{extra}]: {pins}"
+        assert pins == ["royalelearn[torch]>=0.5.12"], f"[{extra}]: {pins}"
 
 
 def test_the_engine_data_comes_from_the_installed_engine(monkeypatch, tmp_path):
@@ -296,8 +297,9 @@ def test_the_imitate_extras_require_record_and_clone():
     Learner.load_policy (royaleimitate 0.2.1). 0.2.3 keeps PublicLogMemory on the engine's
     refill timer and starts a bot from a saved one when installed from a wheel. 0.2.5 with its
     [replays] extra clones human players from the IL_Replay dataset (``from_replays``). 0.2.6
-    stores ``spell_ids`` in its shards beside ``card_ids``, and 0.2.9 ``unit_ids``."""
+    stores ``spell_ids`` in its shards beside ``card_ids``, 0.2.9 ``unit_ids``, and 0.2.10
+    writes ``environment.json`` beside a clone."""
     extras = _extras()
     for extra in ("imitate", "all"):
         pins = [r for r in extras[extra] if r.startswith("royaleimitate")]
-        assert pins == ["royaleimitate[replays]>=0.2.9"], f"[{extra}]: {pins}"
+        assert pins == ["royaleimitate[replays]>=0.2.10"], f"[{extra}]: {pins}"

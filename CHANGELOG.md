@@ -5,7 +5,7 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.19 (2026-10-07)
 
 ### Fixed
 - The hero planes (`heroes=True`) and `card_status`'s `enemy_seen_hero` no longer count a
@@ -44,6 +44,10 @@ change the observation's shape; each such change is listed here.
   spell object, under the card that made it. That includes effects troops and buildings leave,
   such as the Evo Firecracker's fireworks or a Balloon's death bomb. docs/observation-spec.md
   gains a `spell_ids` section.
+- royalesim 0.1.20: a flier held on the ground reports `STATUS_GROUNDED`, the evolved and
+  hero bits follow the unit through its forms and leave champions, and the evolved Goblin
+  Cage's brawler plays at the plain brawler's hp. royalelearn 0.5.12 and royaleimitate
+  0.2.10 save `environment.json` beside every bot, so `Learner.load_env` rebuilds its env.
 
 
 ## 0.1.18 (2026-10-06)
