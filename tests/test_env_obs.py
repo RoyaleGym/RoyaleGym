@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import functools
+
 import msgspec
 import numpy as np
 import pytest
@@ -223,7 +225,12 @@ def flip_mismatches(builder_cls, states=STATES) -> list[str]:
     return bad
 
 
-@pytest.mark.parametrize("builder_cls", [SpatialObsBuilder, EntityListObsBuilder])
+@pytest.mark.parametrize(
+    "builder_cls",
+    [SpatialObsBuilder, EntityListObsBuilder,
+     functools.partial(SpatialObsBuilder, enemy_queue=True)],  # the enemy cycle order too
+    ids=["spatial", "entity_list", "spatial_enemy_queue"],
+)
 def test_red_on_the_mirrored_state_sees_exactly_what_blue_sees(builder_cls):
     assert len(STATES) >= 5
     assert flip_mismatches(builder_cls) == []

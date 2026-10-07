@@ -20,6 +20,10 @@ change the observation's shape; each such change is listed here.
   (`Engine.status_bits()`); with an older engine nothing changes.
 
 ### Added
+- `SpatialObsBuilder(enemy_queue=True)` appends `enemy_queue_5_8`: the enemy's next card and the
+  three after it, in order, as a player who watched its plays works them out (its last plays,
+  reaching further back while a played slot waits for its refill). A position no play has
+  reached yet reads "not deduced". Off by default.
 - `CombinedReward.from_config` rebuilds a combined reward from its `config()`. A term from
   outside `royalegym.reward` is now named in that record by its full dotted path, so a term of
   your own that shares a name with one of this package's comes back as yours. This package's

@@ -466,6 +466,21 @@ for K = the parser's buttons:
 They come after the card-status fields and before any reveal field, so with the switch off no
 offset moves. Read them through `vector_offsets()` by name.
 
+### The enemy's cycle order (`enemy_queue`, off by default)
+
+A played card goes to the back of its side's 8-card cycle, so the cards behind the enemy's hand
+are its last plays, oldest first. After four plays, a player who watched them knows the enemy's
+next card (the fourth most recent play) and the three after it. `enemy_possible_hand` rules
+those four out of the hand as a set; `SpatialObsBuilder(enemy_queue=True)` appends their order:
+
+* `enemy_queue_5_8`: the enemy's cycle positions 5, 6, 7 and 8, one-hot [4 x (n+1)], position
+  5 (its next card) first. Index n means not deduced: no play has reached that position yet.
+
+While played slots wait for their refill (one slot per refill period, a rule of the clock), that
+many more cards are behind the hand, and the queue reaches that much further back. Nothing is
+deduced once the elixir count is not exact (`MatchMemory.exact`), since a missed play would shift
+every position. Only the enemy's plays are logged; the own cycle has its own fields.
+
 ### The builder is stateful
 
 These features make the builder carry a `MatchMemory` per seat. Two guards keep one

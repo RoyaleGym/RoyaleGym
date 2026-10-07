@@ -225,6 +225,7 @@ def vector_layout(
     evolution_progress: bool = False,
     card_status: bool = False,
     button_slots: int = 0,
+    enemy_queue: bool = False,
 ) -> list[VectorField]:
     """The flat vector, field by field, in order. THE definition of the layout.
 
@@ -254,6 +255,9 @@ def vector_layout(
     parser's button count K) appends ``BUTTON_INDEX_FIELDS`` after those: each own ability
     button's card and status BY INDEX k, which the card-keyed fields above cannot say. It is
     the index the action space presses (the mask's tail), so a network can read button k whole.
+
+    ``enemy_queue`` (off by default) appends ``enemy_queue_5_8`` after those: the enemy's cycle
+    positions 5..8 as a player who watched its plays deduces them (``MatchMemory.enemy_queue``).
     """
     rev = reveal or Reveal()
     n = num_cards
@@ -340,6 +344,14 @@ def vector_layout(
         fields.extend(card_status_layout(n))
     if button_slots:
         fields.extend(button_index_layout(n, button_slots))
+    if enemy_queue:
+        fields.append(
+            VectorField(
+                "enemy_queue_5_8",
+                (DECK_SIZE - HAND_SIZE) * onehot,
+                "enemy cycle positions 5-8 one-hot [4 x (n+1)], from its plays; n = not deduced",
+            )
+        )
     if rev.enemy_hand:
         fields.append(
             VectorField(
@@ -375,13 +387,14 @@ def vector_fields(
     evolution_progress: bool = False,
     card_status: bool = False,
     button_slots: int = 0,
+    enemy_queue: bool = False,
 ) -> list[tuple[str, int]]:
     """``(description, size)`` per field, in order. The suite checks the sizes add up."""
     return [
         (f"{f.key}: {f.doc}", f.size)
         for f in vector_layout(
             num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
-            button_slots,
+            button_slots, enemy_queue,
         )
     ]
 
@@ -459,13 +472,14 @@ def vector_offsets(
     evolution_progress: bool = False,
     card_status: bool = False,
     button_slots: int = 0,
+    enemy_queue: bool = False,
 ) -> dict[str, slice]:
     """``key -> slice`` into the flat vector, so nothing has to count slots by hand."""
     out: dict[str, slice] = {}
     at = 0
     for f in vector_layout(
         num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
-        button_slots,
+        button_slots, enemy_queue,
     ):
         out[f.key] = slice(at, at + f.size)
         at += f.size
@@ -592,7 +606,10 @@ class MatchMemory:
         self.own_last_play_tick = -1
         self.foe_seen = np.zeros(num_cards, dtype=bool)
         self.foe_plays = 0
-        self.foe_recent: list[int] = []  # the cards behind the enemy hand, oldest first
+        # The enemy's last plays, oldest first, up to a deck's worth: the last four are the cards
+        # behind its hand (``enemy_possible_hand``), and with a slot waiting for its refill the
+        # cards behind the hand reach one further back (``enemy_queue``).
+        self.foe_recent: list[int] = []
         self.unaffordable = [0, 0]  # plays the counted bar could not pay: own, enemy
         # Each side's ability rows as last seen, [own, enemy]; None until a state shows them.
         self.rows: list[list[list[int]] | None] = [None, None]
@@ -644,7 +661,9 @@ class MatchMemory:
         self.foe_fine = self.law.seed_fine(enemy_elixir_milli)
         self.leak_fine = 0
         self.own_hand = list(own_hand)
-        self.foe_hand = list(enemy_hand) if enemy_hand is not None else [EMPTY_CARD] * HAND_SIZE
+        # Not given (a caller feeding dated plays to ``advance``): unknown, so no slot of it
+        # counts as waiting for a refill (``enemy_queue``).
+        self.foe_hand = list(enemy_hand) if enemy_hand is not None else []
         self.own_cycle = [next_card] + [EMPTY_CARD] * (DECK_SIZE - HAND_SIZE - 1)
         self.own_deck = np.zeros(self.num_cards, dtype=bool)
         self.own_last_card = EMPTY_CARD
@@ -829,7 +848,7 @@ class MatchMemory:
             self.foe_seen[card] = True
             self.foe_plays += 1
             self.foe_recent.append(card)
-            del self.foe_recent[: -(DECK_SIZE - HAND_SIZE)]
+            del self.foe_recent[:-DECK_SIZE]
         self.tick = tick
 
     def _bar(
@@ -907,9 +926,28 @@ class MatchMemory:
         """
         known = int(self.foe_seen.sum())
         out = self.foe_seen.copy() if known >= DECK_SIZE else np.ones(self.num_cards, dtype=bool)
-        for card in self.foe_recent:
+        for card in self.foe_recent[-(DECK_SIZE - HAND_SIZE) :]:
             out[card] = False
         return out
+
+    def enemy_queue(self) -> list[int]:
+        """The enemy's cycle positions 5..8, the next card first, EMPTY_CARD where not deduced.
+
+        A played card goes to the back of the cycle, so the cards behind the enemy hand are its
+        last plays: after four plays the next card is the fourth most recent, as a player who
+        watched them knows. While played slots wait for their refill (one per refill period,
+        a public rule of the clock), that many more cards are behind the hand and the queue
+        reaches that much further back. A position no play has reached yet holds a card the
+        enemy has not shown: not deduced. Nothing is deduced once the memory is not ``exact``:
+        a missed play would shift every position.
+        """
+        unknown = [EMPTY_CARD] * (DECK_SIZE - HAND_SIZE)
+        if not self.exact:
+            return unknown
+        behind = (DECK_SIZE - HAND_SIZE) + sum(1 for c in self.foe_hand if c == EMPTY_CARD)
+        known = self.foe_recent[-behind:] if self.foe_recent else []
+        outside = [EMPTY_CARD] * (behind - len(known)) + known
+        return outside[: DECK_SIZE - HAND_SIZE]
 
 
 class MatchClock(NamedTuple):
@@ -1182,13 +1220,16 @@ def _vector_slots(
     evolution_progress: bool = False,
     card_status: bool = False,
     button_slots: int = 0,
+    enemy_queue: bool = False,
 ) -> tuple[dict[str, slice], int]:
     """``vector_offsets`` and the vector's width, cached and read-only.
 
     The layout is a function of these alone, and ``vector_layout`` is the one
     definition of it.
     """
-    flags = (enemy_last_card, evolutions, evolution_progress, card_status, button_slots)
+    flags = (
+        enemy_last_card, evolutions, evolution_progress, card_status, button_slots, enemy_queue
+    )
     off = vector_offsets(num_cards, reveal, *flags)
     return off, sum(f.size for f in vector_layout(num_cards, reveal, *flags))
 
@@ -1206,6 +1247,7 @@ def build_vector(
     card_status: bool = False,
     enemy_forms: EnemyForms | None = None,
     button_slots: int = 0,
+    enemy_queue: bool = False,
 ) -> np.ndarray:
     """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``.
 
@@ -1220,7 +1262,7 @@ def build_vector(
     num_cards = len(cards)
     off, width = _vector_slots(
         num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
-        button_slots,
+        button_slots, enemy_queue,
     )
     vec = np.zeros(width, dtype=np.float32)
     # Each own slot priced as the engine prices it (a Mirror: its copy plus one), where the
@@ -1254,6 +1296,10 @@ def build_vector(
         _write_card_status(vec, off, me, foe, cards, enemy_forms)
     if button_slots:
         _write_button_index(vec, off, me, num_cards, button_slots)
+    if enemy_queue:
+        queue = vec[off["enemy_queue_5_8"]].reshape(DECK_SIZE - HAND_SIZE, num_cards + 1)
+        for row, card in zip(queue, memory.enemy_queue(), strict=True):
+            _put_one(row, card, num_cards)
     if reveal.enemy_deck:
         deck = vec[off["enemy_deck"]]
         for c in (*foe.hand, foe.next_card):
@@ -1666,6 +1712,9 @@ class ObsBuilder(ABC):
     #: Whether the vector carries ``BUTTON_INDEX_FIELDS`` (each own button k's card and status).
     #: Only SpatialObsBuilder's ``button_index`` turns it on; K is the parser's button count.
     button_index: bool = False
+    #: Whether the vector carries ``enemy_queue_5_8`` (the enemy's cycle positions 5..8, as
+    #: deduced from its plays). Only SpatialObsBuilder's ``enemy_queue`` turns it on.
+    enemy_queue: bool = False
 
     @property
     def button_slots(self) -> int:
@@ -1893,14 +1942,14 @@ class ObsBuilder(ABC):
         """The flat vector's fields, in order, for this builder's ``Reveal``."""
         return vector_layout(
             self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
-            self.evolution_progress, self.card_status, self.button_slots,
+            self.evolution_progress, self.card_status, self.button_slots, self.enemy_queue,
         )
 
     def vector_offsets(self) -> dict[str, slice]:
         """``key -> slice`` into the flat vector this builder writes."""
         return vector_offsets(
             self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
-            self.evolution_progress, self.card_status, self.button_slots,
+            self.evolution_progress, self.card_status, self.button_slots, self.enemy_queue,
         )
 
     def channel_names(self) -> list[str]:
@@ -1984,6 +2033,8 @@ class ObsBuilder(ABC):
             extra["enemy_forms"] = forms
         if self.button_slots:
             extra["button_slots"] = self.button_slots
+        if self.enemy_queue:
+            extra["enemy_queue"] = True
         return build_vector(
             state, team, self.cards, self.max_mana, self.reveal, memory, **extra
         )
@@ -2761,9 +2812,11 @@ class SpatialObsBuilder(ObsBuilder):
         unit_names: Sequence[str] | None = None,
         unit_aliases: Mapping[str, str] | None = None,
         button_index: bool = False,
+        enemy_queue: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.button_index = bool(button_index)
+        self.enemy_queue = bool(enemy_queue)
         self.card_status = bool(card_status)
         self.unit_actions = bool(unit_actions)
         self.card_identity = bool(card_identity)
@@ -3076,6 +3129,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["unit_actions"] = True
         if self.button_index:
             out["button_index"] = True
+        if self.enemy_queue:
+            out["enemy_queue"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
