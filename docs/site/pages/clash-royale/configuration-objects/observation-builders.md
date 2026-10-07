@@ -46,12 +46,14 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 |---|---|
 | `SpatialObsBuilder(card_identity=True)` | Which card each unit came from, as its own `card_ids` grid, and the last card the opponent played. |
 | `SpatialObsBuilder(evolutions=True)` | Which of your cards are evolved, and where evolved units stand. |
-| `SpatialObsBuilder(heroes=True)` | Where each side's heroes stand, and which of the opponent's heroes still have their ability to use. |
+| `SpatialObsBuilder(heroes=True)` | Where each side's heroes stand, and which of the opponent's heroes still have their ability to use. Champions don't count as heroes. |
 | `SpatialObsBuilder(spell_identity=True)` | Which card made each live spell object, as its own `spell_ids` grid: a cast spell, or an effect a troop or building left (an evolution's fireworks or bombs, a death bomb). It shows where each one is now and where it lands. Needs `card_identity=True` and `spell_aim_after_ticks`. |
 | `SpatialObsBuilder(unit_status=True)` | Shields, units under a Rage or slowed by cold, and units already locked on a crown tower. |
 | `SpatialObsBuilder(card_status=True)` | Each card's evolution and hero status: all of yours from the start, and the opponent's as you see them played. |
 | `SpatialObsBuilder(unit_actions=True)` | What units are doing: charging, winding up or using an ability, Clone copies, and where a tunneller will come up. |
 | `SpatialObsBuilder(unit_identity=True)` | What each unit is, as its own `unit_ids` grid: a skeleton reads Skeleton whether the Witch or a Tombstone made it. `card_ids` says which card it came from. |
+| `SpatialObsBuilder(effect_identity=True)` | With `spell_identity`, keeps cast spells apart from the effects troops and buildings leave: `spell_ids` grows from 4 layers to 8, with spell cards in the first four and those effects (an evolution's bombs or fireworks, a death bomb) in the last four. |
+| `SpatialObsBuilder(enemy_queue=True)` | The opponent's next card and the three after it, in order, worked out from its plays the way a player watching them would. A place it can't know yet reads "not deduced". |
 | `SpatialObsBuilder(button_index=True)` | Each of your ability buttons in the order the actions press them: which card it belongs to, and whether it's ready, used or cooling down. |
 | `SpatialObsBuilder(reveal=Reveal(...))` | Hidden information, such as the opponent's real elixir. For experiments only. |
 
