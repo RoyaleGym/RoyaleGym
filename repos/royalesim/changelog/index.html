@@ -2197,6 +2197,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0120-2026-10-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.20 (2026-10-07)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0119-2026-10-06" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3507,6 +3518,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0120-2026-10-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.20 (2026-10-07)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0119-2026-10-06" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3754,6 +3776,21 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0120-2026-10-07">0.1.20 (2026-10-07)<a class="headerlink" href="#0120-2026-10-07" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>status_flags</code> bit 3 (evolved) and bit 4 (hero) now follow the unit, not the row it is on right now. A landed Evo
+  Royal Hog, a lifted Hero Wizard and a Hero Bowler in its siege keep their bit, and an evolution's own summons (the
+  Evo Royal Ghost's pair) now carry bit 3. A champion no longer carries bit 4, and neither does anything a hero puts
+  down beside itself (a turret, a mount, a flag, a tomb's monster).</li>
+<li><code>status_flags</code> gains bit 9 (512): a flier that Vines holds to the ground. <code>flying</code> keeps its meaning; a unit is in the
+  air for targeting when it is flying and bit 9 is not set.</li>
+<li>New: <code>royalesim.STATUS_BITS</code>, the names of the status bits in bit order (name k is bit k). A bit missing from the list
+  is one this engine does not report.</li>
+<li>Battle logic: the Evo Goblin Cage's Brawler plays with the plain Brawler's hitpoints (1121 at level 11, not 1080).</li>
+<li>This release also adds settings used to measure upcoming fixes against the game (a combo hit's step, a target lost
+  past its reach, a net cast between shots, a pull among touching units, the Hero Tombstone's monster and its
+  Skeletons, a dash's range check); every one defaults to the engine's current behaviour.</li>
+</ul>
 <h2 id="0119-2026-10-06">0.1.19 (2026-10-06)<a class="headerlink" href="#0119-2026-10-06" title="Permanent link">&para;</a></h2>
 <ul>
 <li>No change to installing or calling the engine.</li>

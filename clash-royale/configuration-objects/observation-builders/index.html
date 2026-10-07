@@ -3528,7 +3528,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 </tr>
 <tr>
 <td><code>SpatialObsBuilder(heroes=True)</code></td>
-<td>Where each side's heroes stand, and which of the opponent's heroes still have their ability to use.</td>
+<td>Where each side's heroes stand, and which of the opponent's heroes still have their ability to use. Champions don't count as heroes.</td>
 </tr>
 <tr>
 <td><code>SpatialObsBuilder(spell_identity=True)</code></td>
@@ -3549,6 +3549,14 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 <tr>
 <td><code>SpatialObsBuilder(unit_identity=True)</code></td>
 <td>What each unit is, as its own <code>unit_ids</code> grid: a skeleton reads Skeleton whether the Witch or a Tombstone made it. <code>card_ids</code> says which card it came from.</td>
+</tr>
+<tr>
+<td><code>SpatialObsBuilder(effect_identity=True)</code></td>
+<td>With <code>spell_identity</code>, keeps cast spells apart from the effects troops and buildings leave: <code>spell_ids</code> grows from 4 layers to 8, with spell cards in the first four and those effects (an evolution's bombs or fireworks, a death bomb) in the last four.</td>
+</tr>
+<tr>
+<td><code>SpatialObsBuilder(enemy_queue=True)</code></td>
+<td>The opponent's next card and the three after it, in order, worked out from its plays the way a player watching them would. A place it can't know yet reads "not deduced".</td>
 </tr>
 <tr>
 <td><code>SpatialObsBuilder(button_index=True)</code></td>

@@ -1703,6 +1703,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#royalegym.reward.CombinedReward.config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.reward.CombinedReward.from_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;from_config
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1869,6 +1891,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;enemy_possible_hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.MatchMemory.enemy_queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;enemy_queue
       
     </span>
   </a>
@@ -3225,6 +3258,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unit_types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.RustEngine.status_bits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;status_bits
       
     </span>
   </a>
@@ -6278,6 +6322,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#royalegym.reward.CombinedReward.config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.reward.CombinedReward.from_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;from_config
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6444,6 +6510,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;enemy_possible_hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.MatchMemory.enemy_queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;enemy_queue
       
     </span>
   </a>
@@ -7800,6 +7877,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unit_types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.RustEngine.status_bits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;status_bits
       
     </span>
   </a>
@@ -9738,6 +9826,52 @@ seat's with <code>terms_for(team)</code>.</p>
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.reward.CombinedReward.config" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">config</span><span class="p">()</span></code>
+
+<a href="#royalegym.reward.CombinedReward.config" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Each term's class, weight and settings. A term of this module is named by its bare
+class name, as every record so far has it; any other by its full dotted path, so a
+user's own term that shares a name with one of these is rebuilt as itself.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.reward.CombinedReward.from_config" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#royalegym.reward.CombinedReward.from_config" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The reward <code>config()</code> describes. Also takes the <code>{"class", "params"}</code> record
+<code>ClashParallelEnv.config()</code> keeps under <code>"reward_fn"</code>. Each term is rebuilt by its
+own <code>from_config</code> where it has one, else by its constructor with its settings.</p>
+<p>IT IMPORTS THE MODULE EVERY DOTTED TERM NAME NAMES. Call it on records you wrote or
+trust, never on one someone else sent: importing a module runs its code.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -10303,6 +10437,31 @@ else is possible. "Everything else" is the whole catalogue until eight
 distinct cards have been seen, at which point the deck is known and the
 answer narrows to it. While a played card's slot waits for its refill, the
 card about to arrive is counted possible a step early: still a superset.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.obs.MatchMemory.enemy_queue" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">enemy_queue</span><span class="p">()</span></code>
+
+<a href="#royalegym.obs.MatchMemory.enemy_queue" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The enemy's cycle positions 5..8, the next card first, EMPTY_CARD where not deduced.</p>
+<p>A played card goes to the back of the cycle, so the cards behind the enemy hand are its
+last plays: after four plays the next card is the fourth most recent, as a player who
+watched them knows. While played slots wait for their refill (one per refill period,
+a public rule of the clock), that many more cards are behind the hand and the queue
+reaches that much further back. A position no play has reached yet holds a card the
+enemy has not shown: not deduced. Nothing is deduced once the memory is not <code>exact</code>:
+a missed play would shift every position.</p>
 
 
     </div>
@@ -11110,7 +11269,7 @@ the same numbers, so their order cannot be seen.
 
 
 <h3 id="royalegym.obs.vector_layout" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_layout</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">button_slots</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_layout</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">button_slots</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">enemy_queue</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.vector_layout" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -11140,6 +11299,8 @@ does, and never name a card the enemy has not played.</p>
 parser's button count K) appends <code>BUTTON_INDEX_FIELDS</code> after those: each own ability
 button's card and status BY INDEX k, which the card-keyed fields above cannot say. It is
 the index the action space presses (the mask's tail), so a network can read button k whole.</p>
+<p><code>enemy_queue</code> (off by default) appends <code>enemy_queue_5_8</code> after those: the enemy's cycle
+positions 5..8 as a player who watched its plays deduces them (<code>MatchMemory.enemy_queue</code>).</p>
 
 
     </div>
@@ -11150,7 +11311,7 @@ the index the action space presses (the mask's tail), so a network can read butt
 
 
 <h3 id="royalegym.obs.vector_fields" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_fields</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">button_slots</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_fields</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">button_slots</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">enemy_queue</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.vector_fields" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -11204,7 +11365,7 @@ the index the action space presses (the mask's tail), so a network can read butt
 
 
 <h3 id="royalegym.obs.vector_offsets" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_offsets</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">button_slots</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">vector_offsets</span><span class="p">(</span><span class="n">num_cards</span><span class="p">,</span> <span class="n">reveal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">button_slots</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">enemy_queue</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.vector_offsets" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -11309,7 +11470,7 @@ vector. They are views of one buffer, laid out in that order.</p>
 
 
 <h3 id="royalegym.obs.build_vector" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">build_vector</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">max_mana</span><span class="p">,</span> <span class="n">reveal</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">enemy_forms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">button_slots</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">build_vector</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">max_mana</span><span class="p">,</span> <span class="n">reveal</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span> <span class="n">enemy_last_card</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">evolution_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">card_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">enemy_forms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">button_slots</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">enemy_queue</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.build_vector" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -11409,7 +11570,7 @@ turning one on moves no existing plane.</p>
 
 
 <h3 id="royalegym.obs.entity_channels" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">entity_channels</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">entity_channels</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">,</span> <span class="n">grounded_said</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.entity_channels" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -11417,6 +11578,9 @@ turning one on moves no existing plane.</p>
     <div class="doc doc-contents ">
 
         <p>The first <code>ENTITY_CHANNELS</code> channels, float32 [12, tiles_y, tiles_x], seen by <code>team</code>.</p>
+<p>A troop goes in the air channel while it is in the air (<code>protocol.in_the_air</code>): a flier
+a Vines catch holds on the ground counts as a ground troop for the hold, where an engine
+says it (<code>grounded_said</code>, <code>STATUS_GROUNDED</code>).</p>
 <p>Every cell is an INTEGER sum (counts, raw hp) converted to float32 exactly once,
 so the result is a function of the entity SET and cannot depend on list order
 (module doc). hp: int64 / HP_SCALE in float64 (exact for any sum below 2**53),
@@ -11999,8 +12163,9 @@ a tile edge, which no point the mask asks about is. Broadcasts over px, py.</p>
 
     <div class="doc doc-contents ">
 
-        <p>The CELL rules. Troop territory here is only 'not the river band'; the
-enemy tower rects are a point rule, applied in <code>legal_points</code>.</p>
+        <p>The CELL rules. Troop territory here is only 'not the river band' (and
+nothing under the open-bridge model); the enemy tower rects are a point rule,
+applied in <code>legal_points</code>.</p>
 <p>Per placement (the Rust core's <code>Arena::deploy_zone</code> by <code>state.rs
 deploy_rule</code>): SPELL no cell rule; SPELL_NOT_ON_WATER water only (no
 no-deploy, no territory: the king block is a legal Goblin Barrel target);
@@ -14032,6 +14197,26 @@ about game fidelity.</p>
         <p>The unit-type vocabulary <code>EntityState.unit_type</code> indexes: every unit name the
 loaded card table can put on the board, sorted by name (<code>Battle.unit_types_json</code>,
 royalesim 0.1.17 on). None from an engine that does not say unit types.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.rust_engine.RustEngine.status_bits" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">status_bits</span><span class="p">()</span></code>
+
+<a href="#royalegym.rust_engine.RustEngine.status_bits" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The engine's names for the <code>EntityState.status_flags</code> bits it sets, name <code>k</code> for
+bit <code>1 &lt;&lt; k</code> (<code>royalesim.STATUS_BITS</code>, 0.1.20 on). None from an engine that does
+not list them: which of the higher bits it sets is then not said.</p>
 
 
     </div>

@@ -3463,6 +3463,8 @@ own, pass <code>levels=[blue, red]</code> to <code>reset</code>, each a list wit
 the card actually went down. Ask first with
 <code>check_deploy(team, slot, x, y)</code>, which returns the same reason without playing.</p>
 <p><strong>State.</strong> <code>state_json()</code> returns the whole battle as JSON bytes: towers, units, spells, hands, elixir and the tick.
+<code>spells</code> lists every live spell object, not only spell cards. An evolution's effects, a death bomb, a deploy blow and a
+hero's ability are spells too, each under the card that was played.
 <code>state_hash()</code> is one number for the whole state. Two runs with the same seed and commands give the same hash.</p>
 <p><strong>Units.</strong> Each unit is a list of values in <code>ENTITY_FIELDS</code> order. <code>card_id</code> is the card that put the unit down, so a
 Witch's Skeletons report the Witch. <code>unit_type</code> is the unit itself: an index into <code>unit_types_json()</code>, a sorted list of
