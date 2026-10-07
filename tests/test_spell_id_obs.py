@@ -181,3 +181,94 @@ def test_a_real_fireball_is_named_on_both_sides():
     assert seen["blue_own"] > 0, seen
     assert seen["red_enemy"] == seen["blue_own"], seen
     assert 0 < seen["red_aim"] < seen["red_enemy"], f"the aim shows only after {K} ticks: {seen}"
+
+
+# --- effect_identity: spell cards apart from the effects units leave ------------------------
+
+#: The planes ``effect_identity=True`` appends to ``spell_ids``.
+EFFECT_PLANES = ("own_effect_at", "enemy_effect_at", "own_effect_aim", "enemy_effect_aim_seen")
+
+
+def test_effect_identity_needs_spell_identity():
+    with pytest.raises(ValueError, match="effect_identity needs spell_identity"):
+        SpatialObsBuilder(card_identity=True, spell_aim_after_ticks=K, effect_identity=True)
+
+
+def test_effect_identity_appends_four_planes_and_is_off_by_default():
+    from royalegym.obs import EFFECT_ID_PLANES
+
+    assert EFFECT_ID_PLANES == EFFECT_PLANES
+    _, plain = _env(spell_identity=True)
+    assert "effect_identity" not in plain.config()
+    env, split = _env(spell_identity=True, effect_identity=True)
+    a = env.engine.arena()
+    space = split.observation_space()["spell_ids"]
+    assert space.shape == (8, a.tiles_y, a.tiles_x)
+    assert space.high.max() == split.observation_space()["card_ids"].high.max()
+    assert split.config()["effect_identity"] is True
+
+
+def _merged(split: np.ndarray) -> np.ndarray:
+    """The split planes folded back into four, by the lower-id rule of a shared tile."""
+    spells, effects = split[:4].astype(int), split[4:].astype(int)
+    both = (spells != CARD_ID_EMPTY) & (effects != CARD_ID_EMPTY)
+    return np.where(both, np.minimum(spells, effects), np.maximum(spells, effects))
+
+
+def test_a_spell_cards_object_stays_and_a_troops_or_buildings_goes_to_the_effect_planes():
+    """A Fireball (a SPELL card) stays in planes 0-3; a bomb under the Cannon (a BUILDING) and
+    an area under the Minions (a TROOP), objects those cards' units left, go to planes 4-7 in
+    the same order. Folded back together they are exactly the planes without the split."""
+    env, split = _env(spell_identity=True, effect_identity=True)
+    a = env.engine.arena()
+    ids = {c.name: c.card_id for c in env.engine.cards()}
+    fb_at, fb_aim = _point(a, 9, 20), _point(a, 9, 8)
+    bomb, area = _point(a, 4, 12), _point(a, 14, 22)
+    spells = [
+        _spell(BLUE, ids["Fireball"], SpellMotion.FLIGHT, fb_at, fb_aim, flown=1),
+        _spell(BLUE, ids["Cannon"], SpellMotion.FLIGHT, bomb, bomb, delay=20, flown=0),
+        _spell(RED, ids["Minions"], SpellMotion.PULSING, area, area, delay=50),
+    ]
+    out = _ids(env, split, spells)
+    fb, cn, mn = (CARD_ID_OFFSET + ids[n] for n in ("Fireball", "Cannon", "Minions"))
+    assert out.shape[0] == 8
+    assert out[0][_tile(a, BLUE, fb_at)] == fb
+    assert out[2][_tile(a, BLUE, fb_aim)] == fb
+    assert set(np.unique(out[:4]).tolist()) == {CARD_ID_EMPTY, fb}
+    assert out[4][_tile(a, BLUE, bomb)] == cn
+    assert out[6][_tile(a, BLUE, bomb)] == cn
+    assert out[5][_tile(a, BLUE, area)] == mn
+    assert out[7][_tile(a, BLUE, area)] == mn
+    assert set(np.unique(out[4:]).tolist()) == {CARD_ID_EMPTY, cn, mn}
+    plain_env, plain = _env(spell_identity=True)
+    assert np.array_equal(_merged(out), _ids(plain_env, plain, spells))
+
+
+@needs_engine
+def test_on_the_engine_spell_cards_stay_and_the_cards_whose_units_leave_effects_move():
+    """RoyaleSim's catalogue decides it (CardInfo.card_kind): the Fireball, the Heal and the
+    Goblin Barrel are spell cards, and the four whose evolutions Train found in spell_ids
+    (Firecracker, Cannon, Elite Barbarians, Princess) are troops and buildings."""
+    from royalegym.rust_engine import RustEngine
+
+    eng = RustEngine()
+    ids = {c.name: c.card_id for c in eng.cards()}
+    stay = [n for n in ("Fireball", "Heal", "GoblinBarrel") if n in ids]
+    move = ["Firecracker", "Cannon", "AngryBarbarians", "Princess"]
+    assert {"Fireball", "GoblinBarrel"} <= set(stay)
+    assert set(move) <= set(ids)
+    builder = SpatialObsBuilder(card_identity=True, spell_aim_after_ticks=K, spell_identity=True,
+                                effect_identity=True)
+    env = ClashParallelEnv(engine=eng, obs_builder=builder)
+    env.reset(seed=0)
+    a = eng.arena()
+    names = [*stay, *move]
+    spots = [_point(a, 2 + 2 * i, 12) for i in range(len(names))]
+    spells = [_spell(BLUE, ids[n], SpellMotion.PULSING, p, p, delay=50)
+              for n, p in zip(names, spots, strict=True)]
+    out = _ids(env, builder, spells)
+    for n, p in zip(names, spots, strict=True):
+        planes = (4, 6) if n in move else (0, 2)
+        for plane in range(8):
+            want = CARD_ID_OFFSET + ids[n] if plane in planes else CARD_ID_EMPTY
+            assert out[plane][_tile(a, BLUE, p)] == want, (n, plane)

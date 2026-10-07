@@ -2646,10 +2646,18 @@ def unit_ids_digest(names: Sequence[str], aliases: Mapping[str, str] | None) -> 
 
 #: The ``spell_ids`` planes, in order (``SpatialObsBuilder(spell_identity=True)``).
 SPELL_ID_PLANES = ("own_at", "enemy_at", "own_aim", "enemy_aim_seen")
+#: The planes ``SpatialObsBuilder(effect_identity=True)`` appends to ``spell_ids``: the same four
+#: for the objects a troop's or a building's units left, which then leave the first four.
+EFFECT_ID_PLANES = ("own_effect_at", "enemy_effect_at", "own_effect_aim", "enemy_effect_aim_seen")
 
 
 def spell_id_planes(
-    state: BattleState, team: int, arena: Arena, num_cards: int, clock: SpellAimClock
+    state: BattleState,
+    team: int,
+    arena: Arena,
+    num_cards: int,
+    clock: SpellAimClock,
+    effects: frozenset[int] | None = None,
 ) -> np.ndarray:
     """uint8 [4, tiles_y, tiles_x], seen by ``team``: which card made each live spell object,
     in the ``card_ids`` vocabulary (``CARD_ID_OFFSET`` + catalogue id, ``CARD_ID_EMPTY`` for
@@ -2662,10 +2670,16 @@ def spell_id_planes(
     could read it (the rule of ``enemy_spell_aim_seen``). The aim is the landing point, the
     roll's end, or the centre itself for a spell that sits where it acts.
 
+    ``effects``: the card ids whose objects are effects their units left (every card that is
+    not a spell card). Given, the output has 8 planes: an object of one of these cards goes to
+    ``EFFECT_ID_PLANES`` (planes 4-7, the same order) and out of the first four, so a cast
+    Fireball and an Evo Cannon's bombs are separate inputs.
+
     A spell has no uid, so TWO ON ONE TILE OF ONE PLANE KEEP THE LOWER ID: a function of the
     spell set, not of the list order. Module-level so a test can plant a defect in it.
     """
-    out = np.zeros((len(SPELL_ID_PLANES), arena.tiles_y, arena.tiles_x), dtype=np.uint8)
+    planes = len(SPELL_ID_PLANES) + (len(EFFECT_ID_PLANES) if effects is not None else 0)
+    out = np.zeros((planes, arena.tiles_y, arena.tiles_x), dtype=np.uint8)
     for sp in state.spells:
         if not 0 <= sp.card_id < num_cards:
             raise ValueError(
@@ -2674,9 +2688,10 @@ def spell_id_planes(
             )
         value = CARD_ID_OFFSET + sp.card_id
         side = 0 if sp.team == team else 1
-        cells = [(side, _tile(arena, team, sp.x, sp.y))]
+        base = len(SPELL_ID_PLANES) if effects is not None and sp.card_id in effects else 0
+        cells = [(base + side, _tile(arena, team, sp.x, sp.y))]
         if side == 0 or clock.readable(sp, state.tick):
-            cells.append((2 + side, _tile(arena, team, sp.aim_x, sp.aim_y)))
+            cells.append((base + 2 + side, _tile(arena, team, sp.aim_x, sp.aim_y)))
         for plane, (ty, tx) in cells:
             held = out[plane, ty, tx]
             if held == CARD_ID_EMPTY or value < held:
@@ -2719,6 +2734,7 @@ class SpatialObsBuilder(ObsBuilder):
         spell_aim_after_ticks: int | None = None,
         heroes: bool = False,
         spell_identity: bool = False,
+        effect_identity: bool = False,
         unit_status: bool = False,
         card_status: bool = False,
         unit_actions: bool = False,
@@ -2745,6 +2761,13 @@ class SpatialObsBuilder(ObsBuilder):
                 "target only once a player could read it, by that rule"
             )
         self.spell_identity = bool(spell_identity)
+        if effect_identity and not self.spell_identity:
+            raise ValueError(
+                "effect_identity needs spell_identity=True: it splits spell_ids' objects into "
+                "spell cards' and the effects troops and buildings leave"
+            )
+        self.effect_identity = bool(effect_identity)
+        self._effect_cards: frozenset[int] | None = None
         self.enemy_last_card = self.card_identity
         if spell_aim_after_ticks is not None and (
             not isinstance(spell_aim_after_ticks, int) or spell_aim_after_ticks < 0
@@ -2881,10 +2904,19 @@ class SpatialObsBuilder(ObsBuilder):
                 0, self.card_vocab - 1, shape=(2, a.tiles_y, a.tiles_x), dtype=np.uint8
             )
             if self.spell_identity:
+                if self.effect_identity:
+                    # By the catalogue's own kind (card_is_spell): a Heal, a spell with a
+                    # troop's placement, is still a spell card.
+                    self._effect_cards = frozenset(
+                        c.card_id for c in self.cards if not card_is_spell(c)
+                    )
+                planes = len(SPELL_ID_PLANES) + (
+                    len(EFFECT_ID_PLANES) if self.effect_identity else 0
+                )
                 entries["spell_ids"] = spaces.Box(
                     0,
                     self.card_vocab - 1,
-                    shape=(len(SPELL_ID_PLANES), a.tiles_y, a.tiles_x),
+                    shape=(planes, a.tiles_y, a.tiles_x),
                     dtype=np.uint8,
                 )
         if self.unit_identity:
@@ -2991,7 +3023,7 @@ class SpatialObsBuilder(ObsBuilder):
         if self.spell_identity:
             assert self._aim_clock is not None  # the constructor refuses it without one
             out["spell_ids"] = spell_id_planes(
-                state, team, self.arena, self.num_cards, self._aim_clock
+                state, team, self.arena, self.num_cards, self._aim_clock, self._effect_cards
             )
         if self.unit_identity:
             out["unit_ids"] = unit_id_planes(
@@ -3012,6 +3044,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["heroes"] = True
         if self.spell_identity:
             out["spell_identity"] = True
+        if self.effect_identity:
+            out["effect_identity"] = True
         if self.unit_status:
             out["unit_status"] = True
         if self.card_status:

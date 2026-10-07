@@ -14,6 +14,12 @@ change the observation's shape; each such change is listed here.
   enemy hero with an unused charge for its whole life. Units of cards the catalogue calls
   champions are skipped.
 
+### Added
+- `SpatialObsBuilder(effect_identity=True)`, with `spell_identity`: `spell_ids` grows from 4
+  planes to 8. Spell cards' objects stay in the first four; the objects troops' and buildings'
+  units leave (an Evo Cannon's bombs, a death bomb, an Evo Firecracker's fireworks) move to
+  four more (`obs.EFFECT_ID_PLANES`). A player tells a cast Fireball from those. Off by default.
+
 ### Changed
 - `obs.SAME_UNIT_ALIASES` merges three more pairs a player sees as one unit: the Goblins
   card's and the Goblin Gang's goblins with the Goblin Barrel's (as Goblin), the Goblin Hut's

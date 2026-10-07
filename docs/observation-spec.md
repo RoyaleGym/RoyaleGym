@@ -298,6 +298,14 @@ landing point (the Evo Cannon's bombs) shows that tile from its first tick, beca
 is its aim; the bombs' offsets from the cannon are fixed, so a player who knows the card knows
 them too.
 
+**Spell cards apart from effects (`effect_identity=True`, off by default, needs
+`spell_identity`).** A player tells a Fireball from an Evo Cannon's bombs or a death bomb. With
+the flag, `spell_ids` has 8 planes: the first four hold only objects of spell cards, and four
+more, `own_effect_at`, `enemy_effect_at`, `own_effect_aim`, `enemy_effect_aim_seen`
+(`obs.EFFECT_ID_PLANES`), hold the objects of every other card, under the same rules. The
+catalogue decides which is which (`CardInfo.card_kind`): a Heal is a spell card, so it stays.
+Folded back together by the lower-id rule, the 8 planes are the 4 without the flag.
+
 
 ## 3c. Queued: positional channels (NOT built)
 
