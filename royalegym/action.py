@@ -398,8 +398,9 @@ class PlacementOracle:
     def cell_grid(
         self, state: BattleState, team: int, placement: int, troop_laws: bool = True
     ) -> np.ndarray:
-        """The CELL rules. Troop territory here is only 'not the river band'; the
-        enemy tower rects are a point rule, applied in ``legal_points``.
+        """The CELL rules. Troop territory here is only 'not the river band' (and
+        nothing under the open-bridge model); the enemy tower rects are a point rule,
+        applied in ``legal_points``.
 
         Per placement (the Rust core's ``Arena::deploy_zone`` by ``state.rs
         deploy_rule``): SPELL no cell rule; SPELL_NOT_ON_WATER water only (no
@@ -421,7 +422,14 @@ class PlacementOracle:
         if placement in (Placement.SPELL_NOT_ON_WATER, Placement.TUNNEL):
             not_water: np.ndarray = ~self.water
             return not_water
-        terr = self.own_half[team] if placement == Placement.BUILDING else ~self.river_band
+        if placement == Placement.BUILDING:
+            terr = self.own_half[team]
+        elif self.rules.river_band_closed_to_troops:
+            terr = ~self.river_band
+        else:
+            # The open-bridge model: the band has no rule of its own; the water test
+            # below and the enemy rects (a point rule, legal_points) decide.
+            terr = np.ones((a.hy, a.hx), dtype=bool)
         troop = placement == Placement.TROOP and troop_laws
         nodeploy = self.troop_nodeploy if troop else self.nodeploy
         legal: np.ndarray = terr & ~self.water & ~nodeploy

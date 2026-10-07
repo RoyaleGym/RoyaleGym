@@ -1067,12 +1067,15 @@ class MockEngine:
 
     def _in_territory(self, team: int, hx: int, hy: int, building: bool) -> bool:
         """The CELL half of territory: buildings own half; troops anywhere off the
-        river band (the band stays closed to troops -- UNSOURCED, DeployRules)."""
+        river band, or anywhere at all under the open-bridge model, where the water and
+        the enemy rects decide (DeployRules.river_band_closed_to_troops)."""
         a = self._arena
         _, oy = self._own_half_cell(team, hx, hy)
         lo, hi = a.water_half_rows
         if building:
             return oy < lo
+        if not self._rules.river_band_closed_to_troops:
+            return True
         return not lo <= oy <= hi
 
     def _in_enemy_tower_rect(self, team: int, x: int, y: int) -> bool:

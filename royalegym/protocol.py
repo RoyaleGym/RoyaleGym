@@ -1010,7 +1010,13 @@ def princess_centres_from_arena(
     return named[0], named[1]
 
 
-TERRITORY_MODELS = ("enemy_tower_no_deploy_rects",)
+#: arena.TERRITORY_MODEL arms the mask implements. Both judge a troop by the alive enemy
+#: towers' NoDeploySize rects and the water. The first also closes the whole river band to
+#: troops; under the second (royalesim 0.1.21) the band has no rule of its own, so a bridge
+#: whose lane's enemy princess has fallen takes a troop, and the rest of the river is water.
+CLOSED_RIVER_BAND = "enemy_tower_no_deploy_rects"
+OPEN_BRIDGE = "enemy_tower_no_deploy_rects_open_bridge"
+TERRITORY_MODELS = (CLOSED_RIVER_BAND, OPEN_BRIDGE)
 #: What an engine does with a building tap whose point is legal but whose box does not fit.
 ILLEGAL_BUILDING_TAP = ("refuse", "relocate_first_fitting_ring")
 #: placement.TROOP_TOWER_TAPS arms the mask implements. The second, measured on client
@@ -1127,9 +1133,8 @@ class DeployRules(msgspec.Struct, frozen=True):
     """Placement rules the action mask and the engine MUST share.
 
     territory_model
-        calibration.json arena.TERRITORY_MODEL. Only "enemy_tower_no_deploy_rects"
-        is implemented; anything else raises, so a registry change cannot be
-        silently ignored by the mask.
+        calibration.json arena.TERRITORY_MODEL, one of ``TERRITORY_MODELS``; anything
+        else raises, so a registry change cannot be silently ignored by the mask.
     king_no_deploy_size / princess_no_deploy_size
         Full (width, height) in SUBTILES of each crown tower's NoDeploySize
         rectangle, from data/derived/cards.json ``no_deploy_size_tiles`` (2018
@@ -1143,11 +1148,13 @@ class DeployRules(msgspec.Struct, frozen=True):
         12 half-rows past the far bank on the fallen tower's side. That rule had no
         source and was 2 tiles deeper than the shipped rects allow. The shipped
         mechanic is used as it stands rather than the pocket re-tuned to match it.
-    river_band_closed_to_troops (territory_status)
-        UNSOURCED, carried from the old rule in both engines: no troop on any
-        half-row of the river band, even a dry bridge cell whose lane's princess
-        has fallen (the rects alone would open it). calibration.json
-        arena.TERRITORY_MODEL open_question; a recording settles it.
+    river_band_closed_to_troops
+        True under "enemy_tower_no_deploy_rects": no troop on any half-row of the river
+        band, even a dry bridge cell whose lane's princess has fallen. False under
+        "..._open_bridge" (royalesim 0.1.21): the band has no rule of its own, the rects
+        and the water decide, so a fallen lane's bridge takes a troop while a standing
+        princess's rect, which reaches the far bank, still closes its own (the replays'
+        bridge plays, and taps measured on client 16.402, 2026-10-07).
     Buildings
         Own half only, even after a princess falls. UNSOURCED, unchanged.
     footprint_model
@@ -1284,7 +1291,13 @@ class DeployRules(msgspec.Struct, frozen=True):
             territory_model=territory,
             territory_status=(
                 f"{calibration.status('arena.TERRITORY_MODEL')}: rects from cards.json "
-                "no_deploy_size_tiles; river band closed to troops is a guess"
+                "no_deploy_size_tiles; "
+                + (
+                    "river band closed to troops is a guess"
+                    if territory == CLOSED_RIVER_BAND
+                    else "a fallen lane's bridge open to troops, as replays and taps on "
+                    "client 16.402 show"
+                )
             ),
             king_no_deploy_size=in_subtiles(KING_TOWER_NAME),
             princess_no_deploy_size=in_subtiles(PRINCESS_TOWER_NAME),
@@ -1300,6 +1313,12 @@ class DeployRules(msgspec.Struct, frozen=True):
             live_bottle_taps=bottle_taps,
             overtime_tiebreak=tiebreak,
         )
+
+    @property
+    def river_band_closed_to_troops(self) -> bool:
+        """Whether no troop may stand on any half-row of the river band (the territory model
+        before royalesim 0.1.21); under ``OPEN_BRIDGE`` the rects and the water decide."""
+        return self.territory_model == CLOSED_RIVER_BAND
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:
         """The closed NoDeploySize rect of a crown tower in ``slot`` centred at (cx, cy)."""

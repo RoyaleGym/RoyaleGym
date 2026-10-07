@@ -34,6 +34,11 @@ change the observation's shape; each such change is listed here.
   four more (`obs.EFFECT_ID_PLANES`). A player tells a cast Fireball from those. Off by default.
 
 ### Changed
+- The action mask follows royalesim 0.1.21's territory model when the engine runs it: a troop
+  may stand on a bridge whose lane's enemy princess has fallen. Up to now both engines closed
+  the whole river to troops, a rule with no source; replays and taps on the real client show
+  troops on an open lane's bridge. A standing princess still closes its lane's bridge, and the
+  rest of the river is water. With an older engine the river stays closed, as before.
 - `obs.SAME_UNIT_ALIASES` merges three more pairs a player sees as one unit: the Goblins
   card's and the Goblin Gang's goblins with the Goblin Barrel's (as Goblin), the Goblin Hut's
   waves with Spear Goblins, and the second of the Three Musketeers with the first. Each differs
