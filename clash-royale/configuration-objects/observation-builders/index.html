@@ -3532,7 +3532,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 </tr>
 <tr>
 <td><code>SpatialObsBuilder(spell_identity=True)</code></td>
-<td>Which spell is where, as its own <code>spell_ids</code> grid: where each spell is now and where it lands. Needs <code>card_identity=True</code> and <code>spell_aim_after_ticks</code>.</td>
+<td>Which card made each live spell object, as its own <code>spell_ids</code> grid: a cast spell, or an effect a troop or building left (an evolution's fireworks or bombs, a death bomb). It shows where each one is now and where it lands. Needs <code>card_identity=True</code> and <code>spell_aim_after_ticks</code>.</td>
 </tr>
 <tr>
 <td><code>SpatialObsBuilder(unit_status=True)</code></td>

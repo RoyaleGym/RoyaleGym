@@ -2421,6 +2421,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#spell_ids-uint8-4-32-18-behind-its-own-flag-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        spell_ids, uint8 [4, 32, 18] (behind its own flag, default off)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3575,6 +3586,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#spell_ids-uint8-4-32-18-behind-its-own-flag-default-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        spell_ids, uint8 [4, 32, 18] (behind its own flag, default off)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4168,13 +4190,48 @@ unit's OWN type on each tile, own plane then enemy plane, as <code>card_ids</cod
 </tr>
 <tr>
 <td>aliases</td>
-<td><code>unit_aliases=</code> writes a row as its base type when the two are one unit to a player (<code>obs.SAME_UNIT_ALIASES</code>: seven rows, e.g. the Graveyard's skeleton as Skeleton); the aliased names leave the vocabulary, and <code>config()</code> records the map</td>
+<td><code>unit_aliases=</code> writes a row as its base type when the two are one unit to a player (<code>obs.SAME_UNIT_ALIASES</code>: ten rows, e.g. the Graveyard's skeleton as Skeleton, the Goblins card's goblin as Goblin); the aliased names leave the vocabulary, and <code>config()</code> records the map</td>
 </tr>
 </tbody>
 </table>
 <p>Like <code>card_ids</code>, the key holds category ids, not amounts: a network embeds it rather than
 scaling it. A trace header carries the vocabulary as <code>unit_types</code>, and every frame's entity
 rows carry <code>unit_type</code>, so a viewer can name each unit by type.</p>
+<p><strong>What an alias drops.</strong> Three of the shipped aliases differ from their base in one timing a
+player cannot read off the unit (<code>obs.SAME_UNIT_ALIAS_DIFFERENCES</code>): the Goblins card's
+goblins stab first 200 ms later than the Goblin Barrel's, the Goblin Hut's waves deploy in
+500 ms instead of 1000, and the second of the Three Musketeers fires its first shot one tick
+later. For the goblins, <code>card_ids</code> still names the producer, so the difference is recoverable
+when <code>card_identity=True</code> is on too. <code>unit_aliases</code> does not require it. A pair the engine
+plays differently stays apart: the evolved Goblin Cage's brawler (royalesim 0.1.17 gives it
+less hp than the plain one).</p>
+<h3 id="spell_ids-uint8-4-32-18-behind-its-own-flag-default-off"><code>spell_ids</code>, uint8 <code>[4, 32, 18]</code> (behind its own flag, default off)<a class="headerlink" href="#spell_ids-uint8-4-32-18-behind-its-own-flag-default-off" title="Permanent link">&para;</a></h3>
+<p><code>SpatialObsBuilder(spell_identity=True)</code> (it needs <code>card_identity=True</code>) adds <code>spell_ids</code>:
+which card made each live spell object, in the <code>card_ids</code> vocabulary (<code>2 + card_id</code>, 0 =
+nothing). The planes are <code>own_at</code> and <code>enemy_at</code>, each object at its current centre, then
+<code>own_aim</code> and <code>enemy_aim_seen</code>, each object at its aim: the landing point, the roll's end, or
+the centre for an object that acts where it sits. The enemy's aim shows only once a player
+could read it (the rule of <code>enemy_spell_aim_seen</code>). Two objects on one tile of one plane keep
+the lower id.</p>
+<p><strong>Not only spell cards.</strong> The engine's <code>spells</code> list holds every live spell OBJECT, under the
+base card id of whatever made it. That is cast spells, and also the effects troops and
+buildings leave behind:
+- evolution effects: the Evo Firecracker's fireworks, the Evo Cannon's barrage, the Evo Elite
+  Barbarians' spear Rage, the Evo Princess's freeze areas;
+- death bombs and areas (Balloon, Giant Skeleton, Bomb Tower) and deploy blows (Mega Knight);
+- hero abilities, and a Skeleton Barrel's drop.</p>
+<p>A player sees each of these on the board. A troop's or building's id here means an effect it
+left; <code>CardInfo.card_kind</code> says which kind of card it is. An object the engine creates at its
+landing point (the Evo Cannon's bombs) shows that tile from its first tick, because its centre
+is its aim; the bombs' offsets from the cannon are fixed, so a player who knows the card knows
+them too.</p>
+<p><strong>Spell cards apart from effects (<code>effect_identity=True</code>, off by default, needs
+<code>spell_identity</code>).</strong> A player tells a Fireball from an Evo Cannon's bombs or a death bomb. With
+the flag, <code>spell_ids</code> has 8 planes: the first four hold only objects of spell cards, and four
+more, <code>own_effect_at</code>, <code>enemy_effect_at</code>, <code>own_effect_aim</code>, <code>enemy_effect_aim_seen</code>
+(<code>obs.EFFECT_ID_PLANES</code>), hold the objects of every other card, under the same rules. The
+catalogue decides which is which (<code>CardInfo.card_kind</code>): a Heal is a spell card, so it stays.
+Folded back together by the lower-id rule, the 8 planes are the 4 without the flag.</p>
 <h2 id="3c-queued-positional-channels-not-built">3c. Queued: positional channels (NOT built)<a class="headerlink" href="#3c-queued-positional-channels-not-built" title="Permanent link">&para;</a></h2>
 <p>Recorded so the reasoning survives, including the part of it that was WRONG, because the
 wrong version is the one a reader is likely to re-derive.</p>

@@ -11480,7 +11480,7 @@ answer. Module-level so a test can plant a defect in it.</p>
 
 
 <h3 id="royalegym.obs.hero_channels" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">hero_channels</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">hero_channels</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">,</span> <span class="n">champions</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">())</span></code>
 
 <a href="#royalegym.obs.hero_channels" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -11494,6 +11494,10 @@ report the bits is refused, as <code>evolved_channels</code> refuses it. An enem
 read from the enemy's button row that names its card, and from that row's <code>spent</code> column
 alone: <code>available</code> and <code>cost</code> are not on a player's screen for the enemy's buttons. A
 hero no row names is refused rather than guessed. Module-level so a test can plant a defect.</p>
+<p><code>champions</code>: the card ids the catalogue calls champions (<code>CardInfo.champion</code>). Their
+units are skipped: royalesim up to 0.1.19 sets <code>STATUS_HERO</code> on a champion's unit too,
+and a champion is not a hero form (its row is never spent, so an enemy champion would sit
+in <code>enemy_hero_unspent</code> for its whole life).</p>
 
 
     </div>
@@ -11671,19 +11675,26 @@ applied to them. Two observations whose digests differ number their units differ
 
 
 <h3 id="royalegym.obs.spell_id_planes" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">spell_id_planes</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">,</span> <span class="n">num_cards</span><span class="p">,</span> <span class="n">clock</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">spell_id_planes</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">arena</span><span class="p">,</span> <span class="n">num_cards</span><span class="p">,</span> <span class="n">clock</span><span class="p">,</span> <span class="n">effects</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.spell_id_planes" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
 
-        <p>uint8 [4, tiles_y, tiles_x], seen by <code>team</code>: which SPELL card is where, in the
-<code>card_ids</code> vocabulary (<code>CARD_ID_OFFSET</code> + catalogue id, <code>CARD_ID_EMPTY</code> for none).</p>
+        <p>uint8 [4, tiles_y, tiles_x], seen by <code>team</code>: which card made each live spell object,
+in the <code>card_ids</code> vocabulary (<code>CARD_ID_OFFSET</code> + catalogue id, <code>CARD_ID_EMPTY</code> for
+none). Not only spell cards: the engine's spell objects include the effects troops and
+buildings leave (the Evo Firecracker's fireworks, the Evo Cannon's barrage, death bombs,
+deploy blows, hero abilities), under the producer's base card id.</p>
 <p>Planes <code>SPELL_ID_PLANES</code>: own, then enemy spells at the tile of their current centre;
 own spells at their aim tile; enemy spells at their aim tile once <code>clock</code> says a player
 could read it (the rule of <code>enemy_spell_aim_seen</code>). The aim is the landing point, the
 roll's end, or the centre itself for a spell that sits where it acts.</p>
+<p><code>effects</code>: the card ids whose objects are effects their units left (every card that is
+not a spell card). Given, the output has 8 planes: an object of one of these cards goes to
+<code>EFFECT_ID_PLANES</code> (planes 4-7, the same order) and out of the first four, so a cast
+Fireball and an Evo Cannon's bombs are separate inputs.</p>
 <p>A spell has no uid, so TWO ON ONE TILE OF ONE PLANE KEEP THE LOWER ID: a function of the
 spell set, not of the list order. Module-level so a test can plant a defect in it.</p>
 
