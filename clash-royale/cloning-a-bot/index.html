@@ -3566,7 +3566,9 @@ Cloning prints nothing while it works, so let it run.</p>
   towards the 1,000.</li>
 <li><code>clone</code> trains the network to make the same moves as the players. It keeps about one match in
   twenty aside to check the copy, stops once the copy stops getting better, and saves the clone in
-  <code>runs/human_clone</code>.</li>
+  <code>runs/human_clone</code>. That folder holds everything that plays the clone: its network, its weights,
+  and what <code>build_env</code> built (<code>environment.json</code>, from royaleimitate 0.2.10). Zip it to share your
+  clone.</li>
 </ul>
 <p>The matches keep their players' own decks, but your clone plays the deck <code>build_env</code> gives it.
 With <code>make_env()</code>, that's the Quick Start's deck on both sides. For your own deck, change
