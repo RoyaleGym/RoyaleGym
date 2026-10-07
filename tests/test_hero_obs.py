@@ -124,6 +124,20 @@ def test_a_hero_lights_its_own_plane_for_its_side_and_the_enemy_plane_for_the_ot
     assert red[2][_tile(a, RED, at)] == 1
 
 
+def test_a_champion_is_not_a_hero_even_when_its_unit_carries_the_bit():
+    """Up to royalesim 0.1.19 the engine sets STATUS_HERO on a champion's unit (its record holds
+    an ability). A champion is not a hero form, and its row is never spent, so an enemy Golden
+    Knight lit enemy_hero AND enemy_hero_unspent for its whole life. The planes skip a unit
+    whose card the catalogue calls a champion (CardInfo.champion, the engine's own column)."""
+    state, a = _board()
+    at = (a.subtile * 9 + 100, a.subtile * 12 + 100)
+    s = _with(state, [_unit(100, RED, 5, STATUS_HERO, at), _unit(101, BLUE, 5, STATUS_HERO, at)],
+              rows=[[_row(5, 0)], [_row(5, 0)]])
+    assert hero_channels(s, BLUE, a)[:, :, :].sum() == 3, "without a champion list: as before"
+    for team in (BLUE, RED):
+        assert hero_channels(s, team, a, champions=frozenset({5})).sum() == 0
+
+
 def test_a_spent_charge_clears_only_the_unspent_plane():
     state, a = _board()
     at = (a.subtile * 4 + 100, a.subtile * 20 + 100)
@@ -256,3 +270,44 @@ def test_a_hero_musketeer_lights_the_planes_and_its_press_clears_the_unspent_one
     hero_alive = any(e.team == BLUE and e.card_id == ids["Musketeer"] for e in state.entities)
     assert hero_alive, "the hero died at once, so this test would show nothing"
     assert planes(state) == [(1, 0, 0), (0, 1, 0)], "the charge is used; the hero still stands"
+
+
+@needs_engine
+def test_an_enemy_champion_lights_no_hero_plane_and_is_not_seen_as_a_hero_play():
+    """On RustEngine: Blue plays a Golden Knight. Red's hero planes stay dark and Red's
+    ``enemy_seen_hero`` stays 0 for its card, though royalesim up to 0.1.19 sets STATUS_HERO on
+    the champion's unit (from 0.1.20 it does not, and this test checks the same answer)."""
+    from royalegym.env import ClashParallelEnv
+    from royalegym.protocol import status_of
+    from royalegym.state_mutator import DefaultStateMutator
+
+    eng = RustEngine()
+    ids = {c.name: c.card_id for c in eng.cards()}
+    names = ("GoldenKnight", "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap", "Cannon")
+    if any(n not in ids for n in names):
+        pytest.skip(f"this engine's catalogue lacks {[n for n in names if n not in ids]}")
+    deck = [ids[n] for n in names]
+    env = ClashParallelEnv(
+        eng, action_parser=TileActionParser(ability_buttons=True),
+        obs_builder=SpatialObsBuilder(heroes=True, card_status=True),
+        state_mutator=DefaultStateMutator(decks=[deck, deck], shuffle=ShuffleMode.NONE),
+    )
+    env.reset(seed=1)
+    parser = env.action_parser
+    play = 1 + 8 * parser.nx + 9  # hand slot 0 (the Golden Knight), own half, own frame
+    for _ in range(200):
+        if env.action_masks("blue")[play]:
+            break
+        env.step({"blue": 0, "red": 0})
+    assert env.action_masks("blue")[play], "the Golden Knight never became playable"
+    obs, *_ = env.step({"blue": play, "red": 0})
+    knights = [e for e in env.battle_state.entities if e.card_id == ids["GoldenKnight"]]
+    assert knights, "the Golden Knight is not on the board"
+    channels = env.obs_builder.channel_names()
+    planes = [channels.index(n) for n in HERO_PLANES]
+    seen_hero = env.obs_builder.vector_offsets()["enemy_seen_hero"]
+    for _ in range(3):
+        for team in ("blue", "red"):
+            assert obs[team]["spatial"][planes].sum() == 0, (team, status_of(knights[0]))
+        assert obs["red"]["vector"][seen_hero][ids["GoldenKnight"]] == 0
+        obs, *_ = env.step({"blue": 0, "red": 0})

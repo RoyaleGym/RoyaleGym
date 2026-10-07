@@ -296,32 +296,117 @@ def test_a_bad_alias_map_is_refused() -> None:
         SpatialObsBuilder(unit_aliases={"BarrelGoblin": "Goblin"})
 
 
-@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
-def test_every_shipped_alias_pair_has_identical_stats_in_the_engines_table() -> None:
-    """SAME_UNIT_ALIASES merges rows that are one unit to a player: identical stats in the card
-    table the engine reads. A data build that makes a pair differ fails here, rather than the
-    planes quietly mixing two units under one id. Bookkeeping fields (the row's own name, where
-    its numbers came from) are not stats."""
-    from royalegym.obs import SAME_UNIT_ALIASES
+def _engine_card_table() -> dict:
     from royalegym.rust_engine import RustEngine, embedded_card_table
 
-    eng = RustEngine()
     text = embedded_card_table()
     if text is None:
-        text = eng.cards_json_path.read_text(encoding="utf-8")
-    units = json.loads(text)["units"]
+        text = RustEngine().cards_json_path.read_text(encoding="utf-8")
+    return json.loads(text)
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_every_shipped_alias_pair_differs_only_on_its_declared_fields() -> None:
+    """SAME_UNIT_ALIASES merges rows that are one unit to a player. In the card table the engine
+    reads, each pair has identical stats except the fields SAME_UNIT_ALIAS_DIFFERENCES declares
+    for it (a timing no player can read off the unit), and differs on every one of those. A
+    data build that splits a pair on anything else fails here, rather than the planes quietly
+    mixing two units under one id. So does a declared difference that is gone, which would leave
+    the declaration out of date. Bookkeeping fields (the row's own name, where its numbers came
+    from) are not stats."""
+    from royalegym.obs import SAME_UNIT_ALIAS_DIFFERENCES, SAME_UNIT_ALIASES
+
+    table = _engine_card_table()
+    units = table["units"]
     missing = sorted({n for pair in SAME_UNIT_ALIASES.items() for n in pair} - set(units))
     if missing:
         pytest.skip(
-            f"SKIPPED, NOT PASSED: this card table ({json.loads(text)['provenance']['vintage']}) "
+            f"SKIPPED, NOT PASSED: this card table ({table['provenance']['vintage']}) "
             f"has no rows {missing[:4]}: the aliases name the 15.535 table's rows"
         )
+    assert set(SAME_UNIT_ALIAS_DIFFERENCES) <= set(SAME_UNIT_ALIASES), "a difference no alias has"
     bookkeeping = {"name", "damage_source", "overlays", "raw", "source_table"}
     for alias, base in SAME_UNIT_ALIASES.items():
         a = {k: v for k, v in units[alias].items() if k not in bookkeeping}
         b = {k: v for k, v in units[base].items() if k not in bookkeeping}
         differ = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
-        assert differ == [], f"{alias} -> {base}: the rows differ on {differ}"
+        declared = sorted(SAME_UNIT_ALIAS_DIFFERENCES.get(alias, ()))
+        assert differ == declared, f"{alias} -> {base}: the rows differ on {differ}"
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_no_shipped_alias_pair_is_split_by_a_calibration_value() -> None:
+    """The card table is not all the engine plays: a calibration value table (a section's entry
+    whose value maps row names to field values, such as cards.CLIENT16402_VALUES) replaces
+    fields of the rows it NAMES when the battle loads. Two rows with identical table entries
+    then play differently when only one is named (the evolved Goblin Cage's brawler had 1080 hp
+    at level 11, the plain one 1121). Each alias and its base must be named the same way in
+    every such table the engine was built with."""
+    from royalegym.obs import SAME_UNIT_ALIASES
+    from royalegym.rust_engine import RustEngine
+
+    raw = RustEngine().calibration.raw
+    tables = {}
+    for section, entries in raw.items():
+        if not isinstance(entries, dict):
+            continue
+        for key, entry in entries.items():
+            value = entry.get("value") if isinstance(entry, dict) else None
+            values = value.get("values") if isinstance(value, dict) else None
+            if isinstance(values, dict):
+                tables[f"{section}.{key}"] = values
+    assert "cards.CLIENT16402_VALUES" in tables, sorted(tables)
+    for name, values in tables.items():
+        for alias, base in SAME_UNIT_ALIASES.items():
+            assert values.get(alias) == values.get(base), (
+                f"{name} sets {alias} to {values.get(alias)} and {base} to "
+                f"{values.get(base)}: the engine plays the pair differently"
+            )
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_goblins_from_both_goblin_cards_and_the_three_musketeers_read_one_type_aliased() -> None:
+    """On RustEngine: the Goblins card's goblins (row Goblin_Stab) and the Goblin Barrel's
+    (Goblin) are two rows in raw ``unit_ids`` and one, Goblin, under SAME_UNIT_ALIASES; the
+    Three Musketeers' three rows become one. Train's ruling, 2026-10-06: what a player sees,
+    and card_ids still names each goblin's card."""
+    from royalegym.obs import SAME_UNIT_ALIASES, unit_vocabulary
+    from royalegym.protocol import DeployCommand, DeployStatus, MatchSetup
+    from royalegym.rust_engine import RustEngine
+    from royalegym.state_mutator import deck_ids
+
+    def types_by_card(names: list[str], plays: list[tuple[int, int]]) -> dict[str, set[str]]:
+        eng = RustEngine()
+        deck = deck_ids(names, eng.cards())
+        eng.reset(1, MatchSetup(decks=[deck, deck], shuffle=0, elixir_milli=[10000, 10000],
+                                start_tick=eng.rules().deploy_lockout_ticks))
+        t = eng.arena().subtile
+        for slot, x_tile in plays:
+            cmd = DeployCommand(BLUE, slot, x_tile * t + t // 2, 8 * t + t // 2)
+            assert eng.step([cmd], 1)[0].status == DeployStatus.OK, names[slot]
+        unit_names = eng.unit_types()
+        card_names = {c.card_id: c.name for c in eng.cards()}
+        seen: dict[str, set[str]] = {}
+        for _ in range(100):  # the barrel lands and opens within two seconds or so
+            eng.step([], 1)
+            for e in eng.state().entities:
+                if e.team == BLUE and e.kind == EntityKind.TROOP:
+                    seen.setdefault(card_names[e.card_id], set()).add(unit_names[e.unit_type])
+        return seen
+
+    def aliased(rows: set[str]) -> set[str]:
+        names = RustEngine().unit_types()
+        vocab, lookup = unit_vocabulary(names, SAME_UNIT_ALIASES)
+        return {vocab[lookup[names.index(r)]] for r in rows}
+
+    rest = ["Knight", "Archer", "Giant", "Minions", "Fireball", "Zap"]
+    goblins = types_by_card(["Goblins", "GoblinBarrel", *rest], [(0, 4), (1, 13)])
+    assert goblins == {"Goblins": {"Goblin_Stab"}, "GoblinBarrel": {"Goblin"}}, goblins
+    assert aliased(goblins["Goblins"]) == aliased(goblins["GoblinBarrel"]) == {"Goblin"}
+    musketeers = types_by_card(["ThreeMusketeers", *rest, "Musketeer"], [(0, 9)])
+    rework = {f"ThreeMusketeer_Rework_Character_{i}" for i in (1, 2, 3)}
+    assert musketeers == {"ThreeMusketeers": rework}, musketeers
+    assert aliased(musketeers["ThreeMusketeers"]) == {"ThreeMusketeer_Rework_Character_1"}
 
 
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))

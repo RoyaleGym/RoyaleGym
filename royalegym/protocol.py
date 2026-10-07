@@ -640,7 +640,10 @@ class SpellState(msgspec.Struct, frozen=True, array_like=True):
     """
 
     team: int
-    card_id: int  # catalogue id of the spell card
+    # Catalogue id of the card that made this object, its base card for a form: a cast spell,
+    # or an effect a troop or building left (an evolution's areas and bombs, a death bomb, a
+    # deploy blow, a hero ability).
+    card_id: int
     motion: int  # SpellMotion
     x: int  # current centre
     y: int

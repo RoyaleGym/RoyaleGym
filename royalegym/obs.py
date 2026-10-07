@@ -1273,8 +1273,11 @@ class EnemyForms:
     as basic. ``see`` must follow ``MatchMemory.observe`` on the same state.
     """
 
-    def __init__(self, num_cards: int) -> None:
+    def __init__(self, num_cards: int, champions: frozenset[int] = frozenset()) -> None:
         self.num_cards = num_cards
+        # Champion cards (CardInfo.champion): never a hero play, though royalesim up to 0.1.19
+        # sets STATUS_HERO on a champion's unit (``hero_channels`` skips them the same way).
+        self.champions = champions
         self.reset()
 
     def reset(self) -> None:
@@ -1317,7 +1320,7 @@ class EnemyForms:
             evolved, hero = new.get(e.card_id, (False, False))
             new[e.card_id] = (
                 evolved or bool(status & STATUS_EVOLVED),
-                hero or bool(status & STATUS_HERO),
+                hero or (bool(status & STATUS_HERO) and e.card_id not in self.champions),
             )
         played = memory.foe_plays - self.plays
         self.plays = memory.foe_plays
@@ -1571,7 +1574,7 @@ MEMORY_FORMAT = 1
 #: not memory, so it is not saved: the catalogue's names, the calibration digest and the command
 #: delay in the saved header say the two builders agree on it.
 MATCH_MEMORY_BOUND = ("num_cards", "law", "cost", "is_mirror")
-ENEMY_FORMS_BOUND = ("num_cards",)
+ENEMY_FORMS_BOUND = ("num_cards", "champions")
 AIM_CLOCK_BOUND = ("after_ticks",)
 
 
@@ -1701,6 +1704,7 @@ class ObsBuilder(ABC):
         self.arena = engine.arena()
         self.cards = list(engine.cards())
         self.num_cards = len(self.cards)
+        self.champion_ids = frozenset(c.card_id for c in self.cards if c.champion)
         rules = engine.rules()
         # The parser's oracle when it was built from the same arena, rules and cards. Its
         # grids are memoised on everything they read (``PlacementOracle.grid_key``), so one
@@ -1746,7 +1750,7 @@ class ObsBuilder(ABC):
         """Called at the start of every episode: both seats forget the last one."""
         self.presses = None
         self.runs = None
-        self.enemy_forms = {t: EnemyForms(self.num_cards) for t in TEAMS}
+        self.enemy_forms = {t: EnemyForms(self.num_cards, self.champion_ids) for t in TEAMS}
         delay = getattr(self, "command_delay", (0, 0))
         for team, memory in self.memory.items():
             memory.seed(state, team)
@@ -2034,7 +2038,8 @@ SEEN_AIM_CHANNEL: tuple[str, str] = (
 
 #: The planes ``SpatialObsBuilder(heroes=True)`` adds, after every other optional fair plane.
 #: Fair: a hero looks different on the board, and its one ability shows when it fires, so a
-#: player knows whether the enemy's hero has used its charge.
+#: player knows whether the enemy's hero has used its charge. A champion is not a hero form:
+#: its units are not counted, whatever their status bits say (``hero_channels``).
 HERO_SPATIAL_CHANNELS: list[tuple[str, str]] = [
     ("own_hero", "count of own hero units whose centre is in the tile"),
     ("enemy_hero", "count of enemy hero units whose centre is in the tile"),
@@ -2238,7 +2243,9 @@ def evolved_channels(entities: Sequence[EntityState], team: int, arena: Arena) -
     return out
 
 
-def hero_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
+def hero_channels(
+    state: BattleState, team: int, arena: Arena, champions: frozenset[int] = frozenset()
+) -> np.ndarray:
     """float32 [3, tiles_y, tiles_x], seen by ``team``: own heroes, enemy heroes, and the enemy
     heroes whose one ability charge is not used yet (``HERO_SPATIAL_CHANNELS``).
 
@@ -2247,6 +2254,11 @@ def hero_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
     read from the enemy's button row that names its card, and from that row's ``spent`` column
     alone: ``available`` and ``cost`` are not on a player's screen for the enemy's buttons. A
     hero no row names is refused rather than guessed. Module-level so a test can plant a defect.
+
+    ``champions``: the card ids the catalogue calls champions (``CardInfo.champion``). Their
+    units are skipped: royalesim up to 0.1.19 sets ``STATUS_HERO`` on a champion's unit too,
+    and a champion is not a hero form (its row is never spent, so an enemy champion would sit
+    in ``enemy_hero_unspent`` for its whole life).
     """
     spent: dict[int, int] = {}
     for r in map(ability_row, state.players[1 - team].abilities):
@@ -2261,7 +2273,7 @@ def hero_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
                 f"(entity uid {e.uid} has no status_flags). Use an engine that reports them, "
                 "such as RustEngine, or leave heroes off."
             )
-        if not status & STATUS_HERO or e.kind in TOWER_KINDS:
+        if not status & STATUS_HERO or e.kind in TOWER_KINDS or e.card_id in champions:
             continue
         ty, tx = _tile(arena, team, e.x, e.y)
         if e.team == team:
@@ -2509,20 +2521,45 @@ def card_id_planes(
 UNIT_ID_EMPTY = 0
 UNIT_ID_OFFSET = 1
 
-#: Rows of the game's characters table that are ONE unit to a player: the same stats and the
-#: same behaviour, only the producer differs (which ``card_ids`` keeps). With
-#: ``SpatialObsBuilder(unit_aliases=SAME_UNIT_ALIASES)`` each is written as its base type; off
-#: by default. tests/test_unit_ids.py checks that every pair is still stat-identical in the
-#: engine's card table, so a data build that splits one fails rather than mixing two units.
-#: Evolution rows stay apart: their behaviour differs outside the stats.
+#: Rows of the game's characters table that are ONE unit to a player: the same look, stats and
+#: behaviour, and only the producer differs (which ``card_ids`` keeps when
+#: ``card_identity=True``), or a timing no player reads off the unit
+#: (``SAME_UNIT_ALIAS_DIFFERENCES``). With ``SpatialObsBuilder(unit_aliases=SAME_UNIT_ALIASES)``
+#: each is written as its base type; off by default. tests/test_unit_ids.py checks that every
+#: pair is still identical in the engine's card table outside its declared differences, and
+#: that no calibration value names one row of a pair without the other, so a data build that
+#: splits one fails rather than mixing two units. Evolution rows stay apart: their behaviour
+#: differs outside the stats, and the engine can play them differently (the evolved Goblin
+#: Cage's brawler had less hp than the plain one in royalesim 0.1.17).
 SAME_UNIT_ALIASES: Mapping[str, str] = MappingProxyType({
     "Graveyard_rework_Skeleton": "Skeleton",
     "SkeletonKingSkeleton": "Skeleton",
     "GoblinCurseGoblin": "Goblin",
+    "Goblin_Stab": "Goblin",
+    "SpearGoblin_Dummy": "SpearGoblin",
     "DeliveryRecruit": "Recruit",
     "TriWizard": "Wizard",
     "Ghost_EV1_Summon_Right": "Ghost_EV1_Summon_Left",
+    "ThreeMusketeer_Rework_Character_2": "ThreeMusketeer_Rework_Character_1",
     "ThreeMusketeer_Rework_Character_3": "ThreeMusketeer_Rework_Character_1",
+})
+
+#: The fields on which an alias in ``SAME_UNIT_ALIASES`` differs from its base in the card
+#: table, and why a player still sees one unit. What the alias drops is kept elsewhere or too
+#: small to read:
+#: - Goblin_Stab (the Goblins card's and the Goblin Gang's goblins): ``load_time_ms`` 500 against
+#:   the Goblin Barrel's and Goblin Drill's 700, so the first stab after a target comes in
+#:   reach lands 200 ms later, with the same cadence after it. Same sprite. No card makes both
+#:   rows, so ``card_ids`` keeps the difference.
+#: - SpearGoblin_Dummy (the Goblin Hut's waves): ``deploy_time_ms`` 500 against 1000. Same
+#:   sprite; the deploy itself is in the observation (``deploy_ticks``, the deploying planes).
+#: - ThreeMusketeer_Rework_Character_2: ``load_time_ms`` 650 against 700, its first shot one
+#:   tick later. The three Musketeers come from one card and show one stat block; the game
+#:   draws them in three sprite variants, which ``_3`` (equal stats) already merged.
+SAME_UNIT_ALIAS_DIFFERENCES: Mapping[str, tuple[str, ...]] = MappingProxyType({
+    "Goblin_Stab": ("load_time_ms",),
+    "SpearGoblin_Dummy": ("deploy_time_ms",),
+    "ThreeMusketeer_Rework_Character_2": ("load_time_ms",),
 })
 
 
@@ -2614,8 +2651,11 @@ SPELL_ID_PLANES = ("own_at", "enemy_at", "own_aim", "enemy_aim_seen")
 def spell_id_planes(
     state: BattleState, team: int, arena: Arena, num_cards: int, clock: SpellAimClock
 ) -> np.ndarray:
-    """uint8 [4, tiles_y, tiles_x], seen by ``team``: which SPELL card is where, in the
-    ``card_ids`` vocabulary (``CARD_ID_OFFSET`` + catalogue id, ``CARD_ID_EMPTY`` for none).
+    """uint8 [4, tiles_y, tiles_x], seen by ``team``: which card made each live spell object,
+    in the ``card_ids`` vocabulary (``CARD_ID_OFFSET`` + catalogue id, ``CARD_ID_EMPTY`` for
+    none). Not only spell cards: the engine's spell objects include the effects troops and
+    buildings leave (the Evo Firecracker's fireworks, the Evo Cannon's barrage, death bombs,
+    deploy blows, hero abilities), under the producer's base card id.
 
     Planes ``SPELL_ID_PLANES``: own, then enemy spells at the tile of their current centre;
     own spells at their aim tile; enemy spells at their aim tile once ``clock`` says a player
@@ -2931,7 +2971,7 @@ class SpatialObsBuilder(ObsBuilder):
             )
         if self.heroes:
             at = idx["own_hero"]
-            sp[at : at + 3] = hero_channels(state, team, self.arena)
+            sp[at : at + 3] = hero_channels(state, team, self.arena, self.champion_ids)
         if self.unit_status:
             at = idx["own_shield"]
             sp[at : at + len(STATUS_SPATIAL_CHANNELS)] = status_channels(

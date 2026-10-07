@@ -5,6 +5,28 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Fixed
+- The hero planes (`heroes=True`) and `card_status`'s `enemy_seen_hero` no longer count a
+  champion as a hero. royalesim up to 0.1.19 marks a champion's unit as a hero, and a
+  champion's button is never spent, so an enemy Golden Knight or Archer Queen showed as an
+  enemy hero with an unused charge for its whole life. Units of cards the catalogue calls
+  champions are skipped.
+
+### Changed
+- `obs.SAME_UNIT_ALIASES` merges three more pairs a player sees as one unit: the Goblins
+  card's and the Goblin Gang's goblins with the Goblin Barrel's (as Goblin), the Goblin Hut's
+  waves with Spear Goblins, and the second of the Three Musketeers with the first. Each differs
+  from its base only in a timing no player reads off the unit, listed in the new
+  `obs.SAME_UNIT_ALIAS_DIFFERENCES`. With `unit_aliases=SAME_UNIT_ALIASES` the vocabulary has
+  three fewer names, and `unit_ids_digest` changes.
+- The `spell_ids` and `SpellState.card_id` descriptions say what the engine reports: every live
+  spell object, under the card that made it. That includes effects troops and buildings leave,
+  such as the Evo Firecracker's fireworks or a Balloon's death bomb. docs/observation-spec.md
+  gains a `spell_ids` section.
+
+
 ## 0.1.18 (2026-10-06)
 
 ### Fixed

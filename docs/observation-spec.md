@@ -259,11 +259,44 @@ unit's OWN type on each tile, own plane then enemy plane, as `card_ids` lays the
 | ties | the lowest uid, as in `card_ids`, so both keys describe the same unit on each tile |
 | pinning | `config()` records `unit_names`; a builder given `unit_names` refuses an engine whose vocabulary differs |
 | refused | an engine that says no vocabulary (MockEngine), and a unit whose type is not said (-1) |
-| aliases | `unit_aliases=` writes a row as its base type when the two are one unit to a player (`obs.SAME_UNIT_ALIASES`: seven rows, e.g. the Graveyard's skeleton as Skeleton); the aliased names leave the vocabulary, and `config()` records the map |
+| aliases | `unit_aliases=` writes a row as its base type when the two are one unit to a player (`obs.SAME_UNIT_ALIASES`: ten rows, e.g. the Graveyard's skeleton as Skeleton, the Goblins card's goblin as Goblin); the aliased names leave the vocabulary, and `config()` records the map |
 
 Like `card_ids`, the key holds category ids, not amounts: a network embeds it rather than
 scaling it. A trace header carries the vocabulary as `unit_types`, and every frame's entity
 rows carry `unit_type`, so a viewer can name each unit by type.
+
+**What an alias drops.** Three of the shipped aliases differ from their base in one timing a
+player cannot read off the unit (`obs.SAME_UNIT_ALIAS_DIFFERENCES`): the Goblins card's
+goblins stab first 200 ms later than the Goblin Barrel's, the Goblin Hut's waves deploy in
+500 ms instead of 1000, and the second of the Three Musketeers fires its first shot one tick
+later. For the goblins, `card_ids` still names the producer, so the difference is recoverable
+when `card_identity=True` is on too. `unit_aliases` does not require it. A pair the engine
+plays differently stays apart: the evolved Goblin Cage's brawler (royalesim 0.1.17 gives it
+less hp than the plain one).
+
+### `spell_ids`, uint8 `[4, 32, 18]` (behind its own flag, default off)
+
+`SpatialObsBuilder(spell_identity=True)` (it needs `card_identity=True`) adds `spell_ids`:
+which card made each live spell object, in the `card_ids` vocabulary (`2 + card_id`, 0 =
+nothing). The planes are `own_at` and `enemy_at`, each object at its current centre, then
+`own_aim` and `enemy_aim_seen`, each object at its aim: the landing point, the roll's end, or
+the centre for an object that acts where it sits. The enemy's aim shows only once a player
+could read it (the rule of `enemy_spell_aim_seen`). Two objects on one tile of one plane keep
+the lower id.
+
+**Not only spell cards.** The engine's `spells` list holds every live spell OBJECT, under the
+base card id of whatever made it. That is cast spells, and also the effects troops and
+buildings leave behind:
+- evolution effects: the Evo Firecracker's fireworks, the Evo Cannon's barrage, the Evo Elite
+  Barbarians' spear Rage, the Evo Princess's freeze areas;
+- death bombs and areas (Balloon, Giant Skeleton, Bomb Tower) and deploy blows (Mega Knight);
+- hero abilities, and a Skeleton Barrel's drop.
+
+A player sees each of these on the board. A troop's or building's id here means an effect it
+left; `CardInfo.card_kind` says which kind of card it is. An object the engine creates at its
+landing point (the Evo Cannon's bombs) shows that tile from its first tick, because its centre
+is its aim; the bombs' offsets from the cannon are fixed, so a player who knows the card knows
+them too.
 
 
 ## 3c. Queued: positional channels (NOT built)
