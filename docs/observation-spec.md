@@ -54,8 +54,8 @@ containing their centre in the own frame. Every plane is clipped to `[0, 64]`
 
 | # | channel | range | meaning | fair? |
 |---|---|---|---|---|
-| 0 | `own_ground_troops` | 0..64 | count of own non-flying troops in the tile | fair |
-| 1 | `own_air_troops` | 0..64 | count of own flying troops | fair |
+| 0 | `own_ground_troops` | 0..64 | count of own troops on the ground in the tile, a flier a Vines catch holds down included (royalesim 0.1.20 on) | fair |
+| 1 | `own_air_troops` | 0..64 | count of own troops in the air | fair |
 | 2 | `own_buildings` | 0..64 | count of own **buildings** (crown towers excluded) | fair |
 | 3 | `own_towers` | 0..64 | count of own crown towers by centre | fair |
 | 4 | `own_hp` | 0..64 | sum of own entity hp / 1000 | fair |

@@ -130,6 +130,7 @@ from .protocol import (
     HAND_SIZE,
     RED,
     STATUS_ABILITY_ACTIVE,
+    STATUS_BIT_NAMES,
     STATUS_CHARGED,
     STATUS_CLONE,
     STATUS_EVOLVED,
@@ -157,6 +158,7 @@ from .protocol import (
     card_is_spell,
     default_calibration,
     default_elixir_law,
+    in_the_air,
     status_of,
     to_own,
 )
@@ -1705,6 +1707,17 @@ class ObsBuilder(ABC):
         self.cards = list(engine.cards())
         self.num_cards = len(self.cards)
         self.champion_ids = frozenset(c.card_id for c in self.cards if c.champion)
+        # Whether the engine says when a flier is held on the ground (STATUS_GROUNDED). Without
+        # it a flier counts as in the air, as every engine before royalesim 0.1.20 implied.
+        bits = getattr(engine, "status_bits", lambda: None)()
+        self.grounded_said = bool(bits) and "grounded" in bits
+        if self.grounded_said:
+            at = STATUS_BIT_NAMES.index("grounded")
+            if bits[: at + 1] != list(STATUS_BIT_NAMES[: at + 1]):
+                raise ValueError(
+                    f"this engine names its status bits {bits}, and this package reads them "
+                    f"as {list(STATUS_BIT_NAMES)}: a bit would be read under another name"
+                )
         rules = engine.rules()
         # The parser's oracle when it was built from the same arena, rules and cards. Its
         # grids are memoised on everything they read (``PlacementOracle.grid_key``), so one
@@ -1987,13 +2000,13 @@ class ObsBuilder(ABC):
 # ---------------------------------------------------------------------------
 
 FAIR_SPATIAL_CHANNELS: list[tuple[str, str]] = [
-    ("own_ground_troops", "count of own ground troops whose centre is in the tile"),
-    ("own_air_troops", "count of own flying troops"),
+    ("own_ground_troops", "count of own troops on the ground whose centre is in the tile"),
+    ("own_air_troops", "count of own troops in the air"),
     ("own_buildings", "count of own buildings (crown towers have their own channel)"),
     ("own_towers", "count of own crown towers by centre"),
     ("own_hp", "sum of own entity hp / 1000 in the tile"),
-    ("enemy_ground_troops", "count of enemy ground troops"),
-    ("enemy_air_troops", "count of enemy flying troops"),
+    ("enemy_ground_troops", "count of enemy troops on the ground"),
+    ("enemy_air_troops", "count of enemy troops in the air"),
     ("enemy_buildings", "count of enemy buildings"),
     ("enemy_towers", "count of enemy crown towers"),
     ("enemy_hp", "sum of enemy entity hp / 1000"),
@@ -2152,8 +2165,14 @@ SPELL_ROWS = (
 )
 
 
-def entity_channels(entities: Sequence[EntityState], team: int, arena: Arena) -> np.ndarray:
+def entity_channels(
+    entities: Sequence[EntityState], team: int, arena: Arena, grounded_said: bool = False
+) -> np.ndarray:
     """The first ``ENTITY_CHANNELS`` channels, float32 [12, tiles_y, tiles_x], seen by ``team``.
+
+    A troop goes in the air channel while it is in the air (``protocol.in_the_air``): a flier
+    a Vines catch holds on the ground counts as a ground troop for the hold, where an engine
+    says it (``grounded_said``, ``STATUS_GROUNDED``).
 
     Every cell is an INTEGER sum (counts, raw hp) converted to float32 exactly once,
     so the result is a function of the entity SET and cannot depend on list order
@@ -2171,7 +2190,7 @@ def entity_channels(entities: Sequence[EntityState], team: int, arena: Arena) ->
         ty = min(max(oy // arena.subtile, 0), arena.tiles_y - 1)
         base = 0 if e.team == team else TEAM_STRIDE
         if e.kind == EntityKind.TROOP:
-            acc[base + (1 if e.flying else 0), ty, tx] += 1
+            acc[base + (1 if in_the_air(e, grounded_said) else 0), ty, tx] += 1
         elif e.kind == EntityKind.BUILDING:
             acc[base + 2, ty, tx] += 1
         else:
@@ -2987,7 +3006,10 @@ class SpatialObsBuilder(ObsBuilder):
     def build(self, state: BattleState, team: int, action_mask: np.ndarray) -> dict[str, Any]:
         sp = np.zeros(self.shape, dtype=np.float32)
         idx = self._channel_index
-        sp[:ENTITY_CHANNELS] = entity_channels(state.entities, team, self.arena)
+        # By keyword and only when said, so a stand-in with the old three arguments (a test's
+        # plant) keeps working on an engine without the bit.
+        held = {"grounded_said": True} if self.grounded_said else {}
+        sp[:ENTITY_CHANNELS] = entity_channels(state.entities, team, self.arena, **held)
         sp[idx["water"] : idx["no_deploy"] + 1] = self._static[team]
         sp[idx["enemy_troop_zone"]] = self._enemy_troop_zone(state, team)
         rows = spell_channels(state, team, self.arena)
@@ -3274,7 +3296,7 @@ class EntityListObsBuilder(ObsBuilder):
                     e.hp,
                     e.max_hp,
                     e.radius,
-                    int(e.flying),
+                    int(in_the_air(e, self.grounded_said)),
                     e.deploy_ticks,
                     e.stun_ticks,
                     e.knockback_ticks,
@@ -3293,7 +3315,7 @@ class EntityListObsBuilder(ObsBuilder):
             f[9] = hp / max(1, e.max_hp)
             f[10] = min(1.0, hp / HP_SCALE)
             f[11] = e.radius / a.subtile
-            f[12] = float(e.flying)
+            f[12] = float(in_the_air(e, self.grounded_said))
             f[13] = float(e.deploy_ticks > 0)
             f[14] = min(1.0, e.deploy_ticks / 100.0)
             f[15] = float(e.stun_ticks > 0)

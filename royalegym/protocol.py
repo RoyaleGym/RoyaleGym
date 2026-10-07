@@ -541,7 +541,9 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # of it. STATUS_UNDERGROUND: tunnelling now (untargetable, immune to every hit).
     # STATUS_INVISIBLE: invisible to enemies now (untargetable; area damage still lands).
     # STATUS_HIDDEN: a building hidden in the ground (the Tesla). STATUS_EVOLVED: an evolved
-    # unit. STATUS_HERO: a hero unit. Higher bits reserved.
+    # unit. STATUS_HERO: a hero unit. Then STATUS_CLONE, STATUS_WINDUP, STATUS_ABILITY_ACTIVE,
+    # STATUS_CHARGED (royalesim 0.1.8) and STATUS_GROUNDED (0.1.20); higher bits reserved.
+    # Which bits an engine sets: ``Engine.status_bits()``, where it says.
     # -1 means the engine did not report, so read it through ``status_of``, never raw.
     status_flags: int = -1
     # The unit's LEVEL, one scale across rarities, as the engine played it (asked for by
@@ -587,6 +589,25 @@ STATUS_CLONE = 32
 STATUS_WINDUP = 64
 STATUS_ABILITY_ACTIVE = 128
 STATUS_CHARGED = 256
+#: A flier held on the ground (a Vines catch): ``flying`` still says what the unit is, and this
+#: bit says that for now it is on the ground, where ground attacks reach it (royalesim 0.1.20).
+STATUS_GROUNDED = 512
+#: The engine's names for its status bits: name ``k`` is bit ``1 << k`` (``royalesim.STATUS_BITS``
+#: from 0.1.20). An engine that does not list a name does not set that bit.
+STATUS_BIT_NAMES = (
+    "underground", "invisible", "hidden", "evolved", "hero", "clone", "ability_windup",
+    "ability_active", "charged", "grounded",
+)
+
+
+def in_the_air(entity: EntityState, grounded_said: bool) -> bool:
+    """Whether ``entity`` is in the air NOW: a flier, and not held on the ground. With
+    ``grounded_said`` False (an engine that does not set ``STATUS_GROUNDED``) a flier always
+    counts as in the air, which is what every engine before 0.1.20 implied."""
+    if not entity.flying:
+        return False
+    status = status_of(entity) if grounded_said else None
+    return status is None or not status & STATUS_GROUNDED
 
 
 def status_of(entity: EntityState) -> int | None:

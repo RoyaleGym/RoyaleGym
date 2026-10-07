@@ -931,6 +931,13 @@ class RustEngine:
         fn = getattr(self._battle, "unit_types_json", None)
         return None if fn is None else [str(n) for n in json.loads(fn())]
 
+    def status_bits(self) -> list[str] | None:
+        """The engine's names for the ``EntityState.status_flags`` bits it sets, name ``k`` for
+        bit ``1 << k`` (``royalesim.STATUS_BITS``, 0.1.20 on). None from an engine that does
+        not list them: which of the higher bits it sets is then not said."""
+        names = getattr(_core, "STATUS_BITS", None)
+        return None if names is None else [str(n) for n in names]
+
     def arena(self) -> Arena:
         return self._arena
 

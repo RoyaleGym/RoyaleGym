@@ -13,6 +13,11 @@ change the observation's shape; each such change is listed here.
   champion's button is never spent, so an enemy Golden Knight or Archer Queen showed as an
   enemy hero with an unused charge for its whole life. Units of cards the catalogue calls
   champions are skipped.
+- A flier a Vines catch holds on the ground counts as a ground troop for the hold: in the
+  spatial troop channels and in the entity list's `flying` feature. A player sees it on the
+  ground, and ground attacks reach it. Up to royalesim 0.1.19 it stayed in the air channel. It
+  needs royalesim 0.1.20, which sets `STATUS_GROUNDED` (512) and lists its bits
+  (`Engine.status_bits()`); with an older engine nothing changes.
 
 ### Added
 - `SpatialObsBuilder(effect_identity=True)`, with `spell_identity`: `spell_ids` grows from 4
