@@ -93,21 +93,16 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 1  crowns [1, 2]  tick 6123
+winner 1  crowns [0, 1]  tick 3600
 ```
 
-Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes, and it was one crown
-each then: Red took Blue's left princess tower at tick 1800 and Blue took Red's left one at tick
-3580. So the match went to overtime, where the first crown wins, and nobody took one before it ran
-out at tick 6000. Level on crowns, the tiebreak decided it: play stopped, the board was cleared
-down to the crown towers, and from tick 6067 every tower lost the same health each tick. Blue's
-weakest tower had the least left, 796 against Red's 2240, so it fell first, at tick 6123, and Red
-won 2-1 (re-run 2026-10-02 on engine build `6f18fbeda772dfad`, RoyaleSim 0.1.4, commit `9ee48a3`,
-with the 15.535 card table).
+Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes. Red took Blue's left
+princess tower at tick 1800 and Blue took none of Red's, so when the three minutes ran out Red
+won 1-0 (re-run 2026-10-07 on engine build `9e0f5180fcfc1434`, RoyaleSim 0.1.21, commit
+`6cd55cc`, with the 15.535 card table).
 
-One env step is half a second of game time, which is 10 ticks. That battle was 613 steps, the full
-five minutes and six seconds of tiebreak, so each player made 613 decisions. It takes under a
-second of real time.
+One env step is half a second of game time, which is 10 ticks. That battle was 360 steps, the full
+three minutes, so each player made 360 decisions. It takes under a second of real time.
 
 !!! warning "Name the deck, and name it card by card"
     Notice the deck is looked up by name and not by number. A card id is only a position in the
@@ -151,14 +146,14 @@ print(f"steps {steps}  reward {total:.3f}  terminated {terminated}")
 
 ```
 legal moves on the first step: 1 of 2305
-steps 614  reward 1.234  terminated True
+steps 615  reward 1.237  terminated True
 ```
 
 Only the wait is legal on the first step, because a match refuses every deploy for its opening
 seconds. Play opens after 9 steps, four and a half seconds in, and this hand then has 1318 legal
 moves.
 
-Blue won. 614 steps is the three minutes of normal time, the two of overtime and the tiebreak:
+Blue won. 615 steps is the three minutes of normal time, the two of overtime and the tiebreak:
 each side took one princess tower in normal time, nobody scored in overtime, and the tiebreak took
 Red's weakest tower first, a second crown for Blue. `terminated True` says the match ended for real rather than being cut short. The reward is positive because `default_reward()` pays 1.0 for a win and charges 1.0 for a
 loss, with the crown and tower terms on top.
@@ -167,8 +162,8 @@ Swap `me.act(...)` for your own policy and that loop is a training loop with the
 out. Run it twice and you get the same numbers, because the seed fixes everything.
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
-treat them as "this ran", not as constants. These were run on 2026-10-02 on engine build
-`6f18fbeda772dfad`, RoyaleSim 0.1.4, commit `9ee48a3`, with the 15.535 card table.
+treat them as "this ran", not as constants. These were run on 2026-10-07 on engine build
+`9e0f5180fcfc1434`, RoyaleSim 0.1.21, commit `6cd55cc`, with the 15.535 card table.
 
 ## The legality mask, which is the part people like
 

@@ -89,21 +89,17 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 ```
 
 ```
-winner 1  crowns [1, 2]  tick 6123
+winner 1  crowns [0, 1]  tick 3600
 ```
 
-That is a whole match, re-run 2026-10-02 on engine build `6f18fbeda772dfad` with the **15.535 card
-table**, which the Install steps below put at `cards.json`. It was one crown each when the three
-minutes ran out: Red took Blue's left princess tower at tick 1800 and Blue took Red's left one at
-tick 3580. Nobody scored in overtime, so when it ended at tick 6000 the tiebreak decided it: play
-stopped, the board was cleared down to the crown towers, and from tick 6067 every tower lost the
-same health each tick. Blue's weakest tower had the least left, so it fell first, at tick 6123,
-and Red won 2-1.
+That is a whole match, re-run 2026-10-07 on engine build `9e0f5180fcfc1434` with the **15.535 card
+table**, which the Install steps below put at `cards.json`. Red took Blue's left princess tower at
+tick 1800 and Blue took none of Red's, so Red won 1-0 when the three minutes ran out at tick 3600.
 
 Measured on the project's desktop, not on a clean runner, building the engine from
-**RoyaleSim `9ee48a3`**. The compiled engine is `engine_binary_sha256` `db1b9c91f77ad735`.
+**RoyaleSim `6cd55cc`**. The compiled engine is `engine_binary_sha256` `35faea955901eb7b`.
 
-**This result has moved seven times.** The first six were each traced to one engine rule the same
+**This result has moved eight times.** The first six were each traced to one engine rule the same
 way: switch that one rule back, run this exact program, and get the previous result exactly.
 
 - On 2026-09-23 it went from `winner 0  crowns [2, 1]  tick 3600` to `winner 0  crowns [1, 0]  tick
@@ -129,11 +125,18 @@ way: switch that one rule back, run this exact program, and get the previous res
   (`placement.TROOP_BUILDING_TAPS`). With that rule switched back, this build prints `winner 1
   crowns [0, 1]  tick 3600` exactly; switching back any one of the other four placement rules
   that changed with it does not.
-- On 2026-10-02 it moved to the result above, when a level overtime stopped ending in a tiebreak
-  at tick 6000 and started ending as on the client: play stops, the board clears down to the
-  crown towers, and the towers drain until one falls (`match.OVERTIME_TIEBREAK`, RoyaleSim 0.1.4).
+- On 2026-10-02 it moved to `winner 1  crowns [1, 2]  tick 6123`, when a level overtime stopped
+  ending in a tiebreak at tick 6000 and started ending as on the client: play stops, the board
+  clears down to the crown towers, and the towers drain until one falls
+  (`match.OVERTIME_TIEBREAK`, RoyaleSim 0.1.4).
   Up to tick 6000 the battle is the same, with the same two towers falling at ticks 1800 and 3580,
   and so is the winner: the drain takes the weakest tower first, the one the old tiebreak judged.
+- On 2026-10-07 it moved to the result above, when a fallen princess tower started opening her
+  lane's bridge to troops, as replays and taps measured on client 16.402 show
+  (`arena.TERRITORY_MODEL`, the one rule RoyaleSim 0.1.21 changed). The battle is the same up
+  to tick 1920: Red still takes Blue's left princess tower at tick 1800, and then the bridge on
+  that side gives Red's random play more legal taps, so its choices part from there. Blue no
+  longer takes Red's left tower at tick 3580.
 
 **The RoyaleSim commit is written here because the digest cannot supply it.** `build_digest` hashes
 the calibration values and the arena compiled into the extension; it has no access to the Rust at
@@ -159,8 +162,8 @@ against recordings, which `cards.json` lists under `thin_slice`, so the example 
 best-measured part of the engine. Any eight will do. Leave the deck out and each team is dealt a
 random eight, which is the default.
 
-One env step is half a second of game time, which is 10 ticks. The battle ended at tick 6123,
-five minutes and six seconds in, so each player made 613 decisions. The whole battle takes under a second of real time, and how far under depends
+One env step is half a second of game time, which is 10 ticks. The battle ended at tick 3600,
+three minutes in, so each player made 360 decisions. The whole battle takes under a second of real time, and how far under depends
 entirely on what else your machine is doing: four runs on 2026-09-22, on a laptop with 8 GB of
 memory and several other jobs going, gave 0.57 to 0.74 s. Treat any timing on this page the same way.
 
