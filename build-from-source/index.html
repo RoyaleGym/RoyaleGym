@@ -4046,13 +4046,13 @@ meantime. This program needs Step 2 and Step 4, and does not need Step 3:</p>
 <a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"winner </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">winner</span><span class="si">}</span><span class="s2">  crowns </span><span class="si">{</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">crowns</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">s</span><span class="o">.</span><span class="n">players</span><span class="p">]</span><span class="si">}</span><span class="s2">  tick </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">tick</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>16 cards in the stand-in
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>winner 0  crowns [3, 1]  tick 5585
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>winner 0  crowns [2, 1]  tick 4388
 </code></pre></div>
 <p>Each player took one tower in the three minutes, so the match went to overtime, and player 0 won
-it by taking the king tower at tick 5585, a minute and a half into overtime. A king tower is worth
-all three crowns. <code>MockEngine</code> reads RoyaleSim's calibration file each time it starts, so this
-result moves when that file does. It was run on 2026-09-29 against the calibration in RoyaleSim
-<code>1e843ea</code>, the one with triple elixir late in overtime.</p>
+it by taking a second tower at tick 4388, about 40 seconds into overtime: in overtime the next
+tower decides. <code>MockEngine</code> reads RoyaleSim's calibration file each time it starts, so this
+result moves when that file does. It was run on 2026-10-07 against the calibration in RoyaleSim
+<code>6cd55cc</code>, the one where a fallen princess opens her lane's bridge to troops.</p>
 <p>Be clear about what you are using, though. <code>MockEngine</code> is a stand in, not a second simulator. It
 carries 16 cards rather than the full catalogue, spells resolve instantly, there are no stuns or
 knockbacks, and cards run at their base level. It is there so you can write and debug your code.
