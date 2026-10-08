@@ -39,8 +39,8 @@ import pytest
 
 from royalegym import ClashParallelEnv, ClashSelfPlayVecEnv
 from royalegym.mock_engine import MockEngine
-from royalegym.protocol import BLUE, RED, BattleState, Winner
-from royalegym.rust_engine import RustEngine
+from royalegym.protocol import BLUE, RED, BattleState, MatchSetup, Winner
+from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 from royalegym.state_mutator import StateMutator
 from test_reward_ground_truth import (
     CASES,
@@ -61,6 +61,7 @@ from test_reward_ground_truth import (
 )
 
 SEATS = (BLUE, RED)
+NEEDS_CORE = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 
 
 # The tower_max_hp defect these cases allowed for was fixed in the engine on 2026-09-22,
@@ -106,7 +107,7 @@ def leak_steps(b: Battle, team: int) -> int:
 
 
 @pytest.mark.parametrize(("kind", "leader"), CASES)
-def test_the_battle_can_tell_the_seats_and_the_clock_apart(kind, leader):
+def test_the_battle_can_tell_the_seats_apart(kind, leader):
     b = battle(kind, leader)
     require_a_decided_battle(b, f"{kind}-{'blue' if leader == BLUE else 'red'}-leads")
     end = final(b)
@@ -118,10 +119,37 @@ def test_the_battle_can_tell_the_seats_and_the_clock_apart(kind, leader):
     for name, truth in TRUTH.items():
         sums = [sum(truth(b, s, team) for s in b.steps) for team in SEATS]
         assert abs(sums[BLUE] - sums[RED]) > TOL, f"{name} sums to the same for both seats"
-    ticks = end.tick - b.start.tick
-    assert ticks != len(b.steps) * (b.steps[0].cur.tick - b.steps[0].prev.tick)
     for s in b.steps[:-1]:
         assert "own_crowns" not in s.info[BLUE], "a summary arrived before the episode ended"
+
+
+@pytest.mark.parametrize("kind", ["mock", pytest.param("rust", marks=NEEDS_CORE)])
+def test_the_summary_counts_engine_ticks_not_steps_times_the_decision(kind):
+    """``episode_ticks`` is the engine's clock, not the steps taken times the decision length.
+
+    A battle that ends on a step boundary cannot tell the two apart, and the scripted battles
+    above can (royalesim 0.1.21's open bridge moved one onto a boundary). So this battle is
+    built to end mid-step: it starts 20 steps and 3 ticks before overtime runs out, nobody
+    plays, and the tiebreak ends it at a tick no step boundary falls on.
+    """
+    engine = make_engine(kind)
+    env = ClashParallelEnv(engine)
+    env.reset(seed=1)
+    s = env.battle_state
+    step = env.decision_ticks
+    start = s.regular_ticks + s.overtime_ticks - (20 * step + 3)
+    decks = [list(p.deck) for p in s.players]
+    env.reset(seed=1, options={"setup": MatchSetup(decks=decks, start_tick=start)})
+    steps = 0
+    while env.agents:
+        *_, infos = env.step({agent: 0 for agent in env.agents})
+        steps += 1
+    ticks = env.battle_state.tick - start
+    assert ticks % step, f"the battle ended on a step boundary ({ticks} ticks): it shows nothing"
+    for agent in ("blue", "red"):
+        assert infos[agent]["episode_ticks"] == ticks
+        assert infos[agent]["episode_steps"] == steps
+    assert ticks != steps * step
 
 
 @pytest.mark.parametrize(("kind", "leader"), CASES)

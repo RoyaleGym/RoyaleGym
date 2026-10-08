@@ -1293,9 +1293,12 @@ def test_troop_territory_mask_mock_and_rust_agree_on_every_half_cell(
     and team -- every half-cell centre and
     corner, Knight / Minions / Cannon, both teams, seven tower states. The shape is
     held too: with one enemy princess down the Knight's opened ground is exactly
-    own half-rows 34..41 (far bank y = 17 to the king rect y = 21, 8 half-rows);
-    none while every enemy tower stands; and it is on the fallen tower's side --
-    the enemy's own-LEFT princess stands on MY right (own half-cols 18..35).
+    own half-rows 34..41 (far bank y = 17 to the king rect y = 21, 8 half-rows),
+    and under the open-bridge territory model (royalesim 0.1.21) also half-rows 32
+    and 33 on that lane's bridge, its own half-cols only (the enemy's own-LEFT lane:
+    27..30; the right: 5..8); none while every enemy tower stands; and it is on the
+    fallen tower's side -- the enemy's own-LEFT princess stands on MY right (own
+    half-cols 18..35).
     """
     SEEN_TERRITORY_STATUSES.clear()
     dis, pocket = territory_disagreements(rust_arm, mock, oracle, TERRITORY_STATES[towers])
@@ -1316,17 +1319,26 @@ def test_troop_territory_mask_mock_and_rust_agree_on_every_half_cell(
             name, dict(SEEN_TERRITORY_STATUSES)
         )
     hp = TERRITORY_STATES[towers]
+    open_bridge = not mock.rules().river_band_closed_to_troops
+    assert open_bridge == (not rust_arm.rules().river_band_closed_to_troops)
     for team in (BLUE, RED):
         down = {s for s in (TowerSlot.LEFT, TowerSlot.RIGHT) if hp[1 - team][s] == 0}
         rows = {r for r, _ in pocket[team]}
         cols = {c for _, c in pocket[team]}
         want_cols: set[int] = set()
+        want_bridge: set[int] = set()
         if TowerSlot.LEFT in down:
             want_cols |= set(range(18, 36))
+            want_bridge |= set(range(27, 31))
         if TowerSlot.RIGHT in down:
             want_cols |= set(range(0, 18))
-        assert rows == (set(range(34, 42)) if down else set()), (towers, team, sorted(rows))
+            want_bridge |= set(range(5, 9))
+        first = 32 if open_bridge else 34
+        assert rows == (set(range(first, 42)) if down else set()), (towers, team, sorted(rows))
         assert cols == want_cols, (towers, team, sorted(cols))
+        for row in (32, 33) if open_bridge else ():
+            bridge = {c for r, c in pocket[team] if r == row}
+            assert bridge == want_bridge, (towers, team, row, sorted(bridge))
 
 
 def test_plant_mask_rect_shrunk_by_a_half_tile_is_caught(rust, mock, monkeypatch):
