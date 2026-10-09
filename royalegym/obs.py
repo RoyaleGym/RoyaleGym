@@ -2800,13 +2800,22 @@ def unit_id_planes(
 
 
 def unit_vocabulary(
-    names: Sequence[str], aliases: Mapping[str, str] | None
+    names: Sequence[str],
+    aliases: Mapping[str, str] | None,
+    said: Sequence[str] | None = None,
 ) -> tuple[list[str], np.ndarray | None]:
     """The ``unit_ids`` vocabulary under ``aliases``, and the engine-index -> vocabulary-index
-    lookup (None without aliases). An aliased name is written as its base and drops out of the
-    vocabulary; the rest keep the engine's order. Refuses, by name, an alias or a base the
-    engine does not have, a base that is itself an alias (a chain) and a name aliased to
-    itself."""
+    lookup (None where it is the identity). An aliased name is written as its base and drops out
+    of the vocabulary; the rest keep the order of ``names``. Refuses, by name, an alias or a base
+    ``names`` does not have, a base that is itself an alias (a chain) and a name aliased to
+    itself.
+
+    ``said``: the engine's own unit types, when ``names`` is a PINNED vocabulary
+    (``SpatialObsBuilder(unit_names=...)``) that may hold more, in any order. Each said type
+    then maps to its place in the pin by name, and one the pin lacks is refused. None, or the
+    same list, means ``names`` is the engine's list itself."""
+    if said is not None and list(said) != list(names):
+        return _pinned_unit_vocabulary(names, aliases or {}, said)
     if not aliases:
         return list(names), None
     known = set(names)
@@ -2826,6 +2835,41 @@ def unit_vocabulary(
     vocab = [n for n in names if n not in aliases]
     at = {n: i for i, n in enumerate(vocab)}
     lookup = np.array([at[aliases.get(n, n)] for n in names], dtype=np.int64)
+    return vocab, lookup
+
+
+def _pinned_unit_vocabulary(
+    pinned: Sequence[str], aliases: Mapping[str, str], said: Sequence[str]
+) -> tuple[list[str], np.ndarray]:
+    """``unit_vocabulary`` for a pin that is not the engine's list: the vocabulary is the pin's,
+    and the lookup takes each engine index to its pinned place by name."""
+    seen: set[str] = set()
+    for name in pinned:
+        if name in seen:
+            raise ValueError(f"unit_names names {name!r} twice; each unit type needs one id")
+        seen.add(name)
+    missing = [n for n in said if n not in seen]
+    if missing:
+        raise ValueError(
+            f"unit_ids is pinned to {len(pinned)} unit names, and this engine says "
+            f"{len(missing)} it lacks: {missing[:6]}. They would have no id the checkpoint "
+            "learned. Add them to the pin (append, so no pinned id moves), or use the "
+            "engine's vocabulary."
+        )
+    for alias, base in aliases.items():
+        for name in (alias, base):
+            if name not in seen:
+                raise ValueError(f"unit_aliases names {name!r}, which the pinned unit_names lack")
+        if alias == base:
+            raise ValueError(f"unit_aliases maps {alias!r} to itself")
+        if base in aliases:
+            raise ValueError(
+                f"unit_aliases makes a chain: {alias!r} -> {base!r} -> {aliases[base]!r}; "
+                "map each alias straight to its base"
+            )
+    vocab = [n for n in pinned if n not in aliases]
+    at = {n: i for i, n in enumerate(vocab)}
+    lookup = np.array([at[aliases.get(n, n)] for n in said], dtype=np.int64)
     return vocab, lookup
 
 
@@ -3018,8 +3062,11 @@ class SpatialObsBuilder(ObsBuilder):
             )
         return names
 
-    def _check_unit_names(self, engine: Engine) -> list[str]:
-        """The engine's unit-type vocabulary, or a refusal: none said, or not the one pinned."""
+    def _check_unit_names(self, engine: Engine) -> tuple[list[str], list[str]]:
+        """The ``unit_ids`` names (the pin, else the engine's) and the engine's own unit types,
+        or a refusal when the engine says none. A pin may hold more names than the engine, in
+        any order: ids come from the pin by name (``unit_vocabulary``), which refuses a type
+        the pin lacks."""
         said = getattr(engine, "unit_types", None)
         names = said() if callable(said) else None
         if names is None:
@@ -3029,20 +3076,7 @@ class SpatialObsBuilder(ObsBuilder):
                 "Use an engine that says it, or leave unit_identity off."
             )
         pinned = self._pinned_unit_names
-        if pinned is not None and pinned != list(names):
-            i = next(
-                (k for k, (x, y) in enumerate(zip(pinned, names, strict=False)) if x != y),
-                min(len(pinned), len(names)),
-            )
-            was = pinned[i] if i < len(pinned) else "<end>"
-            now = names[i] if i < len(names) else "<end>"
-            raise ValueError(
-                f"unit_ids was built for a vocabulary that has {was!r} at id {i}; this engine "
-                f"has {now!r} there ({len(pinned)} pinned names, {len(names)} said). Unit ids "
-                "are positional, so every unit_ids value from here on would name another unit "
-                "than the checkpoint learned. Refusing rather than reinterpreting."
-            )
-        return list(names)
+        return (list(pinned) if pinned is not None else list(names)), list(names)
 
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
@@ -3116,10 +3150,12 @@ class SpatialObsBuilder(ObsBuilder):
                     dtype=np.uint8,
                 )
         if self.unit_identity:
-            self.unit_names = self._check_unit_names(engine)
-            self.num_units = len(self.unit_names)
+            self.unit_names, said = self._check_unit_names(engine)
+            # The engine's own types: the range of EntityState.unit_type, which the lookup maps
+            # into the vocabulary (the pin's, when one holds more).
+            self.num_units = len(said)
             self.unit_vocabulary, self._unit_lookup = unit_vocabulary(
-                self.unit_names, self.unit_aliases
+                self.unit_names, self.unit_aliases, said
             )
             self.unit_ids_digest = unit_ids_digest(self.unit_names, self.unit_aliases)
             self.unit_vocab = len(self.unit_vocabulary) + UNIT_ID_OFFSET

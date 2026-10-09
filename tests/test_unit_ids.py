@@ -19,7 +19,13 @@ import pytest
 
 from royalegym.env import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
-from royalegym.obs import UNIT_ID_EMPTY, UNIT_ID_OFFSET, SpatialObsBuilder, unit_id_planes
+from royalegym.obs import (
+    UNIT_ID_EMPTY,
+    UNIT_ID_OFFSET,
+    SpatialObsBuilder,
+    unit_id_planes,
+    unit_ids_digest,
+)
 from royalegym.protocol import BLUE, RED, EntityKind, ShuffleMode
 from royalegym.replay import ReplayRecorder
 from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
@@ -487,3 +493,152 @@ def test_the_graveyards_skeletons_are_skeletons_only_through_the_alias_map() -> 
             seen |= set(obs["unit_ids"][0][obs["card_ids"][0] == 2 + graveyard].tolist())
         read[label] = sorted(builder.unit_vocabulary[v - UNIT_ID_OFFSET] for v in seen)
     assert read == {"raw": ["Graveyard_rework_Skeleton"], "aliased": ["Skeleton"]}, read
+
+
+# --- A pinned vocabulary may hold more than the engine says (Train 10-09) -------------------------
+#
+# Training mixes battles replayed on two card tables, and a newer table inserts unit types, which
+# shifts every later engine index. A pin that holds both tables' names (any order; append-only is
+# the stable choice) numbers every unit by its place in the PIN, so both tables give one
+# vocabulary and one digest. Only an engine type the pin lacks is refused.
+
+#: The old vocabulary with the newer table's type appended, plus one neither engine says.
+PIN = [*UNITS, "BarrelGoblin", "Unsaid"]
+
+
+def _random_obs(env, seed: int, steps: int = 60) -> list[dict]:
+    """Both seats' observations over a seeded random battle, moves read off the masks."""
+    obs, _ = env.reset(seed=seed)
+    rng = np.random.default_rng(seed)
+    out = [obs]
+    for _ in range(steps):
+        if not env.agents:
+            break
+        acts = {}
+        for agent in env.agents:
+            legal = np.flatnonzero(obs[agent]["action_mask"])
+            legal = legal[legal != 0]
+            acts[agent] = int(rng.choice(legal)) if len(legal) and rng.random() < 0.5 else 0
+        obs, *_ = env.step(acts)
+        out.append(obs)
+    return out
+
+
+@pytest.mark.parametrize("engine", [UnitTypedMock, SplitBarrelMock])
+def test_a_superset_pin_numbers_every_unit_by_its_place_in_the_pin(engine) -> None:
+    said = engine().unit_types()
+    pinned = _random_obs(_env(engine=engine(), unit_names=PIN), 5)
+    plain = _random_obs(_env(engine=engine()), 5)
+    assert len(pinned) == len(plain) > 30
+    shown = 0
+    for p, q in zip(pinned, plain, strict=True):
+        for agent in ("blue", "red"):
+            for key, want in q[agent].items():
+                got = p[agent][key]
+                if key != "unit_ids":
+                    assert got.tobytes() == want.tobytes(), key
+                    continue
+                # The same tiles, each unit renamed from its engine index to its pin index.
+                expect = np.where(
+                    want == UNIT_ID_EMPTY,
+                    UNIT_ID_EMPTY,
+                    np.vectorize(lambda v: UNIT_ID_OFFSET + PIN.index(said[v - UNIT_ID_OFFSET]))(
+                        np.maximum(want, UNIT_ID_OFFSET)
+                    ),
+                ).astype(np.uint8)
+                assert got.tobytes() == expect.tobytes()
+                shown += int((got != UNIT_ID_EMPTY).sum())
+    assert shown > 100  # vacuity: many units were drawn
+    env = _env(engine=engine(), unit_names=PIN)
+    env.reset(seed=1)
+    assert int(env.observation_space("blue")["unit_ids"].high.max()) + 1 == (
+        len(PIN) + UNIT_ID_OFFSET
+    )
+    assert env.obs_builder.config()["unit_names"] == PIN
+
+
+def test_both_vocabularies_under_one_pin_give_one_digest_and_one_id_per_unit() -> None:
+    """The newer table's insertion shifts the engine's indices; under the pin a Goblin is the
+    same id on both, the Barrel's own row has its own, and the digests agree."""
+    old = _env(engine=UnitTypedMock(), unit_names=PIN)
+    new = _env(engine=SplitBarrelMock(), unit_names=PIN)
+    old_values, new_values = _goblin_values(old), _goblin_values(new)
+    goblin = UNIT_ID_OFFSET + PIN.index("Goblin")
+    assert old_values == {"Goblins": {goblin}, "GoblinBarrel": {goblin}}, old_values
+    assert new_values == {
+        "Goblins": {goblin},
+        "GoblinBarrel": {UNIT_ID_OFFSET + PIN.index("BarrelGoblin")},
+    }, new_values
+    assert old.obs_builder.unit_ids_digest == new.obs_builder.unit_ids_digest
+    assert old.obs_builder.unit_ids_digest == unit_ids_digest(PIN, None)
+    # Without the pin the two engines number units differently: the case the pin exists for.
+    assert _env(engine=UnitTypedMock()).obs_builder.unit_ids_digest != (
+        _env(engine=SplitBarrelMock()).obs_builder.unit_ids_digest
+    )
+
+
+def test_aliases_under_a_superset_pin_may_name_a_unit_one_engine_lacks() -> None:
+    aliases = {"BarrelGoblin": "Goblin"}
+    old = _env(engine=UnitTypedMock(), unit_names=PIN, unit_aliases=aliases)
+    new = _env(engine=SplitBarrelMock(), unit_names=PIN, unit_aliases=aliases)
+    goblin = UNIT_ID_OFFSET + [n for n in PIN if n not in aliases].index("Goblin")
+    assert _goblin_values(new) == {"Goblins": {goblin}, "GoblinBarrel": {goblin}}
+    assert _goblin_values(old) == {"Goblins": {goblin}, "GoblinBarrel": {goblin}}
+    assert old.obs_builder.unit_ids_digest == new.obs_builder.unit_ids_digest
+    assert old.obs_builder.unit_vocabulary == [n for n in PIN if n not in aliases]
+
+
+def test_a_pin_equal_to_the_engine_s_list_changes_nothing() -> None:
+    for engine, aliases in ((UnitTypedMock, None), (SplitBarrelMock, {"BarrelGoblin": "Goblin"})):
+        said = engine().unit_types()
+        pinned = _random_obs(_env(engine=engine(), unit_names=said, unit_aliases=aliases), 6)
+        plain = _random_obs(_env(engine=engine(), unit_aliases=aliases), 6)
+        for p, q in zip(pinned, plain, strict=True):
+            for agent in ("blue", "red"):
+                for key in q[agent]:
+                    assert p[agent][key].tobytes() == q[agent][key].tobytes(), key
+
+
+def test_a_pin_that_lacks_a_unit_the_engine_says_or_repeats_one_is_refused() -> None:
+    with pytest.raises(ValueError, match="BarrelGoblin"):
+        _env(engine=SplitBarrelMock(), unit_names=list(UNITS))
+    with pytest.raises(ValueError, match="Knight"):
+        _env(unit_names=[n for n in PIN if n != "Knight"])
+    with pytest.raises(ValueError, match="twice"):
+        _env(unit_names=[*PIN, "Goblin"])
+    with pytest.raises(ValueError, match="Nobody"):
+        _env(unit_names=PIN, unit_aliases={"Nobody": "Goblin"})
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_on_rustengine_a_reordered_superset_pin_renumbers_every_unit_by_name() -> None:
+    """The real engine's vocabulary, pinned reversed with a name it does not say: the same
+    tiles, each unit at its pinned place, every other key unchanged, with the shipped aliases."""
+    from royalegym.obs import SAME_UNIT_ALIASES
+    from royalegym.rust_engine import RustEngine
+
+    said = RustEngine().unit_types()
+    pin = ["NotSaidByThisTable", *reversed(said)]
+    aliases = dict(SAME_UNIT_ALIASES)
+
+    def run(**builder):
+        return _random_obs(ClashParallelEnv(RustEngine(), obs_builder=SpatialObsBuilder(
+            card_identity=True, unit_identity=True, unit_aliases=aliases, **builder)), 9, 120)
+
+    plain, pinned = run(), run(unit_names=pin)
+    plain_vocab = [n for n in said if n not in aliases]
+    pin_vocab = [n for n in pin if n not in aliases]
+    to_pin = np.zeros(256, dtype=np.uint8)
+    for i, name in enumerate(plain_vocab):
+        to_pin[UNIT_ID_OFFSET + i] = UNIT_ID_OFFSET + pin_vocab.index(name)
+    shown = 0
+    for p, q in zip(pinned, plain, strict=True):
+        for agent in ("blue", "red"):
+            for key, want in q[agent].items():
+                got = p[agent][key]
+                if key == "unit_ids":
+                    assert got.tobytes() == to_pin[want].tobytes()
+                    shown += int((got != UNIT_ID_EMPTY).sum())
+                else:
+                    assert got.tobytes() == want.tobytes(), key
+    assert shown > 500

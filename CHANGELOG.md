@@ -5,6 +5,15 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Added
+- `SpatialObsBuilder(unit_names=...)` may pin more unit names than the engine says, in any
+  order: each unit is numbered by its place in the pin, by name, and only a type the pin
+  lacks is refused. Pinned to the names of two card tables, both give one `unit_ids`
+  vocabulary and one digest. A pin equal to the engine's list changes nothing.
+
+
 ## 0.1.20 (2026-10-09)
 
 ### Added

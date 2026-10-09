@@ -254,12 +254,19 @@ unit's OWN type on each tile, own plane then enemy plane, as `card_ids` lays the
 | | |
 |---|---|
 | key | `unit_ids`, its own key beside `card_ids` (it does not need it) |
-| values | 0 = empty; `1 + u` for unit type `u`, an index into `engine.unit_types()` |
+| values | 0 = empty; `1 + u` for unit type `u`, its place in the vocabulary |
 | vocabulary | every unit name the loaded card table can put on the board, crown towers included, sorted by name (royalesim 0.1.17 on) |
 | ties | the lowest uid, as in `card_ids`, so both keys describe the same unit on each tile |
-| pinning | `config()` records `unit_names`; a builder given `unit_names` refuses an engine whose vocabulary differs |
+| pinning | `config()` records `unit_names`. A builder given `unit_names` numbers units by their place in it, by name: the pin may hold more names than the engine says, in any order, and an engine type the pin lacks is refused |
 | refused | an engine that says no vocabulary (MockEngine), and a unit whose type is not said (-1) |
 | aliases | `unit_aliases=` writes a row as its base type when the two are one unit to a player (`obs.SAME_UNIT_ALIASES`: eleven rows, e.g. the Graveyard's skeleton as Skeleton, the Goblins card's goblin as Goblin); the aliased names leave the vocabulary, and `config()` records the map |
+
+**One vocabulary across card tables.** A newer card table can insert unit types, which
+shifts the engine's index of every later one. Pin the names of every table you train on
+(`SpatialObsBuilder(unit_names=...)`, appending as tables add types) and each unit keeps
+one id and the observation one `unit_ids_digest` whichever table a battle loads. A pin
+equal to the engine's list numbers units exactly as no pin does. `unit_aliases` may then
+name a type only one of the tables has.
 
 Like `card_ids`, the key holds category ids, not amounts: a network embeds it rather than
 scaling it. A trace header carries the vocabulary as `unit_types`, and every frame's entity
