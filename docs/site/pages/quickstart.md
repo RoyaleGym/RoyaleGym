@@ -237,7 +237,7 @@ Names are written without spaces (only `Elixir Collector` keeps its space), and 
 from the game: `IceGolemite` is the Ice Golem, `IceSpirits` the Ice Spirit and `Log` The Log. The
 table of [names that differ](cheatsheets/game-values.md#names-that-differ-from-the-game) lists
 the rest. A wrong name stops it with an error that suggests the closest real ones, such as
-`names 'Archers', which this engine's catalogue of 136 cards does not have (close: Archer, ...)`. To search for a name, run this (change `ice` to part of the name you want):
+`names 'Archers', which this engine's catalogue of 145 cards does not have (close: Archer, ...)`. To search for a name, run this (change `ice` to part of the name you want):
 
 ```
 python -c "from royalegym import RustEngine; print([c.name for c in RustEngine().cards() if 'ice' in c.name.lower()])"

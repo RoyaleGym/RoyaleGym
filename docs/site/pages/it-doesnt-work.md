@@ -201,7 +201,7 @@ The engine wasn't installed with RoyaleGym. Run the install line from step 5 of
 ### `names '...', which this engine's catalogue of ... cards does not have`
 
 ```text
-ValueError: decks[0] names 'Archers', which this engine's catalogue of 136 cards does not have (close: Archer, SuperArcher, EliteArcher). A deck can only use cards engine.cards() lists.
+ValueError: decks[0] names 'Archers', which this engine's catalogue of 145 cards does not have (close: Archer, SuperArcher, EliteArcher). A deck can only use cards engine.cards() lists.
 ```
 
 A card name in your deck is spelled the way the game shows it, not the way RoyaleGym writes it.
