@@ -56,7 +56,7 @@ from __future__ import annotations
 import copy
 import pickle
 import warnings
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any, ClassVar
 
 import gymnasium as gym
@@ -416,16 +416,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         # ``mask_planes``): their observation is ``ObsBuilder.mask_only``, every key at its shape,
         # zero but the masks, at a small fraction of a build. For the whole episode, because a
         # skipped seat's memory does not move; the other seat's observation is unchanged.
-        mask_only = frozenset(options.get("mask_only", ()))
-        unknown = sorted(mask_only - set(self.possible_agents))
-        if unknown:
-            raise ValueError(f"mask_only names {unknown}; the agents are {self.possible_agents}")
-        if mask_only and not callable(getattr(self.obs_builder, "mask_only", None)):
-            raise ValueError(
-                f"mask_only needs an observation builder with mask_only(); "
-                f"{type(self.obs_builder).__name__} has none"
-            )
-        self._mask_only = mask_only
+        self._mask_only = self._mask_only_seats(options.get("mask_only", ()))
         self._start_seat = snapshot.seat if snapshot is not None else None
         self._start_tag = snapshot.tag if snapshot is not None else ""
         self.reward_fn.reset(state)
@@ -678,6 +669,45 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             # Which kind of start this episode was, so results can be split by it.
             out["start_tag"] = self._start_tag
         return out
+
+    def _mask_only_seats(self, agents: Iterable[str]) -> frozenset[str]:
+        """``agents`` as a set of seats to skip, or a refusal: an unknown agent, or a builder
+        that cannot build an observation of legality alone."""
+        seats = frozenset(agents)
+        unknown = sorted(seats - set(self.possible_agents))
+        if unknown:
+            raise ValueError(f"mask_only names {unknown}; the agents are {self.possible_agents}")
+        if seats and not callable(getattr(self.obs_builder, "mask_only", None)):
+            raise ValueError(
+                f"mask_only needs an observation builder with mask_only(); "
+                f"{type(self.obs_builder).__name__} has none"
+            )
+        return seats
+
+    def set_mask_only(self, agents: Iterable[str]) -> None:
+        """Skip building ``agents``' observations from the NEXT one on, for the rest of this
+        episode, as ``reset(options={"mask_only": ...})`` does from the first. For a seat found to
+        be played by something that reads only legality (a scripted opponent) after the episode
+        started; the observations it already has stay full.
+
+        Seats only join. One skipped once stays skipped until the next reset, because its
+        memory of the match stopped moving, so a set that drops a skipped seat is refused. From
+        here on ``snapshot()`` is refused, and ``state()`` too when Blue is skipped, as under the
+        reset option. The next ``reset`` builds every seat again unless it is asked not to.
+        """
+        if not self.agents:
+            raise ValueError(
+                "set_mask_only acts on a running episode; pass reset(options={'mask_only': "
+                "[...]}) to skip a seat from its first observation"
+            )
+        seats = self._mask_only_seats(agents)
+        dropped = sorted(self._mask_only - seats)
+        if dropped:
+            raise ValueError(
+                f"{dropped} already skip their observation this episode, and a skipped seat "
+                "stays skipped until the next reset: its memory of the match stopped moving"
+            )
+        self._mask_only = seats
 
     def snapshot(
         self, *, seat: int | None = None, max_ticks: int | None = None, tag: str = ""

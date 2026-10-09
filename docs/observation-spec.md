@@ -524,6 +524,9 @@ A policy, a clone or a frozen snapshot needs the full observation.
   (the skipped memory was never kept), and so is `state()` when Blue is skipped.
 * It saves about one build per step: with every observation option on, a step runs about a
   fifth faster.
+* A seat found to be scripted after the episode started: `env.set_mask_only(agents)` skips it
+  from the next observation on. The ones it already has stay full. Seats only join: one
+  skipped once stays skipped until the next reset, and the same refusals apply from then on.
 
 `tests/test_mask_only.py` holds all of it, on a builder with every option on and on
 `EntityListObsBuilder`, for either seat skipped.

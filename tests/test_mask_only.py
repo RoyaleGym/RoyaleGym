@@ -50,14 +50,17 @@ def _env(builder):
                             obs_builder=builder, state_mutator=mutator)
 
 
-def _episode(builder, seed, options=None, steps=160):
+def _episode(builder, seed, options=None, steps=160, switch=None):
     """The observations of one episode under random legal play read off the masks alone, so
-    two runs that agree on the masks play the same moves."""
+    two runs that agree on the masks play the same moves. ``switch``: (step, agents) calls
+    ``set_mask_only(agents)`` once that many observations exist."""
     env = _env(builder)
     obs, _ = env.reset(seed=seed, options=options)
     rng = np.random.default_rng(seed)
     out = [obs]
     while env.agents and len(out) < steps:
+        if switch is not None and len(out) == switch[0]:
+            env.set_mask_only(switch[1])
         acts = {}
         for agent in env.agents:
             legal = np.flatnonzero(obs[agent]["action_mask"])
@@ -135,3 +138,59 @@ def test_refusals_and_one_episode_only():
     stub.mask_only = None  # type: ignore[assignment,method-assign]
     with pytest.raises(ValueError, match="has none"):
         _env(stub).reset(seed=1, options={"mask_only": ["red"]})
+
+
+@pytest.mark.parametrize("name", sorted(BUILDERS))
+def test_a_seat_switched_mid_episode_is_full_until_then_and_masks_after(name):
+    """RoyaleLearn learns that a seat is scripted after the episode starts: set_mask_only
+    skips it from the NEXT observation. Every observation before is the full one, every one
+    after holds the masks and zeros, and the other seat is byte-equal throughout."""
+    at = 40
+    full = _episode(BUILDERS[name](), 34)
+    lean = _episode(BUILDERS[name](), 34, switch=(at, ["red"]))
+    assert len(full) == len(lean) > at + 50
+    for i, (f, g) in enumerate(zip(full, lean, strict=True)):
+        for k, want in f["blue"].items():
+            assert g["blue"][k].tobytes() == want.tobytes(), (i, k)
+        for k, want in f["red"].items():
+            got = g["red"][k]
+            assert (got.dtype, got.shape) == (want.dtype, want.shape), (i, k)
+            if i < at or k in MASK_KEYS:
+                assert got.tobytes() == want.tobytes(), (i, k)
+            else:
+                assert not got.any(), (i, k)
+    # Vacuity: the observation the switch blanks held something just before it.
+    assert any(full[at - 1]["red"][k].any() for k in full[at - 1]["red"] if k not in MASK_KEYS)
+
+
+def test_a_mid_episode_switch_only_adds_seats_and_ends_with_the_episode():
+    env = _env(SpatialObsBuilder(**RG2))
+    with pytest.raises(ValueError, match="running episode"):
+        env.set_mask_only(["red"])  # nothing to switch before a reset
+    env.reset(seed=2)
+    env.step({"blue": 0, "red": 0})
+    env.set_mask_only(["red"])
+    env.set_mask_only(["red"])  # the same set again is fine
+    env.state()  # Blue is still built
+    with pytest.raises(ValueError, match="never kept"):
+        env.snapshot()
+    with pytest.raises(ValueError, match="stays"):
+        env.set_mask_only([])  # red's memory stopped: it cannot come back this episode
+    with pytest.raises(ValueError, match="mask_only names"):
+        env.set_mask_only(["red", "green"])
+    env.set_mask_only(["red", "blue"])  # a seat may join
+    obs, *_ = env.step({"blue": 0, "red": 0})
+    assert not obs["blue"]["spatial"].any()
+    with pytest.raises(ValueError, match="Blue's observation"):
+        env.state()
+    # The next episode builds both again, and may be snapshot.
+    obs, _ = env.reset(seed=2)
+    assert obs["blue"]["spatial"].any()
+    assert obs["red"]["spatial"].any()
+    env.snapshot()
+    stub = SpatialObsBuilder(**RG2)
+    stub.mask_only = None  # type: ignore[assignment,method-assign]
+    plain = _env(stub)
+    plain.reset(seed=2)
+    with pytest.raises(ValueError, match="has none"):
+        plain.set_mask_only(["red"])

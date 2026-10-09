@@ -8,6 +8,10 @@ change the observation's shape; each such change is listed here.
 ## Unreleased
 
 ### Added
+- `ClashParallelEnv.set_mask_only(agents)` skips building those seats' observations from the
+  next one on, for the rest of the episode: the reset option `mask_only` for a seat found to
+  be scripted after the episode started. Seats only join, and the next reset builds every
+  seat again.
 - `SpatialObsBuilder(unit_names=...)` may pin more unit names than the engine says, in any
   order: each unit is numbered by its place in the pin, by name, and only a type the pin
   lacks is refused. Pinned to the names of two card tables, both give one `unit_ids`
