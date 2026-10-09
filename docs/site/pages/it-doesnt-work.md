@@ -360,7 +360,8 @@ Check that this now prints `True`:
 python -c "import torch; print(torch.cuda.is_available())"
 ```
 
-GTX 10-series and older cards don't work with this PyTorch: see the next entry. After you fix
+GTX 10-series and older cards don't work with this PyTorch. From royalelearn 0.5.17 training
+then runs on the processor by itself (see the next entry). After you fix
 the graphics card, a bot you started on the processor can't carry on: start a new one with a new
 `save_dir`.
 
@@ -377,9 +378,21 @@ torch.AcceleratorError: CUDA error: no kernel image is available for execution o
 Your graphics card is too old for the PyTorch that RoyaleGym uses. It needs a GTX 16-series, an
 RTX 20-series or anything newer. The GTX 10-series and older can't run it.
 
-Train on the processor instead. It works, but much more slowly. In your file, change
-`device="auto"` to `device="cpu"`. The run that stopped can't carry on, so delete its folder
-(`runs/quickstart` in the Quick Start) or give `save_dir` a new name, then run the file again.
+Train on the processor instead. It works, but much more slowly. Update RoyaleLearn:
+
+```
+pip install --upgrade royalelearn
+```
+
+From 0.5.17, `device="auto"` moves to the processor by itself on such a card, and says so:
+
+```text
+Your graphics card (NVIDIA GeForce GTX 970, sm_52) is too old for this PyTorch, which runs on sm_75 and newer, so this trains on the CPU, which is much slower.
+```
+
+Or, on any version, change `device="auto"` to `device="cpu"` in your file. Either way, the run
+that stopped can't carry on, so delete its folder (`runs/quickstart` in the Quick Start) or give
+`save_dir` a new name, then run the file again.
 
 ### Not enough graphics memory
 

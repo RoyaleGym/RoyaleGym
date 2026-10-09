@@ -84,6 +84,12 @@ cloning stops once 3 passes in a row don't get better, and keeps the best one. T
 royaleimitate 0.2.12 or newer: `pip install --upgrade royaleimitate` updates it. Older versions
 print nothing while they clone.
 
+From royaleimitate 0.2.13, cloning keeps the examples it has packed, so every pass after the
+first loads faster. Its second line says where: in memory when they fit, otherwise on disk in a
+`packed` folder inside `runs/human-demos` when there's room. For 1,000 matches that folder can
+take about 13 GB. Delete it once your clone is done, or change the `clone` line to
+`clone(learner, demos, "runs/human_clone", cache=False)` to write nothing.
+
 Without an NVIDIA graphics card, cloning runs on the processor and takes several hours for
 1,000 matches: on a processor each pass can take 15 minutes or more. Fewer passes is quicker,
 and the copy is rougher: change the `clone` line to
