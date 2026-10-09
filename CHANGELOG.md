@@ -14,10 +14,19 @@ change the observation's shape; each such change is listed here.
   unchanged. A snapshot of such an episode, and `state()` with Blue skipped, are refused.
 
 ### Changed
+- Game Values lists royalesim 0.1.24's nine event cards (`SuperWitch` to `GoblinRocketSilo`),
+  and the building relocation example sets the Goblin Rocket Silo apart: it keeps its
+  footprint five tiles off each side edge, a rule of its own on top of the footprint.
 - The spatial builder takes about a fifth less time per observation. The planes are counted
   once per entity and written once, and the card status fields avoid numpy scalar arithmetic.
   Every observation is byte-for-byte what it was: the test suite holds the new code to a
   frozen copy of the old one on real battles, for both seats.
+
+### Known issues
+- The match memory does not count elixir that a unit pays: the Elixir Golem's to the opponent
+  when a piece of it dies, and the Elixir Collector's pump and its payment when it dies. After
+  one of those, the counted enemy elixir is an estimate (`MatchMemory.exact` turns False). A
+  test holds this as a known gap until the engine says what each unit pays.
 
 ### Fixed
 - `card_status` no longer reads a basic enemy play as evolved when a unit of an earlier

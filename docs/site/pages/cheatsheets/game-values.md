@@ -106,6 +106,8 @@ RoyaleGym writes card names without spaces. Most are the game's names run togeth
 | Royal Ghost | `Ghost` |
 | Skeleton Barrel | `SkeletonBalloon` |
 | Sparky | `ZapMachine` |
+| Super Magic Archer | `SuperEliteArcher` |
+| Super Mini P.E.K.K.A | `SuperMiniPekka` |
 | The Log | `Log` |
 | Void | `DarkMagic` |
 | X-Bow | `Xbow` |
@@ -122,8 +124,8 @@ on the same engine build as the card list below. Every champion's ability works 
 
 ## Cards
 
-The engine's card list, the same on engine build `1cb11c66cdd25ced` (RoyaleSim 0.1.1) and engine
-build `ca780d18ba66da8b` (RoyaleSim 0.1.2), by the names RoyaleGym uses. Hitpoints are for one unit at level 11. A few names in the list are special
+The engine's card list on engine build `355041aef24796b6` (RoyaleSim 0.1.24), by the names
+RoyaleGym uses. Hitpoints are for one unit at level 11. A few names in the list are special
 versions used in game events. To get the list for the engine you have installed:
 
 ```python
@@ -135,7 +137,7 @@ print([card.name for card in cards[:3]])
 ```
 
 ```
-136
+145
 ['Knight', 'Archer', 'Goblins']
 ```
 
@@ -228,9 +230,14 @@ print([card.name for card in cards[:3]])
 | `SkeletonWarriors_SpookyChess` | 7 | Troop | 8 | 81 |
 | `SpearGoblins` | 2 | Troop | 3 | 133 |
 | `SuperArcher` | 3 | Troop | 2 | 701 |
+| `SuperEliteArcher` | 5 | Troop | 1 | 701 |
+| `SuperHogRider` | 5 | Troop | 1 | 1694 |
 | `SuperHogRiderTerry` | 4 | Troop | 1 | 2300 |
 | `SuperIceGolemite` | 4 | Troop | 1 | 3630 |
 | `SuperKnight` | 4 | Troop | 1 | 2030 |
+| `SuperLavaHound` | 8 | Troop | 1 | 7168 |
+| `SuperMiniPekka` | 5 | Troop | 1 | 1573 |
+| `SuperWitch` | 6 | Troop | 1 | 1064 |
 | `SuspiciousBush` | 2 | Troop | 1 | 81 |
 | `ThreeMusketeers` | 9 | Troop | 3 | 883 |
 | `TriWizards` | 7 | Troop | 1 | 755 |
@@ -249,6 +256,7 @@ print([card.name for card in cards[:3]])
 | `GoblinDrill` | 4 | Building | 1 | 2560 |
 | `GoblinHut` | 4 | Building | 1 | 1180 |
 | `GoblinPartyHut` | 5 | Building | 1 | 1180 |
+| `GoblinRocketSilo` | 7 | Building | 1 | 1999 |
 | `InfernoTower` | 5 | Building | 1 | 1748 |
 | `Mortar` | 4 | Building | 1 | 1369 |
 | `Tesla` | 4 | Building | 1 | 1182 |
@@ -261,8 +269,11 @@ print([card.name for card in cards[:3]])
 | `Earthquake` | 3 | Spell | - | - |
 | `Fireball` | 4 | Spell | - | - |
 | `Freeze` | 4 | Spell | - | - |
+| `GlobalClone` | 3 | Spell | - | - |
+| `GlobalLightning` | 1 | Spell | - | - |
 | `GoblinBarrel` | 3 | Spell | - | - |
 | `GoblinCurse` | 2 | Spell | - | - |
+| `GoblinPartyRocket` | 5 | Spell | - | - |
 | `Graveyard` | 5 | Spell | - | - |
 | `Heal` | 1 | Spell | - | - |
 | `Lightning` | 6 | Spell | - | - |

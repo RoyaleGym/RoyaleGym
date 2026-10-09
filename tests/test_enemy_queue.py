@@ -24,9 +24,23 @@ from royalegym.mock_engine import MockEngine
 from royalegym.obs import MatchMemory, SpatialObsBuilder
 from royalegym.protocol import BLUE, EMPTY_CARD, RED, default_elixir_law
 from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
+from royalegym.state_mutator import DefaultStateMutator, random_deck
 
 needs_engine = pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 E = EMPTY_CARD
+#: Cards whose units pay elixir outside the regeneration law: the Elixir Collector (its pump,
+#: and one elixir to its owner when it dies) and the Elixir Golem (one elixir to the OPPONENT
+#: when it dies, half for each golemite and blob). MatchMemory does not count those payments yet
+#: (test_the_memory_counts_an_elixir_golem_death), and a deck with one voids the queue check, so
+#: its random decks are drawn without them.
+PAYS_ELIXIR = frozenset({"Elixir Collector", "ElixirGolem"})
+
+
+def _decks_that_pay_no_elixir(engine, seed: int) -> list[list[int]]:
+    """Two random decks (``random_deck``) from the catalogue without ``PAYS_ELIXIR``."""
+    pool = [c for c in engine.cards() if c.name not in PAYS_ELIXIR]
+    rng = np.random.default_rng(seed)
+    return [[pool[i].card_id for i in random_deck(rng, pool)] for _ in (BLUE, RED)]
 
 
 def _memory(enemy_hand=(20, 21, 22, 23)):
@@ -97,10 +111,15 @@ def test_off_by_default_and_appended_after_every_other_field():
 def _check_against_the_engine(engine, steps: int, seed: int) -> dict[str, int]:
     """Blue's enemy_queue_5_8 at each step, checked against the cards that then ARRIVE in Red's
     hand, in order: a deduced position k must be the k-th card to arrive after that step."""
+    decks = _decks_that_pay_no_elixir(engine, seed)
     env = ClashParallelEnv(engine, action_parser=TileActionParser(),
-                           obs_builder=SpatialObsBuilder(enemy_queue=True), decision_ms=50)
+                           obs_builder=SpatialObsBuilder(enemy_queue=True), decision_ms=50,
+                           state_mutator=DefaultStateMutator(decks=decks))
     obs, _ = env.reset(seed=seed)
     n = len(engine.cards())
+    dealt = [engine.cards()[c].name for p in env.battle_state.players for c in p.deck]
+    assert len(dealt) == 16, dealt
+    assert not PAYS_ELIXIR & set(dealt), dealt
     sl = env.obs_builder.vector_offsets()["enemy_queue_5_8"]
     rng = np.random.default_rng(seed)
     records: list[tuple[int, list[int], bool]] = []
@@ -153,3 +172,54 @@ def test_on_rustengine_every_deduced_position_is_the_card_that_arrives():
     assert seen["during_refill"] > 10, f"no refill window was checked: {seen}"
     assert seen["full_queue"] > 50, seen
 
+
+class _WentInexact(AssertionError):
+    """The memory's count stopped matching the engine's at an Elixir Golem piece's death."""
+
+
+@needs_engine
+@pytest.mark.xfail(
+    strict=True,
+    raises=_WentInexact,
+    reason="A KNOWN GAP: MatchMemory does not count elixir a unit pays (the Elixir Golem's to "
+    "the opponent when it dies, the Elixir Collector's pump and death payment), because the "
+    "engine does not say what each unit pays. When the memory counts it, this passes and the "
+    "mark must go.",
+)
+def test_the_memory_counts_an_elixir_golem_death():
+    """Blue plays an Elixir Golem; when a piece of it dies, Red gains elixir a player can count
+    (the card's rule is public). Blue's memory of Red's bar must stay exact through it."""
+    from royalegym.rust_engine import RustEngine
+
+    engine = RustEngine()
+    names = [c.name for c in engine.cards()]
+    golem = names.index("ElixirGolem")
+    blue = ["ElixirGolem", "Knight", "Archer", "Goblins", "Giant", "Musketeer", "Arrows", "Zap"]
+    red = ["Knight", "Archer", "Goblins", "Valkyrie", "Musketeer", "MiniPekka", "Arrows", "Zap"]
+    env = ClashParallelEnv(engine, action_parser=TileActionParser(),
+                           obs_builder=SpatialObsBuilder(), decision_ms=50,
+                           state_mutator=DefaultStateMutator(decks=[blue, red]))
+    env.reset(seed=4)
+    memory = env.obs_builder.memory[BLUE]
+    rng = np.random.default_rng(4)
+    alive: set[int] = set()
+    deaths = 0
+    for _ in range(3000):
+        if not env.agents:
+            break
+        acts = {}
+        for agent in env.agents:
+            legal = np.flatnonzero(env.action_masks(agent))
+            legal = legal[legal != 0]
+            acts[agent] = int(rng.choice(legal)) if len(legal) and rng.random() < 0.3 else 0
+        env.step(acts)
+        pieces = {e.uid for e in env.battle_state.entities
+                  if e.team == BLUE and e.card_id == golem}
+        died = len(alive - pieces)
+        deaths += died
+        alive = pieces
+        if not memory.exact:
+            # Vacuity: the count must break where a piece died, not for some other reason.
+            assert died, "the memory went inexact on a step no golem piece died"
+            raise _WentInexact(f"after {deaths} golem pieces died")
+    assert deaths, "no Elixir Golem piece died, so nothing was checked"

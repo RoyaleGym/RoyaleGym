@@ -62,6 +62,12 @@ from royalegym.rust_engine import RustEngine, build_digest
 
 TILE = 18000
 
+#: Buildings the engine places by a rule of their own on top of the footprint. They are measured
+#: and printed, and kept out of the footprint verdict below, which would otherwise be about them.
+#: The Goblin Rocket Silo, an event card (royalesim 0.1.24 on), keeps its whole footprint five
+#: tiles off each side edge of the arena.
+OWN_RULE = {"GoblinRocketSilo": "keeps its footprint 5 tiles off each side edge"}
+
 
 def covers(cx: int, cy: int, footprint: int, tx: int, ty: int) -> bool:
     """Does a footprint that many tiles a side, centred at ``(cx, cy)``, stand on ``(tx, ty)``?"""
@@ -119,6 +125,7 @@ def main() -> None:
     print(f"{'card':18s} {'fp':>2s} {'fits':>5s} {'POINT':>7s} {'TILE':>7s} {'COVERAGE':>9s}")
 
     by_footprint: dict[int, set[tuple[float, float, float]]] = {}
+    own_rule: dict[str, tuple[int, tuple[float, float, float]]] = {}
     for card_id, card in enumerate(cards):
         if card.placement != Placement.BUILDING:
             continue
@@ -143,10 +150,14 @@ def main() -> None:
             round(100 * tile / fits, 1),
             round(100 * coverage / fits, 1),
         )
-        by_footprint.setdefault(card.footprint_tiles, set()).add(rates)
+        if card.name in OWN_RULE:
+            own_rule[card.name] = (card.footprint_tiles, rates)
+        else:
+            by_footprint.setdefault(card.footprint_tiles, set()).add(rates)
         print(
             f"{card.name:18s} {card.footprint_tiles:2d} {fits:5d} "
             f"{rates[0]:6.1f}% {rates[1]:6.1f}% {rates[2]:8.1f}%"
+            + ("   (its own rule)" if card.name in OWN_RULE else "")
         )
 
     # THE ACTUAL FINDING, stated by the script rather than left for a reader to notice:
@@ -159,10 +170,20 @@ def main() -> None:
         seen = sum(
             1
             for c in cards
-            if c.placement == Placement.BUILDING and c.footprint_tiles == footprint
+            if c.placement == Placement.BUILDING
+            and c.footprint_tiles == footprint
+            and c.name not in OWN_RULE
         )
         verdict = "one rate" if len(distinct) == 1 else f"{len(distinct)} DIFFERENT rates"
         print(f"footprint {footprint}x{footprint}: {seen:2d} cards -> {verdict}")
+    # A card set apart must still BE apart: if its rates fall back to its footprint's, the rule
+    # is gone from this build and the card belongs in the verdict again.
+    for name, (footprint, rates) in sorted(own_rule.items()):
+        if rates in by_footprint.get(footprint, set()):
+            print(f"{name}: the rates of every other {footprint}x{footprint}, so its own rule "
+                  "does not show on this build")
+        else:
+            print(f"{name}: its own rates, set apart ({OWN_RULE[name]})")
     # THE VERDICT IS A SENTENCE THE SCRIPT EARNS, not a count a reader has to add up, and
     # it is deliberately not phrased with any number in it: the card table differs between
     # machines, so a line naming ten cards or 51.7% would be a claim about this laptop.
