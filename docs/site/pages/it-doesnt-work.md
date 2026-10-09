@@ -360,9 +360,26 @@ Check that this now prints `True`:
 python -c "import torch; print(torch.cuda.is_available())"
 ```
 
-GTX 10-series and older cards don't work with this PyTorch, so on those it trains on the
-processor. After you fix the graphics card, a bot you started on the processor can't carry on:
-start a new one with a new `save_dir`.
+GTX 10-series and older cards don't work with this PyTorch: see the next entry. After you fix
+the graphics card, a bot you started on the processor can't carry on: start a new one with a new
+`save_dir`.
+
+### `no kernel image is available for execution on the device`
+
+Training stops at the start, after a warning about your graphics card:
+
+```text
+UserWarning: NVIDIA GeForce GTX 970 with CUDA capability sm_52 is not compatible with the current PyTorch installation.
+...
+torch.AcceleratorError: CUDA error: no kernel image is available for execution on the device
+```
+
+Your graphics card is too old for the PyTorch that RoyaleGym uses. It needs a GTX 16-series, an
+RTX 20-series or anything newer. The GTX 10-series and older can't run it.
+
+Train on the processor instead. It works, but much more slowly. In your file, change
+`device="auto"` to `device="cpu"`. The run that stopped can't carry on, so delete its folder
+(`runs/quickstart` in the Quick Start) or give `save_dir` a new name, then run the file again.
 
 ### Not enough graphics memory
 
