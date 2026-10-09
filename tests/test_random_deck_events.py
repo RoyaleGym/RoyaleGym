@@ -52,6 +52,21 @@ def test_a_seed_deals_the_deck_it_dealt_before_the_event_cards():
         assert not any(after[c].name in EVENT_CARDS for c in new), seed
 
 
+def test_ids_are_catalogue_positions_wherever_the_event_cards_sit():
+    """The draw is over the cards a deck may hold, and the ids it returns are their places in
+    the catalogue, not in that subset: with the event cards first, a position in the subset
+    would name an event card."""
+    plain = _catalogue(30, set())
+    events = _with_events(plain)[30:]
+    cards = [msgspec.structs.replace(c, card_id=i) for i, c in enumerate([*events, *plain])]
+    for seed in range(300):
+        deck = random_deck(np.random.default_rng(seed), cards)
+        assert not {cards[c].name for c in deck} & EVENT_CARDS, seed
+        assert [cards[c].name for c in deck] == [
+            plain[c].name for c in random_deck(np.random.default_rng(seed), plain)
+        ], seed
+
+
 def test_events_true_draws_them_and_a_named_deck_keeps_them():
     cards = _with_events(_catalogue(20, set()))
     drawn = set()
