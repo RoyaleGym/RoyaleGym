@@ -5,7 +5,7 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.20 (2026-10-09)
 
 ### Added
 - `reset(options={"mask_only": ["red"]})` gives a seat whose player reads only legality, such
@@ -14,6 +14,10 @@ change the observation's shape; each such change is listed here.
   unchanged. A snapshot of such an episode, and `state()` with Blue skipped, are refused.
 
 ### Changed
+- royalesim 0.1.24 loads every card of its table, the nine event cards included (a
+  145-card default catalogue). royalelearn 0.5.16 warm-starts across precision and device
+  (`actor_digest`), and royaleimitate 0.2.12's `clone` prints its progress, a line per epoch.
+  `pip install --upgrade "royalegym[all]"` moves all three.
 - Random decks hold no event card: `DefaultStateMutator` with no decks and
   `DeckCurriculumStateMutator` with no pool leave out `state_mutator.EVENT_CARDS`, which no
   ladder deck holds. A seed deals the same decks as on royalesim 0.1.23.
