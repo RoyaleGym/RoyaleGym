@@ -91,8 +91,8 @@ EXEMPT = {
         "trains from runs/human_clone until Ctrl+C"
     ),
     ("clash-royale/cloning-a-bot.md", 'title="clone_humans.py"'): (
-        "downloads IL_Replay and replays 1,000 human matches (about 11 min, 1,360 read) and "
-        "clones them"
+        "downloads IL_Replay and replays 1,000 human matches (about 15 min, 1,346 read) and "
+        "clones them (about 80 min on a shared GPU; the page's lines are from that run, 2026-10-09)"
     ),
     ("clash-royale/cloning-a-bot.md", 'title="clone_again.py"'): (
         "clones the matches clone_humans.py wrote in runs/human-demos (hours on a CPU); "

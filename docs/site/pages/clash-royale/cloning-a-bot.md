@@ -54,25 +54,40 @@ if __name__ == "__main__":
     print("Your clone is in runs/human_clone")
 ```
 
-Run it with `python clone_humans.py`. It prints a line every 100 matches, then a summary:
+Run it with `python clone_humans.py`. It prints a line every 100 matches and a summary, then a
+line for each pass of the cloning:
 
 ```text
-100 matches written, 45 skipped
-200 matches written, 74 skipped
+100 matches written, 38 skipped
+200 matches written, 71 skipped
 ...
-1000 matches written, 360 skipped
-1000 matches written (830608 rows); skipped: 195 play refused by the engine, 154 card not in the catalogue, 8 card not in hand, 3 not an eight-card deck
+1000 matches written, 346 skipped
+1000 matches written (828570 rows); skipped: 181 play refused by the engine, 154 card not in the catalogue, 8 card not in hand, 3 not an eight-card deck
+cloning 828,570 rows (783,428 to learn from, 45,142 to check against) on cuda: up to 20 epochs, stopping once 3 in a row do not improve
+epoch 1/20: validation nll 0.7380 (best 0.7380), 6 min; at most 1 h 59 min more
+epoch 2/20: validation nll 0.7032 (best 0.7032), 6 min; at most 1 h 43 min more
+...
+epoch 15/20: validation nll 0.6585 (best 0.6576), 5 min; at most 25 min more
+no better for 3 epochs: stopping, and keeping epoch 12's weights
+clone written to runs/human_clone
 Your clone is in runs/human_clone
 ```
 
-On our computer, replaying the matches took about 11 minutes (that part runs on the processor),
-and cloning them on its RTX 4070 Ti about an hour and a half more, while another program shared the card.
-Cloning prints nothing while it works, so let it run.
+On our computer, replaying the matches took about a quarter of an hour (that part runs on the
+processor), and cloning them on its RTX 4070 Ti about an hour and 20 minutes more, while other
+programs shared the card.
+
+Each pass (an epoch) goes over all the examples once. `validation nll` says how far the copy is
+from the players' moves in the matches it keeps aside to check against: lower is better. Then
+comes how long that pass took, and at most how long is left; it usually ends sooner, because
+cloning stops once 3 passes in a row don't get better, and keeps the best one. These lines need
+royaleimitate 0.2.12 or newer: `pip install --upgrade royaleimitate` updates it. Older versions
+print nothing while they clone.
 
 Without an NVIDIA graphics card, cloning runs on the processor and takes several hours for
-1,000 matches. It goes over all the examples up to 20 times, and on a processor each time can
-take 15 minutes or more. Fewer times is quicker, and the copy is rougher: change the `clone`
-line to `clone(learner, demos, "runs/human_clone", epochs=3)`.
+1,000 matches: on a processor each pass can take 15 minutes or more. Fewer passes is quicker,
+and the copy is rougher: change the `clone` line to
+`clone(learner, demos, "runs/human_clone", epochs=3)`.
 
 Here is what each line does:
 

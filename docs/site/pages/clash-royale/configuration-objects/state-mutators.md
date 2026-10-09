@@ -25,7 +25,8 @@ print([names[card] for card in env.battle_state.players[0].hand])
 ```
 
 Each side's deck is shuffled at the start of the battle, so the opening hand changes with the
-seed. With no decks, `DefaultStateMutator()` deals each side eight random cards every battle.
+seed. With no decks, `DefaultStateMutator()` deals each side eight random cards every battle,
+never one of the event cards (such as `SuperWitch`), which no ladder deck holds.
 
 `make_env(deck=...)` is a shortcut for the same thing: `deck=` takes one deck for both sides,
 two decks, or `"random"`.
