@@ -5,6 +5,20 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Fixed
+- `card_status` no longer reads a basic enemy play as evolved when a unit of an earlier
+  evolved play appears on the same step, such as an Evo Wall Breaker's mini or an Evo Royal
+  Ghost's summon, which royalesim 0.1.20 marks evolved. Once a card has shown its evolution,
+  the form of each later play follows from the count of plays, as the engine's own rule says.
+
+### Changed
+- `obs.SAME_UNIT_ALIASES` merges the evolved Goblin Cage's brawler into GoblinBrawler (eleven
+  rows). royalesim 0.1.20 plays it at the plain brawler's hp, and its evolved status bit still
+  says it is the evolved one. With `unit_aliases=SAME_UNIT_ALIASES`, `unit_ids_digest` changes.
+
+
 ## 0.1.19 (2026-10-07)
 
 ### Fixed
