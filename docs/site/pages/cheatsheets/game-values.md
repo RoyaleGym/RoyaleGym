@@ -10,7 +10,7 @@ engine's values, which follow the game's.
 | Size | 18 x 32 tiles | 18 tiles wide, 32 long. Each side owns 15 rows; the river takes the 2 in the middle. |
 | Tile size | 18,000 units | Positions in `state.entities` are in these units: `x` from 0 to 324,000, `y` from 0 to 576,000. |
 | Blue's side | `y` below the river | Blue's king tower is at the bottom. Each seat's observation is turned so its own king is at the bottom. |
-| Bridges | 2 | One in each lane. Most ground troops can cross the river only on a bridge. |
+| Bridges | 2 | One in each lane. Most ground troops can cross the river only on a bridge. Once a lane's enemy princess tower falls, you can also place troops on that lane's bridge. |
 
 ## Time
 

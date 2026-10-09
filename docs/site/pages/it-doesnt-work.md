@@ -222,6 +222,20 @@ or `2` back to `0`, and play the normal card. (With `make_env`, take it out of `
 or `heroes=[...]`.) The cards that have one are listed in
 [Game Values](cheatsheets/game-values.md#evolutions-and-heroes).
 
+### `TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge'`
+
+```text
+NotImplementedError: TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge': only ('enemy_tower_no_deploy_rects',) is implemented
+```
+
+Your engine is royalesim 0.1.21 or newer, and your RoyaleGym is 0.1.18 or older. That engine lets
+troops onto a lane's bridge once that lane's enemy princess tower has fallen, and the older
+RoyaleGym doesn't know the rule yet. Update RoyaleGym too:
+
+```
+pip install --upgrade "royalegym[all]"
+```
+
 ### `build_env must be a function defined at the top level of a module`
 
 The trainer finds `build_env` again by its name, so it must be a normal `def build_env():` at the

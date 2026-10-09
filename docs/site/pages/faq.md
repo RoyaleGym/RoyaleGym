@@ -291,4 +291,5 @@ pip install --upgrade royalesim
 ```
 
 Your code keeps working, but a bot can't carry on training across an update: start a new one with
-a new `save_dir`.
+a new `save_dir`. If RoyaleGym then refuses the new engine, it's too old for it: run the first line
+too.
