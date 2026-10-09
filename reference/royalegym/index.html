@@ -2157,6 +2157,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.ObsBuilder.mask_only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;mask_only
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6776,6 +6787,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#royalegym.obs.ObsBuilder.mask_only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;mask_only
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11003,6 +11025,30 @@ of the others happened to be constant.</p>
     <div class="doc doc-contents ">
 
         <p>Constructor state, JSON-able, for <code>ClashParallelEnv.config()</code>.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.obs.ObsBuilder.mask_only" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">mask_only</span><span class="p">(</span><span class="n">action_mask</span><span class="p">)</span></code>
+
+<a href="#royalegym.obs.ObsBuilder.mask_only" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>An observation that holds only legality: every key <code>build</code> returns, at its shape and
+dtype, all zero but the mask entries (<code>action_mask</code>, <code>mask_planes</code>,
+<code>ability_ready</code>, as <code>build</code> writes them).</p>
+<p>For a seat whose player reads nothing else -- the scripted opponents read
+<code>mask_planes</code> -- at a small fraction of a build's cost. It sees no state, so the
+seat's memory does not move: an episode either builds a seat's observations from its
+first step or never does (<code>ClashParallelEnv.reset</code>'s <code>mask_only</code>).</p>
 
 
     </div>

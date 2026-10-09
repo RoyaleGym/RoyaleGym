@@ -3875,7 +3875,7 @@ keep the spaces at the start of the line. For example, Hog 2.6:</p>
 from the game: <code>IceGolemite</code> is the Ice Golem, <code>IceSpirits</code> the Ice Spirit and <code>Log</code> The Log. The
 table of <a href="../cheatsheets/game-values/#names-that-differ-from-the-game">names that differ</a> lists
 the rest. A wrong name stops it with an error that suggests the closest real ones, such as
-<code>names 'Archers', which this engine's catalogue of 136 cards does not have (close: Archer, ...)</code>. To search for a name, run this (change <code>ice</code> to part of the name you want):</p>
+<code>names 'Archers', which this engine's catalogue of 145 cards does not have (close: Archer, ...)</code>. To search for a name, run this (change <code>ice</code> to part of the name you want):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python -c "from royalegym import RustEngine; print([c.name for c in RustEngine().cards() if 'ice' in c.name.lower()])"
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>['IceWizard', 'IceSpirits', 'IceGolemite', 'SuperIceGolemite']

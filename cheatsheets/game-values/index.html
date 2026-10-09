@@ -3874,6 +3874,14 @@ engine's values, which follow the game's.</p>
 <td><code>ZapMachine</code></td>
 </tr>
 <tr>
+<td>Super Magic Archer</td>
+<td><code>SuperEliteArcher</code></td>
+</tr>
+<tr>
+<td>Super Mini P.E.K.K.A</td>
+<td><code>SuperMiniPekka</code></td>
+</tr>
+<tr>
 <td>The Log</td>
 <td><code>Log</code></td>
 </tr>
@@ -3897,8 +3905,8 @@ on the same engine build as the card list below. Every champion's ability works 
 <p><strong>Evolutions (42):</strong> <code>AngryBarbarians</code>, <code>Archer</code>, <code>AxeMan</code>, <code>BabyDragon</code>, <code>Barbarians</code>, <code>Bats</code>, <code>BattleRam</code>, <code>BlowdartGoblin</code>, <code>Bomber</code>, <code>Cannon</code>, <code>ElectroDragon</code>, <code>Firecracker</code>, <code>FirespiritHut</code>, <code>Ghost</code>, <code>GoblinBarrel</code>, <code>GoblinCage</code>, <code>GoblinDrill</code>, <code>GoblinGiant</code>, <code>Hunter</code>, <code>IceSpirits</code>, <code>InfernoDragon</code>, <code>Knight</code>, <code>MegaKnight</code>, <code>MinionHorde</code>, <code>Mortar</code>, <code>Musketeer</code>, <code>Pekka</code>, <code>Princess</code>, <code>RageBarbarian</code>, <code>RoyalGiant</code>, <code>RoyalHogs</code>, <code>RoyalRecruits</code>, <code>SkeletonArmy</code>, <code>SkeletonBalloon</code>, <code>Skeletons</code>, <code>Snowball</code>, <code>Tesla</code>, <code>Valkyrie</code>, <code>Wallbreakers</code>, <code>Witch</code>, <code>Wizard</code>, <code>Zap</code></p>
 <p><strong>Heroes (16):</strong> <code>Balloon</code>, <code>BarbLog</code>, <code>Berserker</code>, <code>Bowler</code>, <code>DarkPrince</code>, <code>EliteArcher</code>, <code>Giant</code>, <code>Goblins</code>, <code>IceGolemite</code>, <code>Knight</code>, <code>MegaMinion</code>, <code>MiniPekka</code>, <code>Musketeer</code>, <code>Tombstone</code>, <code>Valkyrie</code>, <code>Wizard</code></p>
 <h2 id="cards">Cards<a class="headerlink" href="#cards" title="Permanent link">&para;</a></h2>
-<p>The engine's card list, the same on engine build <code>1cb11c66cdd25ced</code> (RoyaleSim 0.1.1) and engine
-build <code>ca780d18ba66da8b</code> (RoyaleSim 0.1.2), by the names RoyaleGym uses. Hitpoints are for one unit at level 11. A few names in the list are special
+<p>The engine's card list on engine build <code>355041aef24796b6</code> (RoyaleSim 0.1.24), by the names
+RoyaleGym uses. Hitpoints are for one unit at level 11. A few names in the list are special
 versions used in game events. To get the list for the engine you have installed:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">RustEngine</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -3906,7 +3914,7 @@ versions used in game events. To get the list for the engine you have installed:
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cards</span><span class="p">))</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nb">print</span><span class="p">([</span><span class="n">card</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">card</span> <span class="ow">in</span> <span class="n">cards</span><span class="p">[:</span><span class="mi">3</span><span class="p">]])</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>136
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>145
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>['Knight', 'Archer', 'Goblins']
 </code></pre></div>
 <table>
@@ -4530,6 +4538,20 @@ versions used in game events. To get the list for the engine you have installed:
 <td>701</td>
 </tr>
 <tr>
+<td><code>SuperEliteArcher</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>701</td>
+</tr>
+<tr>
+<td><code>SuperHogRider</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1694</td>
+</tr>
+<tr>
 <td><code>SuperHogRiderTerry</code></td>
 <td>4</td>
 <td>Troop</td>
@@ -4549,6 +4571,27 @@ versions used in game events. To get the list for the engine you have installed:
 <td>Troop</td>
 <td>1</td>
 <td>2030</td>
+</tr>
+<tr>
+<td><code>SuperLavaHound</code></td>
+<td>8</td>
+<td>Troop</td>
+<td>1</td>
+<td>7168</td>
+</tr>
+<tr>
+<td><code>SuperMiniPekka</code></td>
+<td>5</td>
+<td>Troop</td>
+<td>1</td>
+<td>1573</td>
+</tr>
+<tr>
+<td><code>SuperWitch</code></td>
+<td>6</td>
+<td>Troop</td>
+<td>1</td>
+<td>1064</td>
 </tr>
 <tr>
 <td><code>SuspiciousBush</code></td>
@@ -4677,6 +4720,13 @@ versions used in game events. To get the list for the engine you have installed:
 <td>1180</td>
 </tr>
 <tr>
+<td><code>GoblinRocketSilo</code></td>
+<td>7</td>
+<td>Building</td>
+<td>1</td>
+<td>1999</td>
+</tr>
+<tr>
 <td><code>InfernoTower</code></td>
 <td>5</td>
 <td>Building</td>
@@ -4761,6 +4811,20 @@ versions used in game events. To get the list for the engine you have installed:
 <td>-</td>
 </tr>
 <tr>
+<td><code>GlobalClone</code></td>
+<td>3</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>GlobalLightning</code></td>
+<td>1</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
 <td><code>GoblinBarrel</code></td>
 <td>3</td>
 <td>Spell</td>
@@ -4770,6 +4834,13 @@ versions used in game events. To get the list for the engine you have installed:
 <tr>
 <td><code>GoblinCurse</code></td>
 <td>2</td>
+<td>Spell</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>GoblinPartyRocket</code></td>
+<td>5</td>
 <td>Spell</td>
 <td>-</td>
 <td>-</td>
