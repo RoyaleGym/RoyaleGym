@@ -1321,8 +1321,16 @@ class EnemyForms:
     as basic. ``see`` must follow ``MatchMemory.observe`` on the same state.
     """
 
-    def __init__(self, num_cards: int, champions: frozenset[int] = frozenset()) -> None:
+    def __init__(
+        self,
+        num_cards: int,
+        champions: frozenset[int] = frozenset(),
+        cycles: tuple[int, ...] = (),
+    ) -> None:
         self.num_cards = num_cards
+        # Each card's evolution cycle (CardInfo.evo_cycle; 0 for none). Once a card has shown its
+        # evolution, its plays' forms follow from the count, not from the units seen (``see``).
+        self.cycles = cycles
         # Champion cards (CardInfo.champion): never a hero play, though royalesim up to 0.1.19
         # sets STATUS_HERO on a champion's unit (``hero_channels`` skips them the same way).
         self.champions = champions
@@ -1375,6 +1383,14 @@ class EnemyForms:
         recent = memory.foe_recent[len(memory.foe_recent) - played :] if played > 0 else []
         for card in recent:
             evolved, hero = new.get(card, (False, False))
+            cycle = self.cycles[card] if card < len(self.cycles) else 0
+            if self.seen_evolved[card] and cycle > 0:
+                # Its evolution is known, so the count decides, by the engine's own rule: the
+                # next play is evolved exactly when ``cycle`` basic plays have passed since the
+                # last evolved one. A unit of an EARLIER evolved play that appears on this play's
+                # step (an Evo Wall Breaker's mini, an Evo Royal Ghost's summon) then cannot
+                # make a basic play read as evolved.
+                evolved = self.basic_since[card] >= cycle
             if hero:
                 self.seen_hero[card] = True
             if evolved:
@@ -1622,7 +1638,7 @@ MEMORY_FORMAT = 1
 #: not memory, so it is not saved: the catalogue's names, the calibration digest and the command
 #: delay in the saved header say the two builders agree on it.
 MATCH_MEMORY_BOUND = ("num_cards", "law", "cost", "is_mirror")
-ENEMY_FORMS_BOUND = ("num_cards", "champions")
+ENEMY_FORMS_BOUND = ("num_cards", "champions", "cycles")
 AIM_CLOCK_BOUND = ("after_ticks",)
 
 
@@ -1812,7 +1828,10 @@ class ObsBuilder(ABC):
         """Called at the start of every episode: both seats forget the last one."""
         self.presses = None
         self.runs = None
-        self.enemy_forms = {t: EnemyForms(self.num_cards, self.champion_ids) for t in TEAMS}
+        cycles = tuple(int(c.evo_cycle or 0) for c in self.cards)
+        self.enemy_forms = {
+            t: EnemyForms(self.num_cards, self.champion_ids, cycles) for t in TEAMS
+        }
         delay = getattr(self, "command_delay", (0, 0))
         for team, memory in self.memory.items():
             memory.seed(state, team)
@@ -2598,15 +2617,17 @@ UNIT_ID_OFFSET = 1
 #: each is written as its base type; off by default. tests/test_unit_ids.py checks that every
 #: pair is still identical in the engine's card table outside its declared differences, and
 #: that no calibration value names one row of a pair without the other, so a data build that
-#: splits one fails rather than mixing two units. Evolution rows stay apart: their behaviour
-#: differs outside the stats, and the engine can play them differently (the evolved Goblin
-#: Cage's brawler had less hp than the plain one in royalesim 0.1.17).
+#: splits one fails rather than mixing two units. Evolution rows stay apart where their
+#: behaviour differs outside the stats. The evolved Goblin Cage's brawler is merged: it is a
+#: plain brawler in behaviour, the engine plays it at the plain one's hp from royalesim 0.1.20
+#: (it had less in 0.1.17), and its STATUS_EVOLVED bit still says it is the evolved one.
 SAME_UNIT_ALIASES: Mapping[str, str] = MappingProxyType({
     "Graveyard_rework_Skeleton": "Skeleton",
     "SkeletonKingSkeleton": "Skeleton",
     "GoblinCurseGoblin": "Goblin",
     "Goblin_Stab": "Goblin",
     "SpearGoblin_Dummy": "SpearGoblin",
+    "GoblinCage_EV1_GoblinBrawler": "GoblinBrawler",
     "DeliveryRecruit": "Recruit",
     "TriWizard": "Wizard",
     "Ghost_EV1_Summon_Right": "Ghost_EV1_Summon_Left",

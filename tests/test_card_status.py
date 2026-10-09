@@ -306,3 +306,47 @@ def test_units_on_the_board_at_the_start_are_not_plays():
     v = _vec(b, parser, s)
     assert v[off["enemy_evo_progress"]][3] == pytest.approx(0.5), "the play counted as evolved"
     assert v[off["enemy_seen_evolved"]][3] == 0
+
+
+def test_a_unit_of_an_earlier_evolved_play_does_not_make_a_basic_play_evolved():
+    """Once card 3 (evo_cycle 2) has shown its evolution, the form of each later play follows
+    from the count: the next play is evolved exactly when two basic plays have passed since
+    the last evolved one (the engine's own rule, PlayerState.evo, checked on 4340 rows). A
+    unit of the EARLIER evolved play that appears on a basic play's step -- an Evo Wall
+    Breaker's mini, an Evo Royal Ghost's summon, which royalesim 0.1.20 marks evolved -- must
+    not make that basic play read as evolved and reset the count."""
+    _, parser, b, state = _builder()
+    off = b.vector_offsets()
+    foe = state.players[RED]
+    hand = list(foe.hand)
+    slot = hand.index(3) if 3 in hand else 0
+    hand[slot] = 3
+    tick, uid = state.tick, 900
+    s = _reporting(state, p1={"hand": list(hand)})
+    b.reset(s)
+
+    def play(*statuses):
+        nonlocal s, tick, uid
+        tick += 5
+        hand[slot] = 14
+        units = []
+        for status in statuses:
+            units.append(_enemy_unit(uid, 3, status))
+            uid += 1
+        s = msgspec.structs.replace(
+            _reporting(state, p1={"hand": list(hand)}), tick=tick, entities=[*s.entities, *units]
+        )
+        v = _vec(b, parser, s)
+        tick += 5
+        hand[slot] = 3
+        s = msgspec.structs.replace(_reporting(state, p1={"hand": list(hand)}), tick=tick,
+                                    entities=s.entities)
+        _vec(b, parser, s)
+        return (v[off["enemy_evo_progress"]][3], v[off["enemy_evo_next"]][3],
+                v[off["enemy_seen_evolved"]][3])
+
+    assert [play(0), play(0), play(STATUS_EVOLVED)] == [(0.5, 0, 0), (1.0, 1, 0), (0.0, 0, 1)]
+    # A basic play whose step also shows a unit of the evolved play before it (status 8).
+    assert play(0, STATUS_EVOLVED) == (0.5, 0, 1), "the summon made a basic play evolved"
+    assert play(0) == (1.0, 1, 1)
+    assert play(STATUS_EVOLVED) == (0.0, 0, 1), "the count's evolved play"
