@@ -791,6 +791,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#territory_modelenemy_tower_no_deploy_rects_open_bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#build_env-must-be-a-function-defined-at-the-top-level-of-a-module" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3998,6 +4009,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#territory_modelenemy_tower_no_deploy_rects_open_bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#build_env-must-be-a-function-defined-at-the-top-level-of-a-module" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4433,6 +4455,14 @@ space), and a few differ: <code>Archer</code> is the Archers card, <code>Log</co
 or <code>2</code> back to <code>0</code>, and play the normal card. (With <code>make_env</code>, take it out of <code>evolved=[...]</code>
 or <code>heroes=[...]</code>.) The cards that have one are listed in
 <a href="../cheatsheets/game-values/#evolutions-and-heroes">Game Values</a>.</p>
+<h3 id="territory_modelenemy_tower_no_deploy_rects_open_bridge"><code>TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge'</code><a class="headerlink" href="#territory_modelenemy_tower_no_deploy_rects_open_bridge" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>NotImplementedError: TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge': only ('enemy_tower_no_deploy_rects',) is implemented
+</code></pre></div>
+<p>Your engine is royalesim 0.1.21 or newer, and your RoyaleGym is 0.1.18 or older. That engine lets
+troops onto a lane's bridge once that lane's enemy princess tower has fallen, and the older
+RoyaleGym doesn't know the rule yet. Update RoyaleGym too:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>pip install --upgrade "royalegym[all]"
+</code></pre></div>
 <h3 id="build_env-must-be-a-function-defined-at-the-top-level-of-a-module"><code>build_env must be a function defined at the top level of a module</code><a class="headerlink" href="#build_env-must-be-a-function-defined-at-the-top-level-of-a-module" title="Permanent link">&para;</a></h3>
 <p>The trainer finds <code>build_env</code> again by its name, so it must be a normal <code>def build_env():</code> at the
 left edge of your file. Not inside another function, and not a <code>lambda</code>.</p>
@@ -4441,7 +4471,7 @@ left edge of your file. Not inside another function, and not a <code>lambda</cod
 me", and nothing is broken. Your bot keeps everything up to its last <code>checkpoint</code> line; run the
 same command again to carry on. Next time, press Ctrl+C once and wait: it saves before it stops.</p>
 <h3 id="holds-a-run-started-with-another-network-environment-or-opponent-setup"><code>holds a run started with another network, environment or opponent setup</code><a class="headerlink" href="#holds-a-run-started-with-another-network-environment-or-opponent-setup" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>runs\quickstart holds a run started with another network, environment or opponent setup, so this one cannot carry it on. Use the settings it was started with, or give this run another save_dir. What differs:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>runs\quickstart holds a run started with another network, environment or opponent setup, so this one cannot carry it on. Use the settings it was started with, or give this run another save_dir. What differs:
 </code></pre></div>
 <p>The bot in that folder was trained under something you've since changed, and it can't carry on
 under the new one. The usual causes: the opponent (<code>"random"</code> to <code>"self"</code>), <code>n_envs</code>, the network
@@ -4450,7 +4480,7 @@ or the software under it: a new graphics card setup, a new PyTorch, or a RoyaleG
 <p>Give <code>save_dir</code> a new name to start a new bot, or put back what you changed to carry on the old
 one. Your old bot stays in its folder either way.</p>
 <h3 id="already-holds-a-run"><code>already holds a run</code><a class="headerlink" href="#already-holds-a-run" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>runs\quickstart already holds a run (metric rows). A fresh start here would begin at iteration 1 and write over its checkpoints.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>runs\quickstart already holds a run (metric rows). A fresh start here would begin at iteration 1 and write over its checkpoints.
 </code></pre></div>
 <p>The run in that folder stopped before its first <code>checkpoint</code> line, so there's nothing to carry
 on. Delete the folder (<code>Remove-Item -Recurse runs\quickstart</code> in PowerShell,
@@ -4458,8 +4488,8 @@ on. Delete the folder (<code>Remove-Item -Recurse runs\quickstart</code> in Powe
 <p>If the message instead says <code>Pass resume=True to carry it on</code>, you set <code>resume=False</code> and the
 folder already has a bot in it. Give <code>save_dir</code> a new name, or remove <code>resume=False</code>.</p>
 <h3 id="holds-a-run-with-no-checkpoint-yet-or-is-not-a-saved-bot"><code>holds a run with no checkpoint yet</code> or <code>is not a saved bot</code><a class="headerlink" href="#holds-a-run-with-no-checkpoint-yet-or-is-not-a-saved-bot" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>runs\quickstart holds a run with no checkpoint yet: train it longer
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>runs\hog is not a saved bot, a run's folder or one of its checkpoints
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>runs\quickstart holds a run with no checkpoint yet: train it longer
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>runs\hog is not a saved bot, a run's folder or one of its checkpoints
 </code></pre></div>
 <p><code>watch.py</code> couldn't load a bot. The first means training hasn't saved yet: let it run until it
 prints a <code>checkpoint</code> line, or stop it once with Ctrl+C, which saves. The second means the folder
@@ -4470,7 +4500,7 @@ didn't work from a normal install. 0.1.4 fixes it: update with the line in
 <a href="../faq/#what-happens-when-clash-royale-updates">What happens when Clash Royale updates?</a></p>
 <h3 id="the-engine-refused-commands-the-mask-allowed"><code>the engine refused ... command(s) the mask allowed</code><a class="headerlink" href="#the-engine-refused-commands-the-mask-allowed" title="Permanent link">&para;</a></h3>
 <p>Training stops with a long error message that ends like this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>royalelearn.coordinator.DeployRefused: the engine refused 1 command(s) the mask allowed (cycle 412, slot 7)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>royalelearn.coordinator.DeployRefused: the engine refused 1 command(s) the mask allowed (cycle 412, slot 7)
 </code></pre></div>
 <p>RoyaleGym 0.1.16 and older let your bot try to play cards after a tied overtime ran out, while
 the tiebreak decided the match. The game takes no plays then, so the engine refused them, and
@@ -4478,7 +4508,7 @@ training stopped. RoyaleGym 0.1.17 fixes it.</p>
 <p>RoyaleGym 0.1.17 and older also let your bot press the Hero Mega Minion's ability too early. It's
 ready only a while after the hero appears, and only while it has a target. RoyaleGym 0.1.18 fixes
 it. Update:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>pip install --upgrade "royalegym[all]"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <p>A bot can't carry on training across an update, so start it again with a new <code>save_dir</code>.</p>
 <h3 id="the-computer-gets-very-slow-or-runs-out-of-memory">The computer gets very slow, or runs out of memory<a class="headerlink" href="#the-computer-gets-very-slow-or-runs-out-of-memory" title="Permanent link">&para;</a></h3>
@@ -4490,7 +4520,7 @@ new <code>save_dir</code>.</p>
 <h2 id="the-graphics-card">The Graphics Card<a class="headerlink" href="#the-graphics-card" title="Permanent link">&para;</a></h2>
 <h3 id="pytorch-cant-see-my-graphics-card">PyTorch can't see my graphics card<a class="headerlink" href="#pytorch-cant-see-my-graphics-card" title="Permanent link">&para;</a></h3>
 <p>The trainer prints:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>No GPU that torch can use was found, so this trains on the CPU, which is much slower. With an NVIDIA card, install torch with CUDA (see Install).
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>No GPU that torch can use was found, so this trains on the CPU, which is much slower. With an NVIDIA card, install torch with CUDA (see Install).
 </code></pre></div>
 <p><strong>On a Mac, this is normal.</strong> A Mac has no NVIDIA card, so it always trains on the processor.
 Don't run the commands below on a Mac.</p>
@@ -4500,8 +4530,8 @@ Don't run the commands below on a Mac.</p>
 <div class="tabbed-block">
 <p>This almost always means the wrong PyTorch got installed. Swap it for the one that uses
 your card:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">-y</span> <span class="n">torch</span>
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">pip</span> <span class="n">uninstall</span> <span class="n">-y</span> <span class="n">torch</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="p">-</span><span class="n">-index-url</span> <span class="n">https</span><span class="p">://</span><span class="n">download</span><span class="p">.</span><span class="n">pytorch</span><span class="p">.</span><span class="n">org</span><span class="p">/</span><span class="n">whl</span><span class="p">/</span><span class="n">cu128</span>
 </code></pre></div>
 <p>Still not working? Update your NVIDIA driver with the NVIDIA App or from
 <a href="https://www.nvidia.com/drivers">nvidia.com/drivers</a>, then restart your computer.</p>
@@ -4513,15 +4543,15 @@ Ubuntu, run <code>sudo ubuntu-drivers install</code>, then restart.</p>
 </div>
 </div>
 <p>Check that this now prints <code>True</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>python -c "import torch; print(torch.cuda.is_available())"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>python -c "import torch; print(torch.cuda.is_available())"
 </code></pre></div>
 <p>GTX 10-series and older cards don't work with this PyTorch, so on those it trains on the
 processor. After you fix the graphics card, a bot you started on the processor can't carry on:
 start a new one with a new <code>save_dir</code>.</p>
 <h3 id="not-enough-graphics-memory">Not enough graphics memory<a class="headerlink" href="#not-enough-graphics-memory" title="Permanent link">&para;</a></h3>
 <p>You see this when training starts, or it stops with <code>CUDA out of memory</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>one minibatch of 2048 peaked at ... MB of device memory and only ... MB was free
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>torch.OutOfMemoryError: CUDA out of memory.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>one minibatch of 2048 peaked at ... MB of device memory and only ... MB was free
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>torch.OutOfMemoryError: CUDA out of memory.
 </code></pre></div>
 <p>Close games and other programs that use the graphics card. If it still happens, lower
 <code>ppo_minibatch_size</code> in <code>quickstart.py</code>. A starting point: <code>1_024</code> for a card with 8 GB, <code>512</code>
@@ -4529,11 +4559,11 @@ for 6 GB, <code>256</code> for 4 GB. The message calls it <code>ppo.minibatch_si
 <code>doctor.vram_headroom_mb</code> alone.</p>
 <h3 id="expected-a-torchdevice-with-a-specified-index-windows"><code>Expected a torch.device with a specified index</code> (Windows)<a class="headerlink" href="#expected-a-torchdevice-with-a-specified-index-windows" title="Permanent link">&para;</a></h3>
 <p>Training stops as it starts, before the first battle:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>ValueError: Expected a torch.device with a specified index or an integer, but got:cuda
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>ValueError: Expected a torch.device with a specified index or an integer, but got:cuda
 </code></pre></div>
 <p>RoyaleLearn 0.5.5 to 0.5.7 stopped every training run on a Windows NVIDIA card this way.
 RoyaleLearn 0.5.8 fixes it. Update RoyaleGym, which brings it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>pip install --upgrade "royalegym[all]"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <h3 id="training-takes-more-and-more-of-the-computers-memory-windows">Training takes more and more of the computer's memory (Windows)<a class="headerlink" href="#training-takes-more-and-more-of-the-computers-memory-windows" title="Permanent link">&para;</a></h3>
 <p>On Windows, when the graphics card's memory is full, Windows lends the card some of the
@@ -4541,7 +4571,7 @@ computer's own memory (RAM) instead of stopping. Over a long run, training could
 of it that way, and the whole computer slows down.</p>
 <p>RoyaleLearn 0.5.8 and newer stop at 80% of the card on Windows instead. Update RoyaleGym, which
 brings it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>pip install --upgrade "royalegym[all]"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <p>If training then stops with <a href="#not-enough-graphics-memory">Not enough graphics memory</a>, lower
 <code>ppo_minibatch_size</code> as that entry says. To pick the limit yourself, add <code>vram_fraction</code> to the
@@ -4561,16 +4591,16 @@ or the viewer isn't installed. Run the install line from step 5 of
 <a href="../install/#5-install-royalegym">Install</a> again.</p>
 <h3 id="module-pygame-has-no-attribute-init"><code>module 'pygame' has no attribute 'init'</code><a class="headerlink" href="#module-pygame-has-no-attribute-init" title="Permanent link">&para;</a></h3>
 <p>You see this when you start the viewer:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>AttributeError: module 'pygame' has no attribute 'init'
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>AttributeError: module 'pygame' has no attribute 'init'
 </code></pre></div>
 <p>You removed <code>pygame</code> after updating. The viewer now uses <code>pygame-ce</code>, and the two share one
 folder, so removing <code>pygame</code> took <code>pygame-ce</code>'s files with it. Put them back, with the virtual
 environment on:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>pip install --force-reinstall pygame-ce
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>pip install --force-reinstall pygame-ce
 </code></pre></div>
 <h3 id="the-viewer-window-stays-empty">The viewer window stays empty<a class="headerlink" href="#the-viewer-window-stays-empty" title="Permanent link">&para;</a></h3>
 <p>The terminal says:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>royaleviser: waiting for a run on 127.0.0.1:9870 (to open a saved battle instead: royaleviser FILE)
 </code></pre></div>
 <p>The viewer is waiting for a training run to watch. Start training in another terminal, with
 <code>viser=True</code> in your <code>Learner(...)</code>. The quickstart has it on already. The battle appears once
@@ -4587,11 +4617,11 @@ other run, or set <code>viser=False</code> in one of them. If you put a <code>Vi
 <h3 id="too-many-values-to-unpack-with-an-evolved-card"><code>too many values to unpack</code> with an evolved card<a class="headerlink" href="#too-many-values-to-unpack-with-an-evolved-card" title="Permanent link">&para;</a></h3>
 <p>A deck has an evolved card, and the viewer is open. Training stops with this, and so does
 opening a saved battle that has an evolved card:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>ValueError: too many values to unpack (expected 3)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>ValueError: too many values to unpack (expected 3)
 </code></pre></div>
 <p>Without the viewer open, training isn't affected. RoyaleGym 0.1.16 and RoyaleViser 0.1.2 fix it.
 Update RoyaleGym, which brings both:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>pip install --upgrade "royalegym[all]"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>pip install --upgrade "royalegym[all]"
 </code></pre></div>
 <h3 id="no-window-appears-at-all">No window appears at all<a class="headerlink" href="#no-window-appears-at-all" title="Permanent link">&para;</a></h3>
 <p>The viewer needs a screen. On a computer with no screen, such as a server you reach over SSH:</p>
@@ -4601,7 +4631,7 @@ Update RoyaleGym, which brings both:</p>
   <code>royaleviser my_bot_battle.msgpack</code>.</li>
 <li>
 <p>Or make a video of it on the server (on Linux, add <code>SDL_VIDEODRIVER=dummy</code> in front):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>python -c "from royaleviser.capture import capture; from royaleviser.sources import open_source; capture(open_source('my_bot_battle.msgpack'), 'my_bot.mp4')"
 </code></pre></div>
 </li>
 </ul>
