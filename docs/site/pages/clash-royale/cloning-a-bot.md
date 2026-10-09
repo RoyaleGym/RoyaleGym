@@ -69,6 +69,11 @@ On our computer, replaying the matches took about 11 minutes (that part runs on 
 and cloning them on its RTX 4070 Ti about an hour and a half more, while another program shared the card.
 Cloning prints nothing while it works, so let it run.
 
+Without an NVIDIA graphics card, cloning runs on the processor and takes several hours for
+1,000 matches. It goes over all the examples up to 20 times, and on a processor each time can
+take 15 minutes or more. Fewer times is quicker, and the copy is rougher: change the `clone`
+line to `clone(learner, demos, "runs/human_clone", epochs=3)`.
+
 Here is what each line does:
 
 - `Learner(build_env, ...)` gives the clone its network and what it sees. It doesn't train here,
@@ -122,10 +127,32 @@ needs royaleimitate 0.2.8 or newer: `pip install --upgrade royaleimitate` update
 and take more disk space.
 
 If it stops before it prints `Your clone is in runs/human_clone`, for example because you pressed
-Ctrl+C or the computer restarted, it can't carry on. Delete the `runs/human-demos` folder, and
-`runs/human_clone` if it's there, and run it again. Otherwise it stops with an error that says the
-folder `already holds files`. To make a second clone next to the first, give it new folders
-instead, such as `"runs/human-demos-2"` and `"runs/human_clone_2"`.
+Ctrl+C or the computer restarted, it can't carry on where it stopped. What to do depends on how
+far it got:
+
+- **Before the `1000 matches written (...)` summary:** delete the `runs/human-demos` folder, and
+  `runs/human_clone` if it's there, and run it again. Otherwise it stops with an error that says
+  the folder `already holds files`.
+- **After the summary:** the matches are ready, so only the cloning needs to run again. Delete
+  `runs/human_clone` if it's there, and run this file instead, next to `clone_humans.py`:
+
+```python title="clone_again.py"
+from pathlib import Path
+
+from royaleimitate import clone
+from royalelearn import Learner
+
+from clone_humans import build_env
+
+if __name__ == "__main__":
+    learner = Learner(build_env, save_dir="runs/my_clone")
+    demos = next(Path("runs/human-demos").glob("*/manifest.json")).parent
+    clone(learner, demos, "runs/human_clone")
+    print("Your clone is in runs/human_clone")
+```
+
+To make a second clone next to the first, give it new folders instead, such as
+`"runs/human-demos-2"` and `"runs/human_clone_2"`.
 
 ### 2. Watch Your Clone
 
