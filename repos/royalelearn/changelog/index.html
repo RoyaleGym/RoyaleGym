@@ -2871,6 +2871,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0515" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.15
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0514" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.14
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0513" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.13
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0512" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3507,6 +3551,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0515" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.15
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0514" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.14
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0513" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.13
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0512" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3752,6 +3840,50 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>SnapshotSpec.actor_digest</code>: what an actor folder's weights compute, which is <code>arch_digest</code>
+  less the autocast precision, the head's precision, the device, the initialisation and the
+  critic (<code>learn.nets.actor_digest_of</code>; <code>net.noop_bias</code>, added in the forward, stays in).
+  <code>check_compatible</code> compares it when both sides state it, so a warm start or a pool snapshot
+  loads into a run that differs only there, a bfloat16 run from a float32 clone, say. A folder
+  without it is held to <code>arch_digest</code> as before, and an unset one is not written, so existing
+  folders keep their bytes. A run's identity and resume keep <code>arch_digest</code>. The extensions
+  surface carries <code>actor_digest_of</code>, <code>arch_digest_of</code> and <code>NetConfig</code>.</li>
+</ul>
+<h2 id="0515">0.5.15<a class="headerlink" href="#0515" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>net.policy_head_float32</code> computes the policy's logits in float32 from the trunk's features
+  while the trunk keeps <code>net.autocast_dtype</code>. Under bfloat16 a large logit is rounded to
+  bfloat16's spacing, which the importance ratio feels through the largest action's
+  probability; the preflight ratio guard now predicts from the precision the logits are
+  computed at, and names this setting when it refuses. An extension's <code>RunContext.precision</code>
+  is that precision. Every actor is built by <code>learn.nets.build_actor</code> and follows it: the
+  run's own, a pool snapshot's, an evaluation's and a saved bot's. Unset, nothing changes.</li>
+<li><code>net.critic_channels</code> and <code>net.critic_blocks</code> give the critic's trunk, and its value head, a
+  width and depth of their own under <code>net.separate_trunks</code>. Unset, the critic is the actor's
+  size and every config hash and architecture digest is as before. A critic shape that cannot
+  be built is refused by these names.</li>
+</ul>
+<h2 id="0514">0.5.14<a class="headerlink" href="#0514" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>royalelearn bench</code> times the codec on a row with every key the run's observation space
+  declares. It packed a row of the spatial, vector and mask keys alone, which a run storing id
+  planes (card, spell or unit ids) refused with a TypeError before the table was printed.</li>
+</ul>
+<h2 id="0513">0.5.13<a class="headerlink" href="#0513" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Where collection's time goes, per iteration: <code>time/worker_env</code>, <code>time/worker_busy</code> and
+  <code>time/worker_idle</code> (one worker's seconds in the environments, working on rounds, and waiting
+  for the learner), <code>time/worker_straggle</code> (how much longer the slowest worker took than the
+  average, over all rounds), <code>time/parent_wait</code> and <code>time/parent_other</code> (with <code>time/inference</code>
+  they add up to <code>time/collection</code>), and <code>throughput/worker_busy_frac</code>. Each worker states its
+  busy and idle time in the control word it publishes, in the record's reserve, so no offset moved.
+  <code>royalelearn bench</code> prints the new figures.</li>
+<li>A worker's publication after a command that runs no step carries no environment time; it
+  carried the previous step's, which <code>time/env</code> then counted twice at each iteration's start.
+  The schema says plainly that <code>time/env</code> is summed over the workers.</li>
+</ul>
 <h2 id="0512">0.5.12<a class="headerlink" href="#0512" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>environment.json</code> holds the whole of <code>env.config()</code> for the env <code>build_env</code> returns, and

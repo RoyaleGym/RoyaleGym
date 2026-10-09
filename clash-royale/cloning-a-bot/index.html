@@ -3552,6 +3552,10 @@ and paste this into it:</p>
 <p>On our computer, replaying the matches took about 11 minutes (that part runs on the processor),
 and cloning them on its RTX 4070 Ti about an hour and a half more, while another program shared the card.
 Cloning prints nothing while it works, so let it run.</p>
+<p>Without an NVIDIA graphics card, cloning runs on the processor and takes several hours for
+1,000 matches. It goes over all the examples up to 20 times, and on a processor each time can
+take 15 minutes or more. Fewer times is quicker, and the copy is rougher: change the <code>clone</code>
+line to <code>clone(learner, demos, "runs/human_clone", epochs=3)</code>.</p>
 <p>Here is what each line does:</p>
 <ul>
 <li><code>Learner(build_env, ...)</code> gives the clone its network and what it sees. It doesn't train here,
@@ -3596,26 +3600,46 @@ needs royaleimitate 0.2.8 or newer: <code>pip install --upgrade royaleimitate</c
 <p><code>matches=1000</code> is how many matches it copies. More matches take longer to replay and to clone,
 and take more disk space.</p>
 <p>If it stops before it prints <code>Your clone is in runs/human_clone</code>, for example because you pressed
-Ctrl+C or the computer restarted, it can't carry on. Delete the <code>runs/human-demos</code> folder, and
-<code>runs/human_clone</code> if it's there, and run it again. Otherwise it stops with an error that says the
-folder <code>already holds files</code>. To make a second clone next to the first, give it new folders
-instead, such as <code>"runs/human-demos-2"</code> and <code>"runs/human_clone_2"</code>.</p>
-<h3 id="2-watch-your-clone">2. Watch Your Clone<a class="headerlink" href="#2-watch-your-clone" title="Permanent link">&para;</a></h3>
-<p>The clone loads like any bot you trained. Make <code>watch_clone.py</code> next to <code>clone_humans.py</code>:</p>
-<div class="highlight"><span class="filename">watch_clone.py</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+Ctrl+C or the computer restarted, it can't carry on where it stopped. What to do depends on how
+far it got:</p>
+<ul>
+<li><strong>Before the <code>1000 matches written (...)</code> summary:</strong> delete the <code>runs/human-demos</code> folder, and
+  <code>runs/human_clone</code> if it's there, and run it again. Otherwise it stops with an error that says
+  the folder <code>already holds files</code>.</li>
+<li><strong>After the summary:</strong> the matches are ready, so only the cloning needs to run again. Delete
+  <code>runs/human_clone</code> if it's there, and run this file instead, next to <code>clone_humans.py</code>:</li>
+</ul>
+<div class="highlight"><span class="filename">clone_again.py</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">play_battle</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royaleimitate</span><span class="w"> </span><span class="kn">import</span> <span class="n">clone</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">clone_humans</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">bot</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/human_clone"</span><span class="p">)</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">battle</span> <span class="o">=</span> <span class="n">play_battle</span><span class="p">(</span><span class="n">build_env</span><span class="p">(),</span> <span class="n">blue</span><span class="o">=</span><span class="n">bot</span><span class="p">,</span> <span class="n">red</span><span class="o">=</span><span class="s2">"push"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">random</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">1_000_000</span><span class="p">),</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>                     <span class="n">save_to</span><span class="o">=</span><span class="s2">"clone_battle.msgpack"</span><span class="p">)</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Crowns:"</span><span class="p">,</span> <span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"-"</span><span class="p">,</span> <span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span><span class="n">build_env</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="s2">"runs/my_clone"</span><span class="p">)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">demos</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"runs/human-demos"</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"*/manifest.json"</span><span class="p">))</span><span class="o">.</span><span class="n">parent</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">clone</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="n">demos</span><span class="p">,</span> <span class="s2">"runs/human_clone"</span><span class="p">)</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"Your clone is in runs/human_clone"</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python watch_clone.py
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>royaleviser clone_battle.msgpack
+<p>To make a second clone next to the first, give it new folders instead, such as
+<code>"runs/human-demos-2"</code> and <code>"runs/human_clone_2"</code>.</p>
+<h3 id="2-watch-your-clone">2. Watch Your Clone<a class="headerlink" href="#2-watch-your-clone" title="Permanent link">&para;</a></h3>
+<p>The clone loads like any bot you trained. Make <code>watch_clone.py</code> next to <code>clone_humans.py</code>:</p>
+<div class="highlight"><span class="filename">watch_clone.py</span><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">play_battle</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">clone_humans</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">bot</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/human_clone"</span><span class="p">)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">battle</span> <span class="o">=</span> <span class="n">play_battle</span><span class="p">(</span><span class="n">build_env</span><span class="p">(),</span> <span class="n">blue</span><span class="o">=</span><span class="n">bot</span><span class="p">,</span> <span class="n">red</span><span class="o">=</span><span class="s2">"push"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">random</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">1_000_000</span><span class="p">),</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>                     <span class="n">save_to</span><span class="o">=</span><span class="s2">"clone_battle.msgpack"</span><span class="p">)</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Crowns:"</span><span class="p">,</span> <span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"-"</span><span class="p">,</span> <span class="n">battle</span><span class="o">.</span><span class="n">crowns</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python watch_clone.py
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>royaleviser clone_battle.msgpack
 </code></pre></div>
 <p>Your clone plays blue, at the bottom, against the push bot, which plays every card as far forward
 as it can. Run it a few times: each battle goes differently.</p>
@@ -3625,23 +3649,23 @@ card.</p>
 <h3 id="3-test-your-clone">3. Test Your Clone<a class="headerlink" href="#3-test-your-clone" title="Permanent link">&para;</a></h3>
 <p>To see how good it is, play it against every scripted bot. Make <code>test_clone.py</code> next to the
 others. It takes a few minutes:</p>
-<div class="highlight"><span class="filename">test_clone.py</span><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallableOpponent</span><span class="p">,</span> <span class="n">evaluate</span><span class="p">,</span> <span class="n">ladder</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">clone_humans</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">bot</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/human_clone"</span><span class="p">)</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">me</span> <span class="o">=</span> <span class="n">CallableOpponent</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obs</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">bot</span><span class="p">(</span><span class="n">obs</span><span class="p">))</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">opponent</span> <span class="ow">in</span> <span class="n">ladder</span><span class="p">():</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">evaluate</span><span class="p">(</span><span class="n">me</span><span class="p">,</span> <span class="n">opponent</span><span class="p">,</span> <span class="n">build_env</span><span class="p">,</span> <span class="n">games</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">"my clone"</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<div class="highlight"><span class="filename">test_clone.py</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallableOpponent</span><span class="p">,</span> <span class="n">evaluate</span><span class="p">,</span> <span class="n">ladder</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">clone_humans</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">bot</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/human_clone"</span><span class="p">)</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">me</span> <span class="o">=</span> <span class="n">CallableOpponent</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obs</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">bot</span><span class="p">(</span><span class="n">obs</span><span class="p">))</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">opponent</span> <span class="ow">in</span> <span class="n">ladder</span><span class="p">():</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">evaluate</span><span class="p">(</span><span class="n">me</span><span class="p">,</span> <span class="n">opponent</span><span class="p">,</span> <span class="n">build_env</span><span class="p">,</span> <span class="n">games</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">"my clone"</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
 </code></pre></div>
 <p>This is what we got. Yours will differ a little:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>my clone vs noop: 50-0-0 over 50 games. win rate 100.0% (92.9% to 100.0% at 95%) -- my clone is better. seat gap +0.0%, mean 2227 ticks.
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>my clone vs random: 47-3-0 over 50 games. win rate 94.0% (83.8% to 97.9% at 95%) -- my clone is better. seat gap +4.0%, mean 3469 ticks.
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>my clone vs first-affordable: 48-2-0 over 50 games. win rate 96.0% (86.5% to 98.9% at 95%) -- my clone is better. seat gap +0.0%, mean 3598 ticks.
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>my clone vs defend: 45-5-0 over 50 games. win rate 90.0% (78.6% to 95.7% at 95%) -- my clone is better. seat gap -12.0%, mean 3984 ticks.
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>my clone vs push: 44-6-0 over 50 games. win rate 88.0% (76.2% to 94.4% at 95%) -- my clone is better. seat gap +16.0%, mean 3630 ticks.
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>my clone vs patient: 40-10-0 over 50 games. win rate 80.0% (67.0% to 88.8% at 95%) -- my clone is better. seat gap -16.0%, mean 3074 ticks.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>my clone vs noop: 50-0-0 over 50 games. win rate 100.0% (92.9% to 100.0% at 95%) -- my clone is better. seat gap +0.0%, mean 2227 ticks.
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>my clone vs random: 47-3-0 over 50 games. win rate 94.0% (83.8% to 97.9% at 95%) -- my clone is better. seat gap +4.0%, mean 3469 ticks.
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>my clone vs first-affordable: 48-2-0 over 50 games. win rate 96.0% (86.5% to 98.9% at 95%) -- my clone is better. seat gap +0.0%, mean 3598 ticks.
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>my clone vs defend: 45-5-0 over 50 games. win rate 90.0% (78.6% to 95.7% at 95%) -- my clone is better. seat gap -12.0%, mean 3984 ticks.
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>my clone vs push: 44-6-0 over 50 games. win rate 88.0% (76.2% to 94.4% at 95%) -- my clone is better. seat gap +16.0%, mean 3630 ticks.
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>my clone vs patient: 40-10-0 over 50 games. win rate 80.0% (67.0% to 88.8% at 95%) -- my clone is better. seat gap -16.0%, mean 3074 ticks.
 </code></pre></div>
 <p>Each line says how many battles it won, lost and drew, and which bot is clearly better, or that
 it's "too close to call". Ours beat every one of them, playing 23 to 32 cards a battle: it spends
@@ -3651,15 +3675,15 @@ player. More about reading these lines is on
 <h3 id="4-train-from-your-clone">4. Train From Your Clone<a class="headerlink" href="#4-train-from-your-clone" title="Permanent link">&para;</a></h3>
 <p>Your clone can go on learning by trial and error, starting from what it copied. Make
 <code>train_from_clone.py</code> next to the others:</p>
-<div class="highlight"><span class="filename">train_from_clone.py</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royaleimitate.artifacts</span><span class="w"> </span><span class="kn">import</span> <span class="n">artifact_digest</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">clone_humans</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">start</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="s2">"runs/human_clone"</span><span class="p">,</span> <span class="s2">"sha256"</span><span class="p">:</span> <span class="n">artifact_digest</span><span class="p">(</span><span class="s2">"runs/human_clone"</span><span class="p">)}</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span><span class="n">build_env</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="s2">"runs/from_clone"</span><span class="p">,</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"warm_start"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"init"</span><span class="p">:</span> <span class="n">start</span><span class="p">}})</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="n">learner</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_steps</span><span class="o">=</span><span class="mi">1_000_000_000</span><span class="p">)</span>  <span class="c1"># stop it with Ctrl+C whenever you like</span>
+<div class="highlight"><span class="filename">train_from_clone.py</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royaleimitate.artifacts</span><span class="w"> </span><span class="kn">import</span> <span class="n">artifact_digest</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">clone_humans</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_env</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">start</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="s2">"runs/human_clone"</span><span class="p">,</span> <span class="s2">"sha256"</span><span class="p">:</span> <span class="n">artifact_digest</span><span class="p">(</span><span class="s2">"runs/human_clone"</span><span class="p">)}</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span><span class="n">build_env</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="s2">"runs/from_clone"</span><span class="p">,</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"warm_start"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"init"</span><span class="p">:</span> <span class="n">start</span><span class="p">}})</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">learner</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_steps</span><span class="o">=</span><span class="mi">1_000_000_000</span><span class="p">)</span>  <span class="c1"># stop it with Ctrl+C whenever you like</span>
 </code></pre></div>
 <p>It trains like the <a href="../../quickstart/">Quick Start</a> and saves in <code>runs/from_clone</code>. <code>sha256</code> is a
 fingerprint of the clone's folder, so the run starts from exactly that clone. Give both <code>Learner</code>s
@@ -3716,20 +3740,20 @@ by name, or a bot you trained. The bot you copy is called the teacher.</p>
 </tbody>
 </table>
 <p>Make a file called <code>clone_my_bot.py</code>:</p>
-<div class="highlight"><span class="filename">clone_my_bot.py</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royaleimitate</span><span class="w"> </span><span class="kn">import</span> <span class="n">clone</span><span class="p">,</span> <span class="n">record</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_env</span><span class="p">():</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="k">return</span> <span class="n">make_env</span><span class="p">()</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span><span class="n">build_env</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="s2">"runs/my_clone"</span><span class="p">)</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="n">demos</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="s2">"push"</span><span class="p">,</span> <span class="s2">"runs/demos"</span><span class="p">,</span> <span class="n">battles</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="n">clone</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="n">demos</span><span class="p">,</span> <span class="s2">"runs/clone"</span><span class="p">)</span>
-<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"Your clone is in runs/clone"</span><span class="p">)</span>
+<div class="highlight"><span class="filename">clone_my_bot.py</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royaleimitate</span><span class="w"> </span><span class="kn">import</span> <span class="n">clone</span><span class="p">,</span> <span class="n">record</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalelearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">Learner</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_env</span><span class="p">():</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="k">return</span> <span class="n">make_env</span><span class="p">()</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span><span class="n">build_env</span><span class="p">,</span> <span class="n">save_dir</span><span class="o">=</span><span class="s2">"runs/my_clone"</span><span class="p">)</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="n">demos</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="s2">"push"</span><span class="p">,</span> <span class="s2">"runs/demos"</span><span class="p">,</span> <span class="n">battles</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="n">clone</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="n">demos</span><span class="p">,</span> <span class="s2">"runs/clone"</span><span class="p">)</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"Your clone is in runs/clone"</span><span class="p">)</span>
 </code></pre></div>
 <p>Run it with <code>python clone_my_bot.py</code>. Recording the 200 battles took about two minutes on our
 computer. The cloning after it uses your graphics card, like training does.</p>
@@ -3741,8 +3765,8 @@ computer. The cloning after it uses your graphics card, like training does.</p>
 </ul>
 <p>To clone a bot you trained, pass it instead of <code>"push"</code>. It has to be a bot for the same battles,
 with the same deck and the same observation, as the one you're cloning into:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>    <span class="n">teacher</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/my_bot"</span><span class="p">)</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">demos</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="n">teacher</span><span class="p">,</span> <span class="s2">"runs/demos"</span><span class="p">,</span> <span class="n">battles</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>    <span class="n">teacher</span> <span class="o">=</span> <span class="n">Learner</span><span class="o">.</span><span class="n">load_policy</span><span class="p">(</span><span class="s2">"runs/my_bot"</span><span class="p">)</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">demos</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="n">teacher</span><span class="p">,</span> <span class="s2">"runs/demos"</span><span class="p">,</span> <span class="n">battles</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
 </code></pre></div>
 <p>Then watch, test and train your clone as in steps 2 to 4 above, with <code>runs/clone</code> in place of
 <code>runs/human_clone</code>, and <code>from clone_my_bot import build_env</code> in place of

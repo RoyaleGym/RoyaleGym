@@ -3850,7 +3850,7 @@ command that had promised more than it did, so the promise went instead.</p>
 </tr>
 <tr>
 <td><code>time/env</code></td>
-<td>Seconds inside the battle engine, as the workers report them.</td>
+<td>Seconds inside the battle engine, added up over all the workers: processor time, not time on the clock.</td>
 </tr>
 <tr>
 <td><code>time/codec</code></td>
@@ -3858,7 +3858,31 @@ command that had promised more than it did, so the promise went instead.</p>
 </tr>
 <tr>
 <td><code>time/ipc</code></td>
-<td>Waiting on round signals and reading scalars.</td>
+<td>Collection less inference and <code>time/env</code>. With more than one worker it reads 0, because <code>time/env</code> is a sum.</td>
+</tr>
+<tr>
+<td><code>time/parent_wait</code></td>
+<td>The learner waiting for every worker to hand in a round.</td>
+</tr>
+<tr>
+<td><code>time/parent_other</code></td>
+<td>The rest of the learner's collection: reading, recording and answering rounds. With <code>parent_wait</code> and <code>inference</code> it adds up to <code>time/collection</code>.</td>
+</tr>
+<tr>
+<td><code>time/worker_env</code></td>
+<td>One worker's seconds inside the battle engine (the average over workers).</td>
+</tr>
+<tr>
+<td><code>time/worker_busy</code></td>
+<td>One worker's seconds working on rounds: stepping, packing, handing in.</td>
+</tr>
+<tr>
+<td><code>time/worker_idle</code></td>
+<td>One worker's seconds waiting for the learner during collection.</td>
+</tr>
+<tr>
+<td><code>time/worker_straggle</code></td>
+<td>How much longer the slowest worker took than the average, added up over rounds. Every other worker waits that out.</td>
 </tr>
 <tr>
 <td><code>time/update</code></td>
@@ -4038,8 +4062,11 @@ applied to, minutes before it is applied.</p>
   workers that had not published yet. The schema expects it under 0.3. Rising means the workers
   cannot keep up, which on a laptop usually means too many workers for the cores you have, or
   something else on the machine.</li>
-<li><code>time/env</code> against <code>time/collection</code> says how much of collection was really inside the battle
-  engine rather than waiting, packing or choosing actions.</li>
+<li><code>throughput/worker_busy_frac</code> says who waits on whom. Near 1, the workers are the limit: more
+  workers or a cheaper environment help. Near 0, they sit waiting for the learner to choose
+  actions, and <code>time/inference</code> is the limit: more battles per worker or a cheaper network help.</li>
+<li><code>time/worker_straggle</code> is the cost of one slow worker. A worker that also records replays, or
+  shares its core with something else, makes every round wait for it.</li>
 </ul>
 <h3 id="something-else-on-the-machine">Something else on the machine<a class="headerlink" href="#something-else-on-the-machine" title="Permanent link">&para;</a></h3>
 <p>This is the most common one on a laptop and the hardest to see in the metrics. The README records

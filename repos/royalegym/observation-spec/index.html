@@ -4212,7 +4212,7 @@ unit's OWN type on each tile, own plane then enemy plane, as <code>card_ids</cod
 </tr>
 <tr>
 <td>aliases</td>
-<td><code>unit_aliases=</code> writes a row as its base type when the two are one unit to a player (<code>obs.SAME_UNIT_ALIASES</code>: ten rows, e.g. the Graveyard's skeleton as Skeleton, the Goblins card's goblin as Goblin); the aliased names leave the vocabulary, and <code>config()</code> records the map</td>
+<td><code>unit_aliases=</code> writes a row as its base type when the two are one unit to a player (<code>obs.SAME_UNIT_ALIASES</code>: eleven rows, e.g. the Graveyard's skeleton as Skeleton, the Goblins card's goblin as Goblin); the aliased names leave the vocabulary, and <code>config()</code> records the map</td>
 </tr>
 </tbody>
 </table>
@@ -4225,8 +4225,8 @@ goblins stab first 200 ms later than the Goblin Barrel's, the Goblin Hut's waves
 500 ms instead of 1000, and the second of the Three Musketeers fires its first shot one tick
 later. For the goblins, <code>card_ids</code> still names the producer, so the difference is recoverable
 when <code>card_identity=True</code> is on too. <code>unit_aliases</code> does not require it. A pair the engine
-plays differently stays apart: the evolved Goblin Cage's brawler (royalesim 0.1.17 gives it
-less hp than the plain one).</p>
+plays differently stays apart. The evolved Goblin Cage's brawler joined once royalesim 0.1.20
+played it at the plain brawler's hp; its evolved status bit still says it is the evolved one.</p>
 <h3 id="spell_ids-uint8-4-32-18-behind-its-own-flag-default-off"><code>spell_ids</code>, uint8 <code>[4, 32, 18]</code> (behind its own flag, default off)<a class="headerlink" href="#spell_ids-uint8-4-32-18-behind-its-own-flag-default-off" title="Permanent link">&para;</a></h3>
 <p><code>SpatialObsBuilder(spell_identity=True)</code> (it needs <code>card_identity=True</code>) adds <code>spell_ids</code>:
 which card made each live spell object, in the <code>card_ids</code> vocabulary (<code>2 + card_id</code>, 0 =
