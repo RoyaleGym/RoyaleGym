@@ -339,6 +339,8 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         self._max_ticks: int | None = None
         self._start_seat: int | None = None
         self._start_tag = ""
+        # The seats whose observation this episode holds only legality (reset's ``mask_only``).
+        self._mask_only: frozenset[str] = frozenset()
 
     # -- spaces -------------------------------------------------------------
 
@@ -410,6 +412,20 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         # The episode's own length cap: a reset option, else the start's, else none.
         cap = options.get("max_ticks", snapshot.max_ticks if snapshot is not None else None)
         self._max_ticks = check_max_ticks(cap, "max_ticks")
+        # The seats played by something that reads only legality (a scripted opponent reads
+        # ``mask_planes``): their observation is ``ObsBuilder.mask_only``, every key at its shape,
+        # zero but the masks, at a small fraction of a build. For the whole episode, because a
+        # skipped seat's memory does not move; the other seat's observation is unchanged.
+        mask_only = frozenset(options.get("mask_only", ()))
+        unknown = sorted(mask_only - set(self.possible_agents))
+        if unknown:
+            raise ValueError(f"mask_only names {unknown}; the agents are {self.possible_agents}")
+        if mask_only and not callable(getattr(self.obs_builder, "mask_only", None)):
+            raise ValueError(
+                f"mask_only needs an observation builder with mask_only(); "
+                f"{type(self.obs_builder).__name__} has none"
+            )
+        self._mask_only = mask_only
         self._start_seat = snapshot.seat if snapshot is not None else None
         self._start_tag = snapshot.tag if snapshot is not None else ""
         self.reward_fn.reset(state)
@@ -585,7 +601,10 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
             team = AGENT_TEAM[agent]
             mask = self.action_parser.action_mask(state, team)
             self._masks[agent] = mask
-            self._obs[agent] = self.obs_builder.build(state, team, mask)
+            if agent in self._mask_only:
+                self._obs[agent] = self.obs_builder.mask_only(mask)
+            else:
+                self._obs[agent] = self.obs_builder.build(state, team, mask)
 
     def _info(
         self, agent: str, state: BattleState, status: int, terminal: bool
@@ -678,6 +697,11 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         state = self.battle_state
         if state.game_over:
             raise ValueError("this battle is over, so nothing can be played from it")
+        if self._mask_only:
+            raise ValueError(
+                f"this episode skips the observation of {sorted(self._mask_only)} (mask_only), "
+                "so their memory of the match was never kept and cannot be saved"
+            )
         return Snapshot(
             self.engine.save_state(),
             memory=self.obs_builder.save_memory(),
@@ -738,6 +762,8 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         keeps and Red's hand is not there at all, unless the builder's ``Reveal``
         opens them.
         """
+        if "blue" in self._mask_only:
+            raise ValueError("this episode skips Blue's observation (mask_only): no state to give")
         obs = self._obs["blue"]
         return np.concatenate(
             [np.asarray(obs[k], dtype=np.float32).ravel() for k in self._state_keys]

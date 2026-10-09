@@ -437,7 +437,7 @@ class AbilityRow(NamedTuple):
 
 def ability_row(row: Sequence[int]) -> AbilityRow:
     """``row`` by column: its first five, whatever an engine appends after them."""
-    return AbilityRow(*(int(v) for v in row[:5]))
+    return AbilityRow(*map(int, row[:5]))
 
 
 class DeployCommand(msgspec.Struct, frozen=True):

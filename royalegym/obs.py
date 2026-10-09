@@ -1481,11 +1481,15 @@ def _write_card_status(
     out[off["enemy_seen_evolved"]] = forms.seen_evolved
     out[off["enemy_seen_hero"]] = forms.seen_hero
     eprog, enext = out[off["enemy_evo_progress"]], out[off["enemy_evo_next"]]
-    for card in np.flatnonzero(forms.basic_since):
+    since = forms.basic_since
+    for card in np.flatnonzero(since).tolist():
         cycle = cards[card].evo_cycle or 0
         if cycle > 0:
-            eprog[card] = min(1.0, forms.basic_since[card] / cycle)
-            enext[card] = float(forms.basic_since[card] >= cycle)
+            # As Python ints: the same float64 quotient numpy's int64 scalars gave, at a tenth
+            # of the cost.
+            count = int(since[card])
+            eprog[card] = min(1.0, count / cycle)
+            enext[card] = float(count >= cycle)
     espent, ecool = out[off["enemy_button_spent"]], out[off["enemy_button_cooldown"]]
     for row in map(ability_row, foe.abilities):
         if row.card_id == EMPTY_CARD:
@@ -1766,6 +1770,8 @@ class ObsBuilder(ABC):
             self.calibration = calibration
 
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
+        # ``mask_only``'s keys, shapes and dtypes, worked out on first use: bind changes them.
+        self._blank: list[tuple[str, tuple[int, ...], Any]] | None = None
         if not hasattr(self, "calibration"):
             self.calibration = default_calibration()
         self.arena = engine.arena()
@@ -2020,6 +2026,24 @@ class ObsBuilder(ABC):
             out["ability_ready"] = flat[len(flat) - self.ability_buttons :]
         return out
 
+    def mask_only(self, action_mask: np.ndarray) -> dict[str, np.ndarray]:
+        """An observation that holds only legality: every key ``build`` returns, at its shape and
+        dtype, all zero but the mask entries (``action_mask``, ``mask_planes``,
+        ``ability_ready``, as ``build`` writes them).
+
+        For a seat whose player reads nothing else -- the scripted opponents read
+        ``mask_planes`` -- at a small fraction of a build's cost. It sees no state, so the
+        seat's memory does not move: an episode either builds a seat's observations from its
+        first step or never does (``ClashParallelEnv.reset``'s ``mask_only``).
+        """
+        blank = getattr(self, "_blank", None)
+        if blank is None:
+            blank = [(k, s.shape, s.dtype) for k, s in self.observation_space().spaces.items()]
+            self._blank = blank
+        out = {k: np.zeros(shape, dtype=dtype) for k, shape, dtype in blank}
+        out.update(self._mask_entries(action_mask))
+        return out
+
     def _vector(self, state: BattleState, team: int) -> np.ndarray:
         memory = self.memory[team]
         # Whenever the env said which presses it accepted, even none: the memory then charges
@@ -2235,6 +2259,61 @@ SPELL_ROWS = (
 )
 
 
+def _clamped_cell(arena: Arena, team: int, x: int, y: int) -> int:
+    """Flat own-frame centre tile (``ty * tiles_x + tx``), clamped onto the board, as ``_tile``."""
+    ox, oy = to_own(arena, team, x, y)
+    tx = ox // arena.subtile
+    ty = oy // arena.subtile
+    tx = 0 if tx < 0 else (arena.tiles_x - 1 if tx >= arena.tiles_x else tx)
+    ty = 0 if ty < 0 else (arena.tiles_y - 1 if ty >= arena.tiles_y else ty)
+    return ty * arena.tiles_x + tx
+
+
+#: The last entities ``_entity_cells`` read (as a tuple: a list changed in place is a new key),
+#: the seat, arena and frame function, and the cells: the five plane functions of one build read
+#: the same entities for the same seat. EntityState is frozen, so equal entities sit on equal
+#: tiles; ``to_own`` is part of the key, so a planted frame function never reads cells another
+#: one worked out.
+_CELLS_CACHE: list[Any] = [None]
+
+
+def _entity_cells(entities: Sequence[EntityState], team: int, arena: Arena) -> list[int]:
+    """Each entity's flat own-frame centre tile (``_clamped_cell``), in list order."""
+    key = (tuple(entities), team, arena, to_own)
+    held = _CELLS_CACHE[0]
+    if held is not None and held[0] == key:
+        cells: list[int] = held[1]
+        return cells
+    cells = [_clamped_cell(arena, team, e.x, e.y) for e in entities]
+    _CELLS_CACHE[0] = (key, cells)
+    return cells
+
+
+def _planes_from(arena: Arena, planes: int, index: list[int]) -> np.ndarray:
+    """float32 [planes, tiles_y, tiles_x] of how often each flat index occurs: whole counts kept
+    as Python ints and written once, so exact in float32, as the int64 accumulator's were.
+    A dozen entities touch a few dozen cells, so counting them here beats any array pass."""
+    out = np.zeros((planes, arena.tiles_y, arena.tiles_x), dtype=np.float32)
+    counts: dict[int, int] = {}
+    for i in index:
+        counts[i] = counts.get(i, 0) + 1
+    flat = out.reshape(-1)
+    for i, n in counts.items():
+        flat[i] = n
+    return out
+
+
+def _write_scaled_sums(flat: np.ndarray, index: list[int], weights: list[int]) -> None:
+    """Write each flat index's integer weight sum / ``HP_SCALE`` into the zeroed ``flat``. The
+    sum is a Python int, exact; one float64 division (the int is far below 2**53, so it is the
+    int64 accumulator's value) and one rounding to float32, as before."""
+    sums: dict[int, int] = {}
+    for i, w in zip(index, weights, strict=True):
+        sums[i] = sums.get(i, 0) + w
+    for i, s in sums.items():
+        flat[i] = s / HP_SCALE
+
+
 def entity_channels(
     entities: Sequence[EntityState], team: int, arena: Arena, grounded_said: bool = False
 ) -> np.ndarray:
@@ -2253,24 +2332,26 @@ def entity_channels(
     was. Module-level so a test can plant the old order-dependent float
     accumulation back in.
     """
-    acc = np.zeros((ENTITY_CHANNELS, arena.tiles_y, arena.tiles_x), dtype=np.int64)
-    for e in entities:
-        ox, oy = to_own(arena, team, e.x, e.y)
-        tx = min(max(ox // arena.subtile, 0), arena.tiles_x - 1)
-        ty = min(max(oy // arena.subtile, 0), arena.tiles_y - 1)
-        base = 0 if e.team == team else TEAM_STRIDE
+    plane = arena.tiles_y * arena.tiles_x
+    counted: list[int] = []
+    at: list[int] = []
+    hp: list[int] = []
+    for e, cell in zip(entities, _entity_cells(entities, team, arena), strict=True):
+        own = e.team == team
+        base = 0 if own else TEAM_STRIDE
         if e.kind == EntityKind.TROOP:
-            acc[base + (1 if in_the_air(e, grounded_said) else 0), ty, tx] += 1
+            channel = base + (1 if in_the_air(e, grounded_said) else 0)
         elif e.kind == EntityKind.BUILDING:
-            acc[base + 2, ty, tx] += 1
+            channel = base + 2
         else:
-            acc[base + 3, ty, tx] += 1
-        acc[base + 4, ty, tx] += e.hp
+            channel = base + 3
+        counted.append(channel * plane + cell)
+        at.append((base + 4) * plane + cell)
+        hp.append(e.hp)
         if e.deploy_ticks > 0:
-            acc[10 if e.team == team else 11, ty, tx] += 1
-    out = acc.astype(np.float32)
-    for c in HP_CHANNELS:
-        out[c] = (acc[c] / HP_SCALE).astype(np.float32)
+            counted.append((10 if own else 11) * plane + cell)
+    out = _planes_from(arena, ENTITY_CHANNELS, counted)
+    _write_scaled_sums(out.reshape(-1), at, hp)
     return out
 
 
@@ -2394,12 +2475,16 @@ def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) ->
     such an engine predates the shield and buff fields too, and their defaults (no shield, no
     buffs) would read as an answer. Module-level so a test can plant a defect in it.
     """
-    acc = np.zeros((len(STATUS_SPATIAL_CHANNELS), arena.tiles_y, arena.tiles_x), dtype=np.int64)
+    planes = len(STATUS_SPATIAL_CHANNELS)
+    plane = arena.tiles_y * arena.tiles_x
     towers = {e.uid for e in entities if e.kind in TOWER_KINDS}
     buildings = {e.uid for e in entities if e.kind == EntityKind.BUILDING}
-    strongest: dict[tuple[int, int, int], tuple[int, int, int, int]] = {}
+    strongest: dict[int, tuple[int, int, int, int]] = {}
     bits = ((STATUS_INVISIBLE, 12), (STATUS_UNDERGROUND, 14), (STATUS_HIDDEN, 16))
-    for e in entities:
+    counted: list[int] = []
+    at: list[int] = []
+    shield: list[int] = []
+    for e, cell in zip(entities, _entity_cells(entities, team, arena), strict=True):
         status = status_of(e)
         if status is None:
             raise ValueError(
@@ -2409,33 +2494,36 @@ def status_channels(entities: Sequence[EntityState], team: int, arena: Arena) ->
             )
         if e.kind in TOWER_KINDS:
             continue
-        ty, tx = _tile(arena, team, e.x, e.y)
         side = 0 if e.team == team else 1
-        acc[side, ty, tx] += e.shield
-        members = {m for name, _ in e.buffs for m in name.split("|")}
-        if RAGE_BUFF in members:
-            acc[2 + side, ty, tx] += 1
-        if SLOW_BUFF in members:
-            acc[4 + side, ty, tx] += 1
+        at.append(side * plane + cell)
+        shield.append(e.shield)
+        if e.buffs:
+            members = {m for name, _ in e.buffs for m in name.split("|")}
+            if RAGE_BUFF in members:
+                counted.append((2 + side) * plane + cell)
+            if SLOW_BUFF in members:
+                counted.append((4 + side) * plane + cell)
         if e.target_uid in towers:
-            acc[6 + side, ty, tx] += 1
+            counted.append((6 + side) * plane + cell)
         elif e.target_uid in buildings:
-            acc[8 + side, ty, tx] += 1
-        for bit, plane in bits:
-            if status & bit:
-                acc[plane + side, ty, tx] += 1
-        key = (side, ty, tx)
+            counted.append((8 + side) * plane + cell)
+        if status:
+            for bit, p in bits:
+                if status & bit:
+                    counted.append((p + side) * plane + cell)
+        key = (10 + side) * plane + cell
         held = strongest.get(key)
         if held is None or (e.max_hp, -e.uid) > (held[0], -held[1]):
             strongest[key] = (e.max_hp, e.uid, e.hp, max(1, e.max_hp))
-    out = acc.astype(np.float32)
-    out[:2] = (acc[:2] / HP_SCALE).astype(np.float32)
-    for (side, ty, tx), (_, _, hp, max_hp) in strongest.items():
+    out = _planes_from(arena, planes, counted)
+    flat = out.reshape(-1)
+    _write_scaled_sums(flat, at, shield)
+    for key, (_, _, hp, max_hp) in strongest.items():
         # In permille, rounded in integers and written as float32(q) / 1000: a plane that
         # stores as uint16 x 1000 exactly (RoyaleImitate's shards refuse anything else), so a
         # live bot reads what the clone trained on.
         q = (2000 * min(max(hp, 0), max_hp) + max_hp) // (2 * max_hp)
-        out[10 + side, ty, tx] = np.float32(q) / np.float32(1000)
+        flat[key] = np.float32(q) / np.float32(1000)
     return out
 
 
@@ -2447,10 +2535,14 @@ def action_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
     An engine before royalesim 0.1.8 sends -1, "not said", for every unit's charge, and is
     refused rather than read as a board where nothing charges. Module-level for plants.
     """
-    acc = np.zeros((len(ACTION_SPATIAL_CHANNELS), arena.tiles_y, arena.tiles_x), dtype=np.int64)
-    most = np.zeros((4, arena.tiles_y, arena.tiles_x), dtype=np.int64)  # charge, ticks x side
+    planes = len(ACTION_SPATIAL_CHANNELS)
+    plane = arena.tiles_y * arena.tiles_x
+    charge: dict[int, int] = {}  # the most on a (side, cell): charge, then ability ticks
+    ticks: dict[int, int] = {}
     bits = ((STATUS_CHARGED, 2), (STATUS_WINDUP, 4), (STATUS_ABILITY_ACTIVE, 6), (STATUS_CLONE, 10))
-    for e in state.entities:
+    counted: list[int] = []
+    entities = state.entities
+    for e, cell in zip(entities, _entity_cells(entities, team, arena), strict=True):
         status = status_of(e)
         if status is None or e.charge < 0:
             raise ValueError(
@@ -2462,18 +2554,25 @@ def action_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
         if e.kind in TOWER_KINDS:
             continue
         side = 0 if e.team == team else 1
-        ty, tx = _tile(arena, team, e.x, e.y)
-        most[side, ty, tx] = max(most[side, ty, tx], min(e.charge, 1000))
-        most[2 + side, ty, tx] = max(most[2 + side, ty, tx], max(e.ability_ticks, 0))
-        for bit, plane in bits:
-            if status & bit:
-                acc[plane + side, ty, tx] += 1
+        key = side * plane + cell
+        c = min(e.charge, 1000)
+        if c > charge.get(key, 0):
+            charge[key] = c
+        t = max(e.ability_ticks, 0)
+        if t > ticks.get(key, 0):
+            ticks[key] = t
+        if status:
+            for bit, p in bits:
+                if status & bit:
+                    counted.append((p + side) * plane + cell)
         if e.dest_x >= 0 and e.dest_y >= 0:
-            dy, dx = _tile(arena, team, e.dest_x, e.dest_y)
-            acc[12 + side, dy, dx] += 1
-    out: np.ndarray = acc.astype(np.float32)
-    out[0:2] = (most[0:2] / 1000.0).astype(np.float32)
-    out[8:10] = np.minimum(most[2:4] / ABILITY_TICKS_SCALE, 1.0).astype(np.float32)
+            counted.append((12 + side) * plane + _clamped_cell(arena, team, e.dest_x, e.dest_y))
+    out = _planes_from(arena, planes, counted)
+    flat = out.reshape(-1)
+    for key, c in charge.items():
+        flat[key] = np.float32(c / 1000.0)
+    for key, t in ticks.items():
+        flat[8 * plane + key] = np.float32(min(t / ABILITY_TICKS_SCALE, 1.0))
     return out
 
 
@@ -2583,17 +2682,17 @@ def card_id_planes(
     Module-level so a test can plant a defect in it.
     """
     out = np.zeros((2, arena.tiles_y, arena.tiles_x), dtype=np.uint8)
-    for e in sorted(entities, key=lambda ent: ent.uid):
-        ox, oy = to_own(arena, team, e.x, e.y)
-        tx = min(max(ox // arena.subtile, 0), arena.tiles_x - 1)
-        ty = min(max(oy // arena.subtile, 0), arena.tiles_y - 1)
-        plane = 0 if e.team == team else 1
-        if out[plane, ty, tx] != CARD_ID_EMPTY:
+    plane = arena.tiles_y * arena.tiles_x
+    held: dict[int, int] = {}
+    cells = _entity_cells(entities, team, arena)
+    for e, cell in sorted(zip(entities, cells, strict=True), key=lambda pair: pair[0].uid):
+        key = (0 if e.team == team else plane) + cell
+        if key in held:
             continue  # a lower uid already holds this tile
         if e.kind in TOWER_KINDS:
-            out[plane, ty, tx] = CARD_ID_TOWER
+            held[key] = CARD_ID_TOWER
         elif 0 <= e.card_id < num_cards:
-            out[plane, ty, tx] = CARD_ID_OFFSET + e.card_id
+            held[key] = CARD_ID_OFFSET + e.card_id
         else:
             # Writing it anyway would put an id outside the declared vocabulary into an
             # embedding lookup, or fold an unknown entity into "tower". Neither is a value.
@@ -2602,6 +2701,8 @@ def card_id_planes(
                 f"{num_cards}-card catalogue, and is not a crown tower, so card_ids has no "
                 "index for it"
             )
+    if held:
+        out.reshape(-1)[list(held)] = list(held.values())
     return out
 
 
@@ -2676,12 +2777,12 @@ def unit_id_planes(
     defect in it.
     """
     out = np.zeros((2, arena.tiles_y, arena.tiles_x), dtype=np.uint8)
-    for e in sorted(entities, key=lambda ent: ent.uid):
-        ox, oy = to_own(arena, team, e.x, e.y)
-        tx = min(max(ox // arena.subtile, 0), arena.tiles_x - 1)
-        ty = min(max(oy // arena.subtile, 0), arena.tiles_y - 1)
-        plane = 0 if e.team == team else 1
-        if out[plane, ty, tx] != UNIT_ID_EMPTY:
+    plane = arena.tiles_y * arena.tiles_x
+    held: dict[int, int] = {}
+    cells = _entity_cells(entities, team, arena)
+    for e, cell in sorted(zip(entities, cells, strict=True), key=lambda pair: pair[0].uid):
+        key = (0 if e.team == team else plane) + cell
+        if key in held:
             continue  # a lower uid already holds this tile
         if not 0 <= e.unit_type < num_units:
             raise ValueError(
@@ -2691,7 +2792,9 @@ def unit_id_planes(
                 + ", so unit_ids has no index for it"
             )
         u = int(lookup[e.unit_type]) if lookup is not None else e.unit_type
-        out[plane, ty, tx] = UNIT_ID_OFFSET + u
+        held[key] = UNIT_ID_OFFSET + u
+    if held:
+        out.reshape(-1)[list(held)] = list(held.values())
     return out
 
 

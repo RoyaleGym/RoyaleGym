@@ -1,6 +1,7 @@
-"""The observation builder's per-entity plane functions as they were before the vectorized
-rewrite (RoyaleGym 27b2a64, 2026-10-09), copied verbatim: the frozen oracle that
-tests/test_obs_fast_equality.py holds the fast versions to, byte for byte, on real battles.
+"""The observation builder's per-entity plane functions, ``_write_card_status`` and
+``protocol.ability_row`` as they were before the speed-up (RoyaleGym 27b2a64, 2026-10-09), copied
+verbatim: the frozen oracle that tests/test_obs_fast_equality.py holds the fast versions to, byte
+for byte, on real battles.
 
 Do not edit these to follow a change in royalegym.obs: a plane whose meaning changes on purpose
 gets a new reference, written beside the change. Every name they use is bound here from a fixed
@@ -19,6 +20,7 @@ from royalegym.obs import (
     CARD_ID_EMPTY,
     CARD_ID_OFFSET,
     CARD_ID_TOWER,
+    COOLDOWN_SCALE,
     ENTITY_CHANNELS,
     HP_CHANNELS,
     HP_SCALE,
@@ -30,6 +32,7 @@ from royalegym.obs import (
     TOWER_KINDS,
     UNIT_ID_EMPTY,
     UNIT_ID_OFFSET,
+    EnemyForms,
 )
 from royalegym.protocol import (
     EMPTY_CARD,
@@ -42,11 +45,13 @@ from royalegym.protocol import (
     STATUS_INVISIBLE,
     STATUS_UNDERGROUND,
     STATUS_WINDUP,
+    AbilityRow,
     Arena,
     BattleState,
+    CardInfo,
     EntityKind,
     EntityState,
-    ability_row,
+    PlayerState,
     in_the_air,
     status_of,
     to_own,
@@ -378,3 +383,77 @@ def unit_id_planes(
         u = int(lookup[e.unit_type]) if lookup is not None else e.unit_type
         out[plane, ty, tx] = UNIT_ID_OFFSET + u
     return out
+
+
+def ability_row(row: Sequence[int]) -> AbilityRow:
+    """``row`` by column: its first five, whatever an engine appends after them."""
+    return AbilityRow(*(int(v) for v in row[:5]))
+
+
+def _write_card_status(
+    out: np.ndarray,
+    off: dict[str, slice],
+    me: PlayerState,
+    foe: PlayerState,
+    cards: Sequence[CardInfo],
+    forms: EnemyForms,
+) -> None:
+    """The ``card_status`` fields. Module-level so a test can plant a defect in it."""
+    if not me.deck:
+        raise ValueError(
+            "card_status=True, but this engine does not report the deck (PlayerState.deck): "
+            "a battle restored with load_state on an engine before royalesim 0.1.9 has none. "
+            "Reset the battle, or use an engine that reports it."
+        )
+    deck_forms = dict(zip(me.deck, me.forms or [0] * len(me.deck), strict=True))
+    deck_all, deck_evo, deck_hero = (out[off[k]] for k in ("own_deck_all", "own_deck_evo",
+                                                           "own_deck_hero"))
+    for card, form in deck_forms.items():
+        deck_all[card] = 1.0
+        deck_evo[card] = float(form == 1)
+        deck_hero[card] = float(form == 2)
+    hand_evo, hand_hero = out[off["own_hand_evo"]], out[off["own_hand_hero"]]
+    for i, card in enumerate(me.hand):
+        form = deck_forms.get(card, 0) if card != EMPTY_CARD else 0
+        hand_evo[i] = float(form == 1)
+        hand_hero[i] = float(form == 2)
+    form = deck_forms.get(me.next_card, 0) if me.next_card != EMPTY_CARD else 0
+    out[off["own_next_form"]] = (float(form == 1), float(form == 2))
+    progress, nxt = out[off["own_evo_progress"]], out[off["own_evo_next"]]
+    for row in me.evo:
+        card = int(row[0])
+        if len(row) < 4 or int(row[3]) < 1:
+            raise ValueError(
+                f"card_status needs each evolution counter's cycle length, the fourth column of "
+                f"PlayerState.evo, and this engine's row for card {card} is {list(row)}"
+            )
+        progress[card] = min(1.0, int(row[1]) / int(row[3]))
+        nxt[card] = float(bool(int(row[2])))
+    button, available, spent, cooldown = (
+        out[off[k]] for k in ("own_button", "own_button_available", "own_button_spent",
+                              "own_button_cooldown")
+    )
+    for row in map(ability_row, me.abilities):
+        if row.card_id == EMPTY_CARD:
+            raise ValueError(
+                "card_status needs each ability button's card (PlayerState.abilities' fourth "
+                "column), and this engine's rows do not name it"
+            )
+        button[row.card_id] = 1.0
+        available[row.card_id] = float(bool(row.available))
+        spent[row.card_id] = float(bool(row.spent))
+        cooldown[row.card_id] = min(1.0, max(0, row.cooldown_ticks) / COOLDOWN_SCALE)
+    out[off["enemy_seen_evolved"]] = forms.seen_evolved
+    out[off["enemy_seen_hero"]] = forms.seen_hero
+    eprog, enext = out[off["enemy_evo_progress"]], out[off["enemy_evo_next"]]
+    for card in np.flatnonzero(forms.basic_since):
+        cycle = cards[card].evo_cycle or 0
+        if cycle > 0:
+            eprog[card] = min(1.0, forms.basic_since[card] / cycle)
+            enext[card] = float(forms.basic_since[card] >= cycle)
+    espent, ecool = out[off["enemy_button_spent"]], out[off["enemy_button_cooldown"]]
+    for row in map(ability_row, foe.abilities):
+        if row.card_id == EMPTY_CARD:
+            continue  # an engine before the champion columns: nothing to index it by
+        espent[row.card_id] = float(bool(row.spent))
+        ecool[row.card_id] = min(1.0, max(0, row.cooldown_ticks) / COOLDOWN_SCALE)

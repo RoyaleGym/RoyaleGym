@@ -7,6 +7,18 @@ change the observation's shape; each such change is listed here.
 
 ## Unreleased
 
+### Added
+- `reset(options={"mask_only": ["red"]})` gives a seat whose player reads only legality, such
+  as the scripted opponents, an observation of its masks and zeros instead of a full build:
+  every key at its shape and dtype, for the whole episode. The other seat's observation is
+  unchanged. A snapshot of such an episode, and `state()` with Blue skipped, are refused.
+
+### Changed
+- The spatial builder takes about a fifth less time per observation. The planes are counted
+  once per entity and written once, and the card status fields avoid numpy scalar arithmetic.
+  Every observation is byte-for-byte what it was: the test suite holds the new code to a
+  frozen copy of the old one on real battles, for both seats.
+
 ### Fixed
 - `card_status` no longer reads a basic enemy play as evolved when a unit of an earlier
   evolved play appears on the same step, such as an Evo Wall Breaker's mini or an Evo Royal

@@ -1,6 +1,7 @@
-"""The builder's plane functions are exactly what they were before the vectorized rewrite.
+"""The builder's plane functions, ``_write_card_status`` and ``ability_row`` are exactly what they
+were before the speed-up.
 
-``tests/_obs_reference.py`` holds the per-entity versions verbatim (RoyaleGym 27b2a64). Here the
+``tests/_obs_reference.py`` holds the old versions verbatim (RoyaleGym 27b2a64). Here the
 shipped functions and the reference run on the same states, real RustEngine battles with
 evolutions, heroes, champions, tunnellers, buildings, rage, slow, shields, charges and the
 Vines, for both seats, and must agree BYTE FOR BYTE: same dtype, same shape, same bytes, or the
@@ -8,8 +9,9 @@ same refusal with the same message. A full SpatialObsBuilder with every option a
 (the rg2 inputs: card and unit identity with SAME_UNIT_ALIASES, spell identity with effects,
 evolutions, heroes, unit status and actions, card status, button index, enemy queue) is built
 over the same battles with the shipped functions and with the reference ones, and every key of
-every observation must match. Then forged edge cases: ties on a tile, points past the edge,
-refusals.
+every observation must match, and every ``_write_card_status`` call it makes is checked against
+the reference's on the same inputs. Then forged edge cases: ties on a tile, points past the
+edge, refusals, ability rows of every width.
 
 SKIPS
     Everything here needs the engine. Not a pass without it.
@@ -26,7 +28,7 @@ import royalegym.obs as obs_mod
 from royalegym.action import TileActionParser
 from royalegym.env import ClashParallelEnv
 from royalegym.obs import SAME_UNIT_ALIASES, SpatialObsBuilder, unit_vocabulary
-from royalegym.protocol import BLUE, RED, STATUS_HERO, EntityKind, ShuffleMode
+from royalegym.protocol import BLUE, RED, STATUS_HERO, EntityKind, ShuffleMode, ability_row
 from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 from royalegym.state_mutator import DefaultStateMutator, deck_ids
 
@@ -52,6 +54,8 @@ RG2 = dict(
 )
 NAMES = ("entity_channels", "spell_channels", "evolved_channels", "hero_channels",
          "status_channels", "action_channels", "card_id_planes", "unit_id_planes")
+#: Swapped in with NAMES for the reference builder: the vector writer and the row reader.
+VECTOR_NAMES = ("_write_card_status", "ability_row")
 
 
 def _env(pair, builder=None):
@@ -181,8 +185,30 @@ def _observe_all(states, engine, builder):
 
 def test_a_full_rg2_builder_matches_the_reference_on_every_key(battles, monkeypatch):
     engine, states = battles[0]
+    shipped = obs_mod._write_card_status
+    calls = {"all": 0, "progress": 0, "ready": 0}
+
+    def both(out, off, me, foe, cards, forms):
+        """Each call the build makes, run by the shipped writer and by the reference on copies
+        of the same buffer: the same bytes, or the same refusal."""
+        a, b = out.copy(), out.copy()
+        _same(_call(lambda: (shipped(a, off, me, foe, cards, forms), a)[1]),
+              _call(lambda: (ref._write_card_status(b, off, me, foe, cards, forms), b)[1]),
+              ("card_status", calls["all"]))
+        calls["all"] += 1
+        evo = [(int(n), cards[c].evo_cycle) for c, n in enumerate(forms.basic_since)
+               if n and cards[c].evo_cycle]
+        calls["progress"] += bool(evo)
+        calls["ready"] += any(n >= cycle for n, cycle in evo)
+        shipped(out, off, me, foe, cards, forms)
+
+    monkeypatch.setattr(obs_mod, "_write_card_status", both)
     fast = _observe_all(states, engine, SpatialObsBuilder(**RG2))
-    for name in NAMES:
+    # Vacuity: the enemy counted toward an evolution, and reached one, on many calls.
+    assert calls["all"] > 200, calls
+    assert calls["progress"] > 50, calls
+    assert calls["ready"] > 10, calls
+    for name in (*NAMES, *VECTOR_NAMES):
         monkeypatch.setattr(obs_mod, name, getattr(ref, name))
     slow = _observe_all(states, engine, SpatialObsBuilder(**RG2))
     assert len(fast) == len(slow) > 200
@@ -226,3 +252,45 @@ def test_forged_ties_edges_and_refusals_match_the_reference(battles):
                 for args, kw in _args(name, engine, state, team, lookup):
                     _same(_call(getattr(obs_mod, name), *args, **kw),
                           _call(getattr(ref, name), *args, **kw), (label, name, team))
+
+
+def test_ability_rows_of_every_width_read_as_the_reference_reads_them(battles):
+    rows = {tuple(r) for _, states in battles for s in states for p in s.players
+            for r in p.abilities}
+    assert len(rows) > 5, rows
+    rows |= {(1, 0, 3), (1, 0, 3, 7), (0, 1, 2, 9, 40, 5, 6), (True, False, 4, 2, -1)}
+    for row in rows:
+        assert ability_row(list(row)) == ref.ability_row(list(row)), row
+        assert ability_row(row) == ref.ability_row(row), row
+        assert [type(v) for v in ability_row(row)] == [type(v) for v in ref.ability_row(row)]
+
+
+def test_the_tile_cache_follows_a_list_changed_in_place(battles):
+    """The plane functions of one build share each entity's tile. A caller that changes its list
+    in place (or a new list that reuses a freed one's id) must get the new tiles, never the
+    ones worked out for what the list held before."""
+    engine, states = battles[1]
+    arena = engine.arena()
+    base = max(states, key=lambda s: len(s.entities))
+    _, lookup = unit_vocabulary(engine.unit_types(), SAME_UNIT_ALIASES)
+    for team in (BLUE, RED):
+        entities = list(base.entities)
+        troop = next(i for i, e in enumerate(entities) if e.kind == EntityKind.TROOP)
+        for name in NAMES:
+            for args, kw in _args(name, engine, msgspec.structs.replace(base, entities=entities),
+                                  team, lookup):
+                _call(getattr(obs_mod, name), *args, **kw)
+        e = entities[troop]
+        entities[troop] = msgspec.structs.replace(e, x=arena.width - 1 - e.x,
+                                                  y=arena.height - 1 - e.y)
+        assert (e.x // arena.subtile, e.y // arena.subtile) != (
+            entities[troop].x // arena.subtile, entities[troop].y // arena.subtile)
+        state = msgspec.structs.replace(base, entities=entities)
+        for name in NAMES:
+            for args, kw in _args(name, engine, state, team, lookup):
+                if name in ("spell_channels", "action_channels", "hero_channels"):
+                    args = (state, *args[1:])
+                else:
+                    args = (entities, *args[1:])
+                _same(_call(getattr(obs_mod, name), *args, **kw),
+                      _call(getattr(ref, name), *args, **kw), ("in place", name, team))
