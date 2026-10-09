@@ -420,8 +420,9 @@ one fair feature that needs saying carefully.
   from the opponent's hand changing between two observed states, which names the same
   event and names the card exactly.
 
-The result is bit-exact against the bar the engine keeps, which is why it belongs in
-the fair set rather than being an estimate. `Reveal.enemy_elixir` swaps in the value
+The result is bit-exact against the bar the engine keeps, in every battle without a card
+that pays elixir (below), which is why it belongs in the fair set rather than being an
+estimate. `Reveal.enemy_elixir` swaps in the value
 read from the state. A test plays a battle out and asserts the two agree at every
 step, from both seats, on a busy game and on a quiet one (the quiet game is what
 exercises the cap). Verified exact, per step, on: the opening, a `start_tick` that
@@ -432,10 +433,16 @@ curriculum, and a game quiet enough to sit at the cap.
 **`MatchMemory.exact`** says when it cannot be. The same law runs on the player's own
 bar, which is visible, so the count is checked every step against a number the memory
 is not allowed to guess at. The moment the two disagree, `exact` goes False and stays
-False for the match. Two things make that happen: a deck that repeats a card (a play
+False for the match. Three things make that happen: a deck that repeats a card (a play
 that swaps a card for itself changes no hand slot, so it is unseen; a real deck is
-eight distinct cards), and an engine whose elixir law is not the one in
-`calibration.json`. The builder then resyncs the own bar from the observed value so it
+eight distinct cards), an engine whose elixir law is not the one in
+`calibration.json`, and a unit that pays elixir. The Elixir Golem pays its OPPONENT one
+elixir when it dies and half of one for each golemite and blob; the Elixir Collector
+pumps elixir for its owner and pays it when it dies. A player can count those (the rules
+are public and the deaths are on the board), but the memory does not yet: the engine does
+not say what each unit pays. This is a known gap, held by
+`tests/test_enemy_queue.py::test_the_memory_counts_an_elixir_golem_death` (a strict xfail
+until it is closed). The builder then resyncs the own bar from the observed value so it
 stops drifting. It leaves the enemy count alone, because the only way to repair it
 would be to read it. A training run that wants the guarantee can assert `exact`.
 
@@ -493,6 +500,26 @@ build the same state dozens of times.
 Tests replay a seeded episode twice in the same env and require the two observation
 sequences to be identical, with a plant that removes both guards and shows the
 difference.
+
+### A seat that reads only legality (`mask_only`)
+
+`env.reset(options={"mask_only": ["red"]})` skips building the named seats' observations
+for that episode. Each such seat gets `ObsBuilder.mask_only(mask)`: every key `build`
+returns, at the same shape and dtype, all zero except the mask entries (`action_mask`,
+`mask_planes`, `ability_ready`), which are exactly what a build writes. It is for a seat
+played by something that reads nothing else: the scripted opponents of
+`opponents.ladder()` read `mask_planes` and choose the same move from either observation.
+A policy, a clone or a frozen snapshot needs the full observation.
+
+* The other seat's observation is byte for byte what it is when both are built.
+* A skipped seat's `MatchMemory` does not move, so the option holds for the whole episode
+  and the next `reset` builds every seat again. `snapshot()` is refused in such an episode
+  (the skipped memory was never kept), and so is `state()` when Blue is skipped.
+* It saves about one build per step: with every observation option on, a step runs about a
+  fifth faster.
+
+`tests/test_mask_only.py` holds all of it, on a builder with every option on and on
+`EntityListObsBuilder`, for either seat skipped.
 
 ### The same fields without an engine
 
