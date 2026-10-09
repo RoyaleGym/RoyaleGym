@@ -3232,6 +3232,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0213" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.13
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0212" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3411,6 +3422,16 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="0213">0.2.13<a class="headerlink" href="#0213" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ShardReader</code> keeps each part's packed rows after their first read, so a second epoch reads
+  no part file again: <code>cache="auto"</code> (the default) keeps them in memory while every split's
+  packed rows fit <code>cache_memory_mb</code> (2 GB), else as uncompressed <code>.npy</code> files in the shard's
+  <code>packed</code> folder while the disk has room, which a later run on the same rows and codec reads
+  too, else not at all. <code>"memory"</code> and <code>"disk"</code> choose, and <code>False</code> keeps them nowhere and writes
+  nothing beside the rows. The rows and their order are the same whichever it is.
+  <code>clone(cache=...)</code> passes it on, and its second line says where and how much.</li>
+</ul>
 <h2 id="0212">0.2.12<a class="headerlink" href="#0212" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>python -m royaleimitate.stamp FOLDER</code> (<code>royaleimitate.stamp.stamp_actor_digest</code>) adds
