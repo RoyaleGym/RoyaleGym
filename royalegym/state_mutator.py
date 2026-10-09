@@ -134,23 +134,38 @@ class StateMutator(ABC):
 #: Champions a random deck may hold: the ladder allows one. (The engine refuses a side with
 #: more champions and heroes than its ability buttons.)
 MAX_CHAMPIONS = 1
+#: The event cards royalesim 0.1.24 loads: special versions from the game's events, which no
+#: ladder deck holds. Random decks leave them out; a deck that names one still plays it. By name
+#: until the engine marks them.
+EVENT_CARDS = frozenset({
+    "SuperWitch", "SuperMiniPekka", "SuperLavaHound", "SuperHogRider", "SuperEliteArcher",
+    "GoblinRocketSilo", "GlobalClone", "GlobalLightning", "GoblinPartyRocket",
+})
 
 
-def random_deck(rng: np.random.Generator, cards: Sequence[CardInfo]) -> list[int]:
-    """Eight different cards of the catalogue, with at most ``MAX_CHAMPIONS`` champions.
+def random_deck(
+    rng: np.random.Generator, cards: Sequence[CardInfo], events: bool = False
+) -> list[int]:
+    """Eight different cards of the catalogue, with at most ``MAX_CHAMPIONS`` champions and,
+    unless ``events``, no event card (``EVENT_CARDS``). Ids are positions in ``cards``.
 
-    A draw with more is drawn again, so every draw the rule allows is the deck the same seed
-    dealt before the rule."""
-    if len(cards) < DECK_SIZE:
-        raise ValueError(f"need at least {DECK_SIZE} cards, catalogue has {len(cards)}")
-    others = sum(not c.champion for c in cards)
+    A draw with more champions is drawn again, so every draw the rule allows is the deck the
+    same seed dealt before the rule. The draw is over the cards a deck may hold, in catalogue
+    order; the engine lists the event cards last, so a seed deals the deck it dealt from the
+    catalogue before they loaded (royalesim 0.1.23)."""
+    pool = [i for i, c in enumerate(cards) if events or c.name not in EVENT_CARDS]
+    if len(pool) < DECK_SIZE:
+        raise ValueError(
+            f"need at least {DECK_SIZE} cards a random deck may hold, catalogue has {len(pool)}"
+        )
+    others = sum(not cards[i].champion for i in pool)
     if others < DECK_SIZE - MAX_CHAMPIONS:
         raise ValueError(
             f"a random deck holds at most {MAX_CHAMPIONS} champion, and the catalogue has only "
             f"{others} other cards"
         )
     while True:
-        deck = [int(c) for c in rng.choice(len(cards), size=DECK_SIZE, replace=False)]
+        deck = [pool[int(c)] for c in rng.choice(len(pool), size=DECK_SIZE, replace=False)]
         if sum(bool(cards[c].champion) for c in deck) <= MAX_CHAMPIONS:
             return deck
 
@@ -159,7 +174,8 @@ class DefaultStateMutator(StateMutator):
     """A normal battle from tick 0.
 
     ``decks``: fixed [blue, red] decks, each 8 card names (or catalogue ids, or a mix);
-    None draws a random 8-card deck per team (at most one champion, as the ladder allows).
+    None draws a random 8-card deck per team (at most one champion, as the ladder allows, and
+    no event card: ``random_deck``).
     Names are looked up in the engine's
     catalogue at every build, so a deck written by name means the same cards on every
     card table; an id is only a position in it.
@@ -505,7 +521,8 @@ class DeckCurriculumStateMutator(StateMutator):
     and no mirror, the deck is on each seat in ``p / 2`` of episodes.
 
     ``pool`` is a list of decks, drawn uniformly (list a deck twice to weight it), or
-    None for a random deck of eight different cards from the catalogue. Pool draws use
+    None for a random deck of eight different cards from the catalogue (no event card:
+    ``random_deck``). Pool draws use
     ``shuffle``; a mirror always uses ``ShuffleMode.MIRRORED``.
 
     Decks are card NAMES, looked up in the catalogue the env passes to ``build``. A name

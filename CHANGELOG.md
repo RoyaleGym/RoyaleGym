@@ -14,6 +14,10 @@ change the observation's shape; each such change is listed here.
   unchanged. A snapshot of such an episode, and `state()` with Blue skipped, are refused.
 
 ### Changed
+- Random decks hold no event card: `DefaultStateMutator` with no decks and
+  `DeckCurriculumStateMutator` with no pool leave out `state_mutator.EVENT_CARDS`, which no
+  ladder deck holds. A seed deals the same decks as on royalesim 0.1.23.
+  `random_deck(..., events=True)` draws them, and a deck that names one still plays it.
 - Game Values lists royalesim 0.1.24's nine event cards (`SuperWitch` to `GoblinRocketSilo`),
   and the building relocation example sets the Goblin Rocket Silo apart: it keeps its
   footprint five tiles off each side edge, a rule of its own on top of the footprint.
