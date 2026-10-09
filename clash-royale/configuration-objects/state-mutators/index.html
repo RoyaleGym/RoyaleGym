@@ -3486,7 +3486,8 @@ name, Blue's first:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>['Cannon', 'Zap', 'Fireball', 'Archer']
 </code></pre></div>
 <p>Each side's deck is shuffled at the start of the battle, so the opening hand changes with the
-seed. With no decks, <code>DefaultStateMutator()</code> deals each side eight random cards every battle.</p>
+seed. With no decks, <code>DefaultStateMutator()</code> deals each side eight random cards every battle,
+never one of the event cards (such as <code>SuperWitch</code>), which no ladder deck holds.</p>
 <p><code>make_env(deck=...)</code> is a shortcut for the same thing: <code>deck=</code> takes one deck for both sides,
 two decks, or <code>"random"</code>.</p>
 <h3 id="evolutions-and-heroes">Evolutions and heroes<a class="headerlink" href="#evolutions-and-heroes" title="Permanent link">&para;</a></h3>

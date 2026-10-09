@@ -3541,21 +3541,35 @@ and paste this into it:</p>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">clone</span><span class="p">(</span><span class="n">learner</span><span class="p">,</span> <span class="n">demos</span><span class="p">,</span> <span class="s2">"runs/human_clone"</span><span class="p">)</span>
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"Your clone is in runs/human_clone"</span><span class="p">)</span>
 </code></pre></div>
-<p>Run it with <code>python clone_humans.py</code>. It prints a line every 100 matches, then a summary:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>100 matches written, 45 skipped
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>200 matches written, 74 skipped
+<p>Run it with <code>python clone_humans.py</code>. It prints a line every 100 matches and a summary, then a
+line for each pass of the cloning:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>100 matches written, 38 skipped
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>200 matches written, 71 skipped
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>...
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>1000 matches written, 360 skipped
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>1000 matches written (830608 rows); skipped: 195 play refused by the engine, 154 card not in the catalogue, 8 card not in hand, 3 not an eight-card deck
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>Your clone is in runs/human_clone
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>1000 matches written, 346 skipped
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>1000 matches written (828570 rows); skipped: 181 play refused by the engine, 154 card not in the catalogue, 8 card not in hand, 3 not an eight-card deck
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>cloning 828,570 rows (783,428 to learn from, 45,142 to check against) on cuda: up to 20 epochs, stopping once 3 in a row do not improve
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>epoch 1/20: validation nll 0.7380 (best 0.7380), 6 min; at most 1 h 59 min more
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>epoch 2/20: validation nll 0.7032 (best 0.7032), 6 min; at most 1 h 43 min more
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>...
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>epoch 15/20: validation nll 0.6585 (best 0.6576), 5 min; at most 25 min more
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>no better for 3 epochs: stopping, and keeping epoch 12's weights
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>clone written to runs/human_clone
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>Your clone is in runs/human_clone
 </code></pre></div>
-<p>On our computer, replaying the matches took about 11 minutes (that part runs on the processor),
-and cloning them on its RTX 4070 Ti about an hour and a half more, while another program shared the card.
-Cloning prints nothing while it works, so let it run.</p>
+<p>On our computer, replaying the matches took about a quarter of an hour (that part runs on the
+processor), and cloning them on its RTX 4070 Ti about an hour and 20 minutes more, while other
+programs shared the card.</p>
+<p>Each pass (an epoch) goes over all the examples once. <code>validation nll</code> says how far the copy is
+from the players' moves in the matches it keeps aside to check against: lower is better. Then
+comes how long that pass took, and at most how long is left; it usually ends sooner, because
+cloning stops once 3 passes in a row don't get better, and keeps the best one. These lines need
+royaleimitate 0.2.12 or newer: <code>pip install --upgrade royaleimitate</code> updates it. Older versions
+print nothing while they clone.</p>
 <p>Without an NVIDIA graphics card, cloning runs on the processor and takes several hours for
-1,000 matches. It goes over all the examples up to 20 times, and on a processor each time can
-take 15 minutes or more. Fewer times is quicker, and the copy is rougher: change the <code>clone</code>
-line to <code>clone(learner, demos, "runs/human_clone", epochs=3)</code>.</p>
+1,000 matches: on a processor each pass can take 15 minutes or more. Fewer passes is quicker,
+and the copy is rougher: change the <code>clone</code> line to
+<code>clone(learner, demos, "runs/human_clone", epochs=3)</code>.</p>
 <p>Here is what each line does:</p>
 <ul>
 <li><code>Learner(build_env, ...)</code> gives the clone its network and what it sees. It doesn't train here,

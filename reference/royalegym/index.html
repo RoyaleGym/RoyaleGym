@@ -13022,7 +13022,8 @@ under its older name.</p>
 
         <p>A normal battle from tick 0.</p>
 <p><code>decks</code>: fixed [blue, red] decks, each 8 card names (or catalogue ids, or a mix);
-None draws a random 8-card deck per team (at most one champion, as the ladder allows).
+None draws a random 8-card deck per team (at most one champion, as the ladder allows, and
+no event card: <code>random_deck</code>).
 Names are looked up in the engine's
 catalogue at every build, so a deck written by name means the same cards on every
 card table; an id is only a position in it.
@@ -13342,7 +13343,8 @@ toward full games) without rebuilding the env.</p>
 </details>        <p><code>seat</code> is "blue", "red", or "either" (a fair coin each episode). With "either"
 and no mirror, the deck is on each seat in <code>p / 2</code> of episodes.</p>
 <p><code>pool</code> is a list of decks, drawn uniformly (list a deck twice to weight it), or
-None for a random deck of eight different cards from the catalogue. Pool draws use
+None for a random deck of eight different cards from the catalogue (no event card:
+<code>random_deck</code>). Pool draws use
 <code>shuffle</code>; a mirror always uses <code>ShuffleMode.MIRRORED</code>.</p>
 <p>Decks are card NAMES, looked up in the catalogue the env passes to <code>build</code>. A name
 the catalogue does not have fails the first reset, for every deck in the pool and
@@ -13493,16 +13495,19 @@ record <code>ClashParallelEnv.config()</code> keeps under <code>"state_mutator"<
 
 
 <h3 id="royalegym.state_mutator.random_deck" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">random_deck</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">cards</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">random_deck</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">cards</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
 
 <a href="#royalegym.state_mutator.random_deck" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
 
-        <p>Eight different cards of the catalogue, with at most <code>MAX_CHAMPIONS</code> champions.</p>
-<p>A draw with more is drawn again, so every draw the rule allows is the deck the same seed
-dealt before the rule.</p>
+        <p>Eight different cards of the catalogue, with at most <code>MAX_CHAMPIONS</code> champions and,
+unless <code>events</code>, no event card (<code>EVENT_CARDS</code>). Ids are positions in <code>cards</code>.</p>
+<p>A draw with more champions is drawn again, so every draw the rule allows is the deck the
+same seed dealt before the rule. The draw is over the cards a deck may hold, in catalogue
+order; the engine lists the event cards last, so a seed deals the deck it dealt from the
+catalogue before they loaded (royalesim 0.1.23).</p>
 
 
     </div>
