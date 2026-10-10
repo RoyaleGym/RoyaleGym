@@ -1023,6 +1023,12 @@ ILLEGAL_BUILDING_TAP = ("refuse", "relocate_first_fitting_ring")
 #: card (by kind) tapped out of its territory, moving the tap back along its tile column to the
 #: first legal tile; the mask keeps refusing such taps (``action.mask_disagreements``).
 ILLEGAL_TROOP_TAP = ("refuse", "client15535_clamp_to_legal_edge")
+#: placement.ENEMY_BUILDING_TAPS arms. A moving arm moves a troop tap off an ENEMY building's box
+#: by the ring search, as off an own one (state.rs relocate_off_own_crown_tower, read only when a
+#: tower or building relocation runs), and anchors every building's box on the grid: the half-tile
+#: arm at the point rounded down to the half-tile, the tile arm with its low corner on the tile
+#: grid (state.rs building_box). The mask reads each box from the state (``EntityState.footprint``).
+ENEMY_BUILDING_TAPS = ("ignored", "client15535_half_tile_box_ring", "client15535_tile_box_ring")
 #: spells.ILLEGAL_SPELL_TAP arms. Under the clamp the engine accepts a spell judged in troop
 #: territory (the Log, the Barbarian Barrel, the Royal Delivery, the Heal) tapped out of that
 #: territory or on water, moved back along its tile column to the first legal tile; the mask
@@ -1209,6 +1215,9 @@ class DeployRules(msgspec.Struct, frozen=True):
     # tapped outside its territory. Under the clamp it accepts the tap at the column's first
     # legal tile; the mask still refuses it, deliberately (``mask_disagreements``).
     illegal_troop_tap: str = "refuse"
+    # placement.ENEMY_BUILDING_TAPS (``ENEMY_BUILDING_TAPS``): whether a troop tap on an ENEMY
+    # building's box is moved off it as off an own one ("ignored": refused OCCUPIED).
+    enemy_building_taps: str = "ignored"
     # The rest of the core's relocation rule (state.rs resolve_point, relocates_taps), each
     # with the arm an engine without the key ran: placement.SNAP_EVEN_CORNER, TAP_SNAP,
     # TROOP_BUILDING_TAPS, SPELL_AS_DEPLOY_TAPS and LIVE_BOTTLE_TAPS (the tuples of that name).
@@ -1275,6 +1284,7 @@ class DeployRules(msgspec.Struct, frozen=True):
         spell_taps = arm("SPELL_AS_DEPLOY_TAPS", SPELL_AS_DEPLOY_TAPS, "spell_point")
         bottle_taps = arm("LIVE_BOTTLE_TAPS", LIVE_BOTTLE_TAPS, "not_blocked")
         troop_tap = arm("ILLEGAL_TROOP_TAP", ILLEGAL_TROOP_TAP, "refuse")
+        enemy_buildings = arm("ENEMY_BUILDING_TAPS", ENEMY_BUILDING_TAPS, "ignored")
         try:
             spell_tap = str(calibration.value("spells.ILLEGAL_SPELL_TAP"))
         except KeyError:
@@ -1323,6 +1333,7 @@ class DeployRules(msgspec.Struct, frozen=True):
             troop_tower_taps=tower_taps,
             illegal_spell_tap=spell_tap,
             illegal_troop_tap=troop_tap,
+            enemy_building_taps=enemy_buildings,
             snap_even_corner=snap,
             tap_snap=tap_snap,
             troop_building_taps=building_taps,

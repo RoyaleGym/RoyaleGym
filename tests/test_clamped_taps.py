@@ -107,6 +107,17 @@ def test_the_arm_is_read_from_the_ledger_and_an_unknown_one_refused(key, arms, c
         DeployRules.load(_ledger_with(key, "teleport_to_the_king", arms))
 
 
+def test_mockengine_states_the_arms_it_runs():
+    """MockEngine refuses a tap out of its territory, troop or spell, whatever its ledger
+    ships; its rules, which the mask reads, say so."""
+    cal = _ledger_with(TROOP_KEY, CLAMP, ILLEGAL_TROOP_TAP)
+    raw = copy.deepcopy(cal.raw)
+    raw.setdefault("spells", {})["ILLEGAL_SPELL_TAP"] = {
+        "value": SPELL_CLAMP, "candidates": list(ILLEGAL_SPELL_TAP)}
+    rules = MockEngine(calibration=Calibration(raw)).rules()
+    assert (rules.illegal_troop_tap, rules.illegal_spell_tap) == ("refuse", "refuse")
+
+
 class _Clamping:
     """The bound engine, with its OUT_OF_TERRITORY refusals of a troop-kind card accepted, as
     the troop clamp accepts them. Planted disagreements the exemption must NOT cover: with

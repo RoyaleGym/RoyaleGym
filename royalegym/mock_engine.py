@@ -449,6 +449,10 @@ class MockEngine:
             troop_building_taps="not_relocated",
             spell_as_deploy_taps="spell_point",
             live_bottle_taps="not_blocked",
+            enemy_building_taps="ignored",
+            # And it refuses a tap out of its territory, troop or spell: no clamp.
+            illegal_troop_tap="refuse",
+            illegal_spell_tap="refuse",
         )
         g = load_globals_csv()
 

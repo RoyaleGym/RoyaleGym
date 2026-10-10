@@ -15,8 +15,16 @@ change the observation's shape; each such change is listed here.
   with either turned on, and `DeployRules` says which ones are on. The mask still leaves
   those drops out: a whole column of them lands on the one edge tile the mask already
   offers. `mask_disagreements` counts such a moved drop as intended, and nothing else.
+- In the game, a troop dropped on an enemy building (a hero's turret, a Cannon in a fallen
+  lane) is moved off it, as off your own buildings (`placement.ENEMY_BUILDING_TAPS`). When
+  royalesim runs that rule, the mask now offers those drops wherever the engine says the
+  troop lands. `SymmetricRustEngine` turns it off, with three tie-break rules that would
+  treat the two sides differently.
 
 ### Fixed
+- MockEngine now states that it moves nothing off an enemy building and moves no drop back
+  from past its side, whatever its rule file says, so a mask built on it matches what it
+  does.
 - On an engine moving troop drops back, RoyaleGym took every troop for one that may go
   anywhere, like the Miner, and the mask offered troops all over the board. Now each card
   keeps its own rule.

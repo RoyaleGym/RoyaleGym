@@ -185,6 +185,11 @@ class PlacementOracle:
         # it, unless placement.ILLEGAL_TAP is "refuse", so no body there blocks it.
         self.buildings_move_taps = rules.troop_building_taps == AS_TOWER_TAP
         self.bottles_move_taps = rules.live_bottle_taps == BOTTLE_RELOCATE
+        # placement.ENEMY_BUILDING_TAPS: an ENEMY building's box moves the tap too, where the
+        # core's tower and building move runs at all (the half-open arm or as_tower_tap).
+        self.enemy_buildings_move_taps = rules.enemy_building_taps != "ignored" and (
+            self.king_half_open or self.buildings_move_taps
+        )
         self.troop_taps_relocate = rules.illegal_building_tap != "refuse" and (
             self.king_half_open or self.buildings_move_taps or self.bottles_move_taps
         )
@@ -275,6 +280,23 @@ class PlacementOracle:
             out.append(e.footprint)
         return out
 
+    def enemy_building_boxes(
+        self, state: BattleState, team: int
+    ) -> list[tuple[int, int, int, int]]:
+        """The placement box (engine frame, closed) of every ALIVE building ``team``'s enemy
+        owns: the box the engine judges with, as its state reports it."""
+        out = []
+        for e in state.entities:
+            if e.team == team or e.hp <= 0 or e.kind != EntityKind.BUILDING:
+                continue
+            if e.footprint is None:
+                raise ValueError(
+                    "placement.ENEMY_BUILDING_TAPS moves taps off enemy buildings, which needs "
+                    "each building's placement box, and this engine reports none"
+                )
+            out.append(e.footprint)
+        return out
+
     @staticmethod
     def own_live_bottles(state: BattleState, team: int) -> list[tuple[int, int]]:
         """The points of the live bottles ``team`` owns: spell objects standing out a positive
@@ -318,6 +340,8 @@ class PlacementOracle:
         boxes = self.own_tower_boxes(state, team) if self.king_half_open else []
         if self.buildings_move_taps:
             boxes += self.own_building_boxes(state, team)
+        if self.enemy_buildings_move_taps:
+            boxes += self.enemy_building_boxes(state, team)
         for x0, y0, x1, y1 in boxes:
             zone |= (lo_x < x1) & (x0 < hi_x) & (lo_y < y1) & (y0 < hi_y)
         if self.bottles_move_taps:

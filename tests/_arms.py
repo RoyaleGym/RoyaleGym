@@ -35,6 +35,8 @@ MOCK_FIELDS: dict[str, str] = {
     "placement.TROOP_BUILDING_TAPS": "troop_building_taps",
     "placement.SPELL_AS_DEPLOY_TAPS": "spell_as_deploy_taps",
     "placement.LIVE_BOTTLE_TAPS": "live_bottle_taps",
+    # MockEngine moves nothing off an enemy building either ("ignored", its rules' default).
+    "placement.ENEMY_BUILDING_TAPS": "enemy_building_taps",
 }
 
 

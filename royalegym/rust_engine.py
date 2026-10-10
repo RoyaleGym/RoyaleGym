@@ -203,6 +203,7 @@ OVERRIDE_FOLLOWED = frozenset(
         "placement.LIVE_BOTTLE_TAPS",
         "placement.ILLEGAL_TROOP_TAP",
         "spells.ILLEGAL_SPELL_TAP",
+        "placement.ENEMY_BUILDING_TAPS",
     }
 )
 
@@ -1615,6 +1616,18 @@ SYMMETRIC_ARMS: dict[str, tuple[str, ...]] = {
     # x one lower on the arena's left half, absolute y one lower for a side-1 owner (RoyaleSim
     # 0.1.28), so a Red release is not the rotation of a Blue one; "none" is the same for both.
     "spells.RELEASE_GROUND_POINT": ("none",),
+    # The tile arm anchors a building's box with its low corner on the tile grid in ARENA
+    # coordinates (floor), so a box off the grid moves toward low x and y for both seats; the
+    # half-tile arm floors the point the same way. "ignored" centres every box on its point.
+    "placement.ENEMY_BUILDING_TAPS": ("ignored",),
+    # The 15.535.29 arms break a relocation's tie between equally near fits in the ARENA's
+    # order (an interleaved ring for a building, clockwise for a troop); the placer's frame
+    # gives the two seats rotated answers.
+    "placement.RELOCATION_TIE_ORDER": ("placer_frame_first_found",),
+    "placement.TROOP_RELOCATION_TIE_ORDER": ("placer_frame_first_found",),
+    # client15535_later_created breaks an equal-distance target tie by creation order, which
+    # a mirrored battle's twins do not share; the high own-frame x is the same for both seats.
+    "targeting.EQUAL_DISTANCE_TIE": ("own_frame_high_x",),
 }
 
 
