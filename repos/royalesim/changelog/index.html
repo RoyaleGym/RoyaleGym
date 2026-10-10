@@ -2197,6 +2197,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0129-2026-10-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.29 (2026-10-10)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0128-2026-10-10" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3606,6 +3617,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0129-2026-10-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.29 (2026-10-10)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0128-2026-10-10" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3952,6 +3974,18 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0129-2026-10-10">0.1.29 (2026-10-10)<a class="headerlink" href="#0129-2026-10-10" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Six settings now default to the current client's behaviour, each measured against its recorded battles: a Rune
+  Giant holds his attack for 14 ticks after each enchant; a buildings-only troop ignores a building farther across the
+  board than its sight allows (<code>targeting.BUILDING_SCAN_X_CUT</code> now reads the card tables' <code>sight_clip_side_milli</code>, on
+  both clients); the Little Prince's ramp holds through his own press; his guard takes no hit while it charges, and
+  its push resets the pushed troop's swing; and a formation member waiting to step in takes no hit and no area. Each
+  older behaviour stays available as that setting's old value, and <code>replay_parity</code> uses the old values for the older
+  client's battles.</li>
+<li>The card tables carry the Dagger Duchess's burst attack (<code>burst_attack</code> on her unit: her charges, their recharge
+  and the order of her attacks). The engine does not read it yet. The tables' hashes change with it.</li>
+</ul>
 <h2 id="0128-2026-10-10">0.1.28 (2026-10-10)<a class="headerlink" href="#0128-2026-10-10" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Two new <code>BattleConfig</code> fields. <code>tower_troops</code> names each side's crown tower troop: <code>"DaggerDuchess"</code>, <code>"Cannoneer"</code>
