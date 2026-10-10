@@ -1502,9 +1502,15 @@ _TUNNEL_CACHE: dict[tuple[Any, ...], frozenset[str]] = {}
 
 
 def _refusing_troop_taps(engine: RustEngine, overrides: dict) -> dict:
-    """``overrides`` with placement.ILLEGAL_TROOP_TAP set to refuse, when the ledger has the
-    key (before royalesim 0.1.29 the core refuses and has no such key to set)."""
-    if "ILLEGAL_TROOP_TAP" not in engine.calibration.raw.get("placement", {}):
+    """``overrides`` with placement.ILLEGAL_TROOP_TAP set to refuse, when ``engine`` runs
+    another arm (its calibration states the arm it runs, an override of the key being
+    followed). Otherwise ``overrides`` itself, so the probe battle is built exactly as the
+    engine's; before royalesim 0.1.29 there is no such key and the core refuses."""
+    try:
+        arm = str(engine.calibration.value("placement.ILLEGAL_TROOP_TAP"))
+    except KeyError:
+        return overrides
+    if arm == "refuse":
         return overrides
     cal = {**overrides.get("calibration_overrides", {}),
            "placement.ILLEGAL_TROOP_TAP": json.dumps("refuse")}
