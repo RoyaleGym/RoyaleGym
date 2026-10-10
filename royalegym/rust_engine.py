@@ -1628,6 +1628,11 @@ SYMMETRIC_ARMS: dict[str, tuple[str, ...]] = {
     # client15535_later_created breaks an equal-distance target tie by creation order, which
     # a mirrored battle's twins do not share; the high own-frame x is the same for both seats.
     "targeting.EQUAL_DISTANCE_TIE": ("own_frame_high_x",),
+    # A line card's line (the Royal Hogs): client15535_y_reflection reflects a Red line in y,
+    # not by the rotation, and client15535_interleaved_first_ring searches for its centre in the
+    # arena's order; the rotation and the corner walk give the two seats rotated lines.
+    "formation.LINE_FRAME": ("rotation",),
+    "formation.LINE_CENTRE_SEARCH": ("ring_corner_walk",),
 }
 
 

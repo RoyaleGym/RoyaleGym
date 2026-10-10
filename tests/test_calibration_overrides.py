@@ -231,14 +231,20 @@ def test_the_seat_asymmetric_release_point_is_overridden_to_none():
          "placer_frame_first_found", ["placer_frame_first_found", "client15535_arena_clockwise"]),
         ("targeting.EQUAL_DISTANCE_TIE", "client15535_later_created", "own_frame_high_x",
          ["own_frame_low_x", "own_frame_high_x", "client15535_later_created"]),
+        ("formation.LINE_FRAME", "client15535_y_reflection", "rotation",
+         ["rotation", "client15535_y_reflection"]),
+        ("formation.LINE_CENTRE_SEARCH", "client15535_interleaved_first_ring", "ring_corner_walk",
+         ["ring_corner_walk", "client15535_interleaved_first_ring"]),
     ],
 )
 def test_the_15535_arms_that_break_the_seat_mirror_are_overridden(
     key, client_arm, symmetric, candidates
 ):
     """RoyaleSim 0.1.30 ships 15.535.29 arms that are not the rotation of themselves: a box
-    anchored on the tile grid in arena coordinates, and ties broken in the arena's order or by
-    creation order (Parity's probe of the flipped keys, 2026-10-10). A ledger shipping one is
+    anchored on the tile grid in arena coordinates, ties broken in the arena's order or by
+    creation order, and a line reflected in y or searched in the arena's order (the Royal Hogs'
+    ring); Parity's probe ran each of the 116 flipped keys alone under the symmetric config
+    (2026-10-10). A ledger shipping one is
     overridden to its symmetric arm; one shipping that arm, or lacking the key, is left alone."""
     section, name = key.split(".")
     ledger = {section: {name: {"value": client_arm, "candidates": candidates}}}
