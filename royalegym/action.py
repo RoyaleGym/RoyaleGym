@@ -738,7 +738,9 @@ BUILDING_TAP_ARMS = ("any_tap", "taps_where_the_building_stays")
 #: dropped there lands on the button, and nothing is placed. Measured on a 1080x1920 screen
 #: (2026-10-09). The left set is the right one mirrored plus (15, 0), the least certain tile,
 #: because the left button sits a little right of the mirror point. Both seats alike, each in its
-#: own frame.
+#: own frame. THE KEYS NAME SIDES OF THE GAME'S SCREEN, which shows a seat's own side mirrored
+#: left to right against the own frame: own x 0 is at the screen's RIGHT edge (the same for both
+#: seats). So "right" holds own x 0-1 and "left" own x 15-17.
 UI_BUTTON_TILES: dict[str, tuple[tuple[int, int], ...]] = {
     "right": ((0, 0), (0, 1), (1, 0), (1, 1)),
     "left": ((15, 0), (16, 0), (16, 1), (17, 0), (17, 1)),
