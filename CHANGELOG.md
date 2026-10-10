@@ -5,6 +5,16 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Added
+- `TileActionParser(ui_buttons=True)` makes the mask follow the client's screen: while a
+  hero's or champion's unit is on the board, its ability button covers two back corners of
+  its owner's side, and a deploy tapped there places nothing in the game. The mask then
+  refuses every card there (`action.UI_BUTTON_TILES`; one button on the right, two left
+  then right). Off by default, so no existing mask changes.
+
+
 ## 0.1.21 (2026-10-09)
 
 ### Changed

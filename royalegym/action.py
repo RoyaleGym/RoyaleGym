@@ -734,6 +734,20 @@ class ActionParser(ABC):
 #: this arm therefore has two candidate causes, not one.
 BUILDING_TAP_ARMS = ("any_tap", "taps_where_the_building_stays")
 
+#: The own-frame TILES each on-screen ability button covers in the game (``ui_buttons``): a card
+#: dropped there lands on the button, and nothing is placed. Measured on a 1080x1920 screen
+#: (2026-10-09). The left set is the right one mirrored plus (15, 0), the least certain tile,
+#: because the left button sits a little right of the mirror point. Both seats alike, each in its
+#: own frame.
+UI_BUTTON_TILES: dict[str, tuple[tuple[int, int], ...]] = {
+    "right": ((0, 0), (0, 1), (1, 0), (1, 1)),
+    "left": ((15, 0), (16, 0), (16, 1), (17, 0), (17, 1)),
+}
+#: Where a seat's buttons sit, by how many it has: they fill from the right, so one sits on the
+#: right and two sit left then right, in ``PlayerState.abilities`` order (the deck's). A third
+#: button's place is not measured, so with three or more no tile is covered.
+UI_BUTTON_PLACES: dict[int, tuple[str, ...]] = {1: ("right",), 2: ("left", "right")}
+
 
 class GridActionParser(ActionParser):
     """Discrete(1 + HAND_SIZE * ny * nx) over a regular grid of placement points.
@@ -751,6 +765,7 @@ class GridActionParser(ActionParser):
         buildings: str = "any_tap",
         ability_buttons: bool = False,
         hold_while_pending: bool = False,
+        ui_buttons: bool = False,
     ) -> None:
         if buildings not in BUILDING_TAP_ARMS:
             raise ValueError(f"buildings must be one of {BUILDING_TAP_ARMS}, not {buildings!r}")
@@ -767,6 +782,11 @@ class GridActionParser(ActionParser):
         # seat with a command waiting is offered only the no-op: an option for a policy that
         # should wait for its last command to run before choosing the next.
         self.hold_while_pending = bool(hold_while_pending)
+        # OPT-IN: the mask follows the client's screen, where a shown ability button covers two
+        # back corners of its owner's side and a deploy tapped under it places nothing
+        # (``UI_BUTTON_TILES``, ``covered_tiles``). The engine has no screen and accepts those
+        # deploys, so off (the default) the mask is the engine's rule, as it always was.
+        self.ui_buttons = bool(ui_buttons)
         self._engine: Engine | None = None
         self._judge: Engine | None = None
 
@@ -830,7 +850,30 @@ class GridActionParser(ActionParser):
             # Only when on, so a parser without buttons reports what it always did.
             **({"ability_buttons": True} if self.ability_buttons else {}),
             **({"hold_while_pending": True} if self.hold_while_pending else {}),
+            **({"ui_buttons": True} if self.ui_buttons else {}),
         }
+
+    def covered_tiles(self, state: BattleState, team: int) -> frozenset[tuple[int, int]]:
+        """The own-frame tiles ``team``'s ON-SCREEN ability buttons cover (``ui_buttons``).
+
+        A button shows while one of the seat's own troops of its card is on the board (a hero's
+        unit, a champion), and sits where ``UI_BUTTON_PLACES`` puts it for the seat's count of
+        buttons; with a count it does not place, nothing is covered. A row that does not name
+        its card (an engine before the champion columns) covers nothing.
+        """
+        rows = state.players[team].abilities
+        places = UI_BUTTON_PLACES.get(len(rows))
+        if places is None:
+            return frozenset()
+        standing = {
+            e.card_id for e in state.entities if e.team == team and e.kind == EntityKind.TROOP
+        }
+        out: set[tuple[int, int]] = set()
+        for row, place in zip(rows, places, strict=True):
+            card = ability_row(row).card_id
+            if card != EMPTY_CARD and card in standing:
+                out.update(UI_BUTTON_TILES[place])
+        return frozenset(out)
 
     def button_of(self, action: int) -> int | None:
         """The ability button ``action`` presses, or None for the no-op or a tile action."""
@@ -913,6 +956,14 @@ class GridActionParser(ActionParser):
             if self._judge is not None and self.oracle._moved_off_own_tower(card):
                 grid = self.moved_taps_that_land(state, team, slot, card, grid)
             mask[1 + slot * per : 1 + (slot + 1) * per] = grid.reshape(-1)
+        if self.ui_buttons:
+            # Every card's deploy, in every hand slot, on each half-cell of a covered tile.
+            p = self.pitch_div
+            for tx, ty in self.covered_tiles(state, team):
+                for dy in range(p):
+                    for dx in range(p):
+                        cell = (ty * p + dy) * self.nx + tx * p + dx
+                        mask[1 + cell : self.n_tile_actions : per] = 0
         return mask
 
     def moved_taps_that_land(
