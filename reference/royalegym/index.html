@@ -2622,6 +2622,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.action.PlacementOracle.zone_verdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;zone_verdict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.action.PlacementOracle.legal_points" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2841,6 +2852,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;mask_disagreements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.action.clamped_tap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;clamped_tap
       
     </span>
   </a>
@@ -7274,6 +7296,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.action.PlacementOracle.zone_verdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;zone_verdict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.action.PlacementOracle.legal_points" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7493,6 +7526,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;mask_disagreements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.action.clamped_tap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;clamped_tap
       
     </span>
   </a>
@@ -12319,6 +12363,31 @@ own: it is placed as the card it copies, which is what to ask with.</p>
 <div class="doc doc-object doc-function">
 
 
+<h4 id="royalegym.action.PlacementOracle.zone_verdict" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">zone_verdict</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">px</span><span class="p">,</span> <span class="n">py</span><span class="p">,</span> <span class="n">troop_laws</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+<a href="#royalegym.action.PlacementOracle.zone_verdict" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>What the core's zone check says of a tap at each point in TROOP territory, as
+<code>DeployStatus</code> codes, the first failing check winning (Arena::deploy_zone):
+OUT_OF_ARENA; WATER, any touched cell; NO_DEPLOY, any touched cell, with the king
+blocks half-open for a card under the troop laws (<code>_troop_laws</code>) when that arm runs;
+OUT_OF_TERRITORY, the river band under the closed model or an alive enemy tower's
+rect; else OK. For a troop and for a spell judged in troop territory (the Log, the
+Heal: <code>troop_laws</code> False). The footprints come after it, so a tap on an enemy
+tower's body is OUT_OF_TERRITORY. The two clamps (<code>clamped_tap</code>) move taps by it.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="royalegym.action.PlacementOracle.legal_points" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">legal_points</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">card</span><span class="p">,</span> <span class="n">px</span><span class="p">,</span> <span class="n">py</span><span class="p">)</span></code>
 
@@ -12890,6 +12959,30 @@ to Blue's 142 (measured on the placement batch's build, 2026-09-28).</p>
 (action, mask value, engine status). <code>state</code> must be <code>engine.state()</code>.</p>
 <p>Exhaustive over the whole action space. This is the check to run against any
 new engine (the Rust core included) before training on it.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.action.clamped_tap" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">clamped_tap</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">cmd</span><span class="p">)</span></code>
+
+<a href="#royalegym.action.clamped_tap" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Whether <code>cmd</code> is a tap a clamp the rules run moves back to its column's first legal
+tile (<code>PlacementOracle.zone_verdict</code>; a Mirror is the card it copies).
+placement.ILLEGAL_TROOP_TAP's: a troop-kind card refused OUT_OF_TERRITORY.
+spells.ILLEGAL_SPELL_TAP's: a spell judged in troop territory (the Log, the Barbarian
+Barrel, the Royal Delivery, the Heal) refused OUT_OF_TERRITORY or on WATER. Off the arena
+and no-deploy ground are not moved. A line card's tap counts too: the troop clamp refuses
+it, but the mask refuses every such tap alike.</p>
 
 
     </div>
@@ -15114,6 +15207,10 @@ as <code>engine</code>'s, both seats, and cached per build, card table, catalogu
 constructor arguments. Both seats must agree, and the same card must be accepted on
 free land in its own half, or it is left as it is and the every-card gate names it.
 A card the opening deal never puts in hand is not asked, and keeps its code.</p>
+<p>The probe battle REFUSES a troop tapped out of its territory whatever arm <code>engine</code>
+runs (<code>_refusing_troop_taps</code>): under placement.ILLEGAL_TROOP_TAP's clamp the core
+accepts every troop tapped in the enemy half, moved back to its own edge, which would
+make every troop a tunneller here. A card's territory does not depend on that arm.</p>
 
 
     </div>
