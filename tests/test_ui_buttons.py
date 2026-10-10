@@ -1,9 +1,9 @@
 """``ui_buttons=True``: the mask follows the game's ability buttons (2026-10-09).
 
 In the game a hero's or champion's ability button sits over two back corners of its owner's
-side while that unit lives, and a card dropped under it lands on the button: nothing is placed.
-The engine has no screen, so it accepts those deploys; a policy trained on its mask learns
-corners the game will not give it.
+side while that unit lives, and a card placed there by tapping lands on the button: nothing is
+placed (measured for taps; a drag is not). The engine has no screen, so it accepts those
+deploys; a policy that taps, trained on its mask, learns corners the game will not give it.
 With the flag the mask refuses every card's deploy on the tiles each SHOWN button covers
 (``action.UI_BUTTON_TILES``). Buttons fill from the right: one sits on the right, two sit left
 then right in their ``PlayerState.abilities`` order (the deck's). A third's place is not
