@@ -5,7 +5,13 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.21 (2026-10-09)
+
+### Changed
+- royalesim 0.1.26, royalelearn 0.5.17 and royaleimitate 0.2.13. royalelearn trains on the
+  processor, and says why, when the graphics card is too old for the installed PyTorch; a
+  clone reads its shard's rows from memory or disk after the first epoch. Game Values is
+  stamped on royalesim 0.1.26: the same cards.
 
 ### Added
 - `ClashParallelEnv.set_mask_only(agents)` skips building those seats' observations from the
