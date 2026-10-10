@@ -3520,7 +3520,7 @@ while that ability can be used. <code>make_env(heroes=[...])</code> turns the bu
 </tr>
 <tr>
 <td><code>TileActionParser(ui_buttons=True)</code></td>
-<td>Makes the mask match the game's screen. While a hero or champion is on the board, its ability button sits over a back corner of its owner's side, and a card dropped under the button isn't placed. The mask then refuses those tiles for every card. One button covers the corner at x 0-1, and a second the corner at x 15-17 (<code>action.UI_BUTTON_TILES</code> lists the tiles). Off by default.</td>
+<td>Makes the mask match the game's screen. While a hero or champion is on the board, its ability button sits over a back corner of its owner's side, and a tap on those tiles lands on the button and places nothing. The mask then refuses those tiles for every card. One button covers the corner at x 0-1, and a second the corner at x 15-17 (<code>action.UI_BUTTON_TILES</code> lists the tiles). Off by default.</td>
 </tr>
 <tr>
 <td><code>HalfTileActionParser()</code></td>
