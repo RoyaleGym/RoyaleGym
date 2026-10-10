@@ -2197,6 +2197,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0128-2026-10-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.28 (2026-10-10)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0127-2026-10-09" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3595,6 +3606,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0128-2026-10-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.28 (2026-10-10)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0127-2026-10-09" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3930,6 +3952,33 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0128-2026-10-10">0.1.28 (2026-10-10)<a class="headerlink" href="#0128-2026-10-10" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Two new <code>BattleConfig</code> fields. <code>tower_troops</code> names each side's crown tower troop: <code>"DaggerDuchess"</code>, <code>"Cannoneer"</code>
+  or <code>"ChefTower"</code>. The default, <code>[None, None]</code>, keeps the Princess. <code>king_level</code> sets each King Tower's own level; the
+  default uses <code>tower_level</code>, as before. Both are read when the battle is made. The tower troops load as the last three
+  card slots, so no deck, catalogue or existing index moves.</li>
+<li>Twenty-five settings now default to the current client's behaviour, each measured against its recorded battles.
+  Among them: a dying troop's death push, the ring a death spawn is laid on, a Witch's ring point at the arena's edge,
+  the Hero Mega Minion's warp and return, the Little Prince's guard, the Mighty Miner's bomb, the tower troops' damage,
+  an Evo Skeletons copy (now on the tick after its hit), and a Poison's first pulse (now 25 ticks after its cast). Each
+  older behaviour stays available as that setting's old value, and <code>replay_parity</code> uses the old values for the older
+  client's battles. The full list is in the release notes on GitHub.</li>
+<li><code>spells.RELEASE_GROUND_POINT</code> treats the two sides differently, as the game does. A seat-symmetry check can turn it off
+  with <code>calibration_overrides={"spells.RELEASE_GROUND_POINT": "none"}</code>.</li>
+<li>On the current client's card tables, a Skeleton King counts a soul once it lands, 1.45 s after the death, not at the
+  death.</li>
+<li>A hero's level-up can take it past level 17 along its rarity's level ladder (the client's Hero Mini P.E.K.K.A went
+  from 16 to 18 in one level-up). A card is still played at 17 at most.</li>
+<li>The card tables carry a new field, <code>sight_clip_side_milli</code>: how far a unit's sight is cut at its sides (the Hog
+  Rider's 4000, the Giant's 2000). The engine does not read it yet. The tables' hashes change with it.</li>
+<li>Tools: <code>tools/make_replay_fixture.py</code> reads more of a live capture. It recovers casts the elixir check had dropped,
+  Poison and Earthquake levels, a hero's or a champion's ability presses and the game mode. It also reads a Zap that
+  leaves no object (from the capture's header), a Rage whose area shows after its elixir drop, a Lightning or a Royal
+  Delivery from its area (dated on its cast, its level from its bolt or crate), and a spell's level from what it took
+  off a crown tower. A Poison or an Earthquake first seen after missing frames is dated by its pulses, and a Hero
+  Musketeer's turret is read as its card's.</li>
+</ul>
 <h2 id="0127-2026-10-09">0.1.27 (2026-10-09)<a class="headerlink" href="#0127-2026-10-09" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The 2026-10-06 card table now has that update's Evo Skeletons summon ring (400, was 700). The extractor read the
