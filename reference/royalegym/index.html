@@ -2755,6 +2755,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.action.GridActionParser.covered_tiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;covered_tiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.action.GridActionParser.button_of" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7389,6 +7400,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;mask_plane_shape
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.action.GridActionParser.covered_tiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;covered_tiles
       
     </span>
   </a>
@@ -12601,6 +12623,28 @@ under the other without saying so.</p>
 <p><code>encode</code> lays the space out as <code>1 + slot * ny * nx + y * nx + x</code>, so
 <code>mask[1:].reshape(HAND_SIZE, ny, nx)</code> is that same mask with no
 arithmetic -- a view, not a copy.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.action.GridActionParser.covered_tiles" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">covered_tiles</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">)</span></code>
+
+<a href="#royalegym.action.GridActionParser.covered_tiles" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The own-frame tiles <code>team</code>'s ON-SCREEN ability buttons cover (<code>ui_buttons</code>).</p>
+<p>A button shows while one of the seat's own troops of its card is on the board (a hero's
+unit, a champion), and sits where <code>UI_BUTTON_PLACES</code> puts it for the seat's count of
+buttons; with a count it does not place, nothing is covered. A row that does not name
+its card (an engine before the champion columns) covers nothing.</p>
 
 
     </div>

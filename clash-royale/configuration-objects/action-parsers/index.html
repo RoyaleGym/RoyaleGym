@@ -3519,6 +3519,10 @@ while that ability can be used. <code>make_env(heroes=[...])</code> turns the bu
 <td>Only offers building taps where the building lands on the tile you chose. By default the game moves a building that doesn't fit to the nearest place it does. Not for RoyaleLearn: its start-up check refuses it when the deck has a building.</td>
 </tr>
 <tr>
+<td><code>TileActionParser(ui_buttons=True)</code></td>
+<td>Makes the mask match the game's screen. While a hero or champion is on the board, its ability button sits over a back corner of its owner's side, and a card dropped under the button isn't placed. The mask then refuses those tiles for every card. One button covers the corner at x 0-1, and a second the corner at x 15-17 (<code>action.UI_BUTTON_TILES</code> lists the tiles). Off by default.</td>
+</tr>
+<tr>
 <td><code>HalfTileActionParser()</code></td>
 <td>Half-tile precision: 9217 moves instead of 2305.</td>
 </tr>
