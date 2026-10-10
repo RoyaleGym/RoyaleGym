@@ -189,9 +189,10 @@ OVERRIDE_READ_HERE = frozenset({"match", "time"})
 #: override: its arms are implemented for MockEngine's model or not at all, so the mask
 #: would judge one rule and the core run another (placement.ILLEGAL_TAP = refuse is a box
 #: fit in the core and a collision-circle test in the mask). Keys the mask never reads go
-#: to the core alone. placement.ILLEGAL_TROOP_TAP is followed although the mask refuses an
-#: out-of-territory troop tap under both arms: ``mask_disagreements`` reads the arm to tell
-#: the clamp's acceptances (intended) from the engine's (tests/test_illegal_troop_tap.py).
+#: to the core alone. placement.ILLEGAL_TROOP_TAP and spells.ILLEGAL_SPELL_TAP are followed
+#: although the mask refuses the taps their clamps move under both arms: ``mask_disagreements``
+#: reads the arm to tell the clamp's acceptances (intended) from the engine's
+#: (tests/test_clamped_taps.py).
 OVERRIDE_FOLLOWED = frozenset(
     {
         "placement.TROOP_TOWER_TAPS",
@@ -201,6 +202,7 @@ OVERRIDE_FOLLOWED = frozenset(
         "placement.SPELL_AS_DEPLOY_TAPS",
         "placement.LIVE_BOTTLE_TAPS",
         "placement.ILLEGAL_TROOP_TAP",
+        "spells.ILLEGAL_SPELL_TAP",
     }
 )
 
@@ -698,8 +700,9 @@ class RustEngine:
         those arms instead of the shipped ones and refuses a key or arm it does not have.
         ``config()`` and every trace recorded from this engine carry them, because an
         overridden engine plays other battles from the same build. A key the mask follows
-        (``OVERRIDE_FOLLOWED``: the six placement keys of the relocation rule and
-        placement.ILLEGAL_TROOP_TAP) is applied to this engine's own calibration too, so
+        (``OVERRIDE_FOLLOWED``: the six placement keys of the relocation rule and the two
+        clamps, placement.ILLEGAL_TROOP_TAP and spells.ILLEGAL_SPELL_TAP) is applied to this
+        engine's own calibration too, so
         ``rules()`` -- what the mask reads -- state the arm the core runs. Any other key the
         mask's rules read is refused, and so are the ``match`` and ``time`` sections, which
         this package reads elsewhere (the elixir law, the clock): the core would run one

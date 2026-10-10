@@ -147,12 +147,12 @@ def test_an_override_of_a_key_the_mask_reads_and_does_not_follow_is_refused():
     placement key was refused and a collision or spells key constructed, with rules stating
     the shipped arm while the core ran another. Opening placement to follow TROOP_TOWER_TAPS
     let ILLEGAL_TAP = refuse through, which is a box fit in the core and a collision-circle
-    test in the mask: 20,870 lattice points disagreed (review, 2026-09-27)."""
+    test in the mask: 20,870 lattice points disagreed (review, 2026-09-27). spells.ILLEGAL_SPELL_TAP
+    was refused here until its clamp was followed (tests/test_clamped_taps.py)."""
     ledger = compiled_ledger()
     cases = (
         ("placement.ILLEGAL_TAP", "refuse"),
         ("collision.BUILDING_FOOTPRINT_MODEL", "tile_size_override_box"),
-        ("spells.ILLEGAL_SPELL_TAP", "client16402_clamp_to_legal_edge"),
     )
     ran = 0
     for key, value in cases:

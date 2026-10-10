@@ -110,6 +110,7 @@ from .protocol import (
     SpellMotion,
     TowerSlot,
     ability_row,
+    card_is_spell,
     slot_cost,
     to_engine,
     to_own,
@@ -455,31 +456,43 @@ class PlacementOracle:
         )
         return touched
 
-    def out_of_territory(
-        self, state: BattleState, team: int, px: np.ndarray, py: np.ndarray
+    def zone_verdict(
+        self,
+        state: BattleState,
+        team: int,
+        px: np.ndarray,
+        py: np.ndarray,
+        troop_laws: bool = True,
     ) -> np.ndarray:
-        """Where the core's zone check refuses a TROOP (``_troop_laws``) for TERRITORY: the
-        point is inside the arena and touches no water or no-deploy cell (the king blocks
-        half-open under that arm), but touches the river band (closed-band model) or lies
-        in an alive enemy tower's rect. Arena::deploy_zone's order is out of arena, water,
-        no-deploy, out of territory, and the footprints come after it, so a tap on an enemy
-        tower's body is refused for territory. These are the taps
-        placement.ILLEGAL_TROOP_TAP's clamp moves back along their tile column."""
+        """What the core's zone check says of a tap at each point in TROOP territory, as
+        ``DeployStatus`` codes, the first failing check winning (Arena::deploy_zone):
+        OUT_OF_ARENA; WATER, any touched cell; NO_DEPLOY, any touched cell, with the king
+        blocks half-open for a card under the troop laws (``_troop_laws``) when that arm runs;
+        OUT_OF_TERRITORY, the river band under the closed model or an alive enemy tower's
+        rect; else OK. For a troop and for a spell judged in troop territory (the Log, the
+        Heal: ``troop_laws`` False). The footprints come after it, so a tap on an enemy
+        tower's body is OUT_OF_TERRITORY. The two clamps (``clamped_tap``) move taps by it."""
         a = self.arena
         px = np.asarray(px, dtype=np.int64)
         py = np.asarray(py, dtype=np.int64)
-        inside = (px > 0) & (px < a.width) & (py > 0) & (py < a.height)
-        zone: np.ndarray = inside & self._touches_only(~self.water & ~self.troop_nodeploy, px, py)
-        if self.king_half_open:
-            for x0, y0, x1, y1 in self.arena.king_blocks:
-                zone &= ~((px >= x0) & (px < x1) & (py >= y0) & (py < y1))
+        verdict = np.full(np.broadcast(px, py).shape, int(DeployStatus.OK), dtype=np.int64)
         if self.rules.river_band_closed_to_troops:
             outside = ~self._touches_only(~self.river_band, px, py)
         else:
-            outside = np.zeros(zone.shape, dtype=bool)
+            outside = np.zeros(verdict.shape, dtype=bool)
         for x0, y0, x1, y1 in self.enemy_rects(state, team):
             outside |= (px >= x0) & (px <= x1) & (py >= y0) & (py <= y1)
-        return zone & outside
+        verdict[outside] = int(DeployStatus.OUT_OF_TERRITORY)
+        nodeploy = self.troop_nodeploy if troop_laws else self.nodeploy
+        blocked = ~self._touches_only(~nodeploy, px, py)
+        if troop_laws and self.king_half_open:
+            for x0, y0, x1, y1 in self.arena.king_blocks:
+                blocked |= (px >= x0) & (px < x1) & (py >= y0) & (py < y1)
+        verdict[blocked] = int(DeployStatus.NO_DEPLOY)
+        verdict[~self._touches_only(~self.water, px, py)] = int(DeployStatus.WATER)
+        inside = (px > 0) & (px < a.width) & (py > 0) & (py < a.height)
+        verdict[~inside] = int(DeployStatus.OUT_OF_ARENA)
+        return verdict
 
     def legal_points(
         self, state: BattleState, team: int, card: CardInfo, px: np.ndarray, py: np.ndarray
@@ -1206,10 +1219,12 @@ def mask_disagreements(
     """
     mask = parser.action_mask(state, team)
     out = []
-    # placement.ILLEGAL_TROOP_TAP's clamp: the engine accepts a troop tapped out of its territory
-    # at the column's first legal tile, and the mask refuses it on purpose (a column of actions
-    # landing on one tile the edge already offers). Such an acceptance is not a disagreement.
-    clamp = parser.oracle.rules.illegal_troop_tap != "refuse"
+    # The clamps (placement.ILLEGAL_TROOP_TAP, spells.ILLEGAL_SPELL_TAP): the engine accepts a
+    # tap out of its territory at the column's first legal tile, and the mask refuses it on
+    # purpose (a column of actions landing on one tile the edge already offers). Such an
+    # acceptance is not a disagreement (``clamped_tap``).
+    rules = parser.oracle.rules
+    clamp = rules.illegal_troop_tap != "refuse" or rules.illegal_spell_tap != "refuse"
     # The hold is a rule for the policy, stricter than the engine's: it offers nothing, so
     # there is nothing of its to disagree with. Build the parser with
     # hold_while_pending=False to grade the mask against the engine under a waiting command.
@@ -1220,20 +1235,22 @@ def mask_disagreements(
         assert cmd is not None
         status = engine.check_deploy(cmd)
         if bool(mask[action]) != (status == 0):
-            if clamp and status == 0 and clamped_troop_tap(parser, state, team, cmd):
+            if clamp and status == 0 and clamped_tap(parser, state, team, cmd):
                 continue
             out.append((action, int(mask[action]), int(status)))
     return out
 
 
-def clamped_troop_tap(
+def clamped_tap(
     parser: GridActionParser, state: BattleState, team: int, cmd: DeployCommand
 ) -> bool:
-    """Whether ``cmd`` is a troop-kind card (a Mirror as the card it copies) tapped where the
-    core's zone check refuses it for territory (``PlacementOracle.out_of_territory``): the tap
-    placement.ILLEGAL_TROOP_TAP's clamp moves back to its column's first legal tile. Water,
-    no-deploy ground and off the arena are refused first and are not. A line card's tap
-    counts too: the clamp refuses it, but the mask refuses every such tap alike."""
+    """Whether ``cmd`` is a tap a clamp the rules run moves back to its column's first legal
+    tile (``PlacementOracle.zone_verdict``; a Mirror is the card it copies).
+    placement.ILLEGAL_TROOP_TAP's: a troop-kind card refused OUT_OF_TERRITORY.
+    spells.ILLEGAL_SPELL_TAP's: a spell judged in troop territory (the Log, the Barbarian
+    Barrel, the Royal Delivery, the Heal) refused OUT_OF_TERRITORY or on WATER. Off the arena
+    and no-deploy ground are not moved. A line card's tap counts too: the troop clamp refuses
+    it, but the mask refuses every such tap alike."""
     player = state.players[team]
     if not 0 <= cmd.hand_slot < len(player.hand) or player.hand[cmd.hand_slot] == EMPTY_CARD:
         return False
@@ -1243,6 +1260,15 @@ def clamped_troop_tap(
         if player.mirror_target < 0:
             return False
         card = oracle.cards[player.mirror_target]
-    if not oracle._troop_laws(card):
+    if oracle._troop_laws(card):
+        if oracle.rules.illegal_troop_tap == "refuse":
+            return False
+        laws, moved = True, (DeployStatus.OUT_OF_TERRITORY,)
+    elif card_is_spell(card) and card.placement in (Placement.TROOP, Placement.ROLLING):
+        if oracle.rules.illegal_spell_tap == "refuse":
+            return False
+        laws, moved = False, (DeployStatus.OUT_OF_TERRITORY, DeployStatus.WATER)
+    else:
         return False
-    return bool(oracle.out_of_territory(state, team, np.asarray([cmd.x]), np.asarray([cmd.y]))[0])
+    point = np.asarray([cmd.x]), np.asarray([cmd.y])
+    return int(oracle.zone_verdict(state, team, *point, troop_laws=laws)[0]) in moved

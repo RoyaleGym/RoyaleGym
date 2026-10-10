@@ -7,14 +7,19 @@ change the observation's shape; each such change is listed here.
 
 ## Unreleased
 
+### Added
+- royalesim can move a drop that is past its own side back along its column to the first
+  tile it may stand on, as the game does: a troop (`placement.ILLEGAL_TROOP_TAP`), and the
+  Log, the Barbarian Barrel, the Royal Delivery or the Heal, also when dropped on the water
+  (`spells.ILLEGAL_SPELL_TAP`). Both are off by default. RoyaleGym now runs on an engine
+  with either turned on, and `DeployRules` says which ones are on. The mask still leaves
+  those drops out: a whole column of them lands on the one edge tile the mask already
+  offers. `mask_disagreements` counts such a moved drop as intended, and nothing else.
+
 ### Fixed
-- royalesim can move a troop dropped past its own side back along its column to the first
-  tile it may stand on, as the game does (`placement.ILLEGAL_TROOP_TAP`). On an engine
-  running that rule, RoyaleGym took every troop for one that may go anywhere, like the Miner,
-  and the mask offered troops all over the board. Now each card keeps its own rule. The
-  mask still leaves those drops out: a whole column of them lands on the one edge tile the
-  mask already offers. `mask_disagreements` counts such a moved drop as intended, and
-  nothing else; `DeployRules.illegal_troop_tap` says which rule the engine runs.
+- On an engine moving troop drops back, RoyaleGym took every troop for one that may go
+  anywhere, like the Miner, and the mask offered troops all over the board. Now each card
+  keeps its own rule.
 
 ## 0.1.22 (2026-10-10)
 

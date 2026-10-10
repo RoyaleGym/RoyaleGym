@@ -1023,6 +1023,11 @@ ILLEGAL_BUILDING_TAP = ("refuse", "relocate_first_fitting_ring")
 #: card (by kind) tapped out of its territory, moving the tap back along its tile column to the
 #: first legal tile; the mask keeps refusing such taps (``action.mask_disagreements``).
 ILLEGAL_TROOP_TAP = ("refuse", "client15535_clamp_to_legal_edge")
+#: spells.ILLEGAL_SPELL_TAP arms. Under the clamp the engine accepts a spell judged in troop
+#: territory (the Log, the Barbarian Barrel, the Royal Delivery, the Heal) tapped out of that
+#: territory or on water, moved back along its tile column to the first legal tile; the mask
+#: keeps refusing such taps (``action.mask_disagreements``).
+ILLEGAL_SPELL_TAP = ("refuse", "client16402_clamp_to_legal_edge")
 #: placement.TROOP_TOWER_TAPS arms the mask implements. The second, measured on client
 #: 16.402: a troop may touch its own king block from the block's open (max) edges, the block
 #: being half-open in the ARENA's frame, and a troop tap whose tile overlaps an alive OWN
@@ -1196,8 +1201,9 @@ class DeployRules(msgspec.Struct, frozen=True):
     # block's max edges and every tap whose tile overlaps an alive own crown tower, which
     # the engine then moves. Trailing and defaulted to the arm an engine without the key ran.
     troop_tower_taps: str = "closed_block"
-    # spells.ILLEGAL_SPELL_TAP: what the engine does with a spell tapped outside its
-    # territory. The mask implements "refuse" only; the clamp arm accepts taps it refuses.
+    # spells.ILLEGAL_SPELL_TAP (``ILLEGAL_SPELL_TAP``): what the engine does with a spell
+    # tapped outside its territory or, in troop territory, on water. Under the clamp it accepts
+    # the tap at the column's first legal tile; the mask still refuses it, as for a troop.
     illegal_spell_tap: str = "refuse"
     # placement.ILLEGAL_TROOP_TAP (``ILLEGAL_TROOP_TAP``): what the engine does with a troop
     # tapped outside its territory. Under the clamp it accepts the tap at the column's first
@@ -1273,9 +1279,10 @@ class DeployRules(msgspec.Struct, frozen=True):
             spell_tap = str(calibration.value("spells.ILLEGAL_SPELL_TAP"))
         except KeyError:
             spell_tap = "refuse"
-        if spell_tap != "refuse":
+        if spell_tap not in ILLEGAL_SPELL_TAP:
             raise NotImplementedError(
-                f"spells.ILLEGAL_SPELL_TAP={spell_tap!r}: the mask implements 'refuse' only"
+                f"spells.ILLEGAL_SPELL_TAP={spell_tap!r}: the mask implements "
+                f"{list(ILLEGAL_SPELL_TAP)}"
             )
         try:
             tiebreak = str(calibration.value("match.OVERTIME_TIEBREAK"))
