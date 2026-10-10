@@ -782,11 +782,11 @@ BUILDING_TAP_ARMS = ("any_tap", "taps_where_the_building_stays")
 
 #: The own-frame TILES each on-screen ability button covers in the game (``ui_buttons``): a card
 #: placed by tapping there (select the card, then tap the tile) lands on the button, and nothing
-#: is placed. Measured for taps on a 1080x1920 (9:16) screen (2026-10-09); a card dragged there,
-#: and other screen shapes, are not measured, and human players do place cards on these tiles,
-#: so this follows the tap path a bot uses, not every way a person plays. The left set is the
-#: right one mirrored plus (15, 0), the least certain tile, because the left button sits a little
-#: right of the mirror point. Both seats alike, each in its own frame. THE KEYS NAME SIDES OF THE
+#: is placed. Measured on a 1080x1920 (9:16) screen (2026-10-09); a card DRAGGED there is placed
+#: as usual (2026-10-10), so this follows the tap path a bot uses, not every way a person plays.
+#: Other screen shapes are not measured. The left set is the right one mirrored plus (15, 0),
+#: the least certain tile, because the left button sits a little right of the mirror point.
+#: Both seats alike, each in its own frame. THE KEYS NAME SIDES OF THE
 #: GAME'S SCREEN, which shows a seat's own side mirrored left to right against the own frame: own
 #: x 0 is at the screen's RIGHT edge (the same for both seats). So "right" holds own x 0-1 and
 #: "left" own x 15-17.
