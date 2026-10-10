@@ -81,7 +81,7 @@ while that ability can be used. `make_env(heroes=[...])` turns the buttons on fo
 |---|---|
 | `TileActionParser(ability_buttons=True)` | Adds the hero and champion ability buttons. |
 | `TileActionParser(buildings="taps_where_the_building_stays")` | Only offers building taps where the building lands on the tile you chose. By default the game moves a building that doesn't fit to the nearest place it does. Not for RoyaleLearn: its start-up check refuses it when the deck has a building. |
-| `TileActionParser(ui_buttons=True)` | Makes the mask match the game's screen. While a hero or champion is on the board, its ability button sits over a back corner of its owner's side, and a card dropped under the button isn't placed. The mask then refuses those tiles for every card. One button covers the corner at x 0-1, and a second the corner at x 15-17 (`action.UI_BUTTON_TILES` lists the tiles). Off by default. |
+| `TileActionParser(ui_buttons=True)` | Makes the mask match the game's screen. While a hero or champion is on the board, its ability button sits over a back corner of its owner's side, and a tap on those tiles lands on the button and places nothing. The mask then refuses those tiles for every card. One button covers the corner at x 0-1, and a second the corner at x 15-17 (`action.UI_BUTTON_TILES` lists the tiles). Off by default. |
 | `HalfTileActionParser()` | Half-tile precision: 9217 moves instead of 2305. |
 
 !!! note "Which parsers RoyaleLearn can train"
