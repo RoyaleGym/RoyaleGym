@@ -189,7 +189,9 @@ OVERRIDE_READ_HERE = frozenset({"match", "time"})
 #: override: its arms are implemented for MockEngine's model or not at all, so the mask
 #: would judge one rule and the core run another (placement.ILLEGAL_TAP = refuse is a box
 #: fit in the core and a collision-circle test in the mask). Keys the mask never reads go
-#: to the core alone.
+#: to the core alone. placement.ILLEGAL_TROOP_TAP is followed although the mask refuses an
+#: out-of-territory troop tap under both arms: ``mask_disagreements`` reads the arm to tell
+#: the clamp's acceptances (intended) from the engine's (tests/test_illegal_troop_tap.py).
 OVERRIDE_FOLLOWED = frozenset(
     {
         "placement.TROOP_TOWER_TAPS",
@@ -198,6 +200,7 @@ OVERRIDE_FOLLOWED = frozenset(
         "placement.TROOP_BUILDING_TAPS",
         "placement.SPELL_AS_DEPLOY_TAPS",
         "placement.LIVE_BOTTLE_TAPS",
+        "placement.ILLEGAL_TROOP_TAP",
     }
 )
 
@@ -695,12 +698,12 @@ class RustEngine:
         those arms instead of the shipped ones and refuses a key or arm it does not have.
         ``config()`` and every trace recorded from this engine carry them, because an
         overridden engine plays other battles from the same build. A key the mask follows
-        (``OVERRIDE_FOLLOWED``: the six placement keys of the relocation rule) is applied to
-        this engine's
-        own calibration too, so ``rules()`` -- what the mask reads -- state the arm the core
-        runs. Any other key the mask's rules read is refused, and so are the ``match`` and
-        ``time`` sections, which this package reads elsewhere (the elixir law, the clock):
-        the core would run one value and the mask or the observation another."""
+        (``OVERRIDE_FOLLOWED``: the six placement keys of the relocation rule and
+        placement.ILLEGAL_TROOP_TAP) is applied to this engine's own calibration too, so
+        ``rules()`` -- what the mask reads -- state the arm the core runs. Any other key the
+        mask's rules read is refused, and so are the ``match`` and ``time`` sections, which
+        this package reads elsewhere (the elixir law, the clock): the core would run one
+        value and the mask or the observation another."""
         if _core is None:
             raise ImportError(CORE_IMPORT_ERROR)
         self.calibration_overrides: dict[str, Any] = dict(calibration_overrides or {})
@@ -1495,6 +1498,16 @@ def troop_ruled_spells(engine: RustEngine, battle_args: tuple, overrides: dict) 
 _TUNNEL_CACHE: dict[tuple[Any, ...], frozenset[str]] = {}
 
 
+def _refusing_troop_taps(engine: RustEngine, overrides: dict) -> dict:
+    """``overrides`` with placement.ILLEGAL_TROOP_TAP set to refuse, when the ledger has the
+    key (before royalesim 0.1.29 the core refuses and has no such key to set)."""
+    if "ILLEGAL_TROOP_TAP" not in engine.calibration.raw.get("placement", {}):
+        return overrides
+    cal = {**overrides.get("calibration_overrides", {}),
+           "placement.ILLEGAL_TROOP_TAP": json.dumps("refuse")}
+    return {**overrides, "calibration_overrides": cal}
+
+
 def battle_takes(keyword: str) -> bool:
     """Whether the core's ``Battle`` constructor takes ``keyword``, from its text signature
     (pyo3 ``#[pyo3(signature = ...)]``). False without a core or a signature."""
@@ -1511,7 +1524,13 @@ def tunnelling_cards(engine: RustEngine, battle_args: tuple, overrides: dict) ->
     constructor arguments. Both seats must agree, and the same card must be accepted on
     free land in its own half, or it is left as it is and the every-card gate names it.
     A card the opening deal never puts in hand is not asked, and keeps its code.
+
+    The probe battle REFUSES a troop tapped out of its territory whatever arm ``engine``
+    runs (``_refusing_troop_taps``): under placement.ILLEGAL_TROOP_TAP's clamp the core
+    accepts every troop tapped in the enemy half, moved back to its own edge, which would
+    make every troop a tunneller here. A card's territory does not depend on that arm.
     """
+    overrides = _refusing_troop_taps(engine, overrides)
     probes = [
         c
         for c in engine._cards

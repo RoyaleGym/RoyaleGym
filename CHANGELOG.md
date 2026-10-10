@@ -5,6 +5,17 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Fixed
+- royalesim can move a troop dropped past its own side back along its column to the first
+  tile it may stand on, as the game does (`placement.ILLEGAL_TROOP_TAP`). On an engine
+  running that rule, RoyaleGym took every troop for one that may go anywhere, like the Miner,
+  and the mask offered troops all over the board. Now each card keeps its own rule. The
+  mask still leaves those drops out: a whole column of them lands on the one edge tile the
+  mask already offers. `mask_disagreements` counts such a moved drop as intended, and
+  nothing else; `DeployRules.illegal_troop_tap` says which rule the engine runs.
+
 ## 0.1.22 (2026-10-10)
 
 ### Changed
