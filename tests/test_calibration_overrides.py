@@ -202,3 +202,17 @@ def test_plant_the_shipped_lane_arm_breaks_the_rotation_gate():
     planted = functools.partial(SymmetricRustEngine, calibration_overrides={KEY: shipped})
     result, _stats = multi_unit_rotation(planted, 1)
     assert result is not None, "the shipped lane arm passed the rotation gate"
+
+
+def test_the_seat_asymmetric_release_point_is_overridden_to_none():
+    """royalesim 0.1.28 ships spells.RELEASE_GROUND_POINT = client16402_one_unit, which moves a
+    ground release ring by absolute x on the arena's left half and absolute y for side 1: not the
+    rotation of itself. A ledger shipping it is overridden to "none"; one shipping "none", or
+    lacking the key (an engine before it), is left alone."""
+    shipped = {"spells": {"RELEASE_GROUND_POINT": {
+        "value": "client16402_one_unit", "candidates": ["none", "client16402_one_unit"]}}}
+    assert symmetric_overrides(shipped)["spells.RELEASE_GROUND_POINT"] == "none"
+    already = {"spells": {"RELEASE_GROUND_POINT": {
+        "value": "none", "candidates": ["none", "client16402_one_unit"]}}}
+    assert "spells.RELEASE_GROUND_POINT" not in symmetric_overrides(already)
+    assert "spells.RELEASE_GROUND_POINT" not in symmetric_overrides({"spells": {}})

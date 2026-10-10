@@ -1582,6 +1582,11 @@ SYMMETRIC_ARMS: dict[str, tuple[str, ...]] = {
     # a Log whose front edge exactly touches a unit misses it rolling +y and hits it rolling
     # -y; the closed rectangle against the circle's edge is the same for both seats.
     "spells.ROLLING_HIT_SHAPE": ("rect_vs_circle_edge",),
+    # The 16.402 client lays a ground release ring (a spell that drops units) around the landing
+    # point moved one native unit as formation.GROUND_DEPLOY_POINT moves a ground summon: absolute
+    # x one lower on the arena's left half, absolute y one lower for a side-1 owner (RoyaleSim
+    # 0.1.28), so a Red release is not the rotation of a Blue one; "none" is the same for both.
+    "spells.RELEASE_GROUND_POINT": ("none",),
 }
 
 
