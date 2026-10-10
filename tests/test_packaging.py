@@ -49,7 +49,7 @@ def test_every_piece_names_a_minimum_so_an_upgrade_moves_it():
             if _names([req]) & set(PIECES.values()):
                 assert ">=" in req, f"[{extra}] names {req!r} with no minimum version"
     floors = sorted(r for r in extras["all"] if _names([r]) & {"royalesim", "royaleviser"})
-    assert floors == ["royalesim>=0.1.26", "royaleviser[media]>=0.1.2"], floors
+    assert floors == ["royalesim>=0.1.27", "royaleviser[media]>=0.1.2"], floors
 
 
 def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
@@ -66,12 +66,13 @@ def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
     writes ``environment.json`` beside every saved bot (``Learner.load_env``), and 0.5.16 loads a
     warm start or a pool snapshot that differs from the run only in precision, device,
     initialisation or critic (``actor_digest``), with ``royalelearn bench`` fixed for id planes,
-    and 0.5.17 trains on the processor, saying why, when the graphics card is too old for the
-    installed PyTorch (``device="auto"``)."""
+    0.5.17 trains on the processor, saying why, when the graphics card is too old for the
+    installed PyTorch (``device="auto"``), and 0.5.18 skips a scripted seat's observation
+    (``rollout.mask_only_scripted``, which needs royalegym 0.1.21)."""
     extras = _extras()
     for extra in ("learn", "all"):
         pins = [r for r in extras[extra] if r.startswith("royalelearn")]
-        assert pins == ["royalelearn[torch]>=0.5.17"], f"[{extra}]: {pins}"
+        assert pins == ["royalelearn[torch]>=0.5.18"], f"[{extra}]: {pins}"
 
 
 def test_the_engine_data_comes_from_the_installed_engine(monkeypatch, tmp_path):

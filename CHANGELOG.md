@@ -5,7 +5,13 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.22 (2026-10-10)
+
+### Changed
+- royalesim 0.1.27 plays cards at level 17, one past the old maximum (a Common's 450 %),
+  and a Mirror of a level-16 card at 17; 18 is refused. No observation or mask reads a
+  unit's level, so levels 1 to 16 observe exactly as before. royalelearn 0.5.18 can skip a
+  scripted opponent's observation. Game Values is stamped on royalesim 0.1.27: the same cards.
 
 ### Added
 - `TileActionParser(ui_buttons=True)` makes the mask follow the client's screen: while a
