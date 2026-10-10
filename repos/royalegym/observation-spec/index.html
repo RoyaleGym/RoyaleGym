@@ -4214,7 +4214,7 @@ unit's OWN type on each tile, own plane then enemy plane, as <code>card_ids</cod
 </tr>
 <tr>
 <td>values</td>
-<td>0 = empty; <code>1 + u</code> for unit type <code>u</code>, an index into <code>engine.unit_types()</code></td>
+<td>0 = empty; <code>1 + u</code> for unit type <code>u</code>, its place in the vocabulary</td>
 </tr>
 <tr>
 <td>vocabulary</td>
@@ -4226,7 +4226,7 @@ unit's OWN type on each tile, own plane then enemy plane, as <code>card_ids</cod
 </tr>
 <tr>
 <td>pinning</td>
-<td><code>config()</code> records <code>unit_names</code>; a builder given <code>unit_names</code> refuses an engine whose vocabulary differs</td>
+<td><code>config()</code> records <code>unit_names</code>. A builder given <code>unit_names</code> numbers units by their place in it, by name: the pin may hold more names than the engine says, in any order, and an engine type the pin lacks is refused</td>
 </tr>
 <tr>
 <td>refused</td>
@@ -4238,6 +4238,12 @@ unit's OWN type on each tile, own plane then enemy plane, as <code>card_ids</cod
 </tr>
 </tbody>
 </table>
+<p><strong>One vocabulary across card tables.</strong> A newer card table can insert unit types, which
+shifts the engine's index of every later one. Pin the names of every table you train on
+(<code>SpatialObsBuilder(unit_names=...)</code>, appending as tables add types) and each unit keeps
+one id and the observation one <code>unit_ids_digest</code> whichever table a battle loads. A pin
+equal to the engine's list numbers units exactly as no pin does. <code>unit_aliases</code> may then
+name a type only one of the tables has.</p>
 <p>Like <code>card_ids</code>, the key holds category ids, not amounts: a network embeds it rather than
 scaling it. A trace header carries the vocabulary as <code>unit_types</code>, and every frame's entity
 rows carry <code>unit_type</code>, so a viewer can name each unit by type.</p>
@@ -4683,6 +4689,9 @@ A policy, a clone or a frozen snapshot needs the full observation.</p>
   (the skipped memory was never kept), and so is <code>state()</code> when Blue is skipped.</li>
 <li>It saves about one build per step: with every observation option on, a step runs about a
   fifth faster.</li>
+<li>A seat found to be scripted after the episode started: <code>env.set_mask_only(agents)</code> skips it
+  from the next observation on. The ones it already has stay full. Seats only join: one
+  skipped once stays skipped until the next reset, and the same refusals apply from then on.</li>
 </ul>
 <p><code>tests/test_mask_only.py</code> holds all of it, on a builder with every option on and on
 <code>EntityListObsBuilder</code>, for either seat skipped.</p>

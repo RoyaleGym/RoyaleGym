@@ -1410,6 +1410,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.env.ClashParallelEnv.set_mask_only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set_mask_only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.env.ClashParallelEnv.snapshot" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6040,6 +6051,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.env.ClashParallelEnv.set_mask_only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set_mask_only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.env.ClashParallelEnv.snapshot" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8878,6 +8900,31 @@ Tower hp is the MEAN of the three towers' hp fractions (<code>tower_hp_frac</cod
 which is TowerHPReward's potential over three -- so what a run logs and what
 its shaping term optimised are the same number. Crowns alone cannot tell a
 tower left at 1 hp from a tower never touched, which is why it is here.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.env.ClashParallelEnv.set_mask_only" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">set_mask_only</span><span class="p">(</span><span class="n">agents</span><span class="p">)</span></code>
+
+<a href="#royalegym.env.ClashParallelEnv.set_mask_only" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Skip building <code>agents</code>' observations from the NEXT one on, for the rest of this
+episode, as <code>reset(options={"mask_only": ...})</code> does from the first. For a seat found to
+be played by something that reads only legality (a scripted opponent) after the episode
+started; the observations it already has stay full.</p>
+<p>Seats only join. One skipped once stays skipped until the next reset, because its
+memory of the match stopped moving, so a set that drops a skipped seat is refused. From
+here on <code>snapshot()</code> is refused, and <code>state()</code> too when Blue is skipped, as under the
+reset option. The next <code>reset</code> builds every seat again unless it is asked not to.</p>
 
 
     </div>
@@ -11844,7 +11891,7 @@ defect in it.</p>
 
 
 <h3 id="royalegym.obs.unit_vocabulary" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">unit_vocabulary</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">aliases</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">unit_vocabulary</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">aliases</span><span class="p">,</span> <span class="n">said</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#royalegym.obs.unit_vocabulary" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -11852,10 +11899,14 @@ defect in it.</p>
     <div class="doc doc-contents ">
 
         <p>The <code>unit_ids</code> vocabulary under <code>aliases</code>, and the engine-index -&gt; vocabulary-index
-lookup (None without aliases). An aliased name is written as its base and drops out of the
-vocabulary; the rest keep the engine's order. Refuses, by name, an alias or a base the
-engine does not have, a base that is itself an alias (a chain) and a name aliased to
+lookup (None where it is the identity). An aliased name is written as its base and drops out
+of the vocabulary; the rest keep the order of <code>names</code>. Refuses, by name, an alias or a base
+<code>names</code> does not have, a base that is itself an alias (a chain) and a name aliased to
 itself.</p>
+<p><code>said</code>: the engine's own unit types, when <code>names</code> is a PINNED vocabulary
+(<code>SpatialObsBuilder(unit_names=...)</code>) that may hold more, in any order. Each said type
+then maps to its place in the pin by name, and one the pin lacks is refused. None, or the
+same list, means <code>names</code> is the engine's list itself.</p>
 
 
     </div>

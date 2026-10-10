@@ -2197,6 +2197,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0126-2026-10-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.26 (2026-10-09)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0125-2026-10-09" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3573,6 +3584,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0126-2026-10-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.26 (2026-10-09)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0125-2026-10-09" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3886,6 +3908,16 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0126-2026-10-09">0.1.26 (2026-10-09)<a class="headerlink" href="#0126-2026-10-09" title="Permanent link">&para;</a></h2>
+<ul>
+<li>This release adds settings used to measure upcoming fixes against the game (a struck troop's last step, a Log tapped
+  on the water, a doomed target and its attackers' wait, a curse's first step, a Sparky's windup after its target dies,
+  a launcher and a kamikaze, a troop tapped on an enemy building, the Evo Skeleton Army's General); every one defaults
+  to the engine's current behaviour.</li>
+<li>Tools: <code>tools/make_replay_fixture.py</code> reads an evolution's or a hero form's units as its card's (an Evo Bats deploy was
+  read as an unknown object), reads the time stamp of a live capture's name, and gives a live capture no partner seat.
+  A <code>replay_parity</code> report names the card table it loaded, not the checkout's <code>cards.json</code>.</li>
+</ul>
 <h2 id="0125-2026-10-09">0.1.25 (2026-10-09)<a class="headerlink" href="#0125-2026-10-09" title="Permanent link">&para;</a></h2>
 <ul>
 <li>New: <code>cards.CLIENT16402_VALUES</code> can set a unit's <code>HitSpeed</code> and <code>LoadTime</code>, as it already sets hitpoints, damage and a
