@@ -2197,6 +2197,39 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0132-2026-10-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.32 (2026-10-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0131-2026-10-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.31 (2026-10-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0130-2026-10-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.30 (2026-10-10)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0129-2026-10-10" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3617,6 +3650,39 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0132-2026-10-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.32 (2026-10-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0131-2026-10-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.31 (2026-10-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0130-2026-10-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.30 (2026-10-10)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0129-2026-10-10" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3974,6 +4040,57 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0132-2026-10-11">0.1.32 (2026-10-11)<a class="headerlink" href="#0132-2026-10-11" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Two settings now default to the current client's behaviour, each measured against its recorded battles. A building
+  lets go of a target that has moved out of its reach after it fires, as a crown tower does
+  (<code>targeting.LAUNCH_BEYOND_POSITION</code>). The Little Prince's guard appears 2000 behind him and takes its first step on
+  the tick it appears, and after its charge it finds a fresh path (<code>combat.GUARD_BIRTH_POINT</code>). Each older behaviour
+  stays available as that setting's old value, and <code>replay_parity</code> uses the old values for the older client's
+  battles.</li>
+</ul>
+<h2 id="0131-2026-10-11">0.1.31 (2026-10-11)<a class="headerlink" href="#0131-2026-10-11" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Four settings now default to the current client's behaviour, each measured against its recorded battles. A flying
+  unit that is still deploying can be pushed over the river; a ground one still stops at the bank
+  (<code>movement.DEPLOY_WATER_EDGE</code>). The Little Prince is not pushed by other units while he holds his press
+  (<code>collision.GUARD_PRESS_CONTACT</code>); a knockback, a hook or a pull still moves him. The Evo Electro Dragon's chain hops
+  are timed as on the current client: every hop waits, the first one too (<code>combat.EVO_CHAIN_HOP_WAIT</code> and
+  <code>combat.EVO_CHAIN_HOP_FIRST_STEP</code>). Each older behaviour stays available as that setting's old value, and
+  <code>replay_parity</code> uses the old values for the older client's battles.</li>
+<li>New setting <code>combat.GUARD_BIRTH_POINT</code>: where the Little Prince's guard appears. The default is unchanged.</li>
+</ul>
+<h2 id="0130-2026-10-10">0.1.30 (2026-10-10)<a class="headerlink" href="#0130-2026-10-10" title="Permanent link">&para;</a></h2>
+<ul>
+<li>114 more settings now default to the current client's behaviour. These are the settings where the current client
+  behaves as the older client (15.535.29) does, so battles recorded on the current client replay more closely. Each
+  older behaviour stays available as that setting's old value, and <code>replay_parity</code> uses the old values for the older
+  client's battles.</li>
+<li>More settings default to the current client's behaviour, each measured against its recorded battles. The Dagger
+  Duchess throws her daggers in bursts and recharges when she is not attacking (the engine now reads the card tables'
+  <code>burst_attack</code>). The Golden Knight's dash chain can pick any enemy ground unit near him, buildings and towers
+  included. A unit attacking a Tesla keeps it as its target while the Tesla hides. An Electro Spirit's chain goes on
+  when its target dies before the hop lands. The Little Prince's guard also hits units that walk into it just after it
+  lands, and his press holds him 3 ticks longer. A building can attack on the last tick of its deploy. A unit stunned
+  or frozen by a hit keeps its reload timer still from one tick later. The Evo Witch's waves are made in the game's
+  order, and the Evo Battle Ram's charge skips a unit that is still waiting to appear.</li>
+<li>Illegal taps are still refused by default: <code>placement.ILLEGAL_TROOP_TAP</code> and <code>spells.ILLEGAL_SPELL_TAP</code> ship
+  <code>refuse</code>, and will keep doing so. A tap outside the legal area is usually a bug in the caller, and a refusal shows
+  it. The game's clamp, which moves the tap to the edge of the legal area, is a setting you can turn on with
+  <code>calibration_overrides</code>: <code>{"placement.ILLEGAL_TROOP_TAP": "client15535_clamp_to_legal_edge"}</code> or
+  <code>{"spells.ILLEGAL_SPELL_TAP": "client16402_clamp_to_legal_edge"}</code>.</li>
+<li>Six settings treat the two sides differently, as the game does. A seat-symmetry check can switch each to a symmetric
+  version with <code>calibration_overrides</code>: <code>targeting.EQUAL_DISTANCE_TIE</code> to <code>own_frame_high_x</code>, <code>formation.LINE_FRAME</code>
+  to <code>rotation</code>, <code>formation.LINE_CENTRE_SEARCH</code> to <code>ring_corner_walk</code>, <code>placement.RELOCATION_TIE_ORDER</code> and
+  <code>placement.TROOP_RELOCATION_TIE_ORDER</code> to <code>placer_frame_first_found</code>, and <code>placement.ENEMY_BUILDING_TAPS</code> to
+  <code>ignored</code>.</li>
+<li>The state's building footprint (the 15th element of each row) is the box a tap is checked against. A building on the
+  tile grid is unchanged; a building off the grid (a hero's turret) is reported where it blocks taps.</li>
+<li>Tools: <code>tools/make_replay_fixture.py</code> reads more of a live capture. A unit first seen after missing frames, already
+  walking, is dated so its deploy ends where it was first seen. A Goblinstein is placed from its card's own layout. An
+  Evo Goblin Barrel's decoy and the Hero Goblins' flag spawns are no longer read as plays. <code>replay_parity</code> plays a
+  group row given only as its centre point from its tile.</li>
+</ul>
 <h2 id="0129-2026-10-10">0.1.29 (2026-10-10)<a class="headerlink" href="#0129-2026-10-10" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Six settings now default to the current client's behaviour, each measured against its recorded battles: a Rune

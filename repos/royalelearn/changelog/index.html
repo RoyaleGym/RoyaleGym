@@ -2871,6 +2871,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0518" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3573,6 +3584,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0518" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3884,6 +3906,15 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>Learner.load_env</code> rebuilds an engine whose <code>__init__</code> takes <code>*args, **kwargs</code> and hands them
+  to its base's, RoyaleGym's <code>SymmetricRustEngine</code> among them, which failed on <code>cards</code>. It takes
+  its base's settings, and is held to them as any engine is.</li>
+<li>A refused carry-on, <code>learn</code> over a run started with another network, environment or opponent
+  setup, leaves the run's <code>environment.json</code> as it was. It was rewritten with the new env before
+  the check.</li>
+</ul>
 <h2 id="0518">0.5.18<a class="headerlink" href="#0518" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>rollout.mask_only_scripted</code>: a scripted opponent's seat skips building its observation after

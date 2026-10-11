@@ -4232,10 +4232,14 @@ hero: rings in <code>theme.evo</code> and <code>theme.hero</code>, each on a bla
 outside the body and so outside every status ring (those reach body + 5, and the Rage glow
 body + 6). They are drawn after the status marks, so a Freeze and an evolution ring both
 show. A hero also wears a crown over its hp bar, lifted above the status pips when it has any,
-and the pin ring moves outside the form rings. The inspector's <code>flags</code> line names the set bits:
-"none", "not reported", or for example "underground, hero", with a bit it does not know as its
-number. 1, 2 and 4 are <code>royalegym.protocol.STATUS_*</code>; 8 and 16 are the engine's evolved and
-hero bits.</p>
+and the pin ring moves outside the form rings. 512, grounded (a flier a Vines holds on the
+ground): the flier keeps <code>flying</code> True, because it IS one, but loses its shadow and white air
+ring, and a dashed ring in <code>theme.grounded</code> says it is held down; the bit on a ground troop
+draws nothing. 32 (clone), 64 (ability windup), 128 (ability active) and 256 (charged) are not
+drawn on the board. The inspector's <code>flags</code> line names every set bit by the engine's own name
+(<code>royalesim.STATUS_BITS</code>, name k for bit 1 &lt;&lt; k): "none", "not reported", or for example
+"underground, hero", with a bit past that list shown as its number. All ten are
+<code>royalegym.protocol.STATUS_*</code>, and a test holds the viewer's numbers and words to that list.</p>
 <h2 id="the-recording-format">The recording format<a class="headerlink" href="#the-recording-format" title="Permanent link">&para;</a></h2>
 <p>A recording (a <em>capture</em> in the code: <code>CaptureSource</code>, <code>frames-*.jsonl</code> or <code>.jsonl.gz</code>) is
 one JSON object per line. A battle frame is <code>{"event": "frame", "active", "seq", "tick",
@@ -4394,7 +4398,7 @@ so a drift between the publisher and the viewer fails there. <code>tests/run_syn
 the real window on the scripted battle straight from the script, with no sibling repo and no
 recording needed: the look check for the renderer, and its <code>--compare</code> ghosts a
 half-tile-shifted copy of the same battle to exercise the compare panel.</p>
-<p>The suite has two correct results, and both are one command apart. Measured at 500ae04 on 2026-10-01, with <code>pytest --collect-only -q</code> collecting 373:</p>
+<p>The suite has two correct results, and both are one command apart. Measured at db785fd on 2026-10-10, with <code>pytest --collect-only -q</code> collecting 374:</p>
 <table>
 <thead>
 <tr>
@@ -4405,11 +4409,11 @@ half-tile-shifted copy of the same battle to exercise the compare panel.</p>
 <tbody>
 <tr>
 <td>a clone, <code>ROYALELIVE_REPORTS</code> pointed at an empty folder</td>
-<td><strong>369 passed, 4 skipped</strong></td>
+<td><strong>370 passed, 4 skipped</strong></td>
 </tr>
 <tr>
 <td>this machine, with the recordings</td>
-<td><strong>372 passed, 1 skipped</strong></td>
+<td><strong>373 passed, 1 skipped</strong></td>
 </tr>
 </tbody>
 </table>
@@ -4424,11 +4428,11 @@ green. Pointing <code>ROYALELIVE_REPORTS</code> at a folder holding
 gitignored) runs those three.</p>
 <p>Two more things move the count, in either run. Without the <code>media</code> extra
 (<code>imageio-ffmpeg</code>, which <code>royaleviser.capture</code> needs only for mp4 and gif) ONE more skips,
-the single <code>@needs_ffmpeg</code> test: a clone then gives <strong>368 passed, 5 skipped</strong> (500ae04,
-2026-10-01, pytest run with <code>sys.modules["imageio_ffmpeg"] = None</code>). Without RoyaleLearn
+the single <code>@needs_ffmpeg</code> test: a clone then gives <strong>369 passed, 5 skipped</strong> (db785fd,
+2026-10-10, pytest run with <code>sys.modules["imageio_ffmpeg"] = None</code>). Without RoyaleLearn
 importable, <code>tests/test_learner_protocol.py</code> skips AT IMPORT: its four tests are not collected
-(369 rather than 373) and the run reports ONE skip for the whole module, so a clone gives 365
-passed and 5 skipped (500ae04, 2026-10-01). A count in this file is the output of the command
+(370 rather than 374) and the run reports ONE skip for the whole module, so a clone gives 366
+passed and 5 skipped (db785fd, 2026-10-10). A count in this file is the output of the command
 beside it and nothing else; the ones that stood here before were measured at a commit fifteen
 behind and were wrong at that commit too.</p>
 <h2 id="the-stream-protocol">The stream protocol<a class="headerlink" href="#the-stream-protocol" title="Permanent link">&para;</a></h2>

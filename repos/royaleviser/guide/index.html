@@ -3993,13 +3993,13 @@ finish:</p>
 </ul>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p align="center">
-  <img alt="pytest on a clone at 500ae04, 2026-10-01: 369 passed, 4 skipped" src="https://img.shields.io/badge/tests_on_a_clone%2C_2026--10--01-369_passed%2C_4_skipped-2ea043?style=flat-square">
+  <img alt="pytest on a clone at db785fd, 2026-10-10: 370 passed, 4 skipped" src="https://img.shields.io/badge/tests_on_a_clone%2C_2026--10--10-370_passed%2C_4_skipped-2ea043?style=flat-square">
   <img alt="Draw cost" src="https://img.shields.io/badge/draw-2--5_ms_per_frame-2ea043?style=flat-square">
   <img alt="Cost when unwatched" src="https://img.shields.io/badge/unwatched-193_ns_per_step-2ea043?style=flat-square">
 </p>
 
-<p>The test badge is a clone's run at <code>500ae04</code>, measured with <code>ROYALELIVE_REPORTS</code> pointed at
-an empty folder. On a machine that has the recordings the same pytest run is 372 passed, 1 skipped.</p>
+<p>The test badge is a clone's run at <code>db785fd</code>, measured with <code>ROYALELIVE_REPORTS</code> pointed at
+an empty folder. On a machine that has the recordings the same pytest run is 373 passed, 1 skipped.</p>
 <p>As of 2026-09-22, this works end to end:</p>
 <ul>
 <li>Replaying a recording, and comparing two recordings of one battle. The pair that ships with the
@@ -4062,8 +4062,8 @@ way on its own gives 284 passed and 16 skipped. The counts below are for a machi
 the stack. Until 2026-09-23 that case could not collect the suite at all, which nothing had ever
 run.</p>
 <p>Tests. Start in the <code>Royale</code> folder. On a clone with the <code>media</code> extra installed, the first line
-prints 369 passed, 4 skipped (2026-10-01, 500ae04). Without the extra, which Setup does not
-install, it prints 368 passed, 5 skipped (2026-10-01, 500ae04). The second line prints
+prints 370 passed, 4 skipped (2026-10-10, db785fd). Without the extra, which Setup does not
+install, it prints 369 passed, 5 skipped (2026-10-10, db785fd). The second line prints
 <code>All checks passed!</code>. Both tools come from the
 <code>pip install maturin pytest hypothesis ruff numpy msgspec</code> line in <a href="#setup">Setup</a>, so the short
 way on its own does not have them:</p>
@@ -4075,7 +4075,7 @@ way on its own does not have them:</p>
 recordings are private, so your clone does not have them, and the run prints "SKIPPED, NOT
 PASSED" for each one so nobody mistakes a skip for a pass. The fourth needs a parity results
 file from RoyaleSim's replay harness. On the machine that has the recordings, the first three
-run and the count is 372 passed, 1 skipped.</p>
+run and the count is 373 passed, 1 skipped.</p>
 <p>Without the <code>media</code> extra (<code>imageio-ffmpeg</code>), the mp4 and gif test skips as well, and it says so.
 Install it with <code>.venv\Scripts\python -m pip install -e "RoyaleViser[media]"</code> from the <code>Royale</code>
 folder. A PNG needs nothing extra.</p>

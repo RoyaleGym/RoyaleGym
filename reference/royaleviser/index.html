@@ -2890,6 +2890,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royaleviser.render.unit_type_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unit_type_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royaleviser.render.unit_label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unit_label
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royaleviser.render.status_words" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6413,6 +6435,28 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;tiles_x10
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royaleviser.render.unit_type_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unit_type_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royaleviser.render.unit_label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;unit_label
       
     </span>
   </a>
@@ -9989,6 +10033,45 @@ viewer's guess, in the same place a reader looks for the number.</p>
     <div class="doc doc-contents ">
 
         <p>Raw units as tiles to a tenth, without a float (sources.tiles_text's rule).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royaleviser.render.unit_type_name" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">unit_type_name</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span></code>
+
+<a href="#royaleviser.render.unit_type_name" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The unit's OWN type when the source names it (<code>extra["unit"]</code>, from the engine's
+<code>unit_type</code>), else None. <code>Unit.name</code> is the card that put it on the board: the Witch's
+skeletons carry "Witch" there and "Skeleton" here.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royaleviser.render.unit_label" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">unit_label</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span></code>
+
+<a href="#royaleviser.render.unit_label" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>What the board writes under a unit: its own type when the source names one, without a
+form suffix, else the card's name, which is everything a source said before types.</p>
 
 
     </div>
