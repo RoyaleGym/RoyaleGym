@@ -5,9 +5,13 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.23 (2026-10-10)
 
 ### Changed
+- royalesim 0.1.30 plays closer to the game in many small ways (how units pick and keep
+  targets, how a drop is moved off a building, how a line of units is laid), so a battle with
+  the same seed can end differently: the Environments page's example now ends 3-1. Game Values
+  is stamped on royalesim 0.1.30: the same cards.
 - A drop past your own side is now moved back along its column to the first tile it may
   stand on, as the game does, instead of being refused: a troop (`placement.ILLEGAL_TROOP_TAP`),
   and the Log, the Barbarian Barrel, the Royal Delivery or the Heal, also when dropped on the
@@ -26,8 +30,8 @@ change the observation's shape; each such change is listed here.
 - In the game, a troop dropped on an enemy building (a hero's turret, a Cannon in a fallen
   lane) is moved off it, as off your own buildings (`placement.ENEMY_BUILDING_TAPS`). When
   royalesim runs that rule, the mask now offers those drops wherever the engine says the
-  troop lands. `SymmetricRustEngine` turns it off, with three tie-break rules that would
-  treat the two sides differently.
+  troop lands. `SymmetricRustEngine` turns it off, with five other rules of royalesim 0.1.30
+  (tie-breaks, and how a line of units is laid) that would treat the two sides differently.
 
 ### Fixed
 - MockEngine now states that it moves nothing off an enemy building and moves no drop back

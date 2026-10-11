@@ -98,8 +98,8 @@ winner 1  crowns [0, 1]  tick 3600
 
 Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes. Red took Blue's left
 princess tower at tick 1800 and Blue took none of Red's, so when the three minutes ran out Red
-won 1-0 (re-run 2026-10-07 on engine build `9e0f5180fcfc1434`, RoyaleSim 0.1.21, commit
-`6cd55cc`, with the 15.535 card table).
+won 1-0 (re-run 2026-10-10 on engine build `907818dc073bb4c4`, RoyaleSim 0.1.30, commit
+`7b3c957`, with the 15.535 card table).
 
 One env step is half a second of game time, which is 10 ticks. That battle was 360 steps, the full
 three minutes, so each player made 360 decisions. It takes under a second of real time.
@@ -146,24 +146,24 @@ print(f"steps {steps}  reward {total:.3f}  terminated {terminated}")
 
 ```
 legal moves on the first step: 1 of 2305
-steps 615  reward 1.237  terminated True
+steps 615  reward 1.425  terminated True
 ```
 
 Only the wait is legal on the first step, because a match refuses every deploy for its opening
 seconds. Play opens after 9 steps, four and a half seconds in, and this hand then has 1318 legal
 moves.
 
-Blue won. 615 steps is the three minutes of normal time, the two of overtime and the tiebreak:
-each side took one princess tower in normal time, nobody scored in overtime, and the tiebreak took
-Red's weakest tower first, a second crown for Blue. `terminated True` says the match ended for real rather than being cut short. The reward is positive because `default_reward()` pays 1.0 for a win and charges 1.0 for a
+Blue won 3-1. 615 steps is the three minutes of normal time, the two of overtime and the
+tiebreak: each side took one princess tower in normal time, nobody scored in overtime, and in the
+tiebreak Red's king tower fell first, which gives Blue all three crowns. `terminated True` says the match ended for real rather than being cut short. The reward is positive because `default_reward()` pays 1.0 for a win and charges 1.0 for a
 loss, with the crown and tower terms on top.
 
 Swap `me.act(...)` for your own policy and that loop is a training loop with the learning taken
 out. Run it twice and you get the same numbers, because the seed fixes everything.
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
-treat them as "this ran", not as constants. These were run on 2026-10-07 on engine build
-`9e0f5180fcfc1434`, RoyaleSim 0.1.21, commit `6cd55cc`, with the 15.535 card table.
+treat them as "this ran", not as constants. These were run on 2026-10-10 on engine build
+`907818dc073bb4c4`, RoyaleSim 0.1.30, commit `7b3c957`, with the 15.535 card table.
 
 ## The legality mask, which is the part people like
 
