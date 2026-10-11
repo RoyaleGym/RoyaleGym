@@ -67,7 +67,7 @@ import numpy as np
 import pytest
 from gymnasium import spaces
 
-from _arms import mock_arms, pinned
+from _arms import mock_arms, pinned, refusing
 from _lockout import lockout_ticks
 from royalegym import mock_engine as mock_engine_module
 from royalegym import rust_engine as rust_engine_module
@@ -146,7 +146,8 @@ LOCKOUT = lockout_ticks()
 
 @pytest.fixture(scope="module")
 def rust() -> RustEngine:
-    return RustEngine(card_names=SHARED)
+    """The engine MockEngine is compared with: its clamps off, as the Mock's (``refusing``)."""
+    return RustEngine(card_names=SHARED, calibration_overrides=refusing())
 
 
 @pytest.fixture(scope="module")

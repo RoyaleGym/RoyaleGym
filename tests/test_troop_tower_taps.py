@@ -196,9 +196,16 @@ def corner_problems(engine, state, oracle_patch, board) -> list[str]:
         slot = 0  # the Knight
         card = engine.cards()[state.players[team].hand[slot]]
         legal = oracle.legal_points(state, team, card, kx, ky)
-        for x, y, m in zip(kx.ravel().tolist(), ky.ravel().tolist(), legal.ravel().tolist(),
-                           strict=True):
+        # placement.ILLEGAL_TROOP_TAP's clamp moves a tap refused for territory to its column's
+        # edge, and the mask refuses it on purpose (action.mask_disagreements): intended.
+        clamped = np.zeros(legal.shape, dtype=bool)
+        if oracle.rules.illegal_troop_tap != "refuse":
+            clamped = oracle.zone_verdict(state, team, kx, ky) == DeployStatus.OUT_OF_TERRITORY
+        for x, y, m, moved in zip(kx.ravel().tolist(), ky.ravel().tolist(),
+                                  legal.ravel().tolist(), clamped.ravel().tolist(), strict=True):
             status = engine.check_deploy(DeployCommand(team, slot, x, y))
+            if moved and not m and status == DeployStatus.OK:
+                continue
             if bool(m) != (status == DeployStatus.OK):
                 out.append(f"{board} corner seat {team} ({x}, {y}): mask {int(m)}, engine "
                            f"{DeployStatus(status).name}")

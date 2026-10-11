@@ -104,12 +104,19 @@ def test_only_a_key_the_ledger_ships_another_arm_of_is_overridden():
 
 
 @needs_core
+def _as_json(arms):
+    """Overrides as the core and a trace header hold them: JSON text per key."""
+    return {k: json.dumps(v) for k, v in arms.items()}
+
+
 def test_an_override_reaches_the_core_and_is_in_the_config_and_the_trace():
     if "FIRST_TOWER_PICK" not in compiled_ledger().get("targeting", {}):
         pytest.skip(f"SKIPPED, NOT PASSED: this engine's ledger has no {KEY}")
     plain = RustEngine()
     over = RustEngine(calibration_overrides={KEY: "current_x"})
-    assert over._battle.calibration_overrides() == {KEY: '"current_x"'}
+    # The core runs RoyaleGym's own arms too (rust_engine.GYM_ARMS); the config keeps them apart.
+    assert plain._battle.calibration_overrides() == _as_json(plain.gym_arms)
+    assert over._battle.calibration_overrides() == {KEY: '"current_x"', **_as_json(over.gym_arms)}
     assert over.config()["calibration_overrides"] == {KEY: "current_x"}
     assert "calibration_overrides" not in plain.config(), "a plain engine's config moved"
     ids = {c.name: c.card_id for c in over.cards()}
@@ -119,7 +126,7 @@ def test_an_override_reaches_the_core_and_is_in_the_config_and_the_trace():
     over.reset(0, MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE))
     rec.begin(over, 0, MatchSetup(decks=[deck, deck], shuffle=ShuffleMode.NONE))
     header = rec.trace.header
-    assert header.calibration_overrides == {KEY: '"current_x"'}
+    assert header.calibration_overrides == {KEY: '"current_x"', **_as_json(over.gym_arms)}
     # Verified on the plain engine, the divergence line names the override first.
     note = _another_engine(header, plain)
     assert note is not None
@@ -180,7 +187,8 @@ def test_an_override_of_a_key_the_mask_follows_reaches_its_rules():
     if "FIRST_TOWER_PICK" in compiled_ledger().get("targeting", {}):
         lane = RustEngine(calibration_overrides={KEY: "current_x"})
         assert lane.calibration.value(KEY) == plain.calibration.value(KEY), "followed"
-        assert lane._battle.calibration_overrides() == {KEY: '"current_x"'}
+        assert lane._battle.calibration_overrides() == {
+            KEY: '"current_x"', **_as_json(lane.gym_arms)}
 
 
 @needs_core

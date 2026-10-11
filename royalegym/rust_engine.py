@@ -208,6 +208,41 @@ OVERRIDE_FOLLOWED = frozenset(
 )
 
 
+#: RoyaleGym's OWN ARMS: the arm it runs of each key, where the compiled ledger lists that arm and
+#: ships another. Both clamps (owner, 2026-10-10): RoyaleSim ships them at "refuse" for good, an
+#: API choice (a direct engine user's out-of-territory tap is refused, not quietly moved), and
+#: RoyaleGym turns them on, as the game moves such a tap, so an older RoyaleGym never meets a
+#: changed default. The mask refuses the taps they move under either arm (``mask_disagreements``
+#: tells their acceptances from the engine's), so a masked policy plays exactly as before.
+#:
+#: An explicit ``calibration_overrides`` entry for the key wins: "refuse" opts out. They are
+#: recorded in ``config()`` as ``gym_arms`` and NEVER become a constructor parameter, nor may the
+#: constructor take ``**kwargs``: RoyaleLearn's ``load_env`` refuses a record whose constructor
+#: parameters differ from the engine's, so a parameter would strand every run and bot saved
+#: before them (RoyaleLearn, measured 2026-10-10). Trace headers carry them with the overrides.
+GYM_ARMS: dict[str, str] = {
+    "placement.ILLEGAL_TROOP_TAP": "client15535_clamp_to_legal_edge",
+    "spells.ILLEGAL_SPELL_TAP": "client16402_clamp_to_legal_edge",
+}
+
+
+def gym_arms(ledger: Mapping[str, Any], given: Mapping[str, Any]) -> dict[str, str]:
+    """The ``GYM_ARMS`` this ledger lists (as a candidate or its value) and ships another arm of,
+    less the keys ``given`` (the caller's ``calibration_overrides``) names."""
+    out = {}
+    for key, arm in GYM_ARMS.items():
+        if key in given:
+            continue
+        section, _, name = key.partition(".")
+        entry = ledger.get(section, {}).get(name)
+        if not isinstance(entry, Mapping) or entry.get("value") == arm:
+            continue
+        listed = entry.get("candidates")
+        if isinstance(listed, list) and arm in listed:
+            out[key] = arm
+    return out
+
+
 class _ReadRecorder(Calibration):
     """A calibration that records every key read from it."""
 
@@ -727,9 +762,12 @@ class RustEngine:
                 "royalesim was built against different data; rebuild with "
                 "`maturin develop --release`:\n  " + "\n  ".join(diffs)
             )
+        # RoyaleGym's own arms (``GYM_ARMS``), which run as overrides do; the caller's win.
+        self.gym_arms: dict[str, str] = gym_arms(cal.raw, self.calibration_overrides)
+        run = {**self.gym_arms, **self.calibration_overrides}
         # After the stale-build check, which compares the LEDGER with the build. A key the
         # ledger lacks is left to the core, whose refusal names it.
-        for key, value in self.calibration_overrides.items():
+        for key, value in run.items():
             section, _, name = key.partition(".")
             if key in OVERRIDE_FOLLOWED and name in cal.raw.get(section, {}):
                 cal = cal.with_override(key, value)
@@ -774,10 +812,8 @@ class RustEngine:
         # By keyword and only when there are any: a build older than the core's keyword
         # still constructs a battle that overrides nothing.
         overrides: dict[str, Any] = (
-            {"calibration_overrides": {
-                k: json.dumps(v) for k, v in self.calibration_overrides.items()
-            }}
-            if self.calibration_overrides
+            {"calibration_overrides": {k: json.dumps(v) for k, v in run.items()}}
+            if run
             else {}
         )
         self.tap_snap = tap_snap
@@ -1229,6 +1265,8 @@ class RustEngine:
                 if self.calibration_overrides
                 else {}
             ),
+            # RoyaleGym's own arms (``GYM_ARMS``): a record, never a parameter.
+            **({"gym_arms": dict(self.gym_arms)} if self.gym_arms else {}),
             "calibration_digest": calibration_digest(self.calibration),
             # The three things an engine is: the data compiled in, the card table read
             # at construction, and the binary itself. The third was missing, so a

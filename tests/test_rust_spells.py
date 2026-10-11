@@ -53,6 +53,7 @@ import msgspec
 import numpy as np
 import pytest
 
+from _arms import refusing
 from _lockout import lockout_ticks
 from royalegym import rust_engine as rust_engine_module
 from royalegym.action import PlacementOracle
@@ -247,7 +248,7 @@ def spell_legality(rust, mock, oracle, tower_hp):
 
 @pytest.fixture(scope="module")
 def spell_engines():
-    rust = RustEngine(card_names=SPELL_CAT)
+    rust = RustEngine(card_names=SPELL_CAT, calibration_overrides=refusing())
     mock = MockEngine(card_names=SPELL_CAT)
     # The mask is built from RustEngine's OWN catalogue -- what the env binds to.
     oracle = PlacementOracle(rust.arena(), rust.rules(), rust.cards())
@@ -292,7 +293,7 @@ def test_spell_mask_mock_and_rust_agree_on_every_half_cell(spell_engines, towers
 def test_plant_adapter_maps_the_barrel_to_anywhere_is_caught(monkeypatch):
     """Regression plant: kind 4 read as SPELL -- the mask offers the river to a Goblin
     Barrel that both engines refuse as WATER, and nothing else changes."""
-    clean = RustEngine(card_names=SPELL_CAT)
+    clean = RustEngine(card_names=SPELL_CAT, calibration_overrides=refusing())
     mock = MockEngine(card_names=SPELL_CAT)
     ok_dis, _, _ = spell_legality(
         clean,
@@ -302,7 +303,7 @@ def test_plant_adapter_maps_the_barrel_to_anywhere_is_caught(monkeypatch):
     )
     assert not ok_dis, "baseline must be green"
     monkeypatch.setitem(rust_engine_module._PLACEMENT_OF_KIND, 4, Placement.SPELL)
-    rust = RustEngine(card_names=SPELL_CAT)
+    rust = RustEngine(card_names=SPELL_CAT, calibration_overrides=refusing())
     assert rust.cards()[BARREL].placement == Placement.SPELL, "plant did not land"
     oracle = PlacementOracle(rust.arena(), rust.rules(), rust.cards())
     dis, _, _ = spell_legality(rust, mock, oracle, TERRITORY_STATES["all_up"])

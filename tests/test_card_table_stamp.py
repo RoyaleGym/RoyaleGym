@@ -254,9 +254,9 @@ def test_a_file_that_changes_while_the_engine_reads_it_is_refused(tmp_path, monk
     class RewritingBattle:
         tower_positions = staticmethod(real.tower_positions)
 
-        def __new__(cls, *args):
+        def __new__(cls, *args, **kwargs):  # a real Battle takes keywords (the overrides)
             copy.write_text('{"provenance": {"vintage": "during the read"}}')
-            return real(*args)
+            return real(*args, **kwargs)
 
     monkeypatch.setattr(rust_engine, "_core", core_with_battle(RewritingBattle))
     monkeypatch.setattr(rust_engine, "engine_cards_json_path", lambda: (copy, "test"))
@@ -280,8 +280,8 @@ def test_an_engine_that_reports_its_own_hash_is_believed(rust, monkeypatch, same
 
         tower_positions = staticmethod(real.tower_positions)
 
-        def __init__(self, *args):
-            self._battle = real(*args)
+        def __init__(self, *args, **kwargs):  # a real Battle takes keywords (the overrides)
+            self._battle = real(*args, **kwargs)
 
         def __getattr__(self, name):
             return getattr(self._battle, name)

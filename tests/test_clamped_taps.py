@@ -151,6 +151,8 @@ SPELL_DECK = ["Log", "Heal", "BarbLog", "RoyalDelivery", "Knight", "Archer", "Gi
 #: A hand of two troops and two such spells.
 MIXED_DECK = ["Knight", "Log", "Heal", "Archer", "Giant", "Minions", "Musketeer", "Fireball"]
 DOWN = [[2400, 0, 1400], [2400, 1400, 1400]]  # one Blue princess down
+#: Both clamps off: the engine refuses, so its own zone refusals can be read.
+REFUSE = {TROOP_KEY: "refuse", SPELL_KEY: "refuse"}
 
 
 def _board(parser_cls=TileActionParser, tower_hp=None, deck=DECK, overrides=None):
@@ -279,7 +281,7 @@ def test_the_zone_verdict_is_the_engines_own(deck, parser_cls, team):
     every tap of both seats of a troop or of a spell judged in troop territory: with one Blue
     princess down (the pocket in front of it is Red's ground) and a tap on an enemy tower's
     body, which the engine refuses for territory before any footprint is looked at."""
-    engine, parser = _board(parser_cls, tower_hp=DOWN, deck=deck)
+    engine, parser = _board(parser_cls, tower_hp=DOWN, deck=deck, overrides=REFUSE)
     wrong, hits, on_towers, slots = _verdicts_agree(engine, parser, team)
     assert wrong == [], (len(wrong), wrong[:5])
     assert slots, "no card a clamp moves in the hand: nothing was checked"
@@ -292,7 +294,7 @@ def test_water_is_judged_before_no_deploy():
     """Off the action lattice, a point can touch a water cell and a no-deploy cell at once (on
     the river's edge row). The zone check reports WATER there, which the spell clamp moves and
     NO_DEPLOY would not; the verdict says the same, for a troop and for the Log."""
-    engine, parser = _board(deck=MIXED_DECK)
+    engine, parser = _board(deck=MIXED_DECK, overrides=REFUSE)
     state = engine.state()
     oracle, a = parser.oracle, engine.arena()
     step = a.half_size // 2
@@ -376,8 +378,8 @@ def test_on_rustengine_the_clamps_leave_every_cards_placement_alone():
 @pytest.mark.parametrize(
     ("deck", "overrides", "refused"),
     [
-        (DECK, {TROOP_KEY: CLAMP}, {"troop": "refuse"}),
-        (SPELL_DECK, {SPELL_KEY: SPELL_CLAMP}, {"spell": "refuse"}),
+        (DECK, {TROOP_KEY: CLAMP, SPELL_KEY: "refuse"}, {"troop": "refuse"}),
+        (SPELL_DECK, {TROOP_KEY: "refuse", SPELL_KEY: SPELL_CLAMP}, {"spell": "refuse"}),
         (MIXED_DECK, {TROOP_KEY: CLAMP, SPELL_KEY: SPELL_CLAMP},
          {"troop": "refuse", "spell": "refuse"}),
     ],
@@ -399,15 +401,15 @@ def test_on_rustengine_the_real_clamps_agree_with_the_mask(
     state = engine.state()
     rules = parser.oracle.rules
     assert (rules.illegal_troop_tap, rules.illegal_spell_tap) == (
-        overrides.get(TROOP_KEY, "refuse"), overrides.get(SPELL_KEY, "refuse"))
+        overrides[TROOP_KEY], overrides[SPELL_KEY])
     assert mask_disagreements(engine, parser, state, team) == []
     found = mask_disagreements(engine, _with_arms(parser, **refused), state, team)
     assert {(m, s) for _, m, s in found} == {(0, DeployStatus.OK)}
     hand = _hand(engine, team)
     moved = {hand[parser.parse(a, state, team).hand_slot] for a, _, _ in found}
     cards = {c.name: c for c in parser.oracle.cards}
-    clamped_laws = {True} if TROOP_KEY in overrides else set()
-    clamped_laws |= {False} if SPELL_KEY in overrides else set()
+    clamped_laws = {True} if overrides[TROOP_KEY] == CLAMP else set()
+    clamped_laws |= {False} if overrides[SPELL_KEY] == SPELL_CLAMP else set()
     want = {n for n in hand if _laws(parser.oracle, cards[n]) in clamped_laws}
     assert moved == want, (moved, want)
     assert len(found) > 20 * len(want), len(found)
@@ -420,8 +422,11 @@ def test_on_rustengine_the_real_clamps_agree_with_the_mask(
      (SPELL_KEY, ILLEGAL_SPELL_TAP, "illegal_spell_tap")],
 )
 def test_on_rustengine_an_override_of_the_arm_reaches_the_rules(key, arms, field):
+    """RoyaleSim ships refuse; a plain RustEngine runs RoyaleGym's own arm, the clamp
+    (``rust_engine.GYM_ARMS``), and an override of either arm reaches the rules."""
     shipped = _needs(key)
-    other = next(a for a in arms if a != shipped)
-    engine = RustEngine(calibration_overrides={key: other})
-    assert getattr(engine.rules(), field) == other
-    assert getattr(RustEngine().rules(), field) == shipped
+    assert shipped == "refuse"
+    clamp = next(a for a in arms if a != shipped)
+    assert getattr(RustEngine().rules(), field) == clamp
+    for arm in arms:
+        assert getattr(RustEngine(calibration_overrides={key: arm}).rules(), field) == arm

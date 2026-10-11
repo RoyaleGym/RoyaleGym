@@ -145,9 +145,9 @@ class TraceHeader(msgspec.Struct):
     build_digest: str = ""
     engine_binary_sha256: str = ""
     # The ledger arms the recording engine ran instead of the shipped ones (RustEngine's
-    # ``calibration_overrides``, as JSON text per key). The build says nothing about them:
-    # an overridden engine plays other battles on the same binary. {} = none, which is also
-    # what a trace from before 2026-09-26 decodes with.
+    # ``calibration_overrides`` and RoyaleGym's own ``gym_arms``, as JSON text per key). The
+    # build says nothing about them: an overridden engine plays other battles on the same
+    # binary. {} = none, which is also what a trace from before 2026-09-26 decodes with.
     calibration_overrides: dict[str, str] = {}
     # The unit-type vocabulary ``EntityState.unit_type`` indexes (``Engine.unit_types()``,
     # royalesim 0.1.17 on), so a reader names each unit by type. [] = not said: MockEngine, an
@@ -214,8 +214,12 @@ def _unit_types(engine: Engine) -> list[str]:
 
 
 def _override_fields(engine: Engine) -> dict[str, dict[str, str]]:
-    """The header's ``calibration_overrides``, from an engine that has any ({} otherwise)."""
-    overrides = getattr(engine, "calibration_overrides", None) or {}
+    """The header's ``calibration_overrides``, from an engine that has any ({} otherwise):
+    RoyaleGym's own arms (``rust_engine.GYM_ARMS``) and the caller's, which win."""
+    overrides = {
+        **(getattr(engine, "gym_arms", None) or {}),
+        **(getattr(engine, "calibration_overrides", None) or {}),
+    }
     if not overrides:
         return {}
     return {"calibration_overrides": {k: json.dumps(v) for k, v in overrides.items()}}
