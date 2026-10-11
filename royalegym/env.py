@@ -434,6 +434,12 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         if self.viser is not None:
             self._decks = None if isinstance(init, Snapshot) else [list(d) for d in init.decks]
             self._forms = None if isinstance(init, Snapshot) else init.forms
+            # The engine's unit-type names, so the viewer names each unit's own type; through an
+            # optional method, so a duck-typed publisher written before them keeps working.
+            setter = getattr(self.viser, "set_unit_types", None)
+            if callable(setter):
+                said = getattr(self.engine, "unit_types", None)
+                setter(said() if callable(said) else None)
             self.viser.publish(state, cards, self.engine.arena(), self._decks, **self._forms_kw())
         self._refresh(state)
         infos = {a: self._info(a, state, NO_COMMAND, terminal=False) for a in self.agents}

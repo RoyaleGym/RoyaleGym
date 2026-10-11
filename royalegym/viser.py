@@ -91,7 +91,20 @@ def names_of(cards: Sequence[CardInfo]) -> Callable[[int], str]:
     return lambda card_id: table.get(card_id, f"#{card_id}")
 
 
-def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
+def unit_namer(names: Sequence[str] | None) -> Callable[[int], str | None] | None:
+    """A unit type index to its name (``Engine.unit_types()``; None past the list), or None when
+    there are no names to read: an engine that states none, a trace from before them."""
+    if not names:
+        return None
+    table = list(names)
+    return lambda i: table[i] if 0 <= i < len(table) else None
+
+
+def unit_dict(
+    e: EntityState,
+    name_of: Callable[[int], str],
+    unit_type_of: Callable[[int], str | None] | None = None,
+) -> dict[str, Any]:
     """royaleviser.model.Unit as a dict. Path is not in an engine state.
 
     ``footprint`` is the engine's own box for a building or tower, passed through as it
@@ -107,7 +120,13 @@ def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
 
     ``status`` is the buff list as the engine names it, names whole: the viewer splits
     sim's "|"-joined names itself.
+
+    ``extra["unit"]`` is the unit's OWN type (``EntityState.unit_type``, named through
+    ``unit_type_of``), where ``name`` is its CARD: a Witch's Skeleton has name "Witch" and unit
+    "Skeleton". Only when ``unit_type_of`` is given and names the engine's type; otherwise the
+    key is absent and the dict is as before.
     """
+    unit = unit_type_of(e.unit_type) if unit_type_of is not None and e.unit_type >= 0 else None
     name = TOWER_NAMES.get(e.kind) if e.card_id == EMPTY_CARD else None
     return {
         "uid": e.uid,
@@ -136,6 +155,7 @@ def unit_dict(e: EntityState, name_of: Callable[[int], str]) -> dict[str, Any]:
             # The uid of the unit this one rides (the Ram Rider's rider on its ram), only
             # when it rides one: the viewer draws the pair as a rider on a mount.
             **({"mount": e.mount_uid} if e.mount_uid >= 0 else {}),
+            **({"unit": unit} if unit is not None else {}),
         },
         "footprint": list(e.footprint) if e.footprint is not None else None,
     }
@@ -247,8 +267,10 @@ def frame_dict(
     events: Sequence[str] = (),
     meta: dict[str, Any] | None = None,
     forms: Sequence[Sequence[int]] | None = None,
+    unit_type_of: Callable[[int], str | None] | None = None,
 ) -> dict[str, Any]:
-    """The viewer's Frame for one BattleState (see WIRE FORM)."""
+    """The viewer's Frame for one BattleState (see WIRE FORM). ``unit_type_of``: see
+    ``unit_dict``."""
     return {
         "tick": state.tick,
         "tick_ms": state.tick_ms,
@@ -262,7 +284,7 @@ def frame_dict(
             )
             for p in state.players
         ],
-        "units": [unit_dict(e, name_of) for e in state.entities],
+        "units": [unit_dict(e, name_of, unit_type_of) for e in state.entities],
         "spells": [spell_dict(s, name_of) for s in state.spells],
         "projectiles": [projectile_dict(p, name_of) for p in state.projectiles],
         "overtime": state.overtime,
@@ -298,6 +320,7 @@ class ViserPublisher:
 
     def __init__(self, host: str = HOST, port: int = PORT, run: str = "") -> None:
         self.run = run
+        self._unit_type_of: Callable[[int], str | None] | None = None  # set_unit_types
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             self._sock.bind((host, port))
@@ -413,7 +436,10 @@ class ViserPublisher:
         if self.run:
             m["run"] = self.run
         m.update(meta or {})
-        d = frame_dict(state, name_of, arena.subtile, decks, self._events, m, forms)
+        d = frame_dict(
+            state, name_of, arena.subtile, decks, self._events, m, forms,
+            unit_type_of=self._unit_type_of,
+        )
         return self.publish_dict(d)
 
     def _note_units(
@@ -436,6 +462,12 @@ class ViserPublisher:
                 if uid not in now:
                     self._events.append(f"t{state.tick} death {TEAM_NAMES[team]} {name}")
         self._seen = now
+
+    def set_unit_types(self, names: Sequence[str] | None) -> None:
+        """The engine's unit-type names (``Engine.unit_types()``), which every frame then uses to
+        name each unit's own type (``unit_dict``); None or [] names none. The env hands them over
+        once per battle, so a duck-typed publisher without this method keeps working."""
+        self._unit_type_of = unit_namer(names)
 
     def publish_dict(self, d: dict[str, Any]) -> bool:
         """Send one frame dict to the attached viewer (the size policy lives here)."""

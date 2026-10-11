@@ -7,14 +7,22 @@ change the observation's shape; each such change is listed here.
 
 ## Unreleased
 
+### Changed
+- A drop past your own side is now moved back along its column to the first tile it may
+  stand on, as the game does, instead of being refused: a troop (`placement.ILLEGAL_TROOP_TAP`),
+  and the Log, the Barbarian Barrel, the Royal Delivery or the Heal, also when dropped on the
+  water (`spells.ILLEGAL_SPELL_TAP`). royalesim keeps both rules off by default; RoyaleGym
+  turns them on (`rust_engine.GYM_ARMS`, recorded in `RustEngine.config()` as `gym_arms`).
+  To keep the old refusals, pass `calibration_overrides={"placement.ILLEGAL_TROOP_TAP":
+  "refuse", "spells.ILLEGAL_SPELL_TAP": "refuse"}`. A bot that follows the mask plays exactly
+  as before: the mask still leaves those drops out, since a whole column of them lands on the
+  one edge tile it already offers. `mask_disagreements` counts such a moved drop as intended,
+  and nothing else. Saved runs and bots load as before.
+
 ### Added
-- royalesim can move a drop that is past its own side back along its column to the first
-  tile it may stand on, as the game does: a troop (`placement.ILLEGAL_TROOP_TAP`), and the
-  Log, the Barbarian Barrel, the Royal Delivery or the Heal, also when dropped on the water
-  (`spells.ILLEGAL_SPELL_TAP`). Both are off by default. RoyaleGym now runs on an engine
-  with either turned on, and `DeployRules` says which ones are on. The mask still leaves
-  those drops out: a whole column of them lands on the one edge tile the mask already
-  offers. `mask_disagreements` counts such a moved drop as intended, and nothing else.
+- The viewer can name each unit by its own type as well as its card: the Witch's Skeletons
+  read "Skeleton" (`unit_dict`'s `extra["unit"]`, `ViserPublisher.set_unit_types`, which the
+  env calls with the engine's `unit_types()`). Frames without the names are unchanged.
 - In the game, a troop dropped on an enemy building (a hero's turret, a Cannon in a fallen
   lane) is moved off it, as off your own buildings (`placement.ENEMY_BUILDING_TAPS`). When
   royalesim runs that rule, the mask now offers those drops wherever the engine says the
