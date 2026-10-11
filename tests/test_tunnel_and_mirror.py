@@ -180,8 +180,11 @@ def mirror_slot_disagreements(
     mask = parser.action_mask(state, team)
     out = []
     for action in range(1 + slot * per, 1 + (slot + 1) * per):
-        status = engine.check_deploy(parser.parse(action, state, team))
+        cmd = parser.parse(action, state, team)
+        status = engine.check_deploy(cmd)
         if bool(mask[action]) != (status == 0):
+            if status == 0 and action_module.clamped_tap(parser, state, team, cmd):
+                continue  # a clamp moved it, and the mask refuses such taps on purpose
             _, xi, yi = parser.decode(action)
             out.append(
                 f"{SEAT[team]} Mirror at own point ({xi}, {yi}), elixir "

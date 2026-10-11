@@ -48,6 +48,7 @@ import numpy as np
 import pytest
 from _pytest.outcomes import Skipped
 
+from _arms import refusing
 from royalegym import ClashParallelEnv, rust_engine
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
@@ -122,15 +123,17 @@ SCENARIO_TOWER_TAPS = "closed_block"
 
 
 def make_engine(kind: str):
+    """The scenarios were written for the arms they run: SCENARIO_TOWER_TAPS, and both clamps
+    off, as MockEngine runs them (``refusing``): a scripted tap past the line is refused there,
+    where a plain RustEngine moves it (``rust_engine.GYM_ARMS``) and plays another battle."""
     if kind != "rust":
         return MockEngine()
+    over = dict(refusing())
     ledger = json.loads(rust_engine._core.EMBEDDED_CALIBRATION_JSON)
     entry = ledger["placement"].get("TROOP_TOWER_TAPS")
-    if entry is None or entry["value"] == SCENARIO_TOWER_TAPS:
-        return RustEngine()
-    return RustEngine(
-        calibration_overrides={"placement.TROOP_TOWER_TAPS": SCENARIO_TOWER_TAPS}
-    )
+    if entry is not None and entry["value"] != SCENARIO_TOWER_TAPS:
+        over["placement.TROOP_TOWER_TAPS"] = SCENARIO_TOWER_TAPS
+    return RustEngine(calibration_overrides=over or None)
 
 
 #: The tower slots in the order ``MatchSetup.tower_hp`` wants them.
