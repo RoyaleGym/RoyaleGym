@@ -5,6 +5,19 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## 0.1.24 (2026-10-13)
+
+### Added
+- `make_env(client="15.535.29")` plays the older game client's measured setup: its mechanics
+  and its card tables' own values, as royalesim 0.1.33's `client_arms` gives them
+  (`rust_engine.client_overrides`). The mask follows the rules it reads. `match.TICK_ORDER`, which
+  that setup selects, now goes to the engine as an override; other `match` and `time` keys stay
+  refused, since RoyaleGym reads them itself.
+
+### Changed
+- royalesim 0.1.33. Battles play slightly differently: the Environments page's example now prints
+  a reward of 1.421. Game Values is stamped on royalesim 0.1.33: the same cards and forms.
+
 ## 0.1.23 (2026-10-10)
 
 ### Changed
