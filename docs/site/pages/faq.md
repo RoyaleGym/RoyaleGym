@@ -18,11 +18,11 @@ copying players: see [Cloning a Bot](clash-royale/cloning-a-bot.md).
 No. The battles run in a copy of the game's battle engine, on your computer. You don't need the
 game, any game files or an account.
 
-### Can my bot play the real game?
+### Can my bot play real matches?
 
-Not with anything from us. RoyaleGym is a simulator and a training framework: your bot trains and
-plays in it, on your own computer. If you want a bot of yours on the real ladder, that part is
-yours to build, and we don't publish tools for it or help with it.
+Yes, on Nulls Royale, a fan-run Clash Royale server. [RoyaleBot](https://github.com/RoyaleGym/RoyaleBot)
+plays a bot you made with RoyaleGym there, card by card. [Playing on Nulls
+Royale](clash-royale/nulls-royale.md) shows how to train for it and set it up.
 
 We show our own bots' ladder results as a benchmark of what a bot can do. You can play against
 them yourself: ask in the [Discord](https://discord.gg/we3z5SWdNj) for a 1v1.

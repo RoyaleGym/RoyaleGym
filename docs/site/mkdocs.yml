@@ -121,6 +121,7 @@ nav:
   - Clash Royale:
       - Cloning a Bot: clash-royale/cloning-a-bot.md
       - Training an Agent: clash-royale/training-an-agent.md
+      - Playing on Nulls Royale: clash-royale/nulls-royale.md
       - Configuration Objects:
           - Overview: clash-royale/configuration-objects/index.md
           - Action Parsers: clash-royale/configuration-objects/action-parsers.md
