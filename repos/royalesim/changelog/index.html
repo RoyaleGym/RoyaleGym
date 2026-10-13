@@ -672,6 +672,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/nulls-royale/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Playing on Nulls Royale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -683,10 +711,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
             
   
   
@@ -704,8 +732,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2197,6 +2225,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0134-2026-10-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.34 (2026-10-13)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0133-2026-10-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.33 (2026-10-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0132-2026-10-11" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3650,6 +3700,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0134-2026-10-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.34 (2026-10-13)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0133-2026-10-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.33 (2026-10-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0132-2026-10-11" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4040,6 +4112,35 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0134-2026-10-13">0.1.34 (2026-10-13)<a class="headerlink" href="#0134-2026-10-13" title="Permanent link">&para;</a></h2>
+<ul>
+<li>One more setting defaults to the current client's behaviour, measured against its recorded battles: the Little
+  Prince's guard waits one tick longer after its charge lands before it picks a target and moves
+  (<code>combat.GUARD_FREE_TICK</code>). The older behaviour stays available as that setting's old value, and <code>replay_parity</code>
+  uses it for the older client's battles.</li>
+</ul>
+<h2 id="0133-2026-10-11">0.1.33 (2026-10-11)<a class="headerlink" href="#0133-2026-10-11" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The Hero Ice Wizard plays on the current client's card table (<code>calibration_overrides={"cards.CARD_TABLE":
+  '"client160402017_20261006"'}</code>, the Ice Wizard marked as form 2 in <code>reset(..., forms=)</code>). Its button waits for the
+  closest enemy its deploy chill or its shots slowed, then puts an ice cube down behind that enemy. Every enemy around
+  the cube is frozen and takes a hit, and stays frozen while the cube stands: 5 seconds at most, and 2 seconds after
+  nothing is left frozen. When the cube is gone they move again, slowed for 2 seconds. The timings are measured
+  against 34 recorded cubes. What the button does when the hero's shot kills a unit, or the hero dies, while it waits
+  is read off the game's data, not measured.</li>
+<li>Four more settings default to the current client's behaviour, each measured against its recorded battles. Only a
+  Tesla acts on the last tick of its deploy; every other building waits for its countdown to end
+  (<code>combat.BUILDING_DEPLOY_LAST_TICK</code>). A Royal Recruit or Royal Hog keeps the lane of the point it stands on
+  (<code>targeting.SUMMON_LANE_FLIP_SCOPE</code>), and Royal Hogs and Royal Recruits tapped into an opened pocket stand there
+  (<code>formation.LINE_TERRITORY</code>). A Poison cloud applies once more as it ends, so a unit still in it takes one more pulse
+  (<code>spells.PULSING_AREA_LIFE</code>). Each older behaviour stays available as that setting's old value, and <code>replay_parity</code>
+  uses the old values for the older client's battles.</li>
+<li>New: <code>royalesim.client_arms(client)</code>. <code>client_arms("15.535.29")</code> gives the <code>calibration_overrides</code> that run the older
+  client's measured mechanics and the card tables' own values, the setup <code>replay_parity</code> uses for that client's
+  battles. Any 15.535 build gets the same; <code>client_arms("16.402")</code> is <code>{}</code>.</li>
+<li>Each value in <code>calibration_overrides</code> is JSON text: <code>'"none"'</code> or <code>json.dumps("none")</code>, not <code>"none"</code>. The 0.1.28 and
+  0.1.30 entries below now say so.</li>
+</ul>
 <h2 id="0132-2026-10-11">0.1.32 (2026-10-11)<a class="headerlink" href="#0132-2026-10-11" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Two settings now default to the current client's behaviour, each measured against its recorded battles. A building
@@ -4077,8 +4178,8 @@ and call the engine. Logic changes are listed by release in the <a href="https:/
 <li>Illegal taps are still refused by default: <code>placement.ILLEGAL_TROOP_TAP</code> and <code>spells.ILLEGAL_SPELL_TAP</code> ship
   <code>refuse</code>, and will keep doing so. A tap outside the legal area is usually a bug in the caller, and a refusal shows
   it. The game's clamp, which moves the tap to the edge of the legal area, is a setting you can turn on with
-  <code>calibration_overrides</code>: <code>{"placement.ILLEGAL_TROOP_TAP": "client15535_clamp_to_legal_edge"}</code> or
-  <code>{"spells.ILLEGAL_SPELL_TAP": "client16402_clamp_to_legal_edge"}</code>.</li>
+  <code>calibration_overrides</code>: <code>{"placement.ILLEGAL_TROOP_TAP": '"client15535_clamp_to_legal_edge"'}</code> or
+  <code>{"spells.ILLEGAL_SPELL_TAP": '"client16402_clamp_to_legal_edge"'}</code> (each value is JSON).</li>
 <li>Six settings treat the two sides differently, as the game does. A seat-symmetry check can switch each to a symmetric
   version with <code>calibration_overrides</code>: <code>targeting.EQUAL_DISTANCE_TIE</code> to <code>own_frame_high_x</code>, <code>formation.LINE_FRAME</code>
   to <code>rotation</code>, <code>formation.LINE_CENTRE_SEARCH</code> to <code>ring_corner_walk</code>, <code>placement.RELOCATION_TIE_ORDER</code> and
@@ -4116,7 +4217,7 @@ and call the engine. Logic changes are listed by release in the <a href="https:/
   older behaviour stays available as that setting's old value, and <code>replay_parity</code> uses the old values for the older
   client's battles. The full list is in the release notes on GitHub.</li>
 <li><code>spells.RELEASE_GROUND_POINT</code> treats the two sides differently, as the game does. A seat-symmetry check can turn it off
-  with <code>calibration_overrides={"spells.RELEASE_GROUND_POINT": "none"}</code>.</li>
+  with <code>calibration_overrides={"spells.RELEASE_GROUND_POINT": '"none"'}</code> (the value is JSON).</li>
 <li>On the current client's card tables, a Skeleton King counts a soul once it lands, 1.45 s after the death, not at the
   death.</li>
 <li>A hero's level-up can take it past level 17 along its rarity's level ladder (the client's Hero Mini P.E.K.K.A went

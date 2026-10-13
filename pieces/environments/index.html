@@ -672,6 +672,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../clash-royale/nulls-royale/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Playing on Nulls Royale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -683,10 +711,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
             
   
   
@@ -704,8 +732,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3660,8 +3688,8 @@ something to train against from the first minute.</p>
 </code></pre></div>
 <p>Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes. Red took Blue's left
 princess tower at tick 1800 and Blue took none of Red's, so when the three minutes ran out Red
-won 1-0 (re-run 2026-10-10 on engine build <code>907818dc073bb4c4</code>, RoyaleSim 0.1.30, commit
-<code>7b3c957</code>, with the 15.535 card table).</p>
+won 1-0 (re-run 2026-10-13 on engine build <code>7e0521751d82e5d0</code>, RoyaleSim 0.1.33, commit
+<code>cacb700</code>, with the 15.535 card table).</p>
 <p>One env step is half a second of game time, which is 10 ticks. That battle was 360 steps, the full
 three minutes, so each player made 360 decisions. It takes under a second of real time.</p>
 <div class="admonition warning">
@@ -3701,7 +3729,7 @@ above. Naming eight cards makes the battle a function of the program.</p>
 <a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"steps </span><span class="si">{</span><span class="n">steps</span><span class="si">}</span><span class="s2">  reward </span><span class="si">{</span><span class="n">total</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  terminated </span><span class="si">{</span><span class="n">terminated</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>legal moves on the first step: 1 of 2305
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>steps 615  reward 1.425  terminated True
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>steps 615  reward 1.421  terminated True
 </code></pre></div>
 <p>Only the wait is legal on the first step, because a match refuses every deploy for its opening
 seconds. Play opens after 9 steps, four and a half seconds in, and this hand then has 1318 legal
@@ -3713,8 +3741,8 @@ loss, with the crown and tower terms on top.</p>
 <p>Swap <code>me.act(...)</code> for your own policy and that loop is a training loop with the learning taken
 out. Run it twice and you get the same numbers, because the seed fixes everything.</p>
 <p>The exact numbers depend on the engine build, the deck and the card table your machine built, so
-treat them as "this ran", not as constants. These were run on 2026-10-10 on engine build
-<code>907818dc073bb4c4</code>, RoyaleSim 0.1.30, commit <code>7b3c957</code>, with the 15.535 card table.</p>
+treat them as "this ran", not as constants. These were run on 2026-10-13 on engine build
+<code>7e0521751d82e5d0</code>, RoyaleSim 0.1.33, commit <code>cacb700</code>, with the 15.535 card table.</p>
 <h2 id="the-legality-mask-which-is-the-part-people-like">The legality mask, which is the part people like<a class="headerlink" href="#the-legality-mask-which-is-the-part-people-like" title="Permanent link">&para;</a></h2>
 <p>Your bot is told exactly which moves are legal before it picks one. Every observation carries an
 <code>action_mask</code> with one entry per move. It never wastes a decision on a card it cannot afford or a

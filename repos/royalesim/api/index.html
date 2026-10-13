@@ -672,6 +672,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../clash-royale/nulls-royale/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Playing on Nulls Royale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -683,10 +711,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
             
   
   
@@ -704,8 +732,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3478,6 +3506,12 @@ real client. <code>pending_commands()</code> lists what is waiting.</p>
 <code>calibration_overrides={"cards.CARD_TABLE": '"client160402017_20261006"'}</code>, which runs the current client's table
 instead. <code>card_table()</code> names the table a Battle runs. Card ids are the same on both tables. A build from a checkout
 also takes <code>"client160402017"</code>, the current client's table from before its 2026-10-06 update; a wheel has no copy.</p>
+<p><strong>Overrides are JSON.</strong> Each value in <code>calibration_overrides</code> is JSON text: pass <code>json.dumps("none")</code>, which is
+<code>'"none"'</code>. A bare <code>"none"</code> raises ValueError.</p>
+<p><strong>The older client.</strong> The engine runs the current client's (16.402) mechanics and card values. For a battle on the
+older client's rules, pass <code>calibration_overrides=royalesim.client_arms("15.535.29")</code>. That is the 15.535.29 client's
+measured mechanics and the card tables' own values: the same setup <code>replay_parity</code> runs for a battle recorded on that
+client. Any <code>"15.535.&lt;build&gt;"</code> gets the same setup; it was measured on 15.535.29. <code>client_arms("16.402")</code> is <code>{}</code>.</p>
 <h2 id="module-level-helpers">Module-level helpers<a class="headerlink" href="#module-level-helpers" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -3494,6 +3528,10 @@ also takes <code>"client160402017"</code>, the current client's table from befor
 <tr>
 <td><code>royalesim.card_table_source()</code></td>
 <td><code>"embedded"</code> for an installed wheel, or <code>"file:&lt;path&gt;"</code> in a source checkout.</td>
+</tr>
+<tr>
+<td><code>royalesim.client_arms(client)</code></td>
+<td>The <code>calibration_overrides</code> that run one client's measured setup: <code>"15.535.29"</code> or <code>"16.402"</code>.</td>
 </tr>
 <tr>
 <td><code>Battle.provenance()</code></td>
