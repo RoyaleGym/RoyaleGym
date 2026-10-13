@@ -52,6 +52,9 @@ def test_the_tick_order_goes_to_the_core_alone_and_nothing_here_reads_it():
     readers = [p.name for p in package.glob("*.py")
                if "TICK_ORDER" in p.read_text(encoding="utf-8") and p.name != "rust_engine.py"]
     assert readers == [], f"{readers} read match.TICK_ORDER: it is not the core's alone"
+    # rust_engine.py names it once, in the allow-list itself; a second mention there is a read.
+    engine_text = (package / "rust_engine.py").read_text(encoding="utf-8")
+    assert engine_text.count("TICK_ORDER") == 1, "rust_engine.py reads match.TICK_ORDER"
 
 
 def test_the_client_overrides_are_the_cores_arms_decoded():
