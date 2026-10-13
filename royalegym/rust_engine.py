@@ -182,6 +182,10 @@ CHAMPIONS_BEFORE_THE_COLUMN = frozenset({
 #: clock), so a ``calibration_overrides`` key in one of them would split the observation
 #: from the engine: refused.
 OVERRIDE_READ_HERE = frozenset({"match", "time"})
+#: Keys of an ``OVERRIDE_READ_HERE`` section that this package does NOT read, so an override of
+#: one goes to the core alone: the order of a tick's phases, which a client's setup selects
+#: (``client_overrides``). Every other key of those sections stays refused.
+OVERRIDE_CORE_ONLY = frozenset({"match.TICK_ORDER"})
 #: Keys the action mask FOLLOWS: an override of one is applied to the engine's own
 #: calibration too, so ``rules()`` state the arm the core runs, and the mask implements
 #: every arm ``DeployRules`` accepts for it (tests/test_troop_tower_taps.py). Any OTHER key
@@ -224,6 +228,21 @@ GYM_ARMS: dict[str, str] = {
     "placement.ILLEGAL_TROOP_TAP": "client15535_clamp_to_legal_edge",
     "spells.ILLEGAL_SPELL_TAP": "client16402_clamp_to_legal_edge",
 }
+
+
+def client_overrides(client: str) -> dict[str, Any]:
+    """The ``calibration_overrides`` that run one game client's measured setup: royalesim's
+    ``client_arms(client)``, decoded (it gives JSON text per key). "15.535.29" (any
+    "15.535.<build>") is the older client's mechanics and its card tables' own values; "16.402"
+    gives {}, the ledger being the current client's. ValueError for any other client, and for
+    an engine without ``client_arms`` (royalesim 0.1.33 adds it). ``make_env(client=...)``
+    builds its engine with them."""
+    if _core is None:
+        raise ImportError(CORE_IMPORT_ERROR)
+    arms = getattr(_core, "client_arms", None)
+    if arms is None:
+        raise ValueError("this royalesim has no client_arms: royalesim 0.1.33 adds it")
+    return {key: json.loads(value) for key, value in arms(client).items()}
 
 
 def gym_arms(ledger: Mapping[str, Any], given: Mapping[str, Any]) -> dict[str, str]:
@@ -747,7 +766,9 @@ class RustEngine:
             raise ImportError(CORE_IMPORT_ERROR)
         self.calibration_overrides: dict[str, Any] = dict(calibration_overrides or {})
         read_here = sorted(
-            k for k in self.calibration_overrides if k.split(".", 1)[0] in OVERRIDE_READ_HERE
+            k
+            for k in self.calibration_overrides
+            if k.split(".", 1)[0] in OVERRIDE_READ_HERE and k not in OVERRIDE_CORE_ONLY
         )
         if read_here:
             raise ValueError(

@@ -93,7 +93,7 @@ from .protocol import (
 )
 from .replay import ReplayRecorder
 from .reward import RewardFunction, TowerHPReward, default_reward
-from .rust_engine import RustEngine, core_available, core_import_message
+from .rust_engine import RustEngine, client_overrides, core_available, core_import_message
 from .selfplay import NoopOpponent, Opponent
 from .state_mutator import DefaultStateMutator, Snapshot, StateMutator, check_max_ticks
 from .viser import ViserPublisher, play_event
@@ -1280,6 +1280,7 @@ def make_env(
     engine: str | Engine = "rust",
     evolved: Sequence[str] = (),
     heroes: Sequence[str] = (),
+    client: str | None = None,
     **env_kwargs: Any,
 ) -> ClashParallelEnv:
     """A two-seat battle, ready to train on: the quickest way to an environment.
@@ -1297,16 +1298,26 @@ def make_env(
     name, on both seats. A hero has an ability button, so a deck with one gets the action
     parser's buttons (``TileActionParser(ability_buttons=True)``) unless you pass a parser.
 
+    ``client``: play one game client's measured setup instead of the current client's:
+    ``"15.535.29"`` is the older client, its mechanics and its card tables' own values
+    (``rust_engine.client_overrides``). Needs the real engine, royalesim 0.1.33 or newer.
+
     Anything else goes to ``ClashParallelEnv`` (``decision_ms``, ``obs_builder``,
     ``action_parser``, ``command_delay_ticks``, ...). Both seats are agents ("blue" and
     "red"); a trainer decides who plays each.
     """
+    if client is not None and engine != "rust":
+        raise ValueError(
+            f"client={client!r} selects the real engine's arms; for engine={engine!r}, build "
+            "RustEngine(calibration_overrides=client_overrides(client)) yourself"
+        )
     if engine == "rust":
         if not core_available():
             # The same words as everywhere else the engine is missing, so one troubleshooting
             # entry answers them all.
             raise ImportError(core_import_message("royalesim did not import"))
-        built: Engine = RustEngine()
+        over = client_overrides(client) if client is not None else None
+        built: Engine = RustEngine(calibration_overrides=over)
     elif engine == "mock":
         built = MockEngine()
     elif isinstance(engine, str):
