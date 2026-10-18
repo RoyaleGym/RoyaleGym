@@ -2225,6 +2225,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0138-2026-10-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.38 (2026-10-17)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0137-2026-10-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.37 (2026-10-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0136-2026-10-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.36 (2026-10-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0135-2026-10-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.35 (2026-10-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0134-2026-10-13" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3700,6 +3744,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0138-2026-10-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.38 (2026-10-17)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0137-2026-10-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.37 (2026-10-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0136-2026-10-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.36 (2026-10-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0135-2026-10-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.35 (2026-10-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0134-2026-10-13" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4112,6 +4200,93 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0138-2026-10-17">0.1.38 (2026-10-17)<a class="headerlink" href="#0138-2026-10-17" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Four more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>A ground hero whose button holds it plans a fresh route once the hold ends (<code>pathfinding.HELD_PRESS_ROUTE</code>), and
+    one whose button does not hold it, a dash included, plans a fresh route on the press (<code>pathfinding.PRESS_ROUTE</code>).</li>
+<li>A princess tower keeps a target past its reach only once its attack has started (<code>targeting.TOWER_HOLD_HIT_STARTED</code>).</li>
+<li>A unit's buff for not attacking is on from its deploy (<code>status.IDLE_BUFF</code>).</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles. Saved battles from earlier releases load
+  unchanged (<code>SNAPSHOT_FORMAT</code> is still 20).</li>
+</ul>
+<h2 id="0137-2026-10-16">0.1.37 (2026-10-16)<a class="headerlink" href="#0137-2026-10-16" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Thirteen more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>A dying unit's death blow hits what is in its circle when the blow lands (<code>combat.DEATH_BLOW_VICTIM_POINT</code>).</li>
+<li>A Tesla that goes underground still takes hits for its hide time (<code>hide.HIDING_DAMAGE_WINDOW</code>).</li>
+<li>The Evo Giant Snowball's rolling ball keeps hitting what it rolls onto (<code>spells.CAPTURE_ROLL_STRIKES</code>).</li>
+<li>The Evo Mega Knight's uppercut throws toward the thrown unit's nearest standing crown tower
+    (<code>knockback.UPPERCUT_THROW_AIM</code>).</li>
+<li>The Evo Bats' heal after hits first pulses a full period after the hit (<code>status.AFTER_HITS_HEAL_PULSE</code>).</li>
+<li>An Electro Giant's reflected stun holds a tick longer too (<code>status.HIT_STUN_SPAN</code>).</li>
+<li>A unit released onto the river stands on the centre of the nearest dry half-cell
+    (<code>spells.ROLL_RELEASE_WATER_POINT</code>), and a Little Prince's guard that would land in the river lands on the
+    nearest land (<code>combat.GUARD_WATER_LANDING</code>).</li>
+<li>The Little Prince's ramp keeps its level for the attack on the tick it resets (<code>combat.RAMP_LEVEL_DROP</code>), and a
+    Fisherman's hook resets it (<code>combat.RAMP_HOOK_RESET</code>).</li>
+<li>A unit standing before its dash is not pushed, and a timed dash's unit joins the contact pass the tick after it
+    ends (<code>combat.DASH_STAND_CONTACT</code>, <code>combat.DASH_END_CONTACT</code>).</li>
+<li>The unit a card's deploy area puts down (the Electro Wizard's, the Ice Wizard's) is not pushed on its first tick
+    (<code>spells.DEPLOY_AREA_BIRTH_CONTACT</code>).</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles. Saved battles from earlier releases load
+  unchanged (<code>SNAPSHOT_FORMAT</code> is still 20).</li>
+</ul>
+<h2 id="0136-2026-10-16">0.1.36 (2026-10-16)<a class="headerlink" href="#0136-2026-10-16" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Twenty-two more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>The Battle Healer's hits heal her friends around her (<code>combat.AREA_EFFECT_ON_HIT</code>), and the Royal Chef cooks
+    pancakes that level up a friendly troop (<code>combat.TOWER_TROOP_COOKING</code>).</li>
+<li>A stun from an Electro Wizard's bolt or an Electro Giant's reflect holds one tick longer (<code>status.HIT_STUN_SPAN</code>).</li>
+<li>A Royal Delivery's crate lands a tick later (<code>spells.STRIKE_DUE</code>).</li>
+<li>A shield takes a tick's hits one by one, and the hit that breaks it is absorbed whole (<code>combat.SHIELD_TICK_SUM</code>).</li>
+<li>A tower judging whether its target is already doomed counts each shot's own damage, not its enchant bonus
+    (<code>targeting.DOOMED_ENCHANT_BONUS</code>). A ranged unit whose target dies during its first attack still fires
+    (<code>combat.LOST_TARGET_SHOT</code>). A snipe never picks a crown tower (<code>targeting.SNIPE_TOWER_FILTER</code>).</li>
+<li>A Miner who comes up is no body to his neighbours for two ticks (<code>movement.SPAWN_PATHFIND_SURFACE_CONTACT</code>). A
+    rolling Log does not hit a unit a spawner makes on that tick (<code>spells.LIVE_SPAWN_ROLL_BIRTH</code>). A pull starts a
+    tick later (<code>status.ATTRACT_ONSET</code>).</li>
+<li>The Little Prince's guard stays hit-immune a tick longer and keeps pushing on its landing ticks
+    (<code>combat.GUARD_CHARGE_IMMUNITY</code>, <code>combat.GUARD_LANDING_PUSH</code>), and the Little Prince is not pushed while he
+    attacks in his press hold (<code>collision.GUARD_PRESS_CONTACT</code>).</li>
+<li>The Rune Giant is not pushed in his enchant hold (<code>enchant.ON_BUFF_HOLD_CONTACT</code>), and the Golden Knight is no
+    contact body between chain hops (<code>movement.CHAIN_LANDED_BODY</code>).</li>
+<li>The Evo P.E.K.K.A.'s kill heal flies to her and can heal past her maximum (<code>combat.EVO_KILL_HEAL</code>).</li>
+<li>The Mother Witch's hog appears on the first dry point near where the cursed unit died
+    (<code>status.BUFF_DEATH_SPAWN_POINT</code>).</li>
+<li>The Evo Goblin Cage takes and holds its captive a tick or two later (<code>combat.CAGE_DEPLOY_TAKE</code>,
+    <code>combat.CAGE_HOLD_START</code>), and the Evo Goblin Barrel's decoy goblins land on the real goblins' mirror points
+    (<code>spells.EVO_BARREL_DECOY_POINTS</code>).</li>
+<li>The Hero Tombstone's button can be pressed while its tomb fades, like the Hero Goblins' flag
+    (<code>combat.FLAG_PRESS_WINDOW</code>).</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles. Saved battles from earlier releases load
+  unchanged (<code>SNAPSHOT_FORMAT</code> is still 20).</li>
+<li>The card tables carry two more blocks: the area a unit puts down on each hit (<code>area_effect_on_hit</code>) and the Royal
+  Chef's cooking timings (<code>chef_cooking</code>, on the Chef's king tower).</li>
+</ul>
+<h2 id="0135-2026-10-16">0.1.35 (2026-10-16)<a class="headerlink" href="#0135-2026-10-16" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Eleven more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>A unit a Witch, Tombstone or Goblin Hut makes on a Poison pulse's tick is not hit by that pulse
+    (<code>spells.LIVE_SPAWN_AREA_BIRTH</code>).</li>
+<li>A walker steering round a Little Prince who stands after his button press turns whatever way he faces
+    (<code>movement.CAST_HOLD_HEADING</code>).</li>
+<li>Lightning reaches a troop only within its radius plus the troop's own (<code>spells.STRIKE_REACH</code>). On a tie in
+    hitpoints it strikes the one nearest its centre (<code>spells.STRIKE_TIE_BREAK</code>).</li>
+<li>An own-side Rage reaches a rider on its mount (<code>rider.OWN_AREA_BUFFS_WHILE_ATTACHED</code>).</li>
+<li>Goblinstein's tether keeps running from where its Monster died (<code>combat.TETHER_MONSTER_GONE</code>).</li>
+<li>A Tornado does not pull the Little Prince while his press holds him (<code>status.GUARD_PRESS_ATTRACT</code>).</li>
+<li>A ground troop laid on the river stays on the water (<code>formation.MEMBER_WATER_POINT</code>).</li>
+<li>The Hero Balloon's throw can pick a building and counts the target's size (<code>targeting.THROW_PICK</code>).</li>
+<li>A rolling log hits only what is under it now (<code>spells.ROLLING_HIT_SWEEP</code>), and passes over a unit mid-jump or
+    mid-dash (<code>spells.ROLLING_SPARES_LEAPERS</code>).</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles. Saved battles from earlier releases load
+  unchanged (<code>SNAPSHOT_FORMAT</code> is still 20).</li>
+</ul>
 <h2 id="0134-2026-10-13">0.1.34 (2026-10-13)<a class="headerlink" href="#0134-2026-10-13" title="Permanent link">&para;</a></h2>
 <ul>
 <li>One more setting defaults to the current client's behaviour, measured against its recorded battles: the Little

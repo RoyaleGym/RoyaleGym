@@ -1707,6 +1707,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalelearn.config.policy_transform_of" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;policy_transform_of
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalelearn.config.policy_head_float32_of" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6259,6 +6270,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalelearn.config.policy_transform_of" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;policy_transform_of
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalelearn.config.policy_head_float32_of" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9820,6 +9842,24 @@ place (<code>config.geometry</code>).</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="royalelearn.config.policy_transform_of" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">policy_transform_of</span><span class="p">(</span><span class="n">ppo</span><span class="p">)</span></code>
+
+<a href="#royalelearn.config.policy_transform_of" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p><code>ppo.policy_transform</code>, or None when it is unset.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="royalelearn.config.policy_head_float32_of" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">policy_head_float32_of</span><span class="p">(</span><span class="n">net</span><span class="p">)</span></code>
 
@@ -10578,7 +10618,8 @@ engine already hashes into its calibration digest does not count twice.</p>
 
     <div class="doc doc-contents ">
 
-        <p><code>{top-level package: where its source is}</code> for the user code this run's env comes from.</p>
+        <p><code>{top-level package: where its source is}</code> for the user code this run's env comes from,
+and <code>ppo.policy_transform</code>'s.</p>
 <p>A component counts when its class lives outside the three packages, and so does any string in
 a component's kwargs that names a module under <code>extra_component_modules</code> -- which is how a
 composition refers to its parts, and the only place such a reference can be. A module that is

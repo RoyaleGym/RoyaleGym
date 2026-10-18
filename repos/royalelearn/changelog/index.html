@@ -3936,6 +3936,20 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li><code>ppo.policy_transform</code>: <code>plugin:&lt;module&gt;:&lt;function&gt;</code>, a function of your own of the actor's
+  logits, <code>f(logits, mask, vector, layout)</code>. The policy the learner trains is the masked softmax
+  of its output, on every path the learner's policy is read: its seats in training battles, the
+  overlap's behaviour snapshot, the update on either pairing, the ratio check, the entropy terms
+  and the extra actor terms. The stored log-probabilities are the transformed policy's, so the
+  first ratio is still one. Snapshots, opponents, the gate and evaluation play the actor itself,
+  the live learner included. The first batch checks that the output is float32 logits of the
+  input's shape, finite on every legal action, differentiable, and each row's own. Set, it is in
+  <code>algo_digest</code> and its module in the identity's <code>user_code</code>; unset, nothing is encoded.
+  <code>RunContext.policy_transform</code> hands it to an extension, and the surface carries <code>PolicyLayout</code>,
+  <code>PolicyTransform</code> and <code>MaskedCategorical</code>.</li>
+<li>The shared-trunk pairing's update runs the policy head as the actor's forward does under
+  <code>net.policy_head_float32</code>: in float32, on float32 features. It ran the head under the
+  autocast, so its logits were not the rollout's.</li>
 <li><code>Learner.load_env</code> rebuilds an engine whose <code>__init__</code> takes <code>*args, **kwargs</code> and hands them
   to its base's, RoyaleGym's <code>SymmetricRustEngine</code> among them, which failed on <code>cards</code>. It takes
   its base's settings, and is held to them as any engine is.</li>

@@ -7131,6 +7131,12 @@ harness exists to remove.</p>
 <td>selected by <code>net.autocast_dtype</code>. 0.0 is not claimed and neither is 1e-4 under autocast: the rollout forward and the update forward are different batch shapes, cuDNN picks a kernel per shape, and bf16 carries three significant digits, so the fp32 logits at the end of the two forwards differ at the 1e-2 level. Section 8.2 says what the check does and does not detect at that tolerance</td>
 </tr>
 <tr>
+<td><code>policy_transform</code></td>
+<td>unset</td>
+<td><code>plugin:&lt;module&gt;:&lt;function&gt;</code></td>
+<td>the policy the learner trains is the masked softmax of a function of your own of the actor's logits, <code>f(logits, mask, vector, layout)</code>, on every path the learner's policy is read: its seats in training battles, the overlap's behaviour snapshot, the update on either pairing, the ratio check, the entropy terms and the extra actor terms. The stored log-probabilities are the transformed policy's, so the first ratio is still one. Snapshots, opponents, the gate and evaluation play the actor itself under <code>ladder.opponent_mode</code> and <code>ladder.release_mode</code>. The function returns float32 logits shaped like its input, built from torch operations on it, finite on every legal action, and each row from its own inputs alone; the first batch is checked for all of that. A transform that sharpens by 1/T multiplies the logits' rounding by 1/T, which <code>ratio_atol</code> has to allow (<code>royalelearn/learn/transform.py</code>). Set, it is in <code>algo_digest</code>, and its module is in the identity's <code>user_code</code></td>
+</tr>
+<tr>
 <td><strong><code>advantage</code></strong></td>
 <td></td>
 <td></td>

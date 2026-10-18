@@ -5197,9 +5197,9 @@ holds a target throughout, as it drops in and out of the attacking state. The ga
 "never build a path while <code>target</code> is None", not "build the path once at acquisition".</p>
 <h3 id="68-what-we-still-cannot-reproduce-the-node-sequence">6.8 What we still cannot reproduce: the node sequence<a class="headerlink" href="#68-what-we-still-cannot-reproduce-the-node-sequence" title="Permanent link">&para;</a></h3>
 <p>The cost model is right: the recorded path is exactly cost-minimal on <strong>150 / 150</strong>
-first-paths. But the exact node <em>sequence</em> is not reproduced. The best configurable A<em>
-reaches </em><em>22 / 140</em><em> exact matches (43/140 when handed the recorded goal cell). Once
-the corpus is deduplicated to 76 distinct experiments the ceiling is </em><em>13 / 76</em>*, of which
+first-paths. But the exact node <em>sequence</em> is not reproduced. The best configurable A*
+reaches <strong>22 / 140</strong> exact matches (43/140 when handed the recorded goal cell). Once
+the corpus is deduplicated to 76 distinct experiments the ceiling is <strong>13 / 76</strong>, of which
 6 are the walk traces (one start, one straight column) and 6 are a single lane-sweep
 column.</p>
 <p>The search space already explored: 5 heuristics × 5 queue tie-breaks × 8 neighbour orders

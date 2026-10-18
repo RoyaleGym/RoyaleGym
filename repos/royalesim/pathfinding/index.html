@@ -3758,7 +3758,7 @@ movement laws and the cost model, and <code>pathfinder-spec.md</code> is the imp
 from that evidence. This file supersedes both where they disagree, because it is measured on the
 newer client.</p>
 <h2 id="what-the-model-is">What the model is<a class="headerlink" href="#what-the-model-is" title="Permanent link">&para;</a></h2>
-<p>A ground unit's route is an 8-connected weighted A<em> over a </em><em>36 x 64 grid of half-tile cells</em>*
+<p>A ground unit's route is an 8-connected weighted A* over a <strong>36 x 64 grid of half-tile cells</strong>
 (500 native units per cell), with road cells at cost 5 and plain cells at 8, diagonals at x1.4,
 water priced rather than refused, and every alive building of either side stamped at cost 50 over
 a half-open box of half-width <code>CollisionRadius</code>. The path ends at the first cell within

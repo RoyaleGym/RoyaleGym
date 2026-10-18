@@ -3260,6 +3260,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0213" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3450,6 +3461,14 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Under RoyaleLearn's <code>ppo.policy_transform</code> (royalelearn 0.5.19), a snapshot reference reads
+  its logits through the run's transform before the KL terms do, as the learner's policy is
+  read, so a run held to its own starting weights starts at no divergence. The warm start's
+  ratio guard measures the transformed policy. A field-model reference, which has no logits to
+  transform, is refused on a run with one. Without a transform nothing changes.</li>
+</ul>
 <h2 id="0213">0.2.13<a class="headerlink" href="#0213" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>ShardReader</code> keeps each part's packed rows after their first read, so a second epoch reads

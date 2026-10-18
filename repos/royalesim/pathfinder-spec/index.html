@@ -3825,9 +3825,9 @@ reach is pinned to roughly ±75 units, not exactly.</p>
 <p><strong>Rule 6.2. The rule is necessary, not determinative.</strong> It is a condition on the last node,
 not a predictor of which cell the search stops at. Between 12 and 52 cells per sample
 satisfy it (median 32). The recorded goal cell is not the cheapest reachable in-reach
-cell in 114 of 140 samples, with no cost ties among them. Handing an A<em> the recorded goal
-cell raises exact-sequence reproduction from 22/140 to 43/140. </em><em>The goal cell is an output
-of the expansion order.</em>* Do not implement "pick the nearest or cheapest in-reach cell".
+cell in 114 of 140 samples, with no cost ties among them. Handing an A* the recorded goal
+cell raises exact-sequence reproduction from 22/140 to 43/140. <strong>The goal cell is an output
+of the expansion order.</strong> Do not implement "pick the nearest or cheapest in-reach cell".
 Implement the reach test as the goal predicate and let the search's pop order choose.</p>
 <p><strong>Rule 6.3. Sign.</strong> The standoff is on the <em>approach</em> side, not unconditionally negative
 in y. In <code>meet/Knight_vs_HogRider</code> ticks 250–273 the Knight's target is below it and the
