@@ -36,7 +36,8 @@ needs royalegym 0.1.24 or newer: `pip install --upgrade "royalegym[all]"`.
 
 **How close is it?** We checked this setup against 750 short test scenes recorded on version
 15.535. The engine put 99.6% of units within a quarter tile of where the game had them and got
-99.9% of hitpoints exactly right, and 684 scenes matched on every tick (RoyaleSim 0.1.32).
+99.9% of hitpoints exactly right, and 684 scenes matched on every tick (RoyaleSim 0.1.32, and the same
+scores on every release since, up to 0.1.38).
 These are short scenes, not whole battles: over a whole battle, small differences add up. Nulls
 can also change cards in its own updates.
 
