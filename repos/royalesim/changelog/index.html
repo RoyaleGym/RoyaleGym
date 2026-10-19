@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0139-2026-10-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.39 (2026-10-18)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0138-2026-10-17" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3744,6 +3755,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0139-2026-10-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.39 (2026-10-18)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0138-2026-10-17" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4200,6 +4222,17 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0139-2026-10-18">0.1.39 (2026-10-18)<a class="headerlink" href="#0139-2026-10-18" title="Permanent link">&para;</a></h2>
+<ul>
+<li>One more setting defaults to the current client's behaviour, measured against its recorded battles: while a Little
+  Prince's guard is being born, rolling spells, shots that pass through units and Lightning's picks pass over it, and
+  area hits still land (<code>combat.GUARD_BIRTH_PASS_THROUGH</code>).</li>
+<li>The older behaviour stays available as the setting's old value, and <code>client_arms("15.535.29")</code> and <code>replay_parity</code>
+  use it for the older client's battles. Saved battles from earlier releases load unchanged (<code>SNAPSHOT_FORMAT</code> is
+  still 20).</li>
+<li><code>tools/make_replay_fixture.py</code> refuses a recording whose content stamp the 2026-10-06 card table is not known to fit
+  (16.402.19 and 16.402.21 are), since a later content update may change cards.</li>
+</ul>
 <h2 id="0138-2026-10-17">0.1.38 (2026-10-17)<a class="headerlink" href="#0138-2026-10-17" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Four more settings default to the current client's behaviour, each measured against its recorded battles:</li>
