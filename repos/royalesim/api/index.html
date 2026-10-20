@@ -3503,9 +3503,11 @@ numbering.</p>
 <p><strong>Play delay.</strong> <code>set_command_delay_ticks(blue, red)</code> makes a play land that many ticks after it is sent, like the
 real client. <code>pending_commands()</code> lists what is waiting.</p>
 <p><strong>Card table.</strong> A Battle runs the 15.535.29 client's card table unless you pass
-<code>calibration_overrides={"cards.CARD_TABLE": '"client160402017_20261006"'}</code>, which runs the current client's table
-instead. <code>card_table()</code> names the table a Battle runs. Card ids are the same on both tables. A build from a checkout
-also takes <code>"client160402017"</code>, the current client's table from before its 2026-10-06 update; a wheel has no copy.</p>
+<code>calibration_overrides={"cards.CARD_TABLE": '"client160402017_20261019"'}</code>, which runs the current client's table
+(its Season 88 mid-season update of 2026-10-19) instead. <code>"client160402017_20261006"</code> runs the same client's table
+from 2026-10-06 to that update. <code>card_table()</code> names the table a Battle runs, and <code>card_table_fnv1a64()</code> gives the hash
+of the file it read. Card ids are the same on every table. A build from a checkout also takes <code>"client160402017"</code>, the
+current client's table from before its 2026-10-06 update; a wheel has no copy.</p>
 <p><strong>Overrides are JSON.</strong> Each value in <code>calibration_overrides</code> is JSON text: pass <code>json.dumps("none")</code>, which is
 <code>'"none"'</code>. A bare <code>"none"</code> raises ValueError.</p>
 <p><strong>The older client.</strong> The engine runs the current client's (16.402) mechanics and card values. For a battle on the

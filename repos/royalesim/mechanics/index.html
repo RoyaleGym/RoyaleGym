@@ -3804,7 +3804,7 @@ measured, and the run that produced it is named.</p>
 <tr>
 <td>Elixir, hand, cycle</td>
 <td><code>state.rs</code></td>
-<td>double elixir when <code>MANA_SPEED_UP_WHEN_REMAINING_SECONDS</code> remain and into overtime, triple elixir from <code>MANA_TRIPLE_AFTER_OVERTIME_S</code> (60 s) into overtime (<code>triple_elixir</code>; measured on client 15.535.29: the first triple step is the one into t4801)</td>
+<td>double elixir when <code>MANA_SPEED_UP_WHEN_REMAINING_SECONDS</code> remain and into overtime, triple elixir from <code>MANA_TRIPLE_AFTER_OVERTIME_S</code> (60 s) into overtime (<code>triple_elixir</code>; measured on client 15.535.29: the first triple step is the one into t4801). A played card goes to the back of the queue, a champion's too, so a champion's card can be back in the hand while it lives, and a second copy can then be played: two can stand at once (measured on client 16.402 and in ranked replays' play order; <code>tests/two_champions.rs</code>)</td>
 </tr>
 <tr>
 <td>Match timing</td>
