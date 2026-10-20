@@ -246,6 +246,30 @@ def core_with_battle(battle_cls: type) -> types.SimpleNamespace:
 
 
 @needs_core
+def test_an_engine_that_reports_the_table_it_loaded_is_stamped_by_it(rust):
+    """royalesim 0.1.40's Battle reports the FNV-1a 64 of the table text it loaded
+    (``card_table_fnv1a64``): the stamp is that, from the engine, and a battle overridden onto
+    another table (``cards.CARD_TABLE``) is stamped as the table it ran, its vintage "unknown"
+    rather than the default file's (before, every such battle was stamped as 15.535). An engine
+    before it reports none, and the stamp is the file's or the compiled table's."""
+    reported = rust_engine._engine_card_hash(rust._battle)
+    stamp = rust.card_table_stamp()
+    if reported is None:
+        assert stamp["cards_json_hash_source"] in ("disk_at_construction", "embedded")
+        return
+    assert stamp["cards_json_hash_source"] == "engine"
+    assert stamp["cards_json_fnv1a64"] == reported
+    entry = json.loads(rust_engine._core.EMBEDDED_CALIBRATION_JSON)["cards"]["CARD_TABLE"]
+    other = next(a for a in entry["candidates"] if a != entry["value"])
+    moved = RustEngine(calibration_overrides={"cards.CARD_TABLE": other})
+    moved_stamp = moved.card_table_stamp()
+    assert moved_stamp["cards_json_hash_source"] == "engine"
+    assert moved_stamp["cards_json_fnv1a64"] == rust_engine._engine_card_hash(moved._battle)
+    assert moved_stamp["cards_json_fnv1a64"] != stamp["cards_json_fnv1a64"]
+    assert moved_stamp["cards_vintage"] == "unknown"
+
+
+@needs_core
 def test_a_file_that_changes_while_the_engine_reads_it_is_refused(tmp_path, monkeypatch):
     real = rust_engine._core.Battle
     copy = tmp_path / "cards.json"
