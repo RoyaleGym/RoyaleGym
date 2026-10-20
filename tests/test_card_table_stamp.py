@@ -251,12 +251,26 @@ def test_a_file_that_changes_while_the_engine_reads_it_is_refused(tmp_path, monk
     copy = tmp_path / "cards.json"
     copy.write_text('{"provenance": {"vintage": "before"}}')
 
+    class Silent:
+        """The real Battle without the hash it may report (royalesim's s67 build on reports
+        ``card_table_fnv1a64``): an engine that reads a file and says nothing of what it read,
+        which is the engine this check exists for. Passed through whole, the reported hash wins
+        (``_stamp_card_table``) and the check is rightly not made, so the test tested nothing."""
+
+        def __init__(self, battle):
+            self._battle = battle
+
+        def __getattr__(self, name):
+            if name in rust_engine.ENGINE_CARD_HASH_NAMES:
+                raise AttributeError(name)
+            return getattr(self._battle, name)
+
     class RewritingBattle:
         tower_positions = staticmethod(real.tower_positions)
 
         def __new__(cls, *args, **kwargs):  # a real Battle takes keywords (the overrides)
             copy.write_text('{"provenance": {"vintage": "during the read"}}')
-            return real(*args, **kwargs)
+            return Silent(real(*args, **kwargs))
 
     monkeypatch.setattr(rust_engine, "_core", core_with_battle(RewritingBattle))
     monkeypatch.setattr(rust_engine, "engine_cards_json_path", lambda: (copy, "test"))
