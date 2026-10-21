@@ -3688,8 +3688,8 @@ something to train against from the first minute.</p>
 </code></pre></div>
 <p>Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes. Red took Blue's left
 princess tower at tick 1800 and Blue took none of Red's, so when the three minutes ran out Red
-won 1-0 (re-run 2026-10-13 on engine build <code>7e0521751d82e5d0</code>, RoyaleSim 0.1.33, commit
-<code>cacb700</code>, with the 15.535 card table).</p>
+won 1-0 (re-run 2026-10-20 on engine build <code>47b9483aed24e9b7</code>, RoyaleSim 0.1.40, commit
+<code>d12fc3b</code>, with the 15.535 card table).</p>
 <p>One env step is half a second of game time, which is 10 ticks. That battle was 360 steps, the full
 three minutes, so each player made 360 decisions. It takes under a second of real time.</p>
 <div class="admonition warning">
@@ -3741,8 +3741,8 @@ loss, with the crown and tower terms on top.</p>
 <p>Swap <code>me.act(...)</code> for your own policy and that loop is a training loop with the learning taken
 out. Run it twice and you get the same numbers, because the seed fixes everything.</p>
 <p>The exact numbers depend on the engine build, the deck and the card table your machine built, so
-treat them as "this ran", not as constants. These were run on 2026-10-13 on engine build
-<code>7e0521751d82e5d0</code>, RoyaleSim 0.1.33, commit <code>cacb700</code>, with the 15.535 card table.</p>
+treat them as "this ran", not as constants. These were run on 2026-10-20 on engine build
+<code>47b9483aed24e9b7</code>, RoyaleSim 0.1.40, commit <code>d12fc3b</code>, with the 15.535 card table.</p>
 <h2 id="the-legality-mask-which-is-the-part-people-like">The legality mask, which is the part people like<a class="headerlink" href="#the-legality-mask-which-is-the-part-people-like" title="Permanent link">&para;</a></h2>
 <p>Your bot is told exactly which moves are legal before it picks one. Every observation carries an
 <code>action_mask</code> with one entry per move. It never wastes a decision on a card it cannot afford or a
