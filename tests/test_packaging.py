@@ -49,7 +49,7 @@ def test_every_piece_names_a_minimum_so_an_upgrade_moves_it():
             if _names([req]) & set(PIECES.values()):
                 assert ">=" in req, f"[{extra}] names {req!r} with no minimum version"
     floors = sorted(r for r in extras["all"] if _names([r]) & {"royalesim", "royaleviser"})
-    assert floors == ["royalesim>=0.1.33", "royaleviser[media]>=0.1.2"], floors
+    assert floors == ["royalesim>=0.1.40", "royaleviser[media]>=0.1.2"], floors
 
 
 def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
@@ -67,12 +67,13 @@ def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
     warm start or a pool snapshot that differs from the run only in precision, device,
     initialisation or critic (``actor_digest``), with ``royalelearn bench`` fixed for id planes,
     0.5.17 trains on the processor, saying why, when the graphics card is too old for the
-    installed PyTorch (``device="auto"``), and 0.5.18 skips a scripted seat's observation
-    (``rollout.mask_only_scripted``, which needs royalegym 0.1.21)."""
+    installed PyTorch (``device="auto"``), 0.5.18 skips a scripted seat's observation
+    (``rollout.mask_only_scripted``, which needs royalegym 0.1.21), and 0.5.19 trains through a
+    transform of the actor's logits of your own (``ppo.policy_transform``)."""
     extras = _extras()
     for extra in ("learn", "all"):
         pins = [r for r in extras[extra] if r.startswith("royalelearn")]
-        assert pins == ["royalelearn[torch]>=0.5.18"], f"[{extra}]: {pins}"
+        assert pins == ["royalelearn[torch]>=0.5.19"], f"[{extra}]: {pins}"
 
 
 def test_the_engine_data_comes_from_the_installed_engine(monkeypatch, tmp_path):
@@ -304,9 +305,10 @@ def test_the_imitate_extras_require_record_and_clone():
     [replays] extra clones human players from the IL_Replay dataset (``from_replays``). 0.2.6
     stores ``spell_ids`` in its shards beside ``card_ids``, 0.2.9 ``unit_ids``, 0.2.10
     writes ``environment.json`` beside a clone, and 0.2.12's ``clone`` prints a line per epoch
-    (a long clone no longer looks hung) and stamps old folders' ``actor_digest``, and 0.2.13's
-    ``ShardReader`` keeps the packed rows after the first epoch (``cache="auto"``)."""
+    (a long clone no longer looks hung) and stamps old folders' ``actor_digest``, 0.2.13's
+    ``ShardReader`` keeps the packed rows after the first epoch (``cache="auto"``), and 0.2.14
+    reads a snapshot reference through royalelearn's ``ppo.policy_transform``."""
     extras = _extras()
     for extra in ("imitate", "all"):
         pins = [r for r in extras[extra] if r.startswith("royaleimitate")]
-        assert pins == ["royaleimitate[replays]>=0.2.13"], f"[{extra}]: {pins}"
+        assert pins == ["royaleimitate[replays]>=0.2.14"], f"[{extra}]: {pins}"

@@ -5,6 +5,26 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## 0.1.25 (2026-10-20)
+
+### Changed
+- royalesim 0.1.40, royalelearn 0.5.19 (train through a transform of the policy of your own,
+  `ppo.policy_transform`) and royaleimitate 0.2.14. Some battles play slightly differently, as
+  royalesim 0.1.34 to 0.1.40 bring more of the current client's behaviour, but every example on
+  the site prints the same numbers. Game Values is stamped on royalesim 0.1.40: the same cards
+  and forms.
+- On royalesim 0.1.40, `RustEngine.config()`'s card-table hash (`cards_json_fnv1a64`) is the one
+  the engine reports for the table it loaded (`cards_json_hash_source` is `"engine"`), an
+  overridden table's too.
+
+### Added
+- royalesim 0.1.40's Season 88 card table plays through RoyaleGym:
+  `calibration_overrides={"cards.CARD_TABLE": "client160402017_20261019"}`. It has four unit
+  types the default table does not have: `BarrelGoblin`, `ElectroGiant_EV1`, `IceWizardHero` and
+  `IceWizardHero_IceCube`. A run that pins its unit vocabulary
+  (`SpatialObsBuilder(unit_names=...)`) must add them to the end of the pin, so no old id moves;
+  `unit_aliases` can map one onto an old name, so both read as one id.
+
 ## 0.1.24 (2026-10-13)
 
 ### Added

@@ -98,8 +98,8 @@ winner 1  crowns [0, 1]  tick 3600
 
 Blue is player 0 and Red is player 1. Tick 3600 is the full three minutes. Red took Blue's left
 princess tower at tick 1800 and Blue took none of Red's, so when the three minutes ran out Red
-won 1-0 (re-run 2026-10-13 on engine build `7e0521751d82e5d0`, RoyaleSim 0.1.33, commit
-`cacb700`, with the 15.535 card table).
+won 1-0 (re-run 2026-10-20 on engine build `47b9483aed24e9b7`, RoyaleSim 0.1.40, commit
+`d12fc3b`, with the 15.535 card table).
 
 One env step is half a second of game time, which is 10 ticks. That battle was 360 steps, the full
 three minutes, so each player made 360 decisions. It takes under a second of real time.
@@ -162,8 +162,8 @@ Swap `me.act(...)` for your own policy and that loop is a training loop with the
 out. Run it twice and you get the same numbers, because the seed fixes everything.
 
 The exact numbers depend on the engine build, the deck and the card table your machine built, so
-treat them as "this ran", not as constants. These were run on 2026-10-13 on engine build
-`7e0521751d82e5d0`, RoyaleSim 0.1.33, commit `cacb700`, with the 15.535 card table.
+treat them as "this ran", not as constants. These were run on 2026-10-20 on engine build
+`47b9483aed24e9b7`, RoyaleSim 0.1.40, commit `d12fc3b`, with the 15.535 card table.
 
 ## The legality mask, which is the part people like
 
