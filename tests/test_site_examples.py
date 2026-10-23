@@ -277,7 +277,7 @@ def check_page(page: Path, text: str, engine: str | None, cwd: Path) -> Verdict:
         if r["how"] != "ok" and any(n in r["err"] for n in PORT_BUSY):
             # The viewer's port is the machine's state: a training run that streams holds it.
             port = free_udp_port()
-            r = run([FREE_PORT_PREFIX.format(port=port)] + prefix, body, cwd)
+            r = run([FREE_PORT_PREFIX.format(port=port), *prefix], body, cwd)
             after += f" (on port {port}: the viewer's port {VISER_PORT} was held)"
         if r["how"] != "ok":
             busy = next((n for n in PORT_BUSY if n in r["err"]), None)
@@ -484,7 +484,7 @@ def test_a_block_whose_viewer_port_is_held_is_checked_on_a_free_port(tmp_path: P
         held.close()
         held = None  # something here holds it already, which is the case this test is for
     try:
-        with pytest.raises(OSError):
+        with pytest.raises(OSError, match="already using it"):
             viser.ViserPublisher()
         v = check_page(tmp_path / "page.md", VIEWER_PAGE, None, tmp_path)
     finally:
@@ -492,7 +492,8 @@ def test_a_block_whose_viewer_port_is_held_is_checked_on_a_free_port(tmp_path: P
             held.close()
     assert not v.unchecked, v.unchecked
     assert not v.failures, v.failures
-    assert len(v.lines) == 1 and v.lines[0].startswith("ok page.md:"), v.lines
+    assert len(v.lines) == 1, v.lines
+    assert v.lines[0].startswith("ok page.md:"), v.lines
     assert f"{viser.PORT} was held" in v.lines[0], v.lines
 
 
