@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import json
 import re
+import socket
 import subprocess
 import sys
 import textwrap
@@ -53,6 +54,7 @@ import pytest
 
 from royalegym.rust_engine import CORE_IMPORT_ERROR, core_available
 from royalegym.rust_engine import build_digest as engine_build_digest
+from royalegym.viser import PORT as VISER_PORT
 
 REPO = Path(__file__).resolve().parents[1]
 PAGES = REPO / "docs" / "site" / "pages"
@@ -110,13 +112,35 @@ EXEMPT = {
 }
 
 #: An address already in use is the machine's state, not the page's: a published example
-#: binds the viewer's fixed port, and on a shared machine a viewer is often holding it.
+#: binds the viewer's fixed port, and on a shared machine a training run that streams is often
+#: holding it. Such a block runs again on a free port (FREE_PORT_PREFIX); only a block that
+#: is held on that one too is reported unchecked.
 PORT_BUSY = (
     "WinError 10048",
     "EADDRINUSE",
     "Address already in use",
     "Only one usage of each socket address",
 )
+#: Runs first when a block is run again because the port was held: the publisher's default
+#: port, and the module's PORT that ``ROYALEVISER=1`` reads, become a free port. Nothing else
+#: in the program changes. A block that holds a port against itself is still held.
+FREE_PORT_PREFIX = """
+import inspect as _inspect
+from royalegym import viser as _viser
+_names = list(_inspect.signature(_viser.ViserPublisher.__init__).parameters)
+_defaults = list(_viser.ViserPublisher.__init__.__defaults__)
+_defaults[_names.index("port") - (len(_names) - len(_defaults))] = {port}
+_viser.ViserPublisher.__init__.__defaults__ = tuple(_defaults)
+_viser.PORT = {port}
+del _inspect, _viser, _names, _defaults
+"""
+
+
+def free_udp_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
 
 #: Pages whose MockEngine programs need a RoyaleSim checkout, and that say so to the reader:
 #: MockEngine reads the 2018 tables from one, and an installed engine carries none. Run from
@@ -245,9 +269,16 @@ def check_page(page: Path, text: str, engine: str | None, cwd: Path) -> Verdict:
         if why is not None:
             lines.append(f"exempt {where}: {why}")
             continue
-        r, after = run([], body, cwd), ""
+        prefix: list[str] = []
+        r, after = run(prefix, body, cwd), ""
         if r["how"] == "name_error" and ran:
-            r, after = run(ran, body, cwd), " (runs only after the blocks above it)"
+            prefix = ran
+            r, after = run(prefix, body, cwd), " (runs only after the blocks above it)"
+        if r["how"] != "ok" and any(n in r["err"] for n in PORT_BUSY):
+            # The viewer's port is the machine's state: a training run that streams holds it.
+            port = free_udp_port()
+            r = run([FREE_PORT_PREFIX.format(port=port)] + prefix, body, cwd)
+            after += f" (on port {port}: the viewer's port {VISER_PORT} was held)"
         if r["how"] != "ok":
             busy = next((n for n in PORT_BUSY if n in r["err"]), None)
             checkout = NEEDS_CHECKOUT.get(page.name) if MOCK_DATA_MISSING in r["err"] else None
@@ -419,6 +450,50 @@ def test_the_checker_sorts_every_kind_of_block(tmp_path: Path) -> None:
     assert "prints something else" in v.failures[0], v.failures
     assert len(v.unchecked) == 1, v.unchecked
     assert "binds a port" in v.unchecked[0], v.unchecked
+
+
+VIEWER_PAGE = '''
+```python
+from royalegym.viser import ViserPublisher
+
+pub = ViserPublisher()
+print("attached:", pub.attached)
+```
+
+```
+attached: False
+```
+'''
+
+
+def test_a_block_whose_viewer_port_is_held_is_checked_on_a_free_port(tmp_path: Path) -> None:
+    """While a training run streams, it holds the viewer's port, and the viewer pages'
+    programs could not bind it: from 2026-10-21 they were skipped on this desktop on every
+    run (Sim's gate, two skips more than the run before). Such a block is run again with the
+    publisher's default port moved to a free one, so it is checked like any other block.
+
+    The plant holds the default port itself and first proves the hold is live: a publisher
+    on the default port must fail in this process. A block that holds a port against itself
+    stays unchecked; the self-test page above has one."""
+    from royalegym import viser
+
+    held = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        held.bind((viser.HOST, viser.PORT))
+    except OSError:
+        held.close()
+        held = None  # something here holds it already, which is the case this test is for
+    try:
+        with pytest.raises(OSError):
+            viser.ViserPublisher()
+        v = check_page(tmp_path / "page.md", VIEWER_PAGE, None, tmp_path)
+    finally:
+        if held is not None:
+            held.close()
+    assert not v.unchecked, v.unchecked
+    assert not v.failures, v.failures
+    assert len(v.lines) == 1 and v.lines[0].startswith("ok page.md:"), v.lines
+    assert f"{viser.PORT} was held" in v.lines[0], v.lines
 
 
 def test_a_stamped_page_on_another_build_skips_instead_of_failing(tmp_path: Path) -> None:
