@@ -776,6 +776,11 @@ class MockEngine:
     def rules(self) -> DeployRules:
         return self._rules
 
+    def unit_mana(self) -> dict[str, tuple[int, int, int, int]]:
+        """No unit pays elixir here: MockEngine has no Elixir Collector payout and no elixir on a
+        death (``RustEngine.unit_mana``), so a counted bar over it takes in nothing."""
+        return {}
+
     def reset(self, seed: int, setup: MatchSetup) -> None:
         """Validate EVERYTHING (``protocol.setup_violation``), then build the new battle
         off to the side, then commit it. A refused setup raises ValueError and the

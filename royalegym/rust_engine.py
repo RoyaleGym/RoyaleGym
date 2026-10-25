@@ -995,6 +995,18 @@ class RustEngine:
         fn = getattr(self._battle, "unit_types_json", None)
         return None if fn is None else [str(n) for n in json.loads(fn())]
 
+    def unit_mana(self) -> dict[str, tuple[int, int, int, int]] | None:
+        """What each unit type pays, as the loaded card table says: {unit type name: (one payout,
+        ms between payouts, to its own side when it dies, to the other side when it dies)}, the
+        three payouts in thousandths of an elixir (``Battle.unit_mana_json``). Only the unit types
+        that pay something are listed: the Elixir Collector, the Elixir Golem's pieces. None from
+        an engine that does not say. ``obs.MatchMemory.count_income`` counts them."""
+        fn = getattr(self._battle, "unit_mana_json", None)
+        if fn is None:
+            return None
+        rows = json.loads(fn())
+        return {str(name): tuple(int(v) for v in row) for name, row in rows.items()}  # type: ignore[misc]
+
     def status_bits(self) -> list[str] | None:
         """The engine's names for the ``EntityState.status_flags`` bits it sets, name ``k`` for
         bit ``1 << k`` (``royalesim.STATUS_BITS``, 0.1.20 on). None from an engine that does

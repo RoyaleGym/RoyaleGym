@@ -446,10 +446,16 @@ eight distinct cards), an engine whose elixir law is not the one in
 `calibration.json`, and a unit that pays elixir. The Elixir Golem pays its OPPONENT one
 elixir when it dies and half of one for each golemite and blob; the Elixir Collector
 pumps elixir for its owner and pays it when it dies. A player can count those (the rules
-are public and the deaths are on the board), but the memory does not yet: the engine does
-not say what each unit pays. This is a known gap, held by
+are public and the deaths are on the board), and `SpatialObsBuilder(elixir_income=True)`
+does: each producer is followed from the states as the engine runs it (its timer starts when
+its deploy ends, a stun holds it, a payout due at the cap waits for the first tick below it),
+and each death is paid when the unit is gone (`MatchMemory.count_income`; it needs an engine
+that says what each unit pays, `RustEngine.unit_mana`). Two things the states cannot date: a
+stun that starts between two observations is taken to start at the earlier one, and a death
+is paid at the observation that shows it. Off, which is the default, the count takes in none
+of it. That gap is held by
 `tests/test_enemy_queue.py::test_the_memory_counts_an_elixir_golem_death` (a strict xfail
-until it is closed). The builder then resyncs the own bar from the observed value so it
+while the default does not count it). The builder then resyncs the own bar from the observed value so it
 stops drifting. It leaves the enemy count alone, because the only way to repair it
 would be to read it. A training run that wants the guarantee can assert `exact`.
 

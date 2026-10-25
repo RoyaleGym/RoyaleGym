@@ -5,6 +5,16 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Added
+- `SpatialObsBuilder(elixir_income=True)` counts the elixir the board pays into both counted
+  bars: the Elixir Collector's payouts and the elixir paid when it dies, and the elixir an
+  Elixir Golem's pieces pay the other side when they die. Without it the counted
+  `enemy_elixir` reads low against a Collector player, by 1.9 elixir on average while the
+  Collector stands. Off by default, so no observation or saved memory changes. It needs an
+  engine that says what each unit pays (`RustEngine.unit_mana`).
+
 ## 0.1.25 (2026-10-20)
 
 ### Changed

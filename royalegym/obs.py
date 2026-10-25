@@ -515,6 +515,51 @@ def presses_seen(
     return out
 
 
+#: The ledger keys that decide when an elixir producer pays (RoyaleSim ``mana_pass``) and what a
+#: death pays (``phase_reap``), each with the arms ``MatchMemory.count_income`` follows. A
+#: calibration on another arm is refused rather than counted wrong.
+INCOME_KEYS: Mapping[str, tuple[Any, ...]] = MappingProxyType({
+    "economy.PRODUCTION_AT_CAP": ("held_reload_on_release",),
+    "economy.PRODUCTION_OVERFLOW": ("clamped_remainder_lost",),
+    "economy.MANA_ON_DEATH_TRIGGER": ("any_death",),
+    "economy.PRODUCTION_RATE_IN_DOUBLE_ELIXIR": ("fixed_interval", "scaled_with_elixir_rate"),
+    "economy.STUN_PAUSES_PRODUCTION": (True, False),
+})
+
+
+class IncomeLaw(NamedTuple):
+    """How a producer's payout timer runs, from the calibration (``INCOME_KEYS``)."""
+
+    step_ms: tuple[int, int, int]  # the timer's step per tick at 1x, 2x and 3x elixir
+    stun_pauses: bool  # a stunned producer holds its timer
+
+    @classmethod
+    def load(
+        cls, calibration: Calibration, law: ElixirLaw, overrides: Mapping[str, Any] | None = None
+    ) -> IncomeLaw:
+        """The arms ``calibration`` runs, each ``overrides`` key (an engine's own
+        ``calibration_overrides``) winning over the file's."""
+        given = overrides or {}
+        arms = {}
+        for key, allowed in INCOME_KEYS.items():
+            value = given[key] if key in given else calibration.value(key)
+            if not any(value == a and type(value) is type(a) for a in allowed):
+                raise ValueError(
+                    f"elixir_income counts {key} as {list(allowed)}, and this calibration runs "
+                    f"{value!r}: the counted bars would not be the engine's"
+                )
+            arms[key] = value
+        dt = law.tick_ms
+        # scaled_with_elixir_rate: the engine steps the timer by the regen's own ratio while
+        # the regen runs faster, its 2x rate in triple elixir too (``mana_pass``).
+        fast = (
+            dt * law.gain_2x // law.gain_1x
+            if arms["economy.PRODUCTION_RATE_IN_DOUBLE_ELIXIR"] == "scaled_with_elixir_rate"
+            else dt
+        )
+        return cls((dt, fast, fast), bool(arms["economy.STUN_PAUSES_PRODUCTION"]))
+
+
 class MatchMemory:
     """One seat's memory of the match so far, kept from the states it is shown.
 
@@ -549,6 +594,20 @@ class MatchMemory:
     is no play: the cycle, the last play a Mirror copies and the play counts stay as they
     were. Uncharged, one enemy Golden Knight press left the count 1000 high for the rest of
     the match (found by the docs session, 2026-09-29).
+
+    AND THE ELIXIR THE BOARD PAYS, when asked (``count_income``, which
+    ``SpatialObsBuilder(elixir_income=True)`` calls). An Elixir Collector pays its side one elixir
+    every so often and one more when it dies; each piece of an Elixir Golem pays the OTHER side
+    when it dies. All of it is public: a player sees the building land, the stun that holds it,
+    the pump and the death. Without it the count reads low by every payout (Live measured 1.9
+    elixir on average while a Collector stands, 2026-10-25) and ``exact`` goes False at the
+    first one. With it each producer is followed as RoyaleSim's ``mana_pass`` runs it: the timer
+    starts when its deploy ends (``deploy_ticks``), steps on every tick it is not stunned
+    (``stun_ticks``), and a payout that falls due while its side holds the cap waits for the
+    first tick below it. A death is paid when the unit is gone from the state. Two things the
+    states cannot date: a stun that starts between two observations is taken to start at the
+    earlier one (exact for a stun cast at an observation, as a play is), and a death is paid at
+    the observation that shows it, which is the same bar unless a payout fell due in between.
 
     AND IT SAYS WHEN IT CANNOT BE EXACT. ``exact`` goes False, and stays False for
     the match, the moment the count disagrees with the bar it is modelling -- on
@@ -619,10 +678,41 @@ class MatchMemory:
         self.delay = [0, 0]
         self.waiting: list[list[list[int]]] = [[], []]
         self.press_queue: list[list[tuple[int, int]]] = [[], []]
+        # What each unit type pays, by EntityState.unit_type, in fine units: (one payout, ms
+        # between payouts, to its side on death, to the other side on death); None counts no
+        # income (``count_income``). Bound, like the costs: not saved.
+        self.income: dict[int, tuple[int, int, int, int]] | None = None
+        self.income_law: IncomeLaw | None = None
 
     def bind(self, cards: Sequence[CardInfo]) -> None:
         self.cost = [c.elixir for c in cards]
         self.is_mirror = [c.placement == Placement.MIRROR for c in cards]
+
+    def count_income(
+        self, mana: Mapping[int, tuple[int, int, int, int]], income_law: IncomeLaw
+    ) -> None:
+        """Count the elixir the board pays into both bars (the class doc): ``mana`` is
+        ``RustEngine.unit_mana`` by unit-type index, its payouts in thousandths of an elixir.
+
+        Off by default, and while it is off this memory keeps exactly the fields it always
+        did, so a memory saved by an earlier royalegym still loads. On, it also keeps
+        ``producers`` (each producer's [uid, team, unit type, first tick its timer steps,
+        timer ms, first tick it is no longer stunned]) and ``payers`` (each unit on the board
+        whose death pays: [uid, team, unit type]).
+        """
+        scale = self.law.scale
+        table = {}
+        for unit_type, (each, period_ms, own, other) in mana.items():
+            fine = [m * scale // 1000 for m in (each, own, other)]
+            if any(f * 1000 != m * scale for f, m in zip(fine, (each, own, other), strict=True)):
+                raise ValueError(f"unit type {unit_type} pays {mana[unit_type]}: not exact here")
+            if each and period_ms <= 0:
+                raise ValueError(f"unit type {unit_type} pays {each} every {period_ms} ms")
+            table[int(unit_type)] = (fine[0], int(period_ms), fine[1], fine[2])
+        self.income = table
+        self.income_law = income_law
+        self.producers: list[list[int]] = []
+        self.payers: list[list[int]] = []
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -639,6 +729,8 @@ class MatchMemory:
         self.press_queue = [
             [(state.tick + row[4], row[5]) for row in p.pending if row[0] == 1] for p in (me, foe)
         ]
+        if self.income is not None:
+            self._income_settle(state, team)
 
     def start(
         self,
@@ -676,6 +768,9 @@ class MatchMemory:
         self.rows = [None, None]
         self.waiting = [[], []]
         self.press_queue = [[], []]
+        if self.income is not None:
+            self.producers = []
+            self.payers = []
         self._note_own_cards()
 
     def observe(
@@ -755,6 +850,7 @@ class MatchMemory:
             queue = self.press_queue[side] + [(self.tick + self.delay[side], c) for c in seen]
             presses_by_side.append([(max(due, self.tick), c) for due, c in queue if due <= last])
             self.press_queue[side] = [(due, c) for due, c in queue if due > last]
+        walking = self._income_interval(state, team) if self.income is not None else None
         self.advance(
             state.tick,
             state.regular_ticks,
@@ -763,7 +859,10 @@ class MatchMemory:
             plays_by_side[1],
             own_presses=presses_by_side[0],
             foe_presses=presses_by_side[1],
+            producers=walking,
         )
+        if self.income is not None:
+            self._income_settle(state, team)
         if self.law.to_milli(self.own_fine) != me.elixir_milli:
             self.exact = False
             self.own_fine = self.law.seed_fine(me.elixir_milli)
@@ -805,6 +904,8 @@ class MatchMemory:
         foe_plays: Sequence[tuple[int, int]],
         own_presses: Sequence[tuple[int, int]] = (),
         foe_presses: Sequence[tuple[int, int]] = (),
+        producers: tuple[Sequence[tuple[list[int], bool]], Sequence[tuple[list[int], bool]]]
+        | None = None,
     ) -> None:
         """Move to ``tick`` through the plays made since the last tick, each ``(tick, card)``,
         and the ability presses, each ``(tick, elixir)``: a press is paid from the bar like a
@@ -833,10 +934,14 @@ class MatchMemory:
         ``own_last_play_tick`` becomes ``tick``, the moment the play is SEEN, not the
         moment it was made. That is what ``observe`` has always recorded, and a policy
         trained on it reads ``own_ticks_since_play`` that way.
+
+        ``producers`` is ``observe``'s own, with ``count_income`` on: each side's producers
+        standing over this interval (``_income_interval``), whose payouts the bars take in.
         """
         clock = (tick, regular_ticks, overtime)
-        self.own_fine, leaked = self._bar(self.own_fine, own_plays, own_presses, 0, *clock)
-        self.foe_fine, _ = self._bar(self.foe_fine, foe_plays, foe_presses, 1, *clock)
+        own_p, foe_p = producers if producers is not None else ((), ())
+        self.own_fine, leaked = self._bar(self.own_fine, own_plays, own_presses, 0, *clock, own_p)
+        self.foe_fine, _ = self._bar(self.foe_fine, foe_plays, foe_presses, 1, *clock, foe_p)
         self.leak_fine += leaked
         for _, card in sorted(own_plays, key=lambda p: p[0]):
             # To the back of the queue; the head leaves when the next card arrives in the hand
@@ -860,14 +965,21 @@ class MatchMemory:
         tick: int,
         regular_ticks: int,
         overtime: bool,
+        producers: Sequence[tuple[list[int], bool]] = (),
     ) -> tuple[int, int]:
-        """One bar from ``self.tick`` to ``tick``: (fine units, fine units lost to the cap)."""
-        at, due, lost = self.tick, 0, 0
+        """One bar from ``self.tick`` to ``tick``: (fine units, fine units lost to the cap).
+
+        With ``producers`` the interval is walked tick by tick (``_walk``): a payout's timing
+        against the cap decides whether it is paid, held or partly lost."""
         paid = [(when, card, None) for when, card in plays]
         paid += [(when, None, cost) for when, cost in presses]
-        for when, card, cost in sorted(paid, key=lambda p: p[0]):
+        for when, _, _ in paid:
             if not self.tick <= when < tick:
                 raise ValueError(f"a play at tick {when} is outside [{self.tick}, {tick})")
+        if producers:
+            return self._walk(fine, paid, side, tick, regular_ticks, overtime, producers)
+        at, due, lost = self.tick, 0, 0
+        for when, card, cost in sorted(paid, key=lambda p: p[0]):
             if when != at:
                 fine, spilled = self.law.advance(fine, due, at, when, regular_ticks, overtime)
                 at, due, lost = when, 0, lost + spilled
@@ -876,6 +988,127 @@ class MatchMemory:
                 self.unaffordable[side] += 1
         fine, spilled = self.law.advance(fine, due, at, tick, regular_ticks, overtime)
         return fine, lost + spilled
+
+    def _walk(
+        self,
+        fine: int,
+        paid: Sequence[tuple[int, int | None, int | None]],
+        side: int,
+        tick: int,
+        regular_ticks: int,
+        overtime: bool,
+        producers: Sequence[tuple[list[int], bool]],
+    ) -> tuple[int, int]:
+        """``_bar`` one tick at a time, for a side with producers standing. On each tick the
+        plays dated to it are paid, the bar regenerates, and then each producer's timer steps
+        (``_produce``), as the engine's ``mana_pass`` runs at the end of the tick's Move.
+        Without a payout this is ``_bar``'s bar exactly: regeneration is never negative, so
+        clamping every tick is clamping once."""
+        law = self.law
+        prices: dict[int, list[int]] = {}
+        for when, card, cost in sorted(paid, key=lambda p: p[0]):
+            price = self._price(card, side) if card is not None else int(cost or 0)
+            prices.setdefault(when, []).append(price)
+        lost = 0
+        for j in range(self.tick, tick):
+            due = 0
+            for price in prices.get(j, ()):
+                due += price
+                if due * law.scale > fine:
+                    self.unaffordable[side] += 1
+            fine, spilled = law.advance(fine, due, j, j + 1, regular_ticks, overtime)
+            lost += spilled
+            rate = law.rate_at(j, regular_ticks, overtime)
+            for record, stunned in producers:
+                fine, spilled = self._produce(record, stunned, j, rate, fine)
+                lost += spilled
+        return fine, lost
+
+    def _produce(
+        self, record: list[int], stunned: bool, j: int, rate: int, fine: int
+    ) -> tuple[int, int]:
+        """Tick ``j`` of one producer's payout timer (RoyaleSim ``mana_pass``): (bar, lost).
+
+        The timer is loaded with the period when the deploy ends and steps on that tick
+        itself, so the first payout is the period's ticks less one after it; a stunned
+        producer holds its timer; a payout due while the side holds the cap is held, its
+        timer at 0, and paid on the first tick below the cap, the timer reloading from there;
+        a payout past the cap fills it and the rest is lost."""
+        assert self.income is not None
+        assert self.income_law is not None
+        each, period_ms = self.income[record[2]][:2]
+        if j < record[3]:
+            return fine, 0
+        if self.income_law.stun_pauses and (stunned or j < record[5]):
+            return fine, 0
+        ms = record[4] - self.income_law.step_ms[rate - 1]
+        if ms > 0:
+            record[4] = ms
+            return fine, 0
+        cap = self.law.cap_fine
+        if fine >= cap:
+            record[4] = 0
+            return fine, 0
+        record[4] = ms + period_ms
+        raw = fine + each
+        return min(cap, raw), max(0, raw - cap)
+
+    def _income_interval(
+        self, state: BattleState, team: int
+    ) -> tuple[list[tuple[list[int], bool]], list[tuple[list[int], bool]]]:
+        """Each side's producers over the interval up to ``state``, [own, enemy], each with
+        whether a stun the last observation did not show holds it (taken to have started at
+        that observation: the states cannot date it better)."""
+        stun = {e.uid: e.stun_ticks for e in state.entities}
+        sides: tuple[list[tuple[list[int], bool]], list[tuple[list[int], bool]]] = ([], [])
+        for record in sorted(self.producers, key=lambda r: r[0]):
+            s = stun.get(record[0], 0)
+            fresh = s > 0 and state.tick + s - 1 > record[5]
+            sides[0 if record[1] == team else 1].append((record, fresh))
+        return sides
+
+    def _income_settle(self, state: BattleState, team: int) -> None:
+        """After an interval: pay the deaths ``state`` shows (a payer of the last observation
+        gone from it), then follow the producers and payers that stand now: a new producer's
+        timer starts when its deploy ends, and a stun it shows holds it to the stun's end."""
+        assert self.income is not None
+        here = {e.uid: e for e in state.entities}
+        cap = self.law.cap_fine
+        for uid, owner, unit_type in self.payers:
+            if uid in here:
+                continue
+            _, _, own, other = self.income[unit_type]
+            for paid_team, amount in ((owner, own), (1 - owner, other)):
+                if not amount:
+                    continue
+                if paid_team == team:
+                    raw = self.own_fine + amount
+                    self.own_fine = min(cap, raw)
+                    self.leak_fine += max(0, raw - cap)
+                else:
+                    self.foe_fine = min(cap, self.foe_fine + amount)
+        kept = []
+        for record in self.producers:
+            e = here.get(record[0])
+            if e is None:
+                continue
+            if e.stun_ticks > 0:
+                record[5] = state.tick + e.stun_ticks - 1
+            kept.append(record)
+        known = {record[0] for record in kept}
+        for e in state.entities:
+            row = self.income.get(e.unit_type)
+            if row is None or not row[0] or e.uid in known:
+                continue
+            first = state.tick + e.deploy_ticks - 1 if e.deploy_ticks > 0 else state.tick
+            held = state.tick + e.stun_ticks - 1 if e.stun_ticks > 0 else 0
+            kept.append([e.uid, e.team, e.unit_type, first, row[1], held])
+        self.producers = kept
+        self.payers = [
+            [e.uid, e.team, e.unit_type]
+            for e in state.entities
+            if e.unit_type in self.income and any(self.income[e.unit_type][2:])
+        ]
 
     def _price(self, card: int, side: int) -> int:
         """What a play of ``card`` by ``side`` (0 own, 1 enemy) cost, and the copy target it
@@ -1641,7 +1874,7 @@ MEMORY_FORMAT = 1
 #: What ``bind`` gives each memory from the catalogue, the calibration or the constructor. It is
 #: not memory, so it is not saved: the catalogue's names, the calibration digest and the command
 #: delay in the saved header say the two builders agree on it.
-MATCH_MEMORY_BOUND = ("num_cards", "law", "cost", "is_mirror")
+MATCH_MEMORY_BOUND = ("num_cards", "law", "cost", "is_mirror", "income", "income_law")
 ENEMY_FORMS_BOUND = ("num_cards", "champions", "cycles")
 AIM_CLOCK_BOUND = ("after_ticks",)
 
@@ -1735,6 +1968,11 @@ class ObsBuilder(ABC):
     #: Whether the vector carries ``enemy_queue_5_8`` (the enemy's cycle positions 5..8, as
     #: deduced from its plays). Only SpatialObsBuilder's ``enemy_queue`` turns it on.
     enemy_queue: bool = False
+    #: Whether the counted bars take in the elixir the board pays: the Elixir Collector's
+    #: payouts and the elixir a death pays (``MatchMemory.count_income``). No field moves; the
+    #: counted ``enemy_elixir`` stays exact against a Collector. Only SpatialObsBuilder's
+    #: ``elixir_income`` turns it on.
+    elixir_income: bool = False
 
     @property
     def button_slots(self) -> int:
@@ -1823,12 +2061,40 @@ class ObsBuilder(ABC):
         self.memory = {t: MatchMemory(self.num_cards, self.law) for t in TEAMS}
         for m in self.memory.values():
             m.bind(self.cards)
+        if self.elixir_income:
+            self._count_income(engine)
         if self.button_index and not self.ability_buttons:
             raise ValueError(
                 "button_index names each ability button's card by index, and this action parser "
                 "has no ability buttons; build it with TileActionParser(ability_buttons=True)"
             )
         self.vec_size = sum(f.size for f in self.vector_layout())
+
+    def _count_income(self, engine: Engine) -> None:
+        """``elixir_income``: what each unit type pays, as the engine says (``unit_mana``), into
+        both seats' memories. Refused on an engine that does not say, and on a calibration
+        whose economy arms the count does not follow (``IncomeLaw.load``), since either would
+        count a bar that is not the engine's."""
+        mana = getattr(engine, "unit_mana", lambda: None)()
+        if mana is None:
+            raise ValueError(
+                "elixir_income counts the elixir the board pays, and this engine does not say "
+                "what each unit pays: it needs a royalesim whose Battle has unit_mana_json"
+            )
+        by_type: dict[int, tuple[int, int, int, int]] = {}
+        if mana:
+            names = getattr(engine, "unit_types", lambda: None)()
+            if not names:
+                raise ValueError("elixir_income needs the engine's unit types (unit_types)")
+            index = {name: i for i, name in enumerate(names)}
+            missing = sorted(set(mana) - set(index))
+            if missing:
+                raise ValueError(f"the engine's unit_mana names {missing}, which unit_types lack")
+            by_type = {index[name]: row for name, row in mana.items()}
+        overrides = getattr(engine, "calibration_overrides", None) or {}
+        law = IncomeLaw.load(self.calibration, self.law, overrides)
+        for m in self.memory.values():
+            m.count_income(by_type, law)
 
     def reset(self, state: BattleState) -> None:
         """Called at the start of every episode: both seats forget the last one."""
@@ -2981,10 +3247,12 @@ class SpatialObsBuilder(ObsBuilder):
         unit_aliases: Mapping[str, str] | None = None,
         button_index: bool = False,
         enemy_queue: bool = False,
+        elixir_income: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.button_index = bool(button_index)
         self.enemy_queue = bool(enemy_queue)
+        self.elixir_income = bool(elixir_income)
         self.card_status = bool(card_status)
         self.unit_actions = bool(unit_actions)
         self.card_identity = bool(card_identity)
@@ -3291,6 +3559,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["button_index"] = True
         if self.enemy_queue:
             out["enemy_queue"] = True
+        if self.elixir_income:
+            out["elixir_income"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []

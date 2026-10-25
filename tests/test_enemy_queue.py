@@ -181,10 +181,10 @@ class _WentInexact(AssertionError):
 @pytest.mark.xfail(
     strict=True,
     raises=_WentInexact,
-    reason="A KNOWN GAP: MatchMemory does not count elixir a unit pays (the Elixir Golem's to "
-    "the opponent when it dies, the Elixir Collector's pump and death payment), because the "
-    "engine does not say what each unit pays. When the memory counts it, this passes and the "
-    "mark must go.",
+    reason="A KNOWN GAP OF THE DEFAULT: SpatialObsBuilder() counts no elixir a unit pays (the "
+    "Elixir Golem's to the opponent when it dies, the Elixir Collector's pump and death "
+    "payment). SpatialObsBuilder(elixir_income=True) does (tests/test_elixir_income.py). When "
+    "the default counts it, this passes and the mark must go.",
 )
 def test_the_memory_counts_an_elixir_golem_death():
     """Blue plays an Elixir Golem; when a piece of it dies, Red gains elixir a player can count
