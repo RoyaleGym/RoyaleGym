@@ -226,6 +226,12 @@ computer. To share a battle, send the `.msgpack` file that `watch.py` saves; the
 `royaleviser FILE`. To make a video of it, see
 [No window appears at all](it-doesnt-work.md#no-window-appears-at-all).
 
+Sharing a bot's files publicly (its folder, or its battle files) is fine for bots no stronger than
+our Upstart reference bot. A strong bot anyone can download becomes a cheating tool on Supercell's
+ladder, so stronger bots stay private. Their results, videos and clips are fine to share. Before
+you share a bot's files, have it checked in the [Discord](https://discord.gg/we3z5SWdNj): it plays
+400 games against the reference bot, and you hear "pass" or "too strong".
+
 ### Can I play against my bot?
 
 Not yet. You can watch it play against other bots, or against itself.
