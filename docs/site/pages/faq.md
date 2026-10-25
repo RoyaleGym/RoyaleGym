@@ -230,9 +230,9 @@ Sharing a bot's files publicly (its folder, or its battle files) is fine for bot
 it takes to reach Ranked. A bot strong enough for Ranked (15,000 trophies and up) that anyone can
 download becomes a cheating tool on Supercell's ladder, so those bots stay private. Their results,
 videos and clips are fine to share. Before you share a bot's files, check it in the
-[Discord](https://discord.gg/we3z5SWdNj): type `/checkbot` in #bot-talk, attach its saved folder as a
-zip and list its 8 cards. It plays against a fixed reference, and you get "pass" or "too strong" by
-DM, usually within an hour.
+[Discord](https://discord.gg/we3z5SWdNj): type `/checkbot` in #bot-talk and attach its saved folder as
+a zip. It reads the deck your bot trained with from the folder. It plays against a fixed reference,
+and you get "pass" or "too strong" by DM, usually within an hour.
 
 ### Can I play against my bot?
 
