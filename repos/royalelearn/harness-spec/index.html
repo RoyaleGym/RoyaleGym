@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -7709,6 +7709,17 @@ the whole test suite runs there precisely because its widths are not the Rust ca
 <li>A <code>uint8</code> plane whose value exceeds 255 is clipped and counted in <code>health/obs_codec_clipped</code>. A
   non-zero value is a bug report, not a tolerance: the plane was admitted to <code>uint8</code> on a declared
   bound, so a clip means the bound was wrong.</li>
+<li>A value that is not a whole number on its way into a <code>uint8</code> plane is stored rounded and counted
+  in <code>health/obs_codec_rounded</code>, and the first time a plane rounds a line names it. The sample
+  admitted the plane because every value it held was whole, and a sample that never showed the
+  feature at all holds only zeros, which are whole. Every process that packs rows counts: a worker
+  sends its codec's counts home in its control word (<code>codec_clipped</code>, <code>codec_rounded</code>,
+  <code>codec_round_plane</code>, in the record's reserve), and the parent sums them per iteration.</li>
+<li><code>rollout.codec_float16_planes</code> names planes stored as <code>float16</code> whatever the sample holds, and
+  <code>rollout.codec_unseen_float16</code> stores so every plane the sample never shows other than zero.
+  <code>float16</code> holds a whole number up to 2048 exactly. Either only decides storage, so the table, and
+  its digest, are the ones a sample that showed those planes' fractions would have decided. Unset,
+  nothing is encoded and the sample decides as before.</li>
 <li><code>unpack_to_device</code> runs on the GPU: <code>uint8 -&gt; float32</code> times a per-channel constant divisor,
   <code>float16 -&gt; float32</code>, bit-unpack the mask with shifts, reshape it into the mask planes, scatter the
   static planes in, and gather the frame-stack history rows. Its FLOP count is nothing against
@@ -9469,7 +9480,8 @@ cannot show); and on a probe iteration ONLY, <code>score_vs/&lt;rung&gt;</code> 
 anchors under their older names.</p>
 <p><strong><code>health/</code></strong>: <code>illegal_action_rate</code> (<strong>exactly zero by construction; this is an alert, not a plot</strong>),
 <code>mask_disagreements</code> (from the start-up gate), <code>worker_restarts</code>, <code>worker_failures_by_kind</code>,
-<code>rows_dropped_dead_worker</code>, <code>obs_codec_clipped</code>, <code>samples_unused_frac</code>, <code>nan_guard_trips</code>,
+<code>rows_dropped_dead_worker</code>, <code>obs_codec_clipped</code>, <code>obs_codec_rounded</code>, <code>samples_unused_frac</code>,
+<code>nan_guard_trips</code>,
 <code>housekeeping_failures</code> (plus <code>housekeeping/{kind}</code> for each kind that has failed),
 <code>vram_peak_mb</code>, <code>rss_peak_mb</code>, <code>buffer_fill_frac</code>, and the device-memory regime read at the end of
 each iteration when the run's device is a CUDA device: <code>vram_reserved_mb</code>, <code>vram_inactive_split_mb</code>,
@@ -9546,6 +9558,13 @@ being hunted, and a false halt costs everything the run was for.</p>
 <td>1</td>
 <td><strong>halt</strong></td>
 <td>an invariant is broken. A healthy rectangle reads <strong>exactly one</strong>: every cell is written once per iteration, so anything under one is a cell nobody filled and anything over it is impossible. The threshold is above one and not below it for that reason: a bound of 0.98 would halt every healthy run on its first iteration</td>
+</tr>
+<tr>
+<td><code>obs_codec_rounded</code></td>
+<td><code>health/obs_codec_rounded &gt; 0</code></td>
+<td>1</td>
+<td>warn</td>
+<td>observation values were rounded into a <code>uint8</code> plane, so the policy sees them as whole numbers. The run's log names the plane; <code>rollout.codec_float16_planes</code> keeps its fractions</td>
 </tr>
 <tr>
 <td><code>worker_failures</code></td>
@@ -10966,10 +10985,10 @@ the scheduling section sets (<code>warm_start.alarms.ev_at_unfreeze</code>, 0.3,
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../../javascripts/org-stats.js"></script>
       

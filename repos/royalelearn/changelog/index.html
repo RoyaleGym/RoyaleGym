@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -2899,6 +2899,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0520" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.20
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0519" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3612,6 +3623,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0520" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.20
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0519" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3934,6 +3956,22 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="0520">0.5.20<a class="headerlink" href="#0520" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A value that is not a whole number on its way into a <code>uint8</code> plane is stored rounded, and is
+  now counted in <code>health/obs_codec_rounded</code>, alarmed on (<code>obs_codec_rounded</code>, warn), and named
+  once in a line. Preflight admits a plane to a byte when every sampled value of it is whole, and
+  a sample that never showed a feature holds only zeros, so such a plane's fractions were rounded
+  away without a word.</li>
+<li><code>health/obs_codec_clipped</code> counts what every process packed: each rollout worker sends its
+  codec's counts home in its control word, in the record's reserve, so no offset moved. It read
+  only the parent's codec, which a process worker's rows never pass through, so it was zero under
+  <code>rollout.source = "process"</code>. It is now this iteration's count rather than a running total.</li>
+<li><code>rollout.codec_float16_planes</code>: planes stored as <code>float16</code> whatever the sample holds.
+  <code>rollout.codec_unseen_float16</code>: every plane the sample never shows other than zero stored so.
+  Either decides storage only, so the table and its digest are the ones a sample that showed
+  those planes' fractions would have decided. Unset, nothing is encoded and tables are unchanged.</li>
+</ul>
 <h2 id="0519">0.5.19<a class="headerlink" href="#0519" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>ppo.policy_transform</code>: <code>plugin:&lt;module&gt;:&lt;function&gt;</code>, a function of your own of the actor's
@@ -4293,10 +4331,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit", "toc.follow"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../../javascripts/org-stats.js"></script>
       
