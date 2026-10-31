@@ -25,7 +25,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2022, macos-14]
+        # macos-15, not macos-14: GitHub retires the macos-14 image on 2026-11-02, and from 10-28 its
+        # jobs were brownout-failed or never picked up (runner-images#13518), so pypi never ran.
+        os: [ubuntu-24.04, windows-2022, macos-15]
         python: ['3.12', '3.13', '3.14']
     name: fresh (${{ matrix.os }}, py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
@@ -42,7 +44,14 @@ jobs:
           mkdir -p "$RUNNER_TEMP/wheels"
           gh release download -R RoyaleGym/RoyaleSim --pattern '*.whl' --dir "$RUNNER_TEMP/wheels" || true
           for repo in RoyaleLearn RoyaleViser RoyaleImitate; do
-            python -m pip wheel --no-deps -q -w "$RUNNER_TEMP/wheels" "git+https://github.com/RoyaleGym/$repo@main"
+            # Three tries: a clone that breaks mid-transfer (10-30: curl 92, index-pack failed) is
+            # the network, not the code, and it cost the night's pypi run.
+            for try in 1 2 3; do
+              python -m pip wheel --no-deps -q -w "$RUNNER_TEMP/wheels" "git+https://github.com/RoyaleGym/$repo@main" && break
+              if [ "$try" = 3 ]; then exit 1; fi
+              echo "::warning::building $repo failed (try $try of 3); retrying in 20 s"
+              sleep 20
+            done
           done
           ls -la "$RUNNER_TEMP/wheels"
       - name: fresh-user test
