@@ -11,9 +11,10 @@ change the observation's shape; each such change is listed here.
 - `SpatialObsBuilder(elixir_income=True)` counts the elixir the board pays into both counted
   bars: the Elixir Collector's payouts and the elixir paid when it dies, and the elixir an
   Elixir Golem's pieces pay the other side when they die. Without it the counted
-  `enemy_elixir` reads low against a Collector player, by 1.9 elixir on average while the
-  Collector stands. Off by default, so no observation or saved memory changes. It needs an
-  engine that says what each unit pays (`RustEngine.unit_mana`), which royalesim 0.1.43 does.
+  `enemy_elixir` misses every payout, so it reads low against a Collector player and `exact`
+  goes False at the first payout. Off by default, so no observation or saved memory changes. It
+  needs an engine that says what each unit pays (`RustEngine.unit_mana`), which royalesim
+  0.1.43 does.
 
 ### Changed
 - royalesim 0.1.43.

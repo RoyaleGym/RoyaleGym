@@ -1,13 +1,13 @@
-"""The counted bars take in the elixir the board pays, when asked (Train and Live, 2026-10-25).
+"""The counted bars take in the elixir the board pays, when asked.
 
 WHY IT EXISTS
     An Elixir Collector pays its side one elixir every 13 s on the 15.535 table and one more
     when it dies, and each piece of an Elixir Golem pays the OTHER side when it dies. The fair
-    count paid plays and presses and regenerated, and took in none of it: Live measured its
-    own count 1.9 elixir low on average while an opponent's Collector stood (liveplay
-    20261025-003433, up to ~3), and RoyaleGym's had the same blind spot, so a policy trained on
-    it underrated a Collector player. ``MatchMemory.count_income`` follows each producer from
-    the states as RoyaleSim's ``mana_pass`` runs it and pays each death the state shows;
+    count paid plays and presses and regenerated, and took in none of it, so the counted enemy
+    elixir read low by every payout while an opponent's Collector stood (the control,
+    ``test_without_the_count_a_collector_leaves_the_enemy_count_low``, keeps showing it).
+    ``MatchMemory.count_income`` follows each producer from the states as RoyaleSim's
+    ``mana_pass`` runs it and pays each death the state shows;
     ``SpatialObsBuilder(elixir_income=True)`` turns it on. Off, nothing changes.
 
 WHAT IT CHECKS

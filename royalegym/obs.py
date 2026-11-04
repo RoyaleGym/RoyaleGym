@@ -599,15 +599,14 @@ class MatchMemory:
     ``SpatialObsBuilder(elixir_income=True)`` calls). An Elixir Collector pays its side one elixir
     every so often and one more when it dies; each piece of an Elixir Golem pays the OTHER side
     when it dies. All of it is public: a player sees the building land, the stun that holds it,
-    the pump and the death. Without it the count reads low by every payout (Live measured 1.9
-    elixir on average while a Collector stands, 2026-10-25) and ``exact`` goes False at the
-    first one. With it each producer is followed as RoyaleSim's ``mana_pass`` runs it: the timer
-    starts when its deploy ends (``deploy_ticks``), steps on every tick it is not stunned
-    (``stun_ticks``), and a payout that falls due while its side holds the cap waits for the
-    first tick below it. A death is paid when the unit is gone from the state. Two things the
-    states cannot date: a stun that starts between two observations is taken to start at the
-    earlier one (exact for a stun cast at an observation, as a play is), and a death is paid at
-    the observation that shows it, which is the same bar unless a payout fell due in between.
+    the pump and the death. Without it the count reads low by every payout and ``exact`` goes False
+    at the first one. With it each producer is followed as RoyaleSim's ``mana_pass`` runs it: the
+    timer starts when its deploy ends (``deploy_ticks``), steps on every tick it is not stunned
+    (``stun_ticks``), and a payout that falls due while its side holds the cap waits for the first
+    tick below it. A death is paid when the unit is gone from the state. Two things the states
+    cannot date: a stun that starts between two observations is taken to start at the earlier one
+    (exact for a stun cast at an observation, as a play is), and a death is paid at the observation
+    that shows it, which is the same bar unless a payout fell due in between.
 
     AND IT SAYS WHEN IT CANNOT BE EXACT. ``exact`` goes False, and stays False for
     the match, the moment the count disagrees with the bar it is modelling -- on
