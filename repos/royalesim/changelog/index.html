@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0143-2026-11-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.43 (2026-11-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0142-2026-10-22" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3788,6 +3799,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0143-2026-11-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.43 (2026-11-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0142-2026-10-22" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4288,6 +4310,51 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0143-2026-11-03">0.1.43 (2026-11-03)<a class="headerlink" href="#0143-2026-11-03" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A new card table: the 16.635 client's, from the game update of 2026-11-03 (content 16.635.8). Pick it with
+  <code>calibration_overrides={"cards.CARD_TABLE": '"client160635007_20261103"'}</code>. The update changes no card's numbers,
+  so the table carries the Season 88 values. The default table is unchanged.</li>
+<li>On it the Evo Electro Giant's pulse takes the Clone spell's copies again.</li>
+<li>The Evo Giant and the Evo Mirror are not supported yet: a deck may play the Giant and the Mirror, not their
+    evolutions.</li>
+<li>Some new details of the client are recorded in the table and not yet simulated: hero abilities and the Golden
+    Knight's dash are refunded until they land, the Evo Mega Knight stands while it uppercuts, the Little Prince's
+    guard charge passes over units that are immune while they dash, and the Evo Cannon's and Evo Firecracker's
+    damage buffs stack once per cast. In Rust, a loaded table's <code>CardDb.unmodelled</code> lists them.</li>
+<li><code>tools/make_replay_fixture.py --table 160635007-20261103</code> makes fixtures from recordings of the new client
+  (16.635.8), and no 16.402 table takes such a recording.</li>
+<li><code>Battle.unit_mana_json()</code> gives the elixir each unit of the table produces, carries or pays out on its death.</li>
+<li>28 more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>Dashes and charges: a timed dasher whose target dies takes its next one after the dash
+    (<code>combat.DASH_KILL_RETARGET</code>); a standing dasher keeps a new target and dashes at it
+    (<code>combat.DASH_STAND_RETARGET</code>); a shot already flying at a unit that starts a dash lands on the unit's last
+    immune tick (<code>combat.DASH_IMMUNE_HITS</code>).</li>
+<li>The Little Prince: his guard is born heading for the nearest enemy in sight (<code>combat.GUARD_BIRTH_GOAL</code>), walks its
+    first landed steps without avoiding (<code>combat.GUARD_LANDING_AVOIDANCE</code>), takes no stun or freeze during its charge
+    (<code>status.DASH_IMMUNE_BUFFS</code>), and is passed over then by Lightning (<code>spells.STRIKE_DASH_IMMUNE</code>) and by the
+    Inferno Tower, Inferno Dragon and Mighty Miner (<code>targeting.VARIABLE_DAMAGE_IMMUNE_TARGET</code>); a knockback resets
+    his ramp (<code>combat.RAMP_KNOCK_RESET</code>).</li>
+<li>The Evo Mega Knight: his deploy blow counts toward his uppercut and his dash blows do not
+    (<code>combat.UPPERCUT_COUNT</code>), and he stands a moment after a throw (<code>combat.UPPERCUT_STAND</code>).</li>
+<li>The Hero Mega Minion: it hides from its first warp step both ways (<code>combat.WARP_HIDING</code>), walks during its warp
+    (<code>combat.WARP_WALK_STEP</code>), and stays hidden one tick longer after its strike (<code>combat.WARP_STRIKE_REVEAL</code>).</li>
+<li>Targeting: a troop leaping the river takes no target in the air (<code>targeting.LEAP_TARGET_SCAN</code>); a unit in a
+    knockback decides its target on the ladder (<code>targeting.KNOCKED_TARGET_HOLD</code>); a building without a projectile
+    keeps a target only within its range (<code>targeting.BUILDING_KEEP_REACH</code>); a stun or freeze clears its victim's
+    target a tick later (<code>status.STUN_CLEARS_TARGET</code>); the Inferno and Mighty Miner rows walk into reach as the
+    client does (<code>targeting.VARIABLE_DAMAGE_WALK_REACH</code>, <code>targeting.VARIABLE_DAMAGE_LADDER_WALK</code>).</li>
+<li>Shots: a straight shot tests its aim point (<code>combat.STRAIGHT_SHOT_RANGE_END</code>) and hits a building by its square
+    (<code>combat.STRAIGHT_SHOT_BUILDING_REACH</code>).</li>
+<li>Others: a stun or freeze resets a Sparky's charge (<code>combat.LOAD_FIRST_HIT_HOLD</code>); the Rune Giant walks on during
+    his launch's hold (<code>enchant.ON_BUFF_HOLD_WALK</code>); the Clone's slide crosses the river (<code>spells.CLONE_SLIDE_WATER</code>);
+    a buff's death spawn takes its victim's facing and moves on its first tick (<code>status.BUFF_DEATH_SPAWN_FACING</code>,
+    <code>status.BUFF_DEATH_SPAWN_FIRST_UPDATE</code>); a unit that transforms stands on its switch tick
+    (<code>transform.SWITCH_TICK_WALK</code>).</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles. <code>replay_parity</code> plays a tick's plays in the
+  client's order. Saved battles from earlier releases load unchanged (<code>SNAPSHOT_FORMAT</code> is still 20).</li>
+</ul>
 <h2 id="0142-2026-10-22">0.1.42 (2026-10-22)<a class="headerlink" href="#0142-2026-10-22" title="Permanent link">&para;</a></h2>
 <ul>
 <li>One more setting defaults to the current client's behaviour, measured against its recorded battles: a charging
