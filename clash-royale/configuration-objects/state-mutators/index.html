@@ -3615,6 +3615,9 @@ would with the same moves. That's a way to practise one situation over and over.
 <p>A snapshot can also carry a <code>seat</code> (the side the start is for) and <code>max_ticks</code> (end each episode
 after that many ticks). <code>SnapshotStateMutator(bank, weights={...}, seat="blue")</code> then draws from
 the bank by tag and by seat. The <a href="../../../reference/royalegym/">API reference</a> has every argument.</p>
+<p>A saved bank loads only on the card data it was saved on. After you upgrade the engine, save your
+starts again: royalesim 0.1.44, for one, refuses every bank an earlier release saved, with
+<code>snapshot was saved against different card data</code>.</p>
 <p>You don't chain mutators one after another. A mutator describes the whole start of a battle, and
 <code>WeightedStateMutator</code> picks between them.</p>
 <h2 id="how-they-work">How They Work<a class="headerlink" href="#how-they-work" title="Permanent link">&para;</a></h2>

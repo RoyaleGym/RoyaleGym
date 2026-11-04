@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0144-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.44 (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0143-2026-11-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3799,6 +3810,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0144-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.44 (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0143-2026-11-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4310,6 +4332,36 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0144-2026-11-04">0.1.44 (2026-11-04)<a class="headerlink" href="#0144-2026-11-04" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The Evo Giant runs on the 16.635 table (<code>cards.CARD_TABLE</code> <code>"client160635007_20261103"</code>). Below half its
+  hitpoints it puts a Rage area down behind it at once and then every 1500 ms, held while it is stunned or frozen.
+  Each area is wider the more hits the giant has made since (2 to 3.5 tiles). The areas rage its own side only and
+  deal no damage. A Clone of it makes a plain Giant. This is read off the game's table and not yet measured. The
+  Evo Mirror is still not supported.</li>
+<li>10 more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>A Poison does not touch a unit exactly on its edge (<code>spells.PULSE_EDGE</code>).</li>
+<li>The Inferno Tower, Inferno Dragon and Mighty Miner wait one tick more after a guard's charge before they target
+    it (<code>targeting.VARIABLE_DAMAGE_IMMUNE_TARGET</code>).</li>
+<li>A dashing Bandit, Boss Bandit or Mega Knight keeps its target (<code>targeting.DASH_TARGET_SCAN</code>).</li>
+<li>The Dark Witch's Bats come out at her facing's eighth of a turn (<code>spawner.SPAWN_POINT</code>).</li>
+<li>The Little Prince: a charging guard is not slowed (<code>status.DASH_IMMUNE_BUFFS</code>), an area hit passes over a guard
+    on its first landing ticks (<code>combat.GUARD_LANDING_AREA</code>), and his load timer runs through his cast unless he is
+    stunned (<code>combat.PRESS_LOAD_TIMER</code>).</li>
+<li>A unit the Evo Mega Knight throws takes one free step, then is rooted (<code>knockback.UPPERCUT_ROOT_WINDOW</code>).</li>
+<li>A walker does not count a dasher's attack stand as a walk stand (<code>movement.DASH_STAND_HEADING</code>).</li>
+<li>The Hero Mega Minion marks its warp target before the press (<code>combat.WARP_PICK</code>).</li>
+<li>Replay fixtures (<code>tools/make_replay_fixture.py</code>) carry a shielded unit's shield, and <code>replay_parity</code> scores it on
+  its own, apart from hitpoints. A recording without shields gives the same fixture as before.</li>
+<li><code>replay_parity</code> follows the 16.635 client's random number generator, the same as 16.402's. The fixture maker drops
+  the generator's states from a 16.635 recording that read them at the old place in memory, and says so in the
+  fixture's <code>rng_unread</code>. A 16.635 fixture's generator column is read only when it names the place its states were
+  read at (<code>rng.place</code>), so one made by an earlier maker plays on the engine's own draws.</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles.</li>
+<li>Battles saved by an earlier release do not load: a saved battle is checked against the card data it ran on, and
+  the Evo Giant's support changed that data on every table (<code>SNAPSHOT_FORMAT</code> is still 20).</li>
+</ul>
 <h2 id="0143-2026-11-03">0.1.43 (2026-11-03)<a class="headerlink" href="#0143-2026-11-03" title="Permanent link">&para;</a></h2>
 <ul>
 <li>A new card table: the 16.635 client's, from the game update of 2026-11-03 (content 16.635.8). Pick it with
