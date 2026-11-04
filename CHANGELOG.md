@@ -8,17 +8,21 @@ change the observation's shape; each such change is listed here.
 ## 0.1.27 (2026-11-04)
 
 ### Changed
-- royalesim 0.1.44. On the 16.635 card table the Evo Giant can now be played (the Evo Mirror
-  still cannot), and the table has one more unit type, `Giant_EV1`. The engine lists unit types
-  by name, so on that table every type after `Giant_EV1` moves up one place in an unpinned
-  `unit_ids` vocabulary. A run that pins its unit vocabulary appends `Giant_EV1` to the pin, so
-  five names go on the end of a default-table pin, not four; until then RoyaleGym refuses the
-  pin and names the type. The default and Season 88 tables are unchanged: the same cards, forms
-  and unit types, and every example on the site prints the same numbers. Game Values and the
-  Environments page are stamped on royalesim 0.1.44.
-- A battle saved with royalesim 0.1.43 or earlier (`RustEngine.save_state`) does not load with
-  0.1.44: `load_state` raises `ValueError` ("snapshot was saved against different card data").
-  Save it again on 0.1.44.
+- royalesim 0.1.44. Some battles play slightly differently, as it brings ten more of the
+  current client's behaviours (Poison's edge, the Dark Witch's Bats, the Little Prince, the Evo
+  Mega Knight's throw and the Hero Mega Minion's warp among them), but every example on the site
+  prints the same numbers. Game Values and the Environments page are stamped on royalesim
+  0.1.44. The default and Season 88 tables have the same cards, forms and unit types as before.
+- On the 16.635 card table the Evo Giant can now be played (the Evo Mirror still cannot), and
+  the table has one more unit type, `Giant_EV1`. The engine lists unit types by name, so on that
+  table every type after `Giant_EV1` moves up one place in an unpinned `unit_ids` vocabulary. A
+  run that pins its unit vocabulary appends `Giant_EV1` after the Season 88 table's four names,
+  so a default-table pin takes five names on its end, not four, and the ids agree with a Season
+  88 pin's. Until then RoyaleGym refuses the pin and names the type.
+- A battle saved with royalesim 0.1.43 or earlier does not load with 0.1.44, on any card table:
+  the Evo Giant's support changed the engine's card data on each. A snapshot (`env.snapshot()`),
+  a bank of them (`save_snapshots`) and a `RustEngine.save_state` blob all raise `ValueError`
+  ("snapshot was saved against different card data"). Save them again on 0.1.44.
 
 ### Added
 - Two columns on the end of each spell row: `SpellState.level`, the object's level (as

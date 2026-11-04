@@ -644,9 +644,10 @@ def test_on_rustengine_a_reordered_superset_pin_renumbers_every_unit_by_name() -
     assert shown > 500
 
 
-#: The unit types each client card table says beyond the default table's, in the engine's order,
-#: as CHANGELOG.md states them: the Season 88 table (royalesim 0.1.40) and the 16.635 table
-#: (royalesim 0.1.43), which says the Evo Giant's own type since royalesim 0.1.44.
+#: The unit types each client card table says beyond the default table's, in the engine's order
+#: (CHANGELOG.md names them): the Season 88 table (royalesim 0.1.40) and the 16.635 table (royalesim
+#: 0.1.43), which says the Evo Giant's own type since royalesim 0.1.44. A pin that keeps a Season 88
+#: pin's ids takes ``Giant_EV1`` after the other four, as the 16.635 test below does.
 TABLE_EXTRA_UNITS = {
     "client160402017_20261019": [
         "BarrelGoblin", "ElectroGiant_EV1", "IceWizardHero", "IceWizardHero_IceCube",
