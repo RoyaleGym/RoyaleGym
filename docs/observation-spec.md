@@ -450,7 +450,7 @@ are public and the deaths are on the board), and `SpatialObsBuilder(elixir_incom
 does: each producer is followed from the states as the engine runs it (its timer starts when
 its deploy ends, a stun holds it, a payout due at the cap waits for the first tick below it),
 and each death is paid when the unit is gone (`MatchMemory.count_income`; it needs an engine
-that says what each unit pays, `RustEngine.unit_mana`). Two things the states cannot date: a
+that says what each unit pays, `RustEngine.unit_mana`, royalesim 0.1.43 on). Two things the states cannot date: a
 stun that starts between two observations is taken to start at the earlier one, and a death
 is paid at the observation that shows it. Off, which is the default, the count takes in none
 of it. That gap is held by

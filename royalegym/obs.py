@@ -2079,7 +2079,7 @@ class ObsBuilder(ABC):
         if mana is None:
             raise ValueError(
                 "elixir_income counts the elixir the board pays, and this engine does not say "
-                "what each unit pays: it needs a royalesim whose Battle has unit_mana_json"
+                "what each unit pays: it needs royalesim 0.1.43 or newer (Battle.unit_mana_json)"
             )
         by_type: dict[int, tuple[int, int, int, int]] = {}
         if mana:

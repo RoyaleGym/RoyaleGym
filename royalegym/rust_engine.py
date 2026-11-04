@@ -998,9 +998,10 @@ class RustEngine:
     def unit_mana(self) -> dict[str, tuple[int, int, int, int]] | None:
         """What each unit type pays, as the loaded card table says: {unit type name: (one payout,
         ms between payouts, to its own side when it dies, to the other side when it dies)}, the
-        three payouts in thousandths of an elixir (``Battle.unit_mana_json``). Only the unit types
-        that pay something are listed: the Elixir Collector, the Elixir Golem's pieces. None from
-        an engine that does not say. ``obs.MatchMemory.count_income`` counts them."""
+        three payouts in thousandths of an elixir (``Battle.unit_mana_json``, royalesim 0.1.43
+        on). Only the unit types that pay something are listed: the Elixir Collector, the Elixir
+        Golem's pieces. None from an engine that does not say. ``obs.MatchMemory.count_income``
+        counts them."""
         fn = getattr(self._battle, "unit_mana_json", None)
         if fn is None:
             return None

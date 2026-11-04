@@ -243,6 +243,19 @@ def test_a_collector_kept_below_the_cap_is_counted_exactly(every: int) -> None:
 
 
 @needs_core
+@pytest.mark.parametrize("table", ["client160402017_20261019", "client160635007_20261103"])
+def test_a_collector_on_a_15_second_table_is_counted_exactly(table: str) -> None:
+    """The client's newer tables pay every 15 s, not 13 (royalesim 0.1.43): the period is the
+    engine's, read through ``unit_mana``, not a constant here."""
+    e = engine(calibration_overrides={"cards.CARD_TABLE": table})
+    assert e.unit_mana()["ElixirCollector"][1] == 15000
+    run = play_out(e, collector_script(), 2700, 1)
+    assert run.jumps[BLUE] >= 5, f"the Collector paid {run.jumps[BLUE]} times"
+    assert not run.wrong, run.wrong[:5]
+    assert all(m.exact for m in run.memories)
+
+
+@needs_core
 def test_without_the_count_a_collector_leaves_the_enemy_count_low() -> None:
     run = play_out(engine(), collector_script(), 1500, on=False)
     assert run.jumps[BLUE] >= 3
