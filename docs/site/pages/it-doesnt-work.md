@@ -222,6 +222,19 @@ or `2` back to `0`, and play the normal card. (With `make_env`, take it out of `
 or `heroes=[...]`.) The cards that have one are listed in
 [Game Values](cheatsheets/game-values.md#evolutions-and-heroes).
 
+### `snapshot was saved against different card data`
+
+```text
+ValueError: snapshot was saved against different card data
+```
+
+The snapshot, or the bank of snapshots in your file, was saved on card data your engine doesn't
+have, usually because an earlier engine release saved it. royalesim 0.1.44 changed the card data,
+so nothing saved on 0.1.43 or older loads on it. Run the code that saved your starts
+(`env.snapshot()` and `save_snapshots(...)`) again on the engine you have now.
+[Starting From a Saved Moment](clash-royale/configuration-objects/state-mutators.md#starting-from-a-saved-moment)
+shows how.
+
 ### `TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge'`
 
 ```text
