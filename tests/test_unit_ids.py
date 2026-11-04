@@ -642,3 +642,60 @@ def test_on_rustengine_a_reordered_superset_pin_renumbers_every_unit_by_name() -
                 else:
                     assert got.tobytes() == want.tobytes(), key
     assert shown > 500
+
+
+#: The unit types each client card table says beyond the default table's, in the engine's order,
+#: as CHANGELOG.md states them: the Season 88 table (royalesim 0.1.40) and the 16.635 table
+#: (royalesim 0.1.43), which says the Evo Giant's own type since royalesim 0.1.44.
+TABLE_EXTRA_UNITS = {
+    "client160402017_20261019": [
+        "BarrelGoblin", "ElectroGiant_EV1", "IceWizardHero", "IceWizardHero_IceCube",
+    ],
+    "client160635007_20261103": [
+        "BarrelGoblin", "ElectroGiant_EV1", "Giant_EV1", "IceWizardHero", "IceWizardHero_IceCube",
+    ],
+}
+
+
+def _on_table(table: str):
+    from royalegym.rust_engine import RustEngine
+
+    return RustEngine(calibration_overrides={"cards.CARD_TABLE": table})
+
+
+def _pinned_env(engine, pin: list[str]) -> ClashParallelEnv:
+    return ClashParallelEnv(engine, obs_builder=SpatialObsBuilder(
+        card_identity=True, unit_identity=True, unit_names=pin))
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+@pytest.mark.parametrize("table", sorted(TABLE_EXTRA_UNITS))
+def test_each_client_table_says_the_unit_types_the_changelog_names(table: str) -> None:
+    """The default table's vocabulary with these names appended is a pin that binds on the
+    table, so a run pinned on the default table moves to it by appending them."""
+    from royalegym.rust_engine import RustEngine
+
+    default = RustEngine().unit_types()
+    engine = _on_table(table)
+    assert [n for n in engine.unit_types() if n not in default] == TABLE_EXTRA_UNITS[table]
+    pin = [*default, *TABLE_EXTRA_UNITS[table]]
+    env = _pinned_env(engine, pin)
+    env.reset(seed=1)
+    assert env.obs_builder.config()["unit_names"] == pin
+    assert env.obs_builder.unit_ids_digest == unit_ids_digest(pin, None)
+
+
+@pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
+def test_on_the_16635_table_the_evo_giant_plays_and_a_pin_without_its_type_is_refused() -> None:
+    """royalesim 0.1.44 lets the Giant's evolution be played on the 16.635 table, and its unit
+    type sits among the others by name, so every later engine index moves by one. A pin taken on
+    an earlier table lacks the type and is refused by name until the name is appended."""
+    from royalegym.rust_engine import RustEngine
+
+    engine = _on_table("client160635007_20261103")
+    giant = next(c for c in engine.cards() if c.name == "Giant")
+    assert giant.evo_cycle > 0, giant
+    earlier = [*RustEngine().unit_types(), *TABLE_EXTRA_UNITS["client160402017_20261019"]]
+    with pytest.raises(ValueError, match=r"lacks: \['Giant_EV1'\]"):
+        _pinned_env(engine, earlier)
+    _pinned_env(engine, [*earlier, "Giant_EV1"]).reset(seed=1)
