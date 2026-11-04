@@ -68,12 +68,14 @@ def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
     initialisation or critic (``actor_digest``), with ``royalelearn bench`` fixed for id planes,
     0.5.17 trains on the processor, saying why, when the graphics card is too old for the
     installed PyTorch (``device="auto"``), 0.5.18 skips a scripted seat's observation
-    (``rollout.mask_only_scripted``, which needs royalegym 0.1.21), and 0.5.19 trains through a
-    transform of the actor's logits of your own (``ppo.policy_transform``)."""
+    (``rollout.mask_only_scripted``, which needs royalegym 0.1.21), 0.5.19 trains through a
+    transform of the actor's logits of your own (``ppo.policy_transform``), and 0.5.20 counts a
+    fraction rounded into a ``uint8`` plane (``health/obs_codec_rounded``) and keeps a plane's
+    fractions with ``rollout.codec_float16_planes``."""
     extras = _extras()
     for extra in ("learn", "all"):
         pins = [r for r in extras[extra] if r.startswith("royalelearn")]
-        assert pins == ["royalelearn[torch]>=0.5.19"], f"[{extra}]: {pins}"
+        assert pins == ["royalelearn[torch]>=0.5.20"], f"[{extra}]: {pins}"
 
 
 def test_the_engine_data_comes_from_the_installed_engine(monkeypatch, tmp_path):
@@ -306,9 +308,10 @@ def test_the_imitate_extras_require_record_and_clone():
     stores ``spell_ids`` in its shards beside ``card_ids``, 0.2.9 ``unit_ids``, 0.2.10
     writes ``environment.json`` beside a clone, and 0.2.12's ``clone`` prints a line per epoch
     (a long clone no longer looks hung) and stamps old folders' ``actor_digest``, 0.2.13's
-    ``ShardReader`` keeps the packed rows after the first epoch (``cache="auto"``), and 0.2.14
-    reads a snapshot reference through royalelearn's ``ppo.policy_transform``."""
+    ``ShardReader`` keeps the packed rows after the first epoch (``cache="auto"``), 0.2.14 reads
+    a snapshot reference through royalelearn's ``ppo.policy_transform``, and 0.2.15's
+    ``ShardReader`` warns once per plane when the run's codec stores a part's values rounded."""
     extras = _extras()
     for extra in ("imitate", "all"):
         pins = [r for r in extras[extra] if r.startswith("royaleimitate")]
-        assert pins == ["royaleimitate[replays]>=0.2.14"], f"[{extra}]: {pins}"
+        assert pins == ["royaleimitate[replays]>=0.2.15"], f"[{extra}]: {pins}"

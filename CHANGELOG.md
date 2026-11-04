@@ -5,7 +5,15 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.26 (2026-11-03)
+
+### Changed
+- royalesim 0.1.43, royalelearn 0.5.20 (counts a fraction rounded into a `uint8` plane,
+  `health/obs_codec_rounded`; `rollout.codec_float16_planes` keeps a plane's fractions) and
+  royaleimitate 0.2.15 (its `ShardReader` warns once per plane that the run's codec stores
+  rounded). Some battles play slightly differently, as royalesim 0.1.41 to 0.1.43 bring more of
+  the current client's behaviour, but every example on the site prints the same numbers. Game
+  Values and the Environments page are stamped on royalesim 0.1.43: the same cards and forms.
 
 ### Added
 - `SpatialObsBuilder(elixir_income=True)` counts the elixir the board pays into both counted
@@ -15,9 +23,13 @@ change the observation's shape; each such change is listed here.
   goes False at the first payout. Off by default, so no observation or saved memory changes. It
   needs an engine that says what each unit pays (`RustEngine.unit_mana`), which royalesim
   0.1.43 does.
-
-### Changed
-- royalesim 0.1.43.
+- royalesim 0.1.43's 16.635 card table plays through RoyaleGym:
+  `calibration_overrides={"cards.CARD_TABLE": "client160635007_20261103"}`. It carries the
+  Season 88 values and has the Season 88 table's unit types, so a pinned unit vocabulary takes
+  the same four names on its end (`BarrelGoblin`, `ElectroGiant_EV1`, `IceWizardHero`,
+  `IceWizardHero_IceCube`). The Evo Giant and the Evo Mirror cannot be played on it yet; the
+  Giant and the Mirror can. On it, as on the 16.402 tables, the Elixir Collector pays every
+  15 s, and `elixir_income` counts that.
 
 ## 0.1.25 (2026-10-20)
 
