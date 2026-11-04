@@ -1,7 +1,7 @@
 # The engine
 
 [![repo](https://img.shields.io/badge/repo-RoyaleSim-DEA584?style=flat-square&logo=rust&logoColor=white)](https://github.com/RoyaleGym/RoyaleSim)
-![cards](https://img.shields.io/badge/cards-136%20of%20145%20load%2C%20same%20in%20a%20clone-555?style=flat-square)
+![cards](https://img.shields.io/badge/cards-145%20of%20145%20load%2C%20same%20in%20a%20clone-555?style=flat-square)
 ![tick](https://img.shields.io/badge/tick-50%20ms%2C%2020%20per%20second-555?style=flat-square)
 ![speed](https://img.shields.io/badge/one%20worker-16%2C100%20battles%2Fhour-2ea043?style=flat-square)
 ![same seed](https://img.shields.io/badge/same%20seed-same%20battle-2ea043?style=flat-square)
@@ -217,12 +217,13 @@ about rewards, so you can change a reward without recompiling anything.
 ## The numbers, and where they come from
 
 **Cards.** The card table that comes with a clone has 145 cards: the 15.535 client's 144, plus
-the Minion Giant. The engine loads 136 of them and refuses the other 9, each with a reason. The
-default catalogue, which is what you get when you name no cards, holds all 136, the Mirror, the
-Miner and the Goblin Drill included. A card that becomes loadable is appended, so no card's id
-moves: the Minion Giant, then the Little Prince, Goblinstein and the Boss Bandit come last.
-Counted on RoyaleSim `92a3abb` on
-2026-09-30.
+the Minion Giant. The engine loads all 145, from RoyaleSim 0.1.24 on, including nine special
+versions used in game events, such as the Super Witch and Global Lightning, which a random deck
+leaves out. The default catalogue, which is what you get when you name no cards, holds all 145,
+the Mirror, the Miner and the Goblin Drill included. A card that becomes loadable is appended, so
+no card's id moves: the Minion Giant, the Little Prince, Goblinstein and the Boss Bandit, then the
+nine event versions, come last.
+Counted on RoyaleSim 0.1.43 on 2026-11-03.
 
 **Speed.** On a 4-core laptop with 8 GB of RAM, with other programs running, the engine did
 18,000 ticks in 0.35 to 0.42 seconds on one core. That is 43,000 to 51,000 ticks a second.

@@ -55,6 +55,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 | `SpatialObsBuilder(effect_identity=True)` | With `spell_identity`, keeps cast spells apart from the effects troops and buildings leave: `spell_ids` grows from 4 layers to 8, with spell cards in the first four and those effects (an evolution's bombs or fireworks, a death bomb) in the last four. |
 | `SpatialObsBuilder(enemy_queue=True)` | The opponent's next card and the three after it, in order, worked out from its plays the way a player watching them would. A place it can't know yet reads "not deduced". |
 | `SpatialObsBuilder(button_index=True)` | Each of your ability buttons in the order the actions press them: which card it belongs to, and whether it's ready, used or cooling down. |
+| `SpatialObsBuilder(elixir_income=True)` | The opponent's counted elixir also takes in what the board pays: an Elixir Collector's elixir, and the elixir it pays when it dies, and what an Elixir Golem's pieces pay when they die. Needs royalegym 0.1.26 or newer: `pip install --upgrade "royalegym[all]"`. |
 | `SpatialObsBuilder(reveal=Reveal(...))` | Hidden information, such as the opponent's real elixir. For experiments only. |
 
 `Reveal` comes from `royalegym`. Turn on what you want the bot to see:
