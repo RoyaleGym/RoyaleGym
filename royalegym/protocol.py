@@ -679,6 +679,17 @@ class SpellState(msgspec.Struct, frozen=True, array_like=True):
     # FLIGHT: ticks it has moved (0 while it waits out delay_ticks, and for other motions).
     # Trailing and defaulted: -1 from an engine before RoyaleSim 0.1.4, not reported.
     ticks_flown: int = -1
+    # The object's LEVEL, one scale across rarities, as for ``EntityState.level``: a Mirror's
+    # copy reads its card's level plus one. Asked for by the sim session (2026-11-04).
+    # Trailing and defaulted: -1 from an engine that does not send it, not reported.
+    level: int = -1
+    # Which of ``card_id``'s records made the object, coded as ``PlayerState.forms`` with one
+    # more: 0 basic, 1 evolution (an Evo Giant Snowball's capture roll, the Evo Firecracker's
+    # fireworks), 2 hero (a hero ability's areas, a Hero Barbarian Barrel's roll), 3 an
+    # evolution's decoy (the Evo Goblin Barrel's decoy barrel). So a row's (card_id, form) is
+    # one of a deck's (card, form) pairs, or that pair's decoy. Trailing and defaulted: -1 from
+    # an engine that does not send it, not reported (never 0, which is the basic card's).
+    form: int = -1
 
 
 class PlayerState(msgspec.Struct, frozen=True):

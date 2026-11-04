@@ -39,6 +39,7 @@ from royalegym.protocol import (
     MatchSetup,
     PlayerState,
     ProjectileState,
+    SpellState,
     status_of,
     to_engine,
 )
@@ -467,3 +468,36 @@ def test_plant_a_mock_that_starts_reporting_a_phase_is_caught(monkeypatch):
     monkeypatch.setattr(engine, "state", state_with_phases)
     reported = fields_the_mock_reports(mock_battle_states(engine))
     assert reported == {"attack_phase": 0}, f"PLANT DID NOT LAND: {reported}"
+
+
+# ---------------------------------------------------------------------------
+# Spell rows: the object's level and which record of its card made it, on the row's end.
+
+#: The SpellState columns every engine sent before ``level`` and ``form`` (royalesim 0.1.4 to
+#: 0.1.44), named as its SPELL_FIELDS names them.
+SPELL_BEFORE_LEVEL = [
+    "team", "card_id", "motion", "x", "y", "aim_x", "aim_y",
+    "delay_ticks", "travelled", "length", "hits", "ticks_flown",
+]
+
+
+def test_spell_rows_take_level_and_form_on_their_end():
+    assert list(SpellState.__struct_fields__) == [*SPELL_BEFORE_LEVEL, "level", "form"]
+    for theirs in (SPELL_BEFORE_LEVEL, [*SPELL_BEFORE_LEVEL, "level", "form"]):
+        assert check_field_order(core_with(SPELL_FIELDS=theirs))["SPELL_FIELDS"] is True
+    with pytest.raises(RuntimeError, match="column 12 is 'form' in the engine"):
+        check_field_order(core_with(SPELL_FIELDS=[*SPELL_BEFORE_LEVEL, "form", "level"]))
+
+
+def test_a_spell_row_without_level_and_form_reads_them_as_not_reported():
+    """Decoded the way RustEngine decodes the engine's state: a BattleState whose spells are
+    rows. The older row is the width every engine sends today; -1 is "not said", never a form
+    (0 is the basic card's)."""
+    engine = MockEngine()
+    engine.reset(seed=0, setup=MatchSetup(decks=[list(range(8))] * 2))
+    raw = msgspec.to_builtins(engine.state())
+    older = [RED, 4, 1, 90, 400, 90, 300, 0, 0, 0, 0, 6]
+    raw["spells"] = [older, [*older, 12, 1]]
+    old, new = msgspec.json.decode(msgspec.json.encode(raw), type=BattleState).spells
+    assert (old.ticks_flown, old.level, old.form) == (6, -1, -1)
+    assert (new.ticks_flown, new.level, new.form) == (6, 12, 1)

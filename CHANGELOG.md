@@ -20,6 +20,15 @@ change the observation's shape; each such change is listed here.
   0.1.44: `load_state` raises `ValueError` ("snapshot was saved against different card data").
   Save it again on 0.1.44.
 
+### Added
+- Two columns on the end of each spell row: `SpellState.level`, the object's level (as
+  `EntityState.level`, so a Mirror's copy reads one above its card), and `SpellState.form`,
+  which of its card's records made it: 0 basic, 1 evolution and 2 hero, as in
+  `PlayerState.forms`, and 3 an evolution's decoy (the Evo Goblin Barrel's). Each is -1 from an
+  engine that does not send it, as royalesim 0.1.44 and earlier do not. An engine that sends
+  them needs this royalegym or newer: an older one refuses an engine whose spell rows are wider
+  than it knows, so upgrade both together (`pip install --upgrade "royalegym[all]"`).
+
 ## 0.1.26 (2026-11-03)
 
 ### Changed
