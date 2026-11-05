@@ -1,5 +1,6 @@
 # The fresh-user test: a clean venv in a clean folder installs royalegym[all] the way a newcomer would, runs
-# examples/quickstart.py, records a battle and opens it in the viewer headless. Nightly, on all three OSes.
+# examples/quickstart.py, records a battle and opens it in the viewer headless. Nightly on Linux and Windows;
+# a dispatched run (every release) on all three OSes.
 # The main step installs RoyaleSim from its latest GitHub release's wheels and builds each sibling from its
 # public repo into the same folder (pip --find-links). A missing prerequisite reports BLOCKED, which is not a pass.
 name: fresh-user
@@ -27,7 +28,10 @@ jobs:
       matrix:
         # macos-15, not macos-14: GitHub retires the macos-14 image on 2026-11-02, and from 10-28 its
         # jobs were brownout-failed or never picked up (runner-images#13518), so pypi never ran.
-        os: [ubuntu-24.04, windows-2022, macos-15]
+        # macOS on dispatched runs only (2026-11-05): GitHub's macOS arm64 runners run short, and a leg
+        # that gets none is cancelled after 15 minutes ("not acquired by Runner of type hosted"), which
+        # turned the 11-02 and 11-04 nightlies red with every test that ran passing.
+        os: ${{ github.event_name == 'schedule' && fromJSON('["ubuntu-24.04", "windows-2022"]') || fromJSON('["ubuntu-24.04", "windows-2022", "macos-15"]') }}
         python: ['3.12', '3.13', '3.14']
     name: fresh (${{ matrix.os }}, py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
