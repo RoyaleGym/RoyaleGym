@@ -1868,12 +1868,18 @@ def _write_hand(
 # ---------------------------------------------------------------------------
 
 
-#: The layout ``ObsBuilder.save_memory`` writes; a new number when it changes.
-MEMORY_FORMAT = 1
+#: The layout ``ObsBuilder.save_memory`` writes; a new number when it changes. 2 (2026-11-05): the
+#: header names the elixir laws the counts ran on (``MEMORY_LAWS``), where 1 named the whole
+#: calibration's digest, so a royalesim release that moves only other values (a unit's, a spell's)
+#: refused every saved memory although no count would change. ``load_memory`` still reads 1.
+MEMORY_FORMAT = 2
 #: What ``bind`` gives each memory from the catalogue, the calibration or the constructor. It is
-#: not memory, so it is not saved: the catalogue's names, the calibration digest and the command
-#: delay in the saved header say the two builders agree on it.
+#: not memory, so it is not saved: the catalogue's names, the elixir laws and the command delay in
+#: the saved header say the two builders agree on it.
 MATCH_MEMORY_BOUND = ("num_cards", "law", "cost", "is_mirror", "income", "income_law")
+#: The bound fields that come from the calibration (and, for ``income``, from what the engine says
+#: each unit pays): the arithmetic the elixir counts run on, saved in the header and compared.
+MEMORY_LAWS = ("law", "income", "income_law")
 ENEMY_FORMS_BOUND = ("num_cards", "champions", "cycles")
 AIM_CLOCK_BOUND = ("after_ticks",)
 
@@ -2179,11 +2185,23 @@ class ObsBuilder(ABC):
         return msgspec.msgpack.encode({
             "format": MEMORY_FORMAT,
             "cards": [c.name for c in self.cards],
-            "calibration": calibration_digest(self.calibration),
+            "laws": self._memory_laws(),
             "command_delay": [int(d) for d in getattr(self, "command_delay", (0, 0))],
             "tick": ticks.pop(),
             "parts": _pack(parts),
         })
+
+    def _memory_laws(self) -> dict[str, Any]:
+        """``MEMORY_LAWS`` as both seats' memories hold them, in the form msgpack gives back."""
+        laws = [
+            msgspec.msgpack.decode(msgspec.msgpack.encode(
+                {k: msgspec.to_builtins(getattr(m, k)) for k in MEMORY_LAWS}
+            ))
+            for m in self.memory.values()
+        ]
+        if any(law != laws[0] for law in laws):
+            raise RuntimeError("the seats' memories run on different elixir laws")
+        return laws[0]
 
     def load_memory(self, blob: bytes, state: BattleState) -> None:
         """Restore ``save_memory``'s bytes, after ``reset(state)``, where ``state`` is the battle
@@ -2191,17 +2209,20 @@ class ObsBuilder(ABC):
         moment). The next build of ``state`` is then the observation each seat had there.
 
         Refuses, by name, a memory saved on another catalogue (card ids are positions in it),
-        another calibration or command delay (the elixir counts would run on other laws), or at
-        another tick.
+        under other elixir laws or another command delay (the counts would run on other
+        arithmetic), or at another tick. Any other calibration value may differ: the counts do
+        not read it. A memory of format 1 (royalegym 0.1.27 and earlier) carries the whole
+        calibration's digest rather than its laws, so it loads only under that calibration.
         """
         try:
             saved = msgspec.msgpack.decode(blob)
         except msgspec.DecodeError as exc:
             raise ValueError(f"not a saved observation memory: {exc}") from exc
-        if not isinstance(saved, dict) or saved.get("format") != MEMORY_FORMAT:
+        fmt = saved.get("format") if isinstance(saved, dict) else None
+        if fmt not in (1, MEMORY_FORMAT):
             raise ValueError(
-                f"not a saved observation memory of format {MEMORY_FORMAT}: "
-                f"{saved.get('format') if isinstance(saved, dict) else type(saved).__name__}"
+                f"not a saved observation memory of format 1 or {MEMORY_FORMAT}: "
+                f"{fmt if isinstance(saved, dict) else type(saved).__name__}"
             )
         names = [c.name for c in self.cards]
         if saved["cards"] != names:
@@ -2210,11 +2231,29 @@ class ObsBuilder(ABC):
                 f"this engine's ({len(names)}); card ids are positions in it, so every card it "
                 "counted would be another card here"
             )
-        if saved["calibration"] != calibration_digest(self.calibration):
-            raise ValueError(
-                "the memory was saved under another calibration, whose elixir laws its counts "
-                "followed"
-            )
+        if fmt == 1:
+            if saved["calibration"] != calibration_digest(self.calibration):
+                raise ValueError(
+                    "the memory was saved under another calibration, whose elixir laws its "
+                    "counts followed, by royalegym 0.1.27 or earlier, which kept the "
+                    "calibration's digest rather than its laws: save it again with this engine"
+                )
+        else:
+            want, got = self._memory_laws(), saved["laws"]
+            differ = []
+            for name in MEMORY_LAWS:
+                a, b = want.get(name), got.get(name)
+                if isinstance(a, dict) and isinstance(b, dict):
+                    differ += [f"{name}.{f}" for f in sorted(set(a) | set(b), key=str)
+                               if a.get(f) != b.get(f)]
+                elif a != b:
+                    differ.append(name)
+            if differ:
+                raise ValueError(
+                    "the memory's counts ran on other elixir laws than this builder's "
+                    f"({', '.join(differ)} differ), so they would not be this engine's counts: "
+                    "save it again with this engine"
+                )
         delay = [int(d) for d in getattr(self, "command_delay", (0, 0))]
         if saved["command_delay"] != delay:
             raise ValueError(

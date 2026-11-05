@@ -5,6 +5,20 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Fixed
+- A snapshot saved by this royalegym (`env.snapshot()`, a bank from `save_snapshots`) loads on
+  a later royalesim that leaves the elixir arithmetic alone. Its observation memory now records
+  the elixir laws its counts ran on (the bar's regeneration, cap and overtime, and with
+  `elixir_income` the payout timers and what each unit pays), and is refused only when one of
+  them differs, naming it. Before, it recorded a digest of the whole calibration, so a royalesim
+  release that moved any value (a unit's, a spell's) refused it with "the memory was saved under
+  another calibration", as royalesim 0.1.45 did with 0.1.44's. A snapshot saved by royalegym
+  0.1.27 or earlier still carries that digest and loads only under the calibration it was saved
+  under: save it again. The engine checks its own saved state apart from this, and refuses one
+  saved on other card data (0.1.44 refuses 0.1.43's).
+
 ## 0.1.27 (2026-11-04)
 
 ### Changed

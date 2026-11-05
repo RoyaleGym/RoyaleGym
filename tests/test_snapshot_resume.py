@@ -11,6 +11,9 @@ every observation, reward and engine state step by step.
 
 from __future__ import annotations
 
+import copy
+
+import msgspec
 import numpy as np
 import pytest
 
@@ -18,7 +21,7 @@ from royalegym.action import TileActionParser
 from royalegym.env import ClashParallelEnv
 from royalegym.mock_engine import MockEngine
 from royalegym.obs import SpatialObsBuilder
-from royalegym.protocol import BLUE, RED
+from royalegym.protocol import BLUE, RED, Calibration, calibration_digest, default_calibration
 from royalegym.rust_engine import CORE_IMPORT_ERROR, RustEngine, core_available
 from royalegym.state_mutator import (
     DefaultStateMutator,
@@ -343,3 +346,69 @@ def test_a_plain_blob_still_resumes_as_before():
         _, infos = other.reset(options=start)
         assert other.battle_state.tick == env.battle_state.tick
         assert "start_seat" not in infos["blue"]
+
+
+def _moved(values: dict[str, object]) -> Calibration:
+    """The shipped calibration with each ``section.NAME`` value replaced."""
+    raw = copy.deepcopy(default_calibration().raw)
+    for key, value in values.items():
+        section, name = key.split(".")
+        assert name in raw[section], key  # the key the test moves is one the calibration has
+        raw[section][name]["value"] = value
+    return Calibration(raw)
+
+
+def _memory_at(builder: SpatialObsBuilder, seed: int = 1, steps: int = 30):
+    """A mock battle's memory after ``steps`` decisions, and the state it was saved in."""
+    env = ClashParallelEnv(MockEngine(), obs_builder=builder,
+                           state_mutator=DefaultStateMutator(decks=DECKS))
+    env.reset(seed=seed)
+    rng = np.random.default_rng(seed)
+    for _ in range(steps):
+        env.step(_actions(env, rng))
+    assert all(m.foe_plays > 0 for m in env.obs_builder.memory.values()), "vacuous: no play seen"
+    return env.obs_builder.save_memory(), env.engine.state()
+
+
+def _bound_to(calibration: Calibration | None, state) -> SpatialObsBuilder:
+    other = ClashParallelEnv(
+        MockEngine(), obs_builder=SpatialObsBuilder(card_identity=True, calibration=calibration),
+        state_mutator=DefaultStateMutator(decks=DECKS),
+    )
+    other.reset(seed=1)
+    return other.obs_builder
+
+
+#: A value the memory's counts never read: a royalesim release moves values like it (a unit's
+#: knockback, a spell's edge) and leaves the elixir arithmetic alone.
+NOT_ELIXIR = {"knockback.DURATION_MS": 120}
+
+
+def test_a_memory_loads_under_a_calibration_that_moved_only_what_its_counts_do_not_read():
+    blob, state = _memory_at(SpatialObsBuilder(card_identity=True))
+    builder = _bound_to(_moved(NOT_ELIXIR), state)
+    assert calibration_digest(builder.calibration) != calibration_digest(default_calibration())
+    builder.load_memory(blob, state)
+    assert builder.save_memory() == blob  # every count, and the laws they run on, carried
+
+
+def test_a_memory_saved_under_another_elixir_law_is_refused_naming_it():
+    blob, state = _memory_at(SpatialObsBuilder(card_identity=True))
+    regen = default_calibration().int("match.MANA_REGEN_MS_1X")
+    builder = _bound_to(_moved({"match.MANA_REGEN_MS_1X": regen * 2}), state)
+    refusal = r"other elixir laws .*law\.scale.* differ\).*save it again"
+    with pytest.raises(ValueError, match=refusal):
+        builder.load_memory(blob, state)
+
+
+def test_a_memory_from_royalegym_0127_or_earlier_is_checked_as_it_was():
+    """Format 1 carried the calibration's digest and not its laws, so it loads only under the
+    calibration it was saved under, and a refusal says what to do."""
+    blob, state = _memory_at(SpatialObsBuilder(card_identity=True))
+    old = msgspec.msgpack.decode(blob)
+    old.pop("laws")
+    old.update(format=1, calibration=calibration_digest(default_calibration()))
+    old_blob = msgspec.msgpack.encode(old)
+    _bound_to(None, state).load_memory(old_blob, state)
+    with pytest.raises(ValueError, match=r"another calibration.*save it again with this engine"):
+        _bound_to(_moved(NOT_ELIXIR), state).load_memory(old_blob, state)
