@@ -92,13 +92,13 @@ print(f"winner {s.winner}  crowns {[p.crowns for p in s.players]}  tick {s.tick}
 winner 1  crowns [0, 1]  tick 3600
 ```
 
-That is a whole match, re-run 2026-11-05 on engine build `a43710f2e7541d4b` with the **15.535 card
+That is a whole match, re-run 2026-11-05 on engine build `d28d39a2cdf51a76` with the **15.535 card
 table**, which the Install steps below put at `cards.json`. Red took Blue's left princess tower at
 tick 1800 and Blue took none of Red's, so Red won 1-0 when the three minutes ran out at tick 3600.
 
-Measured on the project's desktop, not on a clean runner, with the royalesim 0.1.45 wheel from
-PyPI, built from **RoyaleSim `0864abe`**. The compiled engine is `engine_binary_sha256`
-`650be49c96728fec`.
+Measured on the project's desktop, not on a clean runner, with the royalesim 0.1.46 wheel from
+PyPI, built from **RoyaleSim `dbbcb4b`**. The compiled engine is `engine_binary_sha256`
+`c850826d43f4f686`.
 
 **This result has moved eight times.** The first six were each traced to one engine rule the same
 way: switch that one rule back, run this exact program, and get the previous result exactly.

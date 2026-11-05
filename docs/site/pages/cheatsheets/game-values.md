@@ -124,7 +124,7 @@ on the same engine build as the card list below. Every champion's ability works 
 
 ## Cards
 
-The engine's card list on engine build `a43710f2e7541d4b` (RoyaleSim 0.1.45), by the names
+The engine's card list on engine build `d28d39a2cdf51a76` (RoyaleSim 0.1.46), by the names
 RoyaleGym uses. Hitpoints are for one unit at level 11. A few names in the list are special
 versions used in game events. To get the list for the engine you have installed:
 

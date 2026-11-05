@@ -124,7 +124,7 @@ after that many ticks). `SnapshotStateMutator(bank, weights={...}, seat="blue")`
 the bank by tag and by seat. The [API reference](../../reference/royalegym.md) has every argument.
 
 A saved bank belongs to the engine release it was saved on. After you upgrade the engine, save
-your starts again: on royalesim 0.1.45, every bank an earlier release saved is refused, and
+your starts again: on royalesim 0.1.46, every bank an earlier release saved is refused, and
 [It Doesn't Work](../../it-doesnt-work.md#snapshot-was-saved-against-different-card-data-or-the-memory-was-saved-under-another-calibration)
 has the two messages you may see.
 

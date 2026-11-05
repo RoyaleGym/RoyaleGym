@@ -232,9 +232,9 @@ ValueError: the memory was saved under another calibration, whose elixir laws it
 Your snapshots, or the bank of them in your file, were saved on an earlier engine release, and the
 one you have now refuses them. The first message means the card data changed: royalesim 0.1.44
 changed it, so nothing saved on 0.1.43 or older loads on 0.1.44 or newer. The second means the
-engine's settings changed: on royalesim 0.1.45, a bank saved on 0.1.44 gives it. The fix is the
-same for both. Run the code that saved your starts (`env.snapshot()` and `save_snapshots(...)`)
-again on the engine you have now.
+engine's settings changed: on royalesim 0.1.46, a bank saved on 0.1.44 or 0.1.45 gives it. The
+fix is the same for both. Run the code that saved your starts (`env.snapshot()` and
+`save_snapshots(...)`) again on the engine you have now.
 [Starting From a Saved Moment](clash-royale/configuration-objects/state-mutators.md#starting-from-a-saved-moment)
 shows how.
 
