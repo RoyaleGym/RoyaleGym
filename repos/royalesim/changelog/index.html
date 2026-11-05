@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0146-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.46 (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0145-2026-11-04" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3821,6 +3832,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0146-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.46 (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0145-2026-11-04" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4354,6 +4376,21 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0146-2026-11-04">0.1.46 (2026-11-04)<a class="headerlink" href="#0146-2026-11-04" title="Permanent link">&para;</a></h2>
+<ul>
+<li>4 more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>A unit being healed (an Evo Bat after each of its hits, a Battle Healer, a unit in a Heal Spirit's area) is not
+    written off as doomed until the homing shots in flight at it add up to its full hitpoints
+    (<code>targeting.DOOMED_HEAL_BUFF</code>).</li>
+<li>The Evo Skeleton Army's General stays inside the arena when the army is played on the back row
+    (<code>formation.ARMY_GENERAL_CLAMP</code>).</li>
+<li>The Little Prince's guard's charge passes over a troop leaping the river. The troop takes the hit, and the push,
+    on its first tick out of the leap if the charge still reaches it (<code>combat.GUARD_CHARGE_LEAP</code>).</li>
+<li>An Executioner knocked back while his axe is out keeps his attack and waits for the axe, instead of starting a
+    fresh throw (<code>knockback.PINGPONG_WAIT_RESET</code>).</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles.</li>
+</ul>
 <h2 id="0145-2026-11-04">0.1.45 (2026-11-04)<a class="headerlink" href="#0145-2026-11-04" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Upgrade royalegym to 0.1.27 with this release. Its state reader carries the new columns below; an older royalegym
