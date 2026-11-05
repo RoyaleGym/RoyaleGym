@@ -791,10 +791,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#snapshot-was-saved-against-different-card-data-or-the-memory-was-saved-under-another-calibration" class="md-nav__link">
+  <a href="#snapshot-was-saved-against-different-card-data-the-memory-was-saved-under-another-calibration-or-the-memorys-counts-ran-on-other-elixir-laws" class="md-nav__link">
     <span class="md-ellipsis">
       
-        snapshot was saved against different card data or the memory was saved under another calibration
+        snapshot was saved against different card data, the memory was saved under another calibration or the memory's counts ran on other elixir laws
       
     </span>
   </a>
@@ -4059,10 +4059,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#snapshot-was-saved-against-different-card-data-or-the-memory-was-saved-under-another-calibration" class="md-nav__link">
+  <a href="#snapshot-was-saved-against-different-card-data-the-memory-was-saved-under-another-calibration-or-the-memorys-counts-ran-on-other-elixir-laws" class="md-nav__link">
     <span class="md-ellipsis">
       
-        snapshot was saved against different card data or the memory was saved under another calibration
+        snapshot was saved against different card data, the memory was saved under another calibration or the memory's counts ran on other elixir laws
       
     </span>
   </a>
@@ -4527,18 +4527,28 @@ space), and a few differ: <code>Archer</code> is the Archers card, <code>Log</co
 or <code>2</code> back to <code>0</code>, and play the normal card. (With <code>make_env</code>, take it out of <code>evolved=[...]</code>
 or <code>heroes=[...]</code>.) The cards that have one are listed in
 <a href="../cheatsheets/game-values/#evolutions-and-heroes">Game Values</a>.</p>
-<h3 id="snapshot-was-saved-against-different-card-data-or-the-memory-was-saved-under-another-calibration"><code>snapshot was saved against different card data</code> or <code>the memory was saved under another calibration</code><a class="headerlink" href="#snapshot-was-saved-against-different-card-data-or-the-memory-was-saved-under-another-calibration" title="Permanent link">&para;</a></h3>
+<h3 id="snapshot-was-saved-against-different-card-data-the-memory-was-saved-under-another-calibration-or-the-memorys-counts-ran-on-other-elixir-laws"><code>snapshot was saved against different card data</code>, <code>the memory was saved under another calibration</code> or <code>the memory's counts ran on other elixir laws</code><a class="headerlink" href="#snapshot-was-saved-against-different-card-data-the-memory-was-saved-under-another-calibration-or-the-memorys-counts-ran-on-other-elixir-laws" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>ValueError: snapshot was saved against different card data (another royalesim release or card table): make it again with this release
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>ValueError: the memory was saved under another calibration, whose elixir laws its counts followed
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>ValueError: the memory was saved under another calibration, whose elixir laws its counts followed, by royalegym 0.1.27 or earlier, which kept the calibration's digest rather than its laws: save it again with this engine
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>ValueError: the memory's counts ran on other elixir laws than this builder's (law.cap_fine, law.gain_2x, law.gain_3x, law.scale differ), so they would not be this engine's counts: save it again with this engine
 </code></pre></div>
-<p>Your snapshots, or the bank of them in your file, were saved on an earlier engine release, and the
-one you have now refuses them. The first message means the card data changed: royalesim 0.1.44
-changed it, so nothing saved on 0.1.43 or older loads on 0.1.44 or newer. The second means the
-engine's settings changed: on royalesim 0.1.46, a bank saved on 0.1.44 or 0.1.45 gives it. The
-fix is the same for both. Run the code that saved your starts (<code>env.snapshot()</code> and
-<code>save_snapshots(...)</code>) again on the engine you have now.
+<p>Your snapshots, or the bank of them in your file, were saved on an engine the one you have now
+can't carry on from. The fix is the same for all three. Run the code that saved your starts
+(<code>env.snapshot()</code> and <code>save_snapshots(...)</code>) again on the engine you have now.
 <a href="../clash-royale/configuration-objects/state-mutators/#starting-from-a-saved-moment">Starting From a Saved Moment</a>
 shows how.</p>
+<ul>
+<li><strong>The first</strong> means the card data changed. royalesim 0.1.44 changed it, so nothing saved on
+  0.1.43 or older loads on 0.1.44 or newer.</li>
+<li><strong>The second</strong> means the bank was saved by royalegym 0.1.27 or older, under other engine
+  settings. Such a bank loads only under the settings it was saved under, so on royalesim 0.1.46
+  every bank saved on 0.1.44 or 0.1.45 is refused.</li>
+<li><strong>The third</strong> means the elixir rules changed: how fast the bar fills, its cap and overtime,
+  and with <code>elixir_income</code> the payouts. The brackets name the ones that differ. Only a bank saved
+  by royalegym 0.1.28 or newer can give it.</li>
+</ul>
+<p>A bank saved by royalegym 0.1.28 or newer keeps loading after you upgrade royalesim, as long as
+the card data and the elixir rules stay the same: one saved on royalesim 0.1.45 loads on 0.1.46.</p>
 <h3 id="territory_modelenemy_tower_no_deploy_rects_open_bridge"><code>TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge'</code><a class="headerlink" href="#territory_modelenemy_tower_no_deploy_rects_open_bridge" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>NotImplementedError: TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge': only ('enemy_tower_no_deploy_rects',) is implemented
 </code></pre></div>

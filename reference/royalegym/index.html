@@ -11409,8 +11409,10 @@ reset and step). Plain msgpack: loading it runs no code.</p>
 the memory was saved in, at the tick it was saved at (an engine that loaded the same
 moment). The next build of <code>state</code> is then the observation each seat had there.</p>
 <p>Refuses, by name, a memory saved on another catalogue (card ids are positions in it),
-another calibration or command delay (the elixir counts would run on other laws), or at
-another tick.</p>
+under other elixir laws or another command delay (the counts would run on other
+arithmetic), or at another tick. Any other calibration value may differ: the counts do
+not read it. A memory of format 1 (royalegym 0.1.27 and earlier) carries the whole
+calibration's digest rather than its laws, so it loads only under that calibration.</p>
 
 
     </div>

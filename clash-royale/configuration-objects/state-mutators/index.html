@@ -3615,10 +3615,12 @@ would with the same moves. That's a way to practise one situation over and over.
 <p>A snapshot can also carry a <code>seat</code> (the side the start is for) and <code>max_ticks</code> (end each episode
 after that many ticks). <code>SnapshotStateMutator(bank, weights={...}, seat="blue")</code> then draws from
 the bank by tag and by seat. The <a href="../../../reference/royalegym/">API reference</a> has every argument.</p>
-<p>A saved bank belongs to the engine release it was saved on. After you upgrade the engine, save
-your starts again: on royalesim 0.1.46, every bank an earlier release saved is refused, and
-<a href="../../../it-doesnt-work/#snapshot-was-saved-against-different-card-data-or-the-memory-was-saved-under-another-calibration">It Doesn't Work</a>
-has the two messages you may see.</p>
+<p>A bank saved by royalegym 0.1.28 or newer keeps loading after you upgrade royalesim, unless the
+card data or the elixir rules changed. A bank saved by an older royalegym loads only under the
+engine settings it was saved under, and a new royalesim release usually changes them, so save
+your starts again after you upgrade. If a bank is refused,
+<a href="../../../it-doesnt-work/#snapshot-was-saved-against-different-card-data-the-memory-was-saved-under-another-calibration-or-the-memorys-counts-ran-on-other-elixir-laws">It Doesn't Work</a>
+has the messages and what each one means.</p>
 <p>You don't chain mutators one after another. A mutator describes the whole start of a battle, and
 <code>WeightedStateMutator</code> picks between them.</p>
 <h2 id="how-they-work">How They Work<a class="headerlink" href="#how-they-work" title="Permanent link">&para;</a></h2>
