@@ -123,9 +123,10 @@ A snapshot can also carry a `seat` (the side the start is for) and `max_ticks` (
 after that many ticks). `SnapshotStateMutator(bank, weights={...}, seat="blue")` then draws from
 the bank by tag and by seat. The [API reference](../../reference/royalegym.md) has every argument.
 
-A saved bank loads only on the card data it was saved on. After you upgrade the engine, save your
-starts again: royalesim 0.1.44, for one, refuses every bank an earlier release saved, with
-`snapshot was saved against different card data`.
+A saved bank belongs to the engine release it was saved on. After you upgrade the engine, save
+your starts again: on royalesim 0.1.45, every bank an earlier release saved is refused, and
+[It Doesn't Work](../../it-doesnt-work.md#snapshot-was-saved-against-different-card-data-or-the-memory-was-saved-under-another-calibration)
+has the two messages you may see.
 
 You don't chain mutators one after another. A mutator describes the whole start of a battle, and
 `WeightedStateMutator` picks between them.

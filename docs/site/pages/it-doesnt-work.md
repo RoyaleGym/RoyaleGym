@@ -222,16 +222,19 @@ or `2` back to `0`, and play the normal card. (With `make_env`, take it out of `
 or `heroes=[...]`.) The cards that have one are listed in
 [Game Values](cheatsheets/game-values.md#evolutions-and-heroes).
 
-### `snapshot was saved against different card data`
+### `snapshot was saved against different card data` or `the memory was saved under another calibration`
 
 ```text
-ValueError: snapshot was saved against different card data
+ValueError: snapshot was saved against different card data (another royalesim release or card table): make it again with this release
+ValueError: the memory was saved under another calibration, whose elixir laws its counts followed
 ```
 
-The snapshot, or the bank of snapshots in your file, was saved on card data your engine doesn't
-have, usually because an earlier engine release saved it. royalesim 0.1.44 changed the card data,
-so nothing saved on 0.1.43 or older loads on it. Run the code that saved your starts
-(`env.snapshot()` and `save_snapshots(...)`) again on the engine you have now.
+Your snapshots, or the bank of them in your file, were saved on an earlier engine release, and the
+one you have now refuses them. The first message means the card data changed: royalesim 0.1.44
+changed it, so nothing saved on 0.1.43 or older loads on 0.1.44 or newer. The second means the
+engine's settings changed: on royalesim 0.1.45, a bank saved on 0.1.44 gives it. The fix is the
+same for both. Run the code that saved your starts (`env.snapshot()` and `save_snapshots(...)`)
+again on the engine you have now.
 [Starting From a Saved Moment](clash-royale/configuration-objects/state-mutators.md#starting-from-a-saved-moment)
 shows how.
 
