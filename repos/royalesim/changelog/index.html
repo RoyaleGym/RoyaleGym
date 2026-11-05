@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0145-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.45 (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0144-2026-11-04" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3810,6 +3821,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0145-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.45 (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0144-2026-11-04" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4332,13 +4354,49 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0145-2026-11-04">0.1.45 (2026-11-04)<a class="headerlink" href="#0145-2026-11-04" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Upgrade royalegym to 0.1.27 with this release. Its state reader carries the new columns below; an older royalegym
+  refuses this engine's state rows.</li>
+<li><code>reset</code> can start from a battle under way. Each new argument is optional, and leaving it out keeps a fresh battle's
+  state:</li>
+<li><code>unit_spawns</code> puts down any unit by its name, a summoned one too (a Golemite, a Witch's Skeleton), at its own
+    level: <code>(name, team, x, y, hp, level, form)</code>. With <code>form</code> 0 you get the unit you name, an evolved or hero one
+    too (<code>"Musketeer_EV1"</code>), and a unit row's <code>unit_type</code> name works as well, so a unit row puts it back. With 1 or 2
+    you get a card's evolution or hero form (<code>"Musketeer"</code>, 1). An evolved or hero unit starts as if just played (an
+    Evo Musketeer has all her snipes, a hero has its charge), but its play's own effects are not cast (an Evo Cannon
+    fires no barrage). <code>unit_spawn_kind(name, form)</code> says first whether a unit can be put down: a rider, a unit a
+    hero's button makes, the Hero Tombstone's waiting monster and the Evo Lumberjack's ghost cannot.
+    <code>snipe_states()</code> gives each Evo Musketeer's snipes left.</li>
+<li><code>king_wake_ms</code> sets each king tower's wake clock, <code>evo_counts</code> each evolved card's plays since its last evolved
+    one, and <code>last_played</code> the card each side's Mirror would copy.</li>
+<li><code>spells_in_flight</code> puts a flying spell object on its way, one Arrows wave per entry. Ask
+    <code>spell_in_flight_kind(card_id, form)</code> first: only <code>"flies"</code> can be put in flight.</li>
+<li><code>state_json</code> gains columns, each after the existing ones: a player's <code>king_wake_ms</code>, and a spell row's <code>level</code> and
+  <code>form</code> (0 the card, 1 its evolution, 2 its hero form, 3 an evolution's decoy).</li>
+<li>A battle saved by another release, or against another card table, is refused with a message that says so.</li>
+<li>7 more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>A hero's attack keeps loading while it uses its ability (the Skeleton King, Archer Queen, Monk, Boss Bandit,
+    Mighty Miner and the hero forms), unless it is stunned (<code>combat.PRESS_LOAD_TIMER</code>).</li>
+<li>A unit the Evo Mega Knight throws can be targeted only by air attackers while it flies
+    (<code>targeting.UPPERCUT_FLIGHT_TARGETABILITY</code>).</li>
+<li>The Little Prince's guard's charge also hits enemy buildings in its path (<code>combat.GUARD_CHARGE_BUILDINGS</code>).</li>
+<li>Units knocked back by the Mega Knight's jump start moving a tick earlier when they were placed after him
+    (<code>combat.DASH_PUSHBACK</code>).</li>
+<li>The Giant Skeleton's death bomb pushes units back (<code>knockback.DEATH_PUSHBACK</code>).</li>
+<li>A unit the Fisherman drags onto the river is set down on the nearest land (<code>combat.HOOK_WATER_LANDING</code>).</li>
+<li>A Bandit, Boss Bandit or Mega Knight stops pushing units the moment its dash starts (<code>combat.DASH_START_CONTACT</code>).</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles.</li>
+</ul>
 <h2 id="0144-2026-11-04">0.1.44 (2026-11-04)<a class="headerlink" href="#0144-2026-11-04" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The Evo Giant runs on the 16.635 table (<code>cards.CARD_TABLE</code> <code>"client160635007_20261103"</code>). Below half its
   hitpoints it puts a Rage area down behind it at once and then every 1500 ms, held while it is stunned or frozen.
   Each area is wider the more hits the giant has made since (2 to 3.5 tiles). The areas rage its own side only and
   deal no damage. A Clone of it makes a plain Giant. This is read off the game's table and not yet measured. The
-  Evo Mirror is still not supported.</li>
+  Evo Mirror is still not supported. On that table <code>unit_types()</code> gains <code>Giant_EV1</code>, so every unit type after it in
+  the sorted list moves up one (<code>unit_types_digest</code> names the list). The other tables' lists are unchanged.</li>
 <li>10 more settings default to the current client's behaviour, each measured against its recorded battles:</li>
 <li>A Poison does not touch a unit exactly on its edge (<code>spells.PULSE_EDGE</code>).</li>
 <li>The Inferno Tower, Inferno Dragon and Mighty Miner wait one tick more after a guard's charge before they target

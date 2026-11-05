@@ -3486,6 +3486,27 @@ position in that list. <code>catalogue_json()</code> lists each card with its co
 <p><strong>Levels.</strong> Both sides play at one card level and one tower level unless you say otherwise. To give each side its
 own, pass <code>levels=[blue, red]</code> to <code>reset</code>, each a list with one level per deck card (or empty), and
 <code>tower_levels=[blue, red]</code>. A Mirror's copy is one level above the Mirror.</p>
+<p><strong>A battle under way.</strong> <code>reset</code> can also start from the middle of a battle:</p>
+<ul>
+<li><code>unit_spawns</code> puts down a unit by its name, a summoned one too (a Golemite, a Witch's Skeleton), each at its own
+  level: <code>(name, team, x, y, hp, level, form)</code>, with -1 for the default hp and level. The unit must come from a card in
+  the Battle's card list (a Golemite needs the Golem). With <code>form</code> 0 you get the unit you name, an evolved one too
+  (<code>"Musketeer_EV1"</code>). A unit's <code>unit_type</code> name from <code>unit_types_json()</code> works as well, so a unit row can be put
+  back as it is. With 1 or 2 you get the card's evolution or hero form (<code>"Musketeer"</code>, 1). An evolved or hero
+  unit starts as if just played: an Evo Musketeer has all her snipes and a hero has its charge. Its play's own
+  effects are not cast, so an Evo Cannon fires no barrage. Ask <code>unit_spawn_kind(name, form)</code> first. <code>"stands"</code> and
+  <code>"fresh"</code> can be put down. A rider, a spell, a unit a hero's button makes (the Hero Musketeer's turret), the Hero
+  Tombstone's waiting monster and the Evo Lumberjack's ghost cannot. <code>snipe_states()</code> gives each Evo Musketeer's
+  snipes left.</li>
+<li><code>king_wake_ms=[blue, red]</code> sets each king tower's wake clock: the milliseconds since it was first hit or lost a
+  princess tower, or -1. A player row's <code>king_wake_ms</code> in <code>state_json</code> reads it back.</li>
+<li><code>evo_counts=[blue, red]</code> gives each evolved deck card's plays since its last evolved one, one count per deck card.</li>
+<li><code>last_played=[blue, red]</code> is the card id each side's Mirror would copy, or -1.</li>
+<li><code>spells_in_flight</code> puts one flying spell object on its way:
+  <code>(card_id, form, team, x, y, aim_x, aim_y, level, delay_ms)</code>. One Arrows wave is one entry. <code>form</code> is 0 for the
+  card, 1 for its evolution, 2 for its hero form and 3 for an evolution's decoy. Ask
+  <code>spell_in_flight_kind(card_id, form)</code> first: only <code>"flies"</code> can be put in flight.</li>
+</ul>
 <p><strong>Commands.</strong> A command is <code>(team, hand_slot, x, y)</code>. <code>step</code> returns one row per command:
 <code>(card_id, reason, tick, x, y)</code>, where <code>reason</code> indexes <code>DEPLOY_REASONS</code> (<code>0</code> is accepted) and <code>x, y</code> is where
 the card actually went down. Ask first with
