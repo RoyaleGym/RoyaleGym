@@ -5,7 +5,17 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.28 (2026-11-05)
+
+### Changed
+- royalesim 0.1.46. Some battles play slightly differently, as royalesim 0.1.45 and 0.1.46
+  bring eleven more of the current client's behaviours (a hero's attack loading through its
+  ability, the Evo Mega Knight's thrown units, the Giant Skeleton's death bomb, the Fisherman's
+  river drag, a healed unit under homing shots and the Executioner's axe among them), but every
+  example on the site prints the same numbers. The cards, forms and unit types are the same on
+  every table. Game Values and the Environments page are stamped on royalesim 0.1.46. Its spell
+  rows send the two columns 0.1.27 added (from royalesim 0.1.45), so `SpellState.level` and
+  `SpellState.form` now carry the engine's values.
 
 ### Fixed
 - A snapshot saved by this royalegym (`env.snapshot()`, a bank from `save_snapshots`) loads on
