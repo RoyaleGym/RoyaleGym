@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0147-2026-11-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.47 (2026-11-05)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0146-2026-11-04" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3832,6 +3843,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0147-2026-11-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.47 (2026-11-05)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0146-2026-11-04" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4376,6 +4398,19 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0147-2026-11-05">0.1.47 (2026-11-05)<a class="headerlink" href="#0147-2026-11-05" title="Permanent link">&para;</a></h2>
+<ul>
+<li>2 more settings default to the current client's behaviour, each measured against its recorded battles:</li>
+<li>The Evo Mega Knight no longer starts a jump while he is still standing after an uppercut. If a target is in
+    reach when the stand ends, he jumps then (<code>combat.UPPERCUT_STAND_DASH</code>).</li>
+<li>The Goblin Machine fires its rocket. It marks where the closest enemy 2.5 to 5 tiles away stands and, a second
+    later, fires a rocket that damages every enemy near that spot, once every 5 seconds while targets are in reach.
+    The setting is new (<code>combat.GOBLIN_MACHINE_ROCKET</code>); its old value leaves the rocket out.</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
+  <code>replay_parity</code> use the old values for the older client's battles.</li>
+<li>New setting <code>targeting.CHASE_HOLD_BACKWARDS</code>: how long a troop keeps chasing a target that has left its sight when
+  nothing else is in sight. The default is unchanged, and <code>client_arms("15.535.29")</code> lists it.</li>
+</ul>
 <h2 id="0146-2026-11-04">0.1.46 (2026-11-04)<a class="headerlink" href="#0146-2026-11-04" title="Permanent link">&para;</a></h2>
 <ul>
 <li>4 more settings default to the current client's behaviour, each measured against its recorded battles:</li>
@@ -4390,6 +4425,9 @@ and call the engine. Logic changes are listed by release in the <a href="https:/
     fresh throw (<code>knockback.PINGPONG_WAIT_RESET</code>).</li>
 <li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and
   <code>replay_parity</code> use the old values for the older client's battles.</li>
+<li>New settings <code>combat.HOOK_DRAG_ROUNDING</code> (how the Fisherman's drag step is rounded) and
+  <code>combat.UPPERCUT_STAND_VICTIM</code> (when the Evo Mega Knight may attack a unit he has just thrown). The defaults are
+  unchanged, and <code>client_arms("15.535.29")</code> lists both.</li>
 </ul>
 <h2 id="0145-2026-11-04">0.1.45 (2026-11-04)<a class="headerlink" href="#0145-2026-11-04" title="Permanent link">&para;</a></h2>
 <ul>
@@ -4411,7 +4449,8 @@ and call the engine. Logic changes are listed by release in the <a href="https:/
     <code>spell_in_flight_kind(card_id, form)</code> first: only <code>"flies"</code> can be put in flight.</li>
 <li><code>state_json</code> gains columns, each after the existing ones: a player's <code>king_wake_ms</code>, and a spell row's <code>level</code> and
   <code>form</code> (0 the card, 1 its evolution, 2 its hero form, 3 an evolution's decoy).</li>
-<li>A battle saved by another release, or against another card table, is refused with a message that says so.</li>
+<li>A battle saved against different card data (a release that changed the cards, or another card table) is refused
+  with a message that says so.</li>
 <li>7 more settings default to the current client's behaviour, each measured against its recorded battles:</li>
 <li>A hero's attack keeps loading while it uses its ability (the Skeleton King, Archer Queen, Monk, Boss Bandit,
     Mighty Miner and the hero forms), unless it is stunned (<code>combat.PRESS_LOAD_TIMER</code>).</li>
