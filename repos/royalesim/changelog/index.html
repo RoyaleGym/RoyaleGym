@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0148-2026-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.48 (2026-11-06)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0147-2026-11-05" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3843,6 +3854,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0148-2026-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.48 (2026-11-06)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0147-2026-11-05" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4398,6 +4420,24 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0148-2026-11-06">0.1.48 (2026-11-06)<a class="headerlink" href="#0148-2026-11-06" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>reset</code> takes two more optional arguments for copying a battle under way. Leaving them out keeps the old
+  behaviour:</li>
+<li><code>unit_deploy_ticks</code> gives each <code>unit_spawns</code> entry its deploy ticks still to run, one per entry (a unit row's
+    <code>deploy_ticks</code>), 0 for a deployed unit. A unit still deploying stands until its timer ends, then deploys. A
+    negative count, and a count above 0 for a unit that has no deploy time, are refused.</li>
+<li><code>projectiles_in_flight</code> puts one shot of a unit or crown tower on its way:
+    <code>(firer, team, x, y, aim_x, aim_y, target)</code>. <code>firer</code> and <code>target</code> point at the copy's own board: 0 and up is
+    that <code>unit_spawns</code> entry, and -1, -2, -3 are crown towers 0, 1, 2 in <code>reset</code>'s <code>tower_hp</code> order. <code>target=None</code>
+    is a shot whose target is gone: it flies on to its aim. The shot is the firer's own, at its level, so the firer
+    must be on the board.</li>
+<li>New <code>projectile_in_flight_kind(name, form=0)</code> says first whether a unit's or crown tower's shot can be put in
+  flight. Only <code>"flies"</code> can. The others are <code>"straight"</code> (the Hunter's shots), <code>"hops"</code> (a chain or bounce),
+  <code>"form_shot"</code> (an evolution's special shot), <code>"warp_shot"</code> (a hero whose warp remakes its shots), <code>"kamikaze"</code>
+  and <code>"no_projectile"</code> (a melee hit). A crown tower is <code>"KingTower"</code> or <code>"PrincessTower"</code>.</li>
+<li><code>state_json</code> is unchanged, so royalegym needs no upgrade.</li>
+</ul>
 <h2 id="0147-2026-11-05">0.1.47 (2026-11-05)<a class="headerlink" href="#0147-2026-11-05" title="Permanent link">&para;</a></h2>
 <ul>
 <li>2 more settings default to the current client's behaviour, each measured against its recorded battles:</li>

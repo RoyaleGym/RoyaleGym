@@ -3498,6 +3498,11 @@ own, pass <code>levels=[blue, red]</code> to <code>reset</code>, each a list wit
   <code>"fresh"</code> can be put down. A rider, a spell, a unit a hero's button makes (the Hero Musketeer's turret), the Hero
   Tombstone's waiting monster and the Evo Lumberjack's ghost cannot. <code>snipe_states()</code> gives each Evo Musketeer's
   snipes left.</li>
+<li><code>unit_deploy_ticks</code> gives each <code>unit_spawns</code> entry its deploy ticks still to run, one per entry (a unit row's
+  <code>deploy_ticks</code>), 0 for a deployed unit. A unit still deploying stands until its timer ends, then deploys: a Tesla
+  hides then and a Furnace starts its spirits. A member of a group (a Royal Recruit) keeps the wait the group's
+  stagger gives it. An evolved or hero unit's own clocks start at the copy. Leave out a unit that is under ground (a
+  Miner on its way).</li>
 <li><code>king_wake_ms=[blue, red]</code> sets each king tower's wake clock: the milliseconds since it was first hit or lost a
   princess tower, or -1. A player row's <code>king_wake_ms</code> in <code>state_json</code> reads it back.</li>
 <li><code>evo_counts=[blue, red]</code> gives each evolved deck card's plays since its last evolved one, one count per deck card.</li>
@@ -3506,6 +3511,15 @@ own, pass <code>levels=[blue, red]</code> to <code>reset</code>, each a list wit
   <code>(card_id, form, team, x, y, aim_x, aim_y, level, delay_ms)</code>. One Arrows wave is one entry. <code>form</code> is 0 for the
   card, 1 for its evolution, 2 for its hero form and 3 for an evolution's decoy. Ask
   <code>spell_in_flight_kind(card_id, form)</code> first: only <code>"flies"</code> can be put in flight.</li>
+<li><code>projectiles_in_flight</code> puts one shot of a unit or crown tower on its way:
+  <code>(firer, team, x, y, aim_x, aim_y, target)</code>. <code>firer</code> and <code>target</code> point at the copy's own board: 0 and up is that
+  <code>unit_spawns</code> entry, and -1, -2, -3 are crown towers 0, 1, 2 in the order <code>reset</code>'s <code>tower_hp</code> takes them, 0 the
+  king (the firer's of <code>team</code>, the target's of the other side). A row's <code>tower_slot</code> is not that order, and a row's
+  <code>target_uid</code> -1 is <code>None</code> here, not -1. <code>target=None</code> is a shot whose target is gone: it flies on to its aim. The
+  shot is the firer's own, at its level, so the firer must be on the board, and the target must be an enemy. Ask
+  <code>projectile_in_flight_kind(name, form)</code> first: only <code>"flies"</code> can be put in flight. A straight shot (the Hunter's),
+  a chain or bounce (the Electro Dragon's), an evolution's special shot (the Evo Musketeer's snipe) and a melee hit
+  cannot.</li>
 </ul>
 <p><strong>Commands.</strong> A command is <code>(team, hand_slot, x, y)</code>. <code>step</code> returns one row per command:
 <code>(card_id, reason, tick, x, y)</code>, where <code>reason</code> indexes <code>DEPLOY_REASONS</code> (<code>0</code> is accepted) and <code>x, y</code> is where
