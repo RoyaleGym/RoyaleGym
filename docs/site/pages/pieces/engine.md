@@ -223,7 +223,7 @@ leaves out. The default catalogue, which is what you get when you name no cards,
 the Mirror, the Miner and the Goblin Drill included. A card that becomes loadable is appended, so
 no card's id moves: the Minion Giant, the Little Prince, Goblinstein and the Boss Bandit, then the
 nine event versions, come last.
-Counted on RoyaleSim 0.1.47 on 2026-11-05.
+Counted on RoyaleSim 0.1.48 on 2026-11-06.
 
 **Speed.** On a 4-core laptop with 8 GB of RAM, with other programs running, the engine did
 18,000 ticks in 0.35 to 0.42 seconds on one core. That is 43,000 to 51,000 ticks a second.
