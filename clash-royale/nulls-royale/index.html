@@ -3386,40 +3386,40 @@
 With <a href="https://github.com/RoyaleGym/RoyaleBot">RoyaleBot</a>, a bot you made with RoyaleGym plays
 real matches there, card by card. Two steps: train on the version Nulls runs, then play.</p>
 <h2 id="1-train-on-the-nulls-version">1. Train on the Nulls version<a class="headerlink" href="#1-train-on-the-nulls-version" title="Permanent link">&para;</a></h2>
-<p>Nulls Royale runs game version 15.535. RoyaleGym plays today's version by default, and a few
-cards and rules differ between the two. To train on the rules your bot will meet on Nulls, pass
-<code>client="15.535.29"</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_env</span>
+<p>Nulls Royale runs game version 16.635 (its page offers 16.635.1). RoyaleGym plays the current
+game's rules by default, but its default card values are an older version's, and a few cards
+differ. To train on the cards your bot will meet on Nulls, pick the 16.635 card table:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">royalegym</span><span class="w"> </span><span class="kn">import</span> <span class="n">RustEngine</span><span class="p">,</span> <span class="n">make_env</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">for</span> <span class="n">client</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"15.535.29"</span><span class="p">):</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">env</span> <span class="o">=</span> <span class="n">make_env</span><span class="p">(</span><span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">fire_spirits</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">card</span> <span class="k">for</span> <span class="n">card</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()</span> <span class="k">if</span> <span class="n">card</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"FireSpirits"</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">client</span> <span class="ow">or</span> <span class="s2">"today"</span><span class="p">,</span> <span class="n">fire_spirits</span><span class="o">.</span><span class="n">hitpoints</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">NULLS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cards.CARD_TABLE"</span><span class="p">:</span> <span class="s2">"client160635007_20261103"</span><span class="p">}</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">for</span> <span class="n">overrides</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">NULLS</span><span class="p">):</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">env</span> <span class="o">=</span> <span class="n">make_env</span><span class="p">(</span><span class="n">engine</span><span class="o">=</span><span class="n">RustEngine</span><span class="p">(</span><span class="n">calibration_overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">))</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">musketeers</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">card</span> <span class="k">for</span> <span class="n">card</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">cards</span><span class="p">()</span> <span class="k">if</span> <span class="n">card</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"ThreeMusketeers"</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"16.635"</span> <span class="k">if</span> <span class="n">overrides</span> <span class="k">else</span> <span class="s2">"default"</span><span class="p">,</span> <span class="n">musketeers</span><span class="o">.</span><span class="n">hitpoints</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>today 215
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>15.535.29 217
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>default 883
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>16.635 906
 </code></pre></div>
-<p>That one setting switches both the card values and the game mechanics to version 15.535's. It
-needs royalegym 0.1.24 or newer: <code>pip install --upgrade "royalegym[all]"</code>.</p>
+<p><code>pip install --upgrade "royalegym[all]"</code> gets you an engine that has this table.</p>
 <div class="admonition tip">
 <p class="admonition-title">In your quickstart.py</p>
 <p>In <code>build_env</code>, change <code>RustEngine()</code> to
-<code>RustEngine(calibration_overrides=client_overrides("15.535.29"))</code>, and add
-<code>from royalegym.rust_engine import client_overrides</code> to the imports at the top of
-<code>build_env</code>. It changes the battles, so it needs a new bot: change <code>save_dir</code> to a new name
-too.</p>
+<code>RustEngine(calibration_overrides={"cards.CARD_TABLE": "client160635007_20261103"})</code>. It
+changes the battles, so it needs a new bot: change <code>save_dir</code> to a new name too.</p>
 </div>
-<p><strong>How close is it?</strong> We checked this setup against 750 short test scenes recorded on version
-15.535. The engine put 99.6% of units within a quarter tile of where the game had them and got
-99.9% of hitpoints exactly right, and 684 scenes matched on every tick (RoyaleSim 0.1.32, and the same
-scores on every release since, up to 0.1.48).
-These are short scenes, not whole battles: over a whole battle, small differences add up. Nulls
-can also change cards in its own updates.</p>
+<p><strong>How close is it?</strong> The table is the game's own 16.635 card data. We haven't checked it against
+battles recorded on Nulls yet, and Nulls can change cards in its own updates.</p>
+<p><strong>Nulls' previous version, 15.535.</strong> <code>make_env(client="15.535.29")</code> switches both the card values
+and the game mechanics to version 15.535's. We checked that setup against 750 short test scenes
+recorded on 15.535. The engine put 99.6% of units within a quarter tile of where the game had
+them and got 99.9% of hitpoints exactly right, and 684 scenes matched on every tick (RoyaleSim
+0.1.32, and the same scores on every release since, up to 0.1.48). These are short scenes, not
+whole battles: over a whole battle, small differences add up.</p>
 <h2 id="2-play-it-with-royalebot">2. Play it with RoyaleBot<a class="headerlink" href="#2-play-it-with-royalebot" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Download the Nulls Royale app (the <code>.apk</code> file) yourself from
    <a href="https://nulls.gg/servers/nulls-royale/">Nulls' page</a>. RoyaleBot supports Nulls Royale
-   15.535.13, the version that page has now.</li>
+   16.635.1, the version that page has now, and the earlier 15.535.13.</li>
 <li>Follow <a href="https://github.com/RoyaleGym/RoyaleBot#1-prepare-the-game">RoyaleBot's setup</a>. It
    prepares your copy of the app, then <code>royalebot-play --bot &lt;your bot's folder&gt;</code> plays your
    bot in your matches.</li>
