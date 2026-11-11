@@ -1660,6 +1660,13 @@ def mirror_state(arena: Arena, s: BattleState) -> BattleState:
     Positions rotate 180 degrees and team ids swap. Tower slots are already
     own-frame, so they are unchanged. Obs/mask for Red on the mirror must equal
     obs/mask for Blue on the original, bit for bit.
+
+    EVERY ENGINE-FRAME VALUE TURNS: positions and footprints, a unit's ``facing`` (a
+    direction, so it negates), a tunneller's landing point (``dest_x``/``dest_y``, unless
+    -1, "none"), spells and projectiles with their aim points, and each waiting play's tap
+    (``PlayerState.pending`` kind 0; a press has no tap). Before 2026-11-11 facing, dest,
+    pending and projectiles were left in the original frame, and the seat-flip gate, fed
+    MockEngine states that leave them at their defaults, could not see it.
     """
     w, h = arena.width, arena.height
     ents = [
@@ -1668,6 +1675,9 @@ def mirror_state(arena: Arena, s: BattleState) -> BattleState:
             team=1 - e.team,
             x=w - e.x,
             y=h - e.y,
+            facing=(-e.facing[0], -e.facing[1]),
+            dest_x=w - e.dest_x if e.dest_x >= 0 else e.dest_x,
+            dest_y=h - e.dest_y if e.dest_y >= 0 else e.dest_y,
             # A closed box rotates corner to corner: the far corner becomes the near one.
             footprint=(
                 None
@@ -1695,14 +1705,26 @@ def mirror_state(arena: Arena, s: BattleState) -> BattleState:
         )
         for sp in s.spells
     ]
+    projectiles = [
+        msgspec.structs.replace(
+            p, team=1 - p.team, x=w - p.x, y=h - p.y, aim_x=w - p.aim_x, aim_y=h - p.aim_y
+        )
+        for p in s.projectiles
+    ]
+
+    def turned(rows: list[list[int]]) -> list[list[int]]:
+        return [[r[0], r[1], w - r[2], h - r[3], *r[4:]] if r[0] == 0 else list(r) for r in rows]
+
     players = [
-        msgspec.structs.replace(s.players[RED], team=BLUE),
-        msgspec.structs.replace(s.players[BLUE], team=RED),
+        msgspec.structs.replace(s.players[RED], team=BLUE, pending=turned(s.players[RED].pending)),
+        msgspec.structs.replace(s.players[BLUE], team=RED, pending=turned(s.players[BLUE].pending)),
     ]
     winner = s.winner
     if winner in (Winner.BLUE, Winner.RED):
         winner = 1 - winner
-    return msgspec.structs.replace(s, entities=ents, players=players, winner=winner, spells=spells)
+    return msgspec.structs.replace(
+        s, entities=ents, players=players, winner=winner, spells=spells, projectiles=projectiles
+    )
 
 
 @lru_cache(maxsize=1)
