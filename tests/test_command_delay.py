@@ -17,6 +17,7 @@ SKIPS
 
 from __future__ import annotations
 
+import msgspec
 import numpy as np
 import pytest
 
@@ -229,3 +230,32 @@ def test_the_vector_carries_the_own_waiting_commands_and_never_the_enemys():
     assert own[off["own_hand_affordable"]][1] == 0
     assert own[off["own_pending_cost"]][0] == pytest.approx(cost / 10)
     assert own[off["own_elixir"]][0] == plain[off["own_elixir"]][0], "the bar is spent at the tap"
+
+
+@needs_delay
+def test_a_trace_records_its_delay_and_verify_names_a_different_one():
+    """The delay is engine state, not a calibration override, so a trace that does not record
+    it verifies on a plain engine as thousands of hash lines naming nothing (2026-11-11). It
+    records it, and verify_trace says in one line when the verifying engine runs another."""
+    from royalegym.replay import ReplayRecorder, TraceHeader, verify_trace
+
+    rec = ReplayRecorder()
+    env = ClashParallelEnv(RustEngine(), command_delay_ticks=DELAY, recorder=rec)
+    rng = np.random.default_rng(5)
+    _play(env, rng, 60, lambda obs: None)
+    trace = rec.trace
+    assert any(st.commands for st in trace.steps), "vacuous: nothing was played"
+    assert trace.header.command_delay_ticks == [DELAY, DELAY]
+    assert verify_trace(trace, RustEngine(command_delay_ticks=DELAY)) == []
+    problems = verify_trace(trace, RustEngine())
+    assert len(problems) == 1, problems[:3]
+    assert f"[{DELAY}, {DELAY}]" in problems[0]
+    assert "[0, 0]" in problems[0]
+    plain = ReplayRecorder()
+    ClashParallelEnv(RustEngine(), recorder=plain).reset(seed=1)
+    assert plain.trace.header.command_delay_ticks == [0, 0]
+    older = msgspec.to_builtins(plain.trace.header)
+    del older["command_delay_ticks"]  # a trace from before the field decodes as "not said"
+    assert msgspec.msgpack.decode(
+        msgspec.msgpack.encode(older), type=TraceHeader
+    ).command_delay_ticks == []

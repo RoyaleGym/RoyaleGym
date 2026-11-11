@@ -153,6 +153,11 @@ class TraceHeader(msgspec.Struct):
     # royalesim 0.1.17 on), so a reader names each unit by type. [] = not said: MockEngine, an
     # older engine, and every trace from before 2026-10-05.
     unit_types: list[str] = []
+    # The command delay the recording engine ran, [blue, red] ticks (RustEngine's
+    # ``command_delay_ticks``). It is engine state, not a calibration override, so nothing else
+    # here says it, and a delayed battle replayed without it diverges at its first delayed
+    # command. [] = not said: MockEngine, and every trace from before 2026-11-11.
+    command_delay_ticks: list[int] = []
 
 
 class TraceResult(msgspec.Struct):
@@ -223,6 +228,12 @@ def _override_fields(engine: Engine) -> dict[str, dict[str, str]]:
     if not overrides:
         return {}
     return {"calibration_overrides": {k: json.dumps(v) for k, v in overrides.items()}}
+
+
+def _command_delay(engine: Engine) -> list[int]:
+    """``engine``'s command delay as [blue, red] ticks, or [] from an engine that has none."""
+    delay = getattr(engine, "command_delay_ticks", None)
+    return [] if delay is None else [int(d) for d in delay]
 
 
 def _another_engine(header: TraceHeader, engine: Engine) -> str | None:
@@ -310,6 +321,7 @@ class ReplayRecorder:
             **_engine_identity_fields(engine),
             **_override_fields(engine),
             unit_types=_unit_types(engine),
+            command_delay_ticks=_command_delay(engine),
         )
         self.trace = Trace(header=header, steps=[], frames=[_frame(engine)])
         self._open = True
@@ -383,6 +395,9 @@ def verify_trace(trace: Trace, engine: Engine) -> list[str]:
     is ordinary (a CI runner compiles its own), and the note is there so that a list of
     hash lines is not read as a changed battle when it may be a changed build.
 
+    A TRACE RECORDED UNDER ANOTHER COMMAND DELAY is one line naming both delays, and nothing
+    is replayed, where both the trace and the engine say theirs.
+
     THE CARDS A SETUP DEALS ARE COMPARED BY NAME first. A setup names its cards by
     POSITION (a deck is a list of catalogue ids), and the catalogue renumbers whenever a
     card becomes loadable, so the same setup on an engine with a different table deals
@@ -414,6 +429,14 @@ def verify_trace(trace: Trace, engine: Engine) -> list[str]:
                 "RustEngine). A build that loads a card the recording build refused moves "
                 "every hash as well, so such a trace verifies only on the recording build."
             ]
+    here = _command_delay(engine)
+    if h.command_delay_ticks and here and h.command_delay_ticks != here:
+        want = tuple(h.command_delay_ticks)
+        return [
+            f"the trace was recorded with command delay {h.command_delay_ticks} and this engine "
+            f"runs {here}, so every delayed command would run at another tick. Replay it on an "
+            f"engine with the trace's delay (RustEngine(command_delay_ticks={want}))."
+        ]
     problems: list[str] = []
     if h.setup is not None:
         engine.reset(h.seed, h.setup)
