@@ -484,8 +484,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         # refused when they came to run: a press refused then (its hero died while it waited)
         # is never paid. From an engine that reports it; None keeps the accepted presses.
         if hasattr(self.obs_builder, "see_runs"):
-            report = getattr(self.engine, "step_commands_run", None)
-            self.obs_builder.see_runs(report() if report is not None else None)
+            self.obs_builder.see_runs(self._step_runs)
         self._episode_steps += 1
         full = self.full_elixir_milli
         for team in TEAMS:
@@ -560,14 +559,28 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
         watching = self.viser is not None and self.viser.attached
         recording_ticks = rec is not None and rec.frame_every_tick
         self._published_per_tick = watching
+        # The delayed commands that ran in this decision, gathered after EVERY engine step:
+        # the engine reports only its last step's, so on the tick-by-tick path below one read
+        # at the end saw only the last tick's (2026-11-11), and a recorded or watched env
+        # counted other elixir than an unwatched one. None from an engine that does not say.
+        report = getattr(self.engine, "step_commands_run", None)
+        self._step_runs = None
+
+        def gather() -> None:
+            got = report() if report is not None else None
+            if got is not None:
+                self._step_runs = [*(self._step_runs or []), *got]
+
         if not (watching or recording_ticks):
             results = self.engine.step(commands, self.decision_ticks)
+            gather()
             if rec is not None:
                 rec.record_frame(self.engine)
         else:
             # Tick-by-tick is the same battle as one multi-tick call (the protocol
             # validates commands up front); tests check the hashes agree.
             results = self.engine.step(commands, 1)
+            gather()
             if recording_ticks:
                 rec.record_frame(self.engine)
             if watching:
@@ -578,6 +591,7 @@ class ClashParallelEnv(ParallelEnv[str, dict[str, np.ndarray], int]):
                 if self.engine.state().game_over:
                     break
                 self.engine.step([], 1)
+                gather()
                 if recording_ticks:
                     rec.record_frame(self.engine)
                 if watching:

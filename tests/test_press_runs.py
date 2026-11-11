@@ -141,3 +141,45 @@ def test_the_env_hands_its_builder_the_engines_report():
     plain.reset(seed=0)
     plain.step({a: 0 for a in plain.agents})
     assert seen == [None], "an engine without the report hands None, not an empty list"
+
+
+def test_the_report_is_the_whole_decisions_on_every_stepping_path():
+    """A recorder that keeps every tick's frame steps the engine one tick at a time, and the
+    engine reports only its last step's commands. The builder must still get every command
+    that ran in the decision, the same list the one-call path gives it."""
+    from royalegym import ClashParallelEnv
+    from royalegym.obs import SpatialObsBuilder
+    from royalegym.replay import ReplayRecorder
+
+    class Reporting(MockEngine):
+        """Reports one run on every third tick its last step covered, like the engine."""
+
+        def step(self, commands, ticks):
+            start = self.state().tick
+            out = super().step(commands, ticks)
+            self.ran = [(t, 1, "ability", SLOT, 0)
+                        for t in range(start + 1, self.state().tick + 1) if t % 3 == 0]
+            return out
+
+        def step_commands_run(self):
+            return list(self.ran)
+
+    class Recording(SpatialObsBuilder):
+        def see_runs(self, runs):
+            seen.append(runs)
+            super().see_runs(runs)
+
+    got = {}
+    for name, recorder in (("one call", None),
+                           ("per tick", ReplayRecorder(frame_every_tick=True)),
+                           ("one frame", ReplayRecorder(frame_every_tick=False))):
+        seen = []
+        env = ClashParallelEnv(engine=Reporting(), obs_builder=Recording(), recorder=recorder)
+        env.reset(seed=0)
+        for _ in range(3):
+            env.step({a: 0 for a in env.agents})
+        got[name] = seen
+    assert len(got["one call"]) == 3, got
+    assert all(len(r) >= 3 for r in got["one call"]), got  # vacuity: every step ran commands
+    assert got["per tick"] == got["one call"], got
+    assert got["one frame"] == got["one call"], got

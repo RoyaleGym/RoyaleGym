@@ -155,7 +155,13 @@ CHAMPION_DECK = ("GoldenKnight", "ArcherQueen", "Knight", "Archer", "Fireball", 
     ],
     ids=["plain", "evo-and-hero-presses", "champion-presses"],
 )
-def test_the_memories_stay_exact_under_a_delay(names, forms, buttons):
+@pytest.mark.parametrize("recorded", [False, True], ids=["unrecorded", "recorded-per-tick"])
+def test_the_memories_stay_exact_under_a_delay(names, forms, buttons, recorded):
+    """Recorded too: a recorder that keeps every tick's frame (the default, and the env a
+    training run records) or an attached viewer makes the env step the engine one tick at a
+    time, and the memories must count the same either way. They did not before 2026-11-11:
+    the env handed them only the last tick's report of the delayed commands that ran."""
+    from royalegym.replay import ReplayRecorder
     from royalegym.state_mutator import DefaultStateMutator
 
     engine = RustEngine()
@@ -168,6 +174,7 @@ def test_the_memories_stay_exact_under_a_delay(names, forms, buttons):
         engine, command_delay_ticks=DELAY,
         state_mutator=DefaultStateMutator(decks=[deck, deck], forms=[row, row] if forms else None),
         action_parser=TileActionParser(ability_buttons=buttons),
+        recorder=ReplayRecorder(frame_every_tick=True) if recorded else None,
     )
     off = []
 
