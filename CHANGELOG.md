@@ -14,11 +14,20 @@ change the observation's shape; each such change is listed here.
   gap is scaled to 5 ticks, so 250 and 500 ms decisions read the same speed. Off by default;
   appended after every other optional plane. The builder keeps where each seat saw each unit, and
   a snapshot carries it; a builder with the flag refuses a snapshot saved without it.
+- `EntityListObsBuilder` takes a fuller per-unit row as four flags, each off by default and
+  appending after the card one-hot: `unit_motion` (has_prev, dx, dy, per seat, saved with a
+  snapshot), `unit_stats` (log max hp, shield, the target's offset), `unit_status` (one column
+  per status bit) and `unit_actions` (charge, ability ticks, the attack phase, facing, a
+  tunneller's landing point). Signed columns are [-1, 1] and the Box carries each column's own
+  bounds. `entities_dropped` and `spells_dropped` count the rows the last build had no room for.
 - A trace records the engine's command delay (`TraceHeader.command_delay_ticks`, [] in older
   traces), and `verify_trace` says in one line when the verifying engine runs another delay,
   where it listed every hash.
 
 ### Fixed
+- `protocol.mirror_state` turns a unit's facing, a tunneller's landing point, each waiting play's
+  tap and the projectiles, which it left in the original frame. The seat-flip check could not
+  see a builder reading them wrongly for Red.
 - Under a command delay, an env with a recorder that keeps every tick's frame (the default) or an
   attached viewer handed the observation only the last tick's report of the delayed commands that
   ran, so its counted elixir went wrong (and `exact` False) while the same battle unwatched stayed

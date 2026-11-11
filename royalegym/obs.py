@@ -80,8 +80,10 @@ SPELLS AND STATUS EFFECTS
     builder rasterises spells in the ``own_spells``..``enemy_stunned`` channels; the
     entity-list builder adds status features to each entity row and a separate
     ``spells`` array. Not exposed: a spell's hit radius or damage, which the engine
-    does not export (use the card one-hot); and a unit's buffs and current target,
-    which it does (``EntityState.buffs``, ``target_uid``) and no builder reads yet.
+    does not export (use the card one-hot). A unit's buffs and current target, which
+    it does export (``EntityState.buffs``, ``target_uid``), are read by the status planes
+    (Rage, slow; units on a tower or building) and by the entity rows' ``unit_stats``
+    columns (the target's offset); no builder yet reads each buff by name.
     MockEngine resolves spells within a tick and has no status effects, so on it
     those channels and the ``spells`` array are always zero (mock_engine.py WHAT IT
     IS NOT); tests/test_rust_engine.py checks they carry information on RustEngine
@@ -112,6 +114,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
@@ -1980,6 +1983,9 @@ class ObsBuilder(ABC):
     #: counted ``enemy_elixir`` stays exact against a Collector. Only SpatialObsBuilder's
     #: ``elixir_income`` turns it on.
     elixir_income: bool = False
+    #: One ``UnitTrack`` per seat when a builder shows each unit's motion (``unit_velocity``,
+    #: ``unit_motion``), else None. Reset, saved and restored with the rest of the memory here.
+    _tracks: dict[int, UnitTrack] | None = None
 
     @property
     def button_slots(self) -> int:
@@ -2116,6 +2122,9 @@ class ObsBuilder(ABC):
             memory.seed(state, team)
             self.enemy_forms[team].seed(state, team, memory)
             memory.delay = [delay[team], delay[1 - team]]
+        if self._tracks is not None:
+            for track in self._tracks.values():
+                track.reset()
 
     def see_presses(self, presses: Sequence[tuple[int, int]] | None) -> None:
         """The ability presses accepted since the last build, each ``(team, button)``, for
@@ -2156,6 +2165,11 @@ class ObsBuilder(ABC):
             # The forms are counted only with card_status on; a builder that shows them cannot
             # restore a count nobody kept.
             "forms_counted": bool(self.card_status),
+            "unit_track": (
+                None
+                if self._tracks is None
+                else {t: _attrs(k, UNIT_TRACK_BOUND) for t, k in self._tracks.items()}
+            ),
         }
 
     def load_memory_state(self, parts: Mapping[str, Any]) -> None:
@@ -2166,10 +2180,21 @@ class ObsBuilder(ABC):
                 "the saved memory never counted them: it was saved by a builder without "
                 "card_status. Save the snapshot with the builder you train on."
             )
+        tracks, held = self._tracks, parts.get("unit_track")
+        if tracks is not None:
+            if held is None:
+                raise ValueError(
+                    "this builder shows each unit's motion (unit_velocity or unit_motion), and "
+                    "the saved memory never tracked it: it was saved by a builder without it. "
+                    "Save the snapshot with the builder you train on."
+                )
+            _check_saved(tracks, held, UNIT_TRACK_BOUND, "unit track")
         _check_saved(self.memory, parts["memory"], MATCH_MEMORY_BOUND, "match memory")
         _check_saved(self.enemy_forms, parts["enemy_forms"], ENEMY_FORMS_BOUND, "enemy forms")
         _restore(self.memory, parts["memory"])
         _restore(self.enemy_forms, parts["enemy_forms"])
+        if tracks is not None:
+            _restore(tracks, held)
 
     def save_memory(self) -> bytes:
         """What each seat's observation remembers of the match, as bytes for ``load_memory``.
@@ -3586,30 +3611,14 @@ class SpatialObsBuilder(ObsBuilder):
         super().reset(state)
         if self._aim_clock is not None:
             self._aim_clock.reset()
-        if self._tracks is not None:
-            for track in self._tracks.values():
-                track.reset()
 
     def memory_state(self) -> dict[str, Any]:
         out = super().memory_state()
         clock = self._aim_clock
         out["aim_clock"] = None if clock is None else _attrs(clock, AIM_CLOCK_BOUND)
-        tracks = self._tracks
-        out["unit_track"] = (
-            None if tracks is None else {t: _attrs(k, UNIT_TRACK_BOUND) for t, k in tracks.items()}
-        )
         return out
 
     def load_memory_state(self, parts: Mapping[str, Any]) -> None:
-        tracks, held = self._tracks, parts.get("unit_track")
-        if tracks is not None:
-            if held is None:
-                raise ValueError(
-                    "this builder shows each unit's motion (unit_velocity=True), and the saved "
-                    "memory never tracked it: it was saved by a builder without unit_velocity. "
-                    "Save the snapshot with the builder you train on."
-                )
-            _check_saved(tracks, held, UNIT_TRACK_BOUND, "unit track")
         clock, saved = self._aim_clock, parts.get("aim_clock")
         if clock is not None:
             if saved is None:
@@ -3622,8 +3631,6 @@ class SpatialObsBuilder(ObsBuilder):
         super().load_memory_state(parts)
         if clock is not None:
             _restore({0: clock}, {0: saved})
-        if tracks is not None:
-            _restore(tracks, held)
 
     def channel_names(self) -> list[str]:
         return [name for name, _ in self.channels]
@@ -3808,6 +3815,43 @@ ENTITY_FEATURE_NAMES = (
     "knockback",
 )
 
+#: Each APPENDED entity column an ``EntityListObsBuilder`` flag adds, after the card one-hot, as
+#: (name, low, high), in the order the flags add them. Signed columns are [-1, 1]. Every flag is
+#: off by default, so no existing column moves (2026-11-11).
+ENTITY_EXTRA_COLUMNS: dict[str, tuple[tuple[str, float, float], ...]] = {
+    # Motion since the seat's last observation (the velocity planes' UnitTrack), tiles per
+    # VELOCITY_TICKS ticks / 3 (clipped there); has_prev 0 for a unit not seen last time.
+    "unit_motion": (("has_prev", 0.0, 1.0), ("dx", -1.0, 1.0), ("dy", -1.0, 1.0)),
+    # ln(1 + max_hp) / 16; shield hp / 1000 (clipped); the unit's current target, own-frame
+    # offset in tiles / 10 (clipped), has_target 0 when it has none.
+    "unit_stats": (
+        ("log_max_hp", 0.0, 1.0),
+        ("shield", 0.0, 1.0),
+        ("has_target", 0.0, 1.0),
+        ("target_dx", -1.0, 1.0),
+        ("target_dy", -1.0, 1.0),
+    ),
+    # One column per status bit, in STATUS_BIT_NAMES order.
+    "unit_status": tuple((f"status_{n}", 0.0, 1.0) for n in STATUS_BIT_NAMES),
+    # charge permille / 1000; ability ticks left / ABILITY_TICKS_SCALE (clipped); the attack
+    # phase one-hot (idle, windup, cooldown or firing); facing as an own-frame unit vector (0, 0
+    # when the engine says none); a tunneller's landing point, own-frame offset in tiles / 20.
+    "unit_actions": (
+        ("charge", 0.0, 1.0),
+        ("ability_ticks", 0.0, 1.0),
+        ("attack_idle", 0.0, 1.0),
+        ("attack_windup", 0.0, 1.0),
+        ("attack_fire", 0.0, 1.0),
+        ("facing_x", -1.0, 1.0),
+        ("facing_y", -1.0, 1.0),
+        ("has_dest", 0.0, 1.0),
+        ("dest_dx", -1.0, 1.0),
+        ("dest_dy", -1.0, 1.0),
+    ),
+}
+TARGET_OFFSET_TILES = 10  # target_dx / target_dy saturate here
+DEST_OFFSET_TILES = 20  # dest_dx / dest_dy saturate here
+
 # Columns 9 and 10 hold the aim point of the VIEWER's own spells and are 0 on an
 # enemy row; ``Reveal.enemy_spell_aim`` appends two more for the opponent's.
 SPELL_FEATURE_NAMES = (
@@ -3839,13 +3883,27 @@ class EntityListObsBuilder(ObsBuilder):
         18.. card one-hot (last index = crown tower / no card). A unit a spell
         released (Goblin Barrel's Goblins) carries that spell's card.
     Rows are sorted canonically by ``entity_row_key``: (enemy, y_own, x_own, kind,
-    card, hp, max_hp, radius, flying, deploy_ticks, stun_ticks, knockback_ticks) --
-    EVERY entity field a row is built from, so two rows that tie are identical and
-    the order is seat-invariant whatever order the engine listed them in. A shorter
-    key -- (enemy, y_own, x_own, kind, card, hp) -- leaves stacked twins that differ
-    only in deploy_ticks in engine list order. Entities beyond
-    ``max_entities`` are dropped in that order; the drop is silent, so size
-    ``max_entities`` generously.
+    card, hp, max_hp, radius, flying, deploy_ticks, stun_ticks, knockback_ticks, then
+    every value an appended column is built from) -- EVERY entity field a row is built
+    from, so two rows that tie are identical and the order is seat-invariant whatever
+    order the engine listed them in. A shorter key -- (enemy, y_own, x_own, kind, card,
+    hp) -- leaves stacked twins that differ only in deploy_ticks in engine list order.
+    Entities beyond ``max_entities`` are dropped in that order; how many were dropped at
+    the last build of each seat is ``entities_dropped[team]`` (and spells,
+    ``spells_dropped``), so size ``max_entities`` generously and watch it.
+
+    APPENDED COLUMNS, each behind its own flag, off by default, after the card one-hot
+    (``ENTITY_EXTRA_COLUMNS`` names them and their bounds; signed ones are [-1, 1], and the
+    Box carries each column's own bounds):
+        ``unit_motion``: has_prev, dx, dy, the velocity planes' motion per unit (it keeps
+        one ``UnitTrack`` per seat, saved with a snapshot);
+        ``unit_stats``: log_max_hp, shield, has_target, target_dx, target_dy;
+        ``unit_status``: one column per status bit (``STATUS_BIT_NAMES``);
+        ``unit_actions``: charge, ability_ticks, the attack phase one-hot, facing_x/_y,
+        has_dest, dest_dx/_dy.
+    ``unit_stats``, ``unit_status`` and ``unit_actions`` read columns MockEngine does not
+    report, and refuse an engine whose units say none (status bits -1), rather than write
+    zeros that read as "no target", "no status", "idle".
 
     Live spell objects, ``spells`` [max_spells, S] (S = 14 + num_cards), named by
     ``SPELL_FEATURE_NAMES``:
@@ -3883,14 +3941,47 @@ class EntityListObsBuilder(ObsBuilder):
         reveal: Reveal | None = None,
         calibration: Calibration | None = None,
         max_spells: int = 16,
+        unit_motion: bool = False,
+        unit_stats: bool = False,
+        unit_status: bool = False,
+        unit_actions: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.max_entities = max_entities
         self.max_spells = max_spells
+        self.unit_motion = bool(unit_motion)
+        self.unit_stats = bool(unit_stats)
+        self.entity_status = bool(unit_status)
+        self.entity_actions = bool(unit_actions)
+        self._tracks = {t: UnitTrack() for t in TEAMS} if self.unit_motion else None
+        self.entities_dropped: dict[int, int] = {t: 0 for t in TEAMS}
+        self.spells_dropped: dict[int, int] = {t: 0 for t in TEAMS}
+
+    def _flags(self) -> dict[str, bool]:
+        """Each appended-column flag and whether it is on, in ``ENTITY_EXTRA_COLUMNS`` order."""
+        return {
+            "unit_motion": self.unit_motion,
+            "unit_stats": self.unit_stats,
+            "unit_status": self.entity_status,
+            "unit_actions": self.entity_actions,
+        }
 
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
-        self.features = self.BASE_FEATURES + self.num_cards + 1
+        self._extra = [
+            column
+            for flag, on in self._flags().items()
+            if on
+            for column in ENTITY_EXTRA_COLUMNS[flag]
+        ]
+        self._extra_at = self.BASE_FEATURES + self.num_cards + 1
+        self.features = self._extra_at + len(self._extra)
+        low = np.zeros(self.features, dtype=np.float32)
+        high = np.ones(self.features, dtype=np.float32)
+        for i, (_, lo, hi) in enumerate(self._extra):
+            low[self._extra_at + i], high[self._extra_at + i] = lo, hi
+        self._entity_low = np.tile(low, (self.max_entities, 1))
+        self._entity_high = np.tile(high, (self.max_entities, 1))
         self.spell_features = self.SPELL_BASE_FEATURES + self.num_cards
         # Reveal.enemy_spell_aim APPENDS two columns rather than filling the two the
         # fair rows already have: a reveal must change the width (module doc), and
@@ -3901,9 +3992,7 @@ class EntityListObsBuilder(ObsBuilder):
             self.spell_features += 2
         self._space = spaces.Dict(
             {
-                "entities": spaces.Box(
-                    0.0, 1.0, shape=(self.max_entities, self.features), dtype=np.float32
-                ),
+                "entities": spaces.Box(self._entity_low, self._entity_high, dtype=np.float32),
                 "spells": spaces.Box(
                     0.0, 1.0, shape=(self.max_spells, self.spell_features), dtype=np.float32
                 ),
@@ -3917,6 +4006,7 @@ class EntityListObsBuilder(ObsBuilder):
         names = [
             *(f"entity.{n}" for n in ENTITY_FEATURE_NAMES),
             "entity.card_one_hot",
+            *(f"entity.{n}" for n, _, _ in self._extra),
             *(f"spell.{n}" for n in SPELL_FEATURE_NAMES),
             "spell.card_one_hot",
         ]
@@ -3925,11 +4015,114 @@ class EntityListObsBuilder(ObsBuilder):
         return names
 
     def config(self) -> dict[str, Any]:
-        return {
+        out = {
             **super().config(),
             "max_entities": self.max_entities,
             "max_spells": self.max_spells,
         }
+        for flag, on in self._flags().items():
+            if on:
+                out[flag] = True
+        return out
+
+    def _extra_values(
+        self, state: BattleState, team: int, by_uid: Mapping[int, EntityState]
+    ) -> list[tuple[int, ...]]:
+        """Each entity's appended-column inputs, as integers in list order (they join the sort
+        key, so twins differing only in one of them still sort by what is seen)."""
+        a = self.arena
+        flags = self._flags()
+        need_status = flags["unit_stats"] or flags["unit_status"] or flags["unit_actions"]
+        if need_status:
+            for e in state.entities:
+                if status_of(e) is None or (flags["unit_actions"] and e.charge < 0):
+                    asked = [f for f in ("unit_stats", "unit_status", "unit_actions") if flags[f]]
+                    raise ValueError(
+                        f"{', '.join(asked)} read what the engine says of each unit, and this "
+                        f"engine says nothing (entity uid {e.uid}: status_flags {e.status_flags}, "
+                        f"charge {e.charge}). Use an engine that reports them (royalesim 0.1.8 "
+                        "on), or leave these flags off."
+                    )
+        track = None
+        if self._tracks is not None:
+            track = self._tracks[team]
+            track.see(state, team, a)
+        gap = track.tick - track.prev_tick if track is not None else 0
+        out = []
+        for e in state.entities:
+            ox, oy = to_own(a, team, e.x, e.y)
+            v: list[int] = []
+            if flags["unit_motion"]:
+                then = track.prev.get(e.uid) if track is not None and gap > 0 else None
+                now = track.at.get(e.uid) if track is not None else None
+                if then is None or now is None or track.prev_tick < 0:
+                    v += [0, 0, 0]
+                else:
+                    den = gap * a.subtile
+                    q = []
+                    for axis in (0, 1):
+                        num = (now[axis] - then[axis]) * VELOCITY_TICKS * 1000
+                        m = min((2 * abs(num) + den) // (2 * den), VELOCITY_CLIP_MILLI)
+                        q.append(m if num > 0 else -m)
+                    v += [1, *q]
+            if flags["unit_stats"]:
+                target = by_uid.get(e.target_uid) if e.target_uid >= 0 else None
+                if target is None:
+                    v += [e.max_hp, e.shield, 0, 0, 0]
+                else:
+                    tx, ty = to_own(a, team, target.x, target.y)
+                    v += [e.max_hp, e.shield, 1, tx - ox, ty - oy]
+            if flags["unit_status"]:
+                v += [int(e.status_flags)]
+            if flags["unit_actions"]:
+                fx, fy = (-e.facing[0], -e.facing[1]) if team == RED else e.facing
+                if e.dest_x >= 0 and e.dest_y >= 0:
+                    dx, dy = to_own(a, team, e.dest_x, e.dest_y)
+                    dest = [1, dx - ox, dy - oy]
+                else:
+                    dest = [0, 0, 0]
+                v += [e.charge, max(e.ability_ticks, 0), e.attack_phase, fx, fy, *dest]
+            out.append(tuple(v))
+        return out
+
+    def _write_extra(self, f: np.ndarray, v: tuple[int, ...]) -> None:
+        """The appended columns of one row from ``_extra_values``'s integers."""
+        a = self.arena
+        flags = self._flags()
+        i, j = self._extra_at, 0
+        if flags["unit_motion"]:
+            f[i] = v[0]
+            f[i + 1] = np.float32(v[1]) / np.float32(VELOCITY_CLIP_MILLI)
+            f[i + 2] = np.float32(v[2]) / np.float32(VELOCITY_CLIP_MILLI)
+            i, j = i + 3, j + 3
+        if flags["unit_stats"]:
+            max_hp, shield, has, tdx, tdy = v[j : j + 5]
+            span = TARGET_OFFSET_TILES * a.subtile
+            f[i] = min(1.0, math.log1p(max(max_hp, 0)) / 16.0)
+            f[i + 1] = min(1.0, shield / HP_SCALE)
+            f[i + 2] = has
+            f[i + 3] = max(-1.0, min(1.0, tdx / span))
+            f[i + 4] = max(-1.0, min(1.0, tdy / span))
+            i, j = i + 5, j + 5
+        if flags["unit_status"]:
+            bits = v[j]
+            for k in range(len(STATUS_BIT_NAMES)):
+                f[i + k] = float(bits >> k & 1)
+            i, j = i + len(STATUS_BIT_NAMES), j + 1
+        if flags["unit_actions"]:
+            charge, ticks, phase, fx, fy, has, ddx, ddy = v[j : j + 8]
+            span = DEST_OFFSET_TILES * a.subtile
+            f[i] = min(1.0, charge / 1000.0)
+            f[i + 1] = min(1.0, ticks / ABILITY_TICKS_SCALE)
+            if 0 <= phase <= 2:
+                f[i + 2 + phase] = 1
+            norm = math.hypot(fx, fy)
+            if norm > 0:
+                f[i + 5] = fx / norm
+                f[i + 6] = fy / norm
+            f[i + 7] = has
+            f[i + 8] = max(-1.0, min(1.0, ddx / span))
+            f[i + 9] = max(-1.0, min(1.0, ddy / span))
 
     def observation_space(self) -> spaces.Dict:
         return self._space
@@ -3937,7 +4130,12 @@ class EntityListObsBuilder(ObsBuilder):
     def build(self, state: BattleState, team: int, action_mask: np.ndarray) -> dict[str, Any]:
         a = self.arena
         rows = []
-        for e in state.entities:
+        extra = (
+            self._extra_values(state, team, {e.uid: e for e in state.entities})
+            if self._extra
+            else [()] * len(state.entities)
+        )
+        for e, ev in zip(state.entities, extra, strict=True):
             ox, oy = to_own(a, team, e.x, e.y)
             enemy = int(e.team != team)
             card = self.num_cards if e.card_id == EMPTY_CARD else e.card_id
@@ -3955,12 +4153,14 @@ class EntityListObsBuilder(ObsBuilder):
                     e.deploy_ticks,
                     e.stun_ticks,
                     e.knockback_ticks,
+                    ev,
                     e,
                 )
             )
         rows.sort(key=entity_row_key)
+        self.entities_dropped[team] = max(0, len(rows) - self.max_entities)
         out = np.zeros((self.max_entities, self.features), dtype=np.float32)
-        for i, (enemy, oy, ox, kind, card, hp, *_, e) in enumerate(rows[: self.max_entities]):
+        for i, (enemy, oy, ox, kind, card, hp, *_, ev, e) in enumerate(rows[: self.max_entities]):
             f = out[i]
             f[0] = 1
             f[1 + enemy] = 1
@@ -3977,7 +4177,9 @@ class EntityListObsBuilder(ObsBuilder):
             f[16] = min(1.0, e.stun_ticks / 100.0)
             f[17] = float(e.knockback_ticks > 0)
             f[self.BASE_FEATURES + card] = 1
-        np.clip(out, 0.0, 1.0, out=out)
+            if self._extra:
+                self._write_extra(f, ev)
+        np.clip(out, self._entity_low, self._entity_high, out=out)
         return {
             "entities": out,
             "spells": self._spell_rows(state, team),
@@ -4018,6 +4220,7 @@ class EntityListObsBuilder(ObsBuilder):
                 )
             )
         rows.sort(key=spell_row_key)
+        self.spells_dropped[team] = max(0, len(rows) - self.max_spells)
         aim_at = self._enemy_aim_at
         out = np.zeros((self.max_spells, self.spell_features), dtype=np.float32)
         for i, (enemy, oy, ox, motion, card, delay, trav, length, hits, ay, ax, _) in enumerate(

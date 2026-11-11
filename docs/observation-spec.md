@@ -78,9 +78,9 @@ containing their centre in the own frame. Every plane is clipped to `[0, 64]`
 
 One known gap in the "fair" column: a unit invisible to its enemy, such as a Royal Ghost, is
 still shown to the enemy seat. It is counted in `enemy_ground_troops` (5) and `enemy_hp` (9)
-where it stands, and the entity-list builder writes it a full row. No builder reads a unit's
-status flags. Hiding or marking such a unit waits on a measurement of what a player sees in the
-real game. It is not fixed.
+where it stands, and the entity-list builder writes it a full row. The status planes
+(`unit_status`) and the entity rows' `unit_status` columns mark it invisible; neither hides it.
+Hiding it waits on a measurement of what a player sees in the real game. It is not fixed.
 
 Channels 0–11 are integer sums converted to float32 exactly once, so no plane can
 depend on the engine's entity list order (see `obs.py`, NO FLOAT MAY DEPEND ON ENTITY
@@ -625,6 +625,26 @@ For attention / transformer policies. `entities [N, 18 + n + 1]`, `spells [M, 14
 plus the same `vector`, `action_mask` and `mask_planes`. Column names are in
 `ENTITY_FEATURE_NAMES` and `SPELL_FEATURE_NAMES`; the full per-column meaning is in
 the class docstring.
+
+### Appended columns (each flag off by default)
+
+Four flags append columns after the card one-hot, in this order, so no existing column moves
+(`ENTITY_EXTRA_COLUMNS` names each one with its bounds; the `entities` Box carries every
+column's own bounds, and signed ones are `[-1, 1]`):
+
+| flag | columns | meaning |
+|---|---|---|
+| `unit_motion` | `has_prev`, `dx`, `dy` | motion since the seat's last observation, as the velocity planes measure it (tiles per 5 ticks, each axis clipped to 3), / 3; `has_prev` 0 for a unit not seen last time |
+| `unit_stats` | `log_max_hp`, `shield`, `has_target`, `target_dx`, `target_dy` | ln(1 + max_hp) / 16; shield hp / 1000; the current target's own-frame offset in tiles / 10 |
+| `unit_status` | `status_underground` ... `status_grounded` | one column per status bit (`STATUS_BIT_NAMES`) |
+| `unit_actions` | `charge`, `ability_ticks`, `attack_idle`, `attack_windup`, `attack_fire`, `facing_x`, `facing_y`, `has_dest`, `dest_dx`, `dest_dy` | charge permille / 1000; ability ticks / 200; the attack phase one-hot; facing as an own-frame unit vector; a tunneller's landing point, own-frame offset in tiles / 20 |
+
+`unit_stats`, `unit_status` and `unit_actions` read columns MockEngine does not report and refuse
+an engine whose units say none. `unit_motion` keeps one track per seat (as the velocity planes
+do), saved with a snapshot. The sort key takes every appended value, so twins differing only
+there still sort by what is seen. `entities_dropped[team]` and `spells_dropped[team]` count the
+rows the last build of that seat had no room for (the default `max_entities` is 96; a
+crowded board needs about 128).
 
 Rows are sorted by a key made of **every field the row is built from**, so two rows
 that tie are identical and the order is seat-invariant whatever order the engine
