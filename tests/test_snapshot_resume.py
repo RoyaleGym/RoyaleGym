@@ -43,11 +43,11 @@ DECKS = [
 def _builder(full: bool) -> SpatialObsBuilder:
     """Every option that keeps a memory across steps, on the engine that can feed them all."""
     if not full:
-        return SpatialObsBuilder(card_identity=True)
+        return SpatialObsBuilder(card_identity=True, unit_velocity=True)
     return SpatialObsBuilder(
         card_identity=True, spell_aim_after_ticks=20, spell_identity=True, card_status=True,
         heroes=True, unit_status=True, unit_actions=True, evolutions=True,
-        evolution_progress=True,
+        evolution_progress=True, unit_velocity=True,
     )
 
 
@@ -154,7 +154,8 @@ def test_the_loaded_memory_is_the_saved_memory():
     other.engine.load_state(env.engine.save_state())
     other.obs_builder.load_memory(blob, other.engine.state())
     for t in (BLUE, RED):
-        for name, holder in (("memory", "memory"), ("enemy_forms", "enemy_forms")):
+        for name, holder in (("memory", "memory"), ("enemy_forms", "enemy_forms"),
+                             ("unit_track", "_tracks")):
             want = vars(getattr(env.obs_builder, holder)[t])
             got = vars(getattr(other.obs_builder, holder)[t])
             assert sorted(want) == sorted(got)
@@ -412,3 +413,18 @@ def test_a_memory_from_royalegym_0127_or_earlier_is_checked_as_it_was():
     _bound_to(None, state).load_memory(old_blob, state)
     with pytest.raises(ValueError, match=r"another calibration.*save it again with this engine"):
         _bound_to(_moved(NOT_ELIXIR), state).load_memory(old_blob, state)
+
+
+def test_a_memory_without_the_unit_track_is_refused_by_a_builder_that_shows_motion():
+    """A snapshot saved without ``unit_velocity`` never tracked where units stood, and a builder
+    that shows motion cannot start from nothing and read every unit as standing still."""
+    plain = ClashParallelEnv(MockEngine(), obs_builder=SpatialObsBuilder(card_identity=True),
+                             state_mutator=DefaultStateMutator(decks=DECKS))
+    plain.reset(seed=1)
+    plain.step({"blue": 0, "red": 0})
+    blob, state = plain.obs_builder.save_memory(), plain.engine.state()
+    moving = ClashParallelEnv(MockEngine(), obs_builder=_builder(False),
+                              state_mutator=DefaultStateMutator(decks=DECKS))
+    moving.reset(seed=1)
+    with pytest.raises(ValueError, match="unit_velocity"):
+        moving.obs_builder.load_memory(blob, state)

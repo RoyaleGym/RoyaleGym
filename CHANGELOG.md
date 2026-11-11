@@ -5,6 +5,28 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Added
+- `SpatialObsBuilder(unit_velocity=True)`: eight planes of how far each unit moved since the
+  seat's last observation, in its own frame, as tiles per 5 ticks (each axis clipped to 3 tiles),
+  split by sign into `own_dx_plus` ... `enemy_dy_minus` and summed within a tile. The real tick
+  gap is scaled to 5 ticks, so 250 and 500 ms decisions read the same speed. Off by default;
+  appended after every other optional plane. The builder keeps where each seat saw each unit, and
+  a snapshot carries it; a builder with the flag refuses a snapshot saved without it.
+- A trace records the engine's command delay (`TraceHeader.command_delay_ticks`, [] in older
+  traces), and `verify_trace` says in one line when the verifying engine runs another delay,
+  where it listed every hash.
+
+### Fixed
+- Under a command delay, an env with a recorder that keeps every tick's frame (the default) or an
+  attached viewer handed the observation only the last tick's report of the delayed commands that
+  ran, so its counted elixir went wrong (and `exact` False) while the same battle unwatched stayed
+  exact. It now gathers every tick's. No observation shape or config changes.
+- `ClashGymEnv.metadata["render_fps"]` is one frame per decision (4 at `decision_ms` 250), where it
+  was 2 at every cadence. `ElixirLeakPenalty` and the `elixir_leak_steps` stat count decisions, so
+  the same leak weighs twice at 250 ms; their docs say so.
+
 ## 0.1.28 (2026-11-05)
 
 ### Changed

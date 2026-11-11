@@ -50,7 +50,7 @@ RG2 = dict(
     card_identity=True, spell_aim_after_ticks=0, spell_identity=True, effect_identity=True,
     evolutions=True, evolution_progress=True, heroes=True, unit_status=True, card_status=True,
     unit_actions=True, unit_identity=True, unit_aliases=dict(SAME_UNIT_ALIASES),
-    button_index=True, enemy_queue=True,
+    button_index=True, enemy_queue=True, unit_velocity=True,
 )
 NAMES = ("entity_channels", "spell_channels", "evolved_channels", "hero_channels",
          "status_channels", "action_channels", "card_id_planes", "unit_id_planes")

@@ -64,7 +64,7 @@ def test_every_plane_of_a_played_battle_is_stored_exactly():
     has_actions = "charge" in getattr(_core, "ENTITY_FIELDS", ())
     builder = SpatialObsBuilder(
         evolutions=True, spell_aim_after_ticks=0, heroes=True, unit_status=True,
-        unit_actions=has_actions,
+        unit_actions=has_actions, unit_velocity=True,
     )
     env = make_env(
         deck=["Skeletons", "Musketeer", "Knight", "Archer", "Giant", "Minions", "Fireball", "Zap"],
@@ -73,10 +73,12 @@ def test_every_plane_of_a_played_battle_is_stored_exactly():
     rng = np.random.default_rng(5)
     obs, _ = env.reset(seed=3)
     names = builder.channel_names()
-    steps = 0
+    moving = names.index("own_dx_plus")
+    steps, moved = 0, 0
     while env.agents and steps < 400:
         for agent in env.agents:
             sp = obs[agent]["spatial"]
+            moved += int(np.count_nonzero(sp[moving : moving + 8]))
             bad = ~stored_exactly(sp)
             if bad.any():
                 plane = int(np.argwhere(bad)[0][0])
@@ -88,3 +90,4 @@ def test_every_plane_of_a_played_battle_is_stored_exactly():
         obs, *_ = env.step(acts)
         steps += 1
     assert steps > 100
+    assert moved > 100, "vacuous: the velocity planes never held a value"

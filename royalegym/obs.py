@@ -1883,6 +1883,7 @@ MATCH_MEMORY_BOUND = ("num_cards", "law", "cost", "is_mirror", "income", "income
 MEMORY_LAWS = ("law", "income", "income_law")
 ENEMY_FORMS_BOUND = ("num_cards", "champions", "cycles")
 AIM_CLOCK_BOUND = ("after_ticks",)
+UNIT_TRACK_BOUND: tuple[str, ...] = ()
 
 
 def _attrs(obj: Any, bound: Sequence[str]) -> dict[str, Any]:
@@ -2513,6 +2514,29 @@ ACTION_SPATIAL_CHANNELS: list[tuple[str, str]] = [
     ("enemy_tunnel_dest", "count of enemy tunnellers that will come up in the tile"),
 ]
 
+#: The planes ``SpatialObsBuilder(unit_velocity=True)`` adds, after the action planes: how far
+#: each unit moved since this seat's last observation, in its own frame, as tiles per
+#: ``VELOCITY_TICKS`` ticks (2026-11-11), each axis clipped to
+#: ``VELOCITY_CLIP_MILLI``. Split by sign, since a plane holds no negative value; summed over the
+#: units in the tile. +y is toward the enemy king for both seats. Crown towers are in none of them,
+#: and a unit the seat did not see at its last observation adds nothing.
+VELOCITY_SPATIAL_CHANNELS: list[tuple[str, str]] = [
+    ("own_dx_plus", "own units' motion toward +x, tiles per 5 ticks, summed"),
+    ("enemy_dx_plus", "enemy units' motion toward +x, tiles per 5 ticks, summed"),
+    ("own_dx_minus", "own units' motion toward -x, tiles per 5 ticks, summed"),
+    ("enemy_dx_minus", "enemy units' motion toward -x, tiles per 5 ticks, summed"),
+    ("own_dy_plus", "own units' motion toward the enemy king (+y), tiles per 5 ticks, summed"),
+    ("enemy_dy_plus", "enemy units' motion away from the own king (+y), tiles per 5 ticks"),
+    ("own_dy_minus", "own units' motion toward the own king (-y), tiles per 5 ticks, summed"),
+    ("enemy_dy_minus", "enemy units' motion toward the own king (-y), tiles per 5 ticks, summed"),
+]
+#: The window ``VELOCITY_SPATIAL_CHANNELS`` measure motion over: 5 ticks, 250 ms. The
+#: real gap since the seat's last observation is scaled to it, so 250 and 500 ms decisions read
+#: the same speed.
+VELOCITY_TICKS = 5
+#: Each axis's motion is clipped to 3 tiles per window, in thousandths of a tile.
+VELOCITY_CLIP_MILLI = 3000
+
 
 def spatial_channels(
     reveal: Reveal | None = None,
@@ -2521,11 +2545,12 @@ def spatial_channels(
     heroes: bool = False,
     unit_status: bool = False,
     unit_actions: bool = False,
+    unit_velocity: bool = False,
 ) -> list[tuple[str, str]]:
     """The spatial channels: the fair ones, then the evolved-unit pair, the readable enemy spell
-    targets, the hero planes, the unit status planes and the unit action planes when asked for,
-    then the revealed ones. Each optional block is appended after the ones before it, so
-    turning one on moves no existing plane."""
+    targets, the hero planes, the unit status planes, the unit action planes and the unit
+    velocity planes when asked for, then the revealed ones. Each optional block is appended
+    after the ones before it, so turning one on moves no existing plane."""
     rev = reveal or Reveal()
     out = list(FAIR_SPATIAL_CHANNELS)
     if evolutions:
@@ -2538,6 +2563,8 @@ def spatial_channels(
         out.extend(STATUS_SPATIAL_CHANNELS)
     if unit_actions:
         out.extend(ACTION_SPATIAL_CHANNELS)
+    if unit_velocity:
+        out.extend(VELOCITY_SPATIAL_CHANNELS)
     for field, entry in REVEAL_SPATIAL_CHANNELS.items():
         if getattr(rev, field):
             out.append(entry)
@@ -2878,6 +2905,78 @@ def action_channels(state: BattleState, team: int, arena: Arena) -> np.ndarray:
         flat[key] = np.float32(c / 1000.0)
     for key, t in ticks.items():
         flat[8 * plane + key] = np.float32(min(t / ABILITY_TICKS_SCALE, 1.0))
+    return out
+
+
+class UnitTrack:
+    """Where one seat saw each unit, by uid, at its last two observations, for
+    ``velocity_channels``: own-frame subtiles, as Python ints, so it saves with the memory.
+
+    One per seat, because the env builds both seats from one builder on every state: a track
+    shared by the seats would measure Blue's step against Red's view of the same state.
+    ``see`` keeps the previous observation when the tick moved on, keeps it on a rebuild of
+    the same tick (so a rebuild, and the first build after a resume, read the same motion), and
+    forgets it when the tick went back (a new battle on a builder nobody reset). A uid is never
+    reused within a battle, so a new uid is a new unit and has no motion yet.
+    """
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self.tick = -1
+        self.at: dict[int, tuple[int, int]] = {}
+        self.prev_tick = -1
+        self.prev: dict[int, tuple[int, int]] = {}
+
+    def see(self, state: BattleState, team: int, arena: Arena) -> None:
+        if self.tick >= 0 and state.tick > self.tick:
+            self.prev_tick, self.prev = self.tick, self.at
+        elif self.tick < 0 or state.tick < self.tick:
+            self.prev_tick, self.prev = -1, {}
+        self.tick = state.tick
+        self.at = {
+            e.uid: to_own(arena, team, e.x, e.y)
+            for e in state.entities
+            if e.kind not in TOWER_KINDS
+        }
+
+
+def velocity_channels(
+    entities: Sequence[EntityState], team: int, arena: Arena, track: UnitTrack
+) -> np.ndarray:
+    """float32 [8, tiles_y, tiles_x], seen by ``team``: ``VELOCITY_SPATIAL_CHANNELS``.
+
+    For each unit ``track`` saw at the seat's previous observation: its own-frame displacement
+    since then, scaled from the real tick gap to ``VELOCITY_TICKS`` ticks, in whole thousandths
+    of a tile (rounded half away from zero, so both seats round alike), each axis clipped to
+    ``VELOCITY_CLIP_MILLI``, added to the plane of its sign at the unit's tile now. Integer
+    sums, written once as thousandths, so every value is stored exactly. Module-level for plants.
+    """
+    planes = len(VELOCITY_SPATIAL_CHANNELS)
+    plane = arena.tiles_y * arena.tiles_x
+    out = np.zeros((planes, arena.tiles_y, arena.tiles_x), dtype=np.float32)
+    gap = track.tick - track.prev_tick
+    if track.prev_tick < 0 or gap <= 0:
+        return out
+    den = gap * arena.subtile
+    sums: dict[int, int] = {}
+    for e, cell in zip(entities, _entity_cells(entities, team, arena), strict=True):
+        then = track.prev.get(e.uid)
+        now = track.at.get(e.uid)
+        if then is None or now is None or e.kind in TOWER_KINDS:
+            continue
+        side = 0 if e.team == team else 1
+        for axis in (0, 1):
+            num = (now[axis] - then[axis]) * VELOCITY_TICKS * 1000
+            q = min((2 * abs(num) + den) // (2 * den), VELOCITY_CLIP_MILLI)
+            if q == 0:
+                continue
+            key = (4 * axis + (0 if num > 0 else 2) + side) * plane + cell
+            sums[key] = sums.get(key, 0) + q
+    flat = out.reshape(-1)
+    for key, s in sums.items():
+        flat[key] = np.float32(min(s, int(SPATIAL_CLIP) * 1000)) / np.float32(1000)
     return out
 
 
@@ -3287,8 +3386,12 @@ class SpatialObsBuilder(ObsBuilder):
         button_index: bool = False,
         enemy_queue: bool = False,
         elixir_income: bool = False,
+        unit_velocity: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
+        self.unit_velocity = bool(unit_velocity)
+        # One track per seat (UnitTrack): both seats are built from this builder on each state.
+        self._tracks = {t: UnitTrack() for t in TEAMS} if self.unit_velocity else None
         self.button_index = bool(button_index)
         self.enemy_queue = bool(enemy_queue)
         self.elixir_income = bool(elixir_income)
@@ -3404,6 +3507,7 @@ class SpatialObsBuilder(ObsBuilder):
             self.heroes,
             self.unit_status,
             self.unit_actions,
+            self.unit_velocity,
         )
         self._channel_index = {name: i for i, (name, _) in enumerate(self.channels)}
         self.shape = (len(self.channels), a.tiles_y, a.tiles_x)
@@ -3482,14 +3586,30 @@ class SpatialObsBuilder(ObsBuilder):
         super().reset(state)
         if self._aim_clock is not None:
             self._aim_clock.reset()
+        if self._tracks is not None:
+            for track in self._tracks.values():
+                track.reset()
 
     def memory_state(self) -> dict[str, Any]:
         out = super().memory_state()
         clock = self._aim_clock
         out["aim_clock"] = None if clock is None else _attrs(clock, AIM_CLOCK_BOUND)
+        tracks = self._tracks
+        out["unit_track"] = (
+            None if tracks is None else {t: _attrs(k, UNIT_TRACK_BOUND) for t, k in tracks.items()}
+        )
         return out
 
     def load_memory_state(self, parts: Mapping[str, Any]) -> None:
+        tracks, held = self._tracks, parts.get("unit_track")
+        if tracks is not None:
+            if held is None:
+                raise ValueError(
+                    "this builder shows each unit's motion (unit_velocity=True), and the saved "
+                    "memory never tracked it: it was saved by a builder without unit_velocity. "
+                    "Save the snapshot with the builder you train on."
+                )
+            _check_saved(tracks, held, UNIT_TRACK_BOUND, "unit track")
         clock, saved = self._aim_clock, parts.get("aim_clock")
         if clock is not None:
             if saved is None:
@@ -3502,6 +3622,8 @@ class SpatialObsBuilder(ObsBuilder):
         super().load_memory_state(parts)
         if clock is not None:
             _restore({0: clock}, {0: saved})
+        if tracks is not None:
+            _restore(tracks, held)
 
     def channel_names(self) -> list[str]:
         return [name for name, _ in self.channels]
@@ -3554,6 +3676,13 @@ class SpatialObsBuilder(ObsBuilder):
         if self.unit_actions:
             at = idx["own_charge"]
             sp[at : at + len(ACTION_SPATIAL_CHANNELS)] = action_channels(state, team, self.arena)
+        if self._tracks is not None:
+            track = self._tracks[team]
+            track.see(state, team, self.arena)
+            at = idx["own_dx_plus"]
+            sp[at : at + len(VELOCITY_SPATIAL_CHANNELS)] = velocity_channels(
+                state.entities, team, self.arena, track
+            )
         np.clip(sp, 0.0, SPATIAL_CLIP, out=sp)
         out: dict[str, Any] = {
             "spatial": sp,
@@ -3600,6 +3729,8 @@ class SpatialObsBuilder(ObsBuilder):
             out["enemy_queue"] = True
         if self.elixir_income:
             out["elixir_income"] = True
+        if self.unit_velocity:
+            out["unit_velocity"] = True
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []

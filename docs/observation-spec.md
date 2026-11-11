@@ -94,6 +94,27 @@ constant on any sample in which no tower falls, because a crown tower never move
 consumer that concluded "static" from that would never see a tower destroyed. A test
 asserts exactly that.
 
+### Unit velocity (`unit_velocity`, off by default)
+
+`SpatialObsBuilder(unit_velocity=True)` appends eight planes after every other optional block
+(and before the reveal planes): how far each unit moved since this seat's last observation.
+`own_dx_plus`, `enemy_dx_plus`, `own_dx_minus`, `enemy_dx_minus`, then the
+same four for dy.
+
+* **Units.** Tiles per 5 ticks (250 ms), in the seat's own frame: the displacement in subtiles,
+  times 5 over the real tick gap since the seat's last observation, so a Knight reads 0.300 at
+  both 250 and 500 ms decisions. Each axis is clipped to 3 tiles (an underground Miner reaches
+  3.25), rounded to whole thousandths half away from zero, so both seats round alike.
+* **Sign.** A plane holds no negative value, so each axis splits into `_plus` and `_minus`.
+  +y is toward the enemy king for both seats; Red's view of the mirrored battle is Blue's.
+* **Merge.** The magnitudes of the units on a tile add up: two units moving apart both show.
+* **Who counts.** Every unit and building the seat saw at its last observation, by uid; a new
+  uid (a deploy, a spawn) has no motion yet, and crown towers are in none of the planes. Spells
+  and projectiles carry no uid and get none: their aim points are planes already.
+
+Every value is whole thousandths, so it is stored exactly. A learner that stores planes as bytes
+must keep these eight as floats (RoyaleLearn: `rollout.codec_float16_planes`).
+
 ### What is deliberately not here
 
 * `own_troop_zone` and `own_building_zone` were deleted. The action space is
@@ -514,6 +535,12 @@ build the same state dozens of times.
 Tests replay a seeded episode twice in the same env and require the two observation
 sequences to be identical, with a plant that removes both guards and shows the
 difference.
+
+`unit_velocity` adds one more memory per seat, a `UnitTrack`: where the seat saw each unit at
+its last two observations. It keeps the same guards (cleared by `reset`, forgotten when the tick
+goes back, unchanged by a rebuild of the same tick) and is saved with a snapshot; a builder with
+`unit_velocity` refuses a snapshot saved without it. It is per seat because the env builds both
+seats from one builder on every state.
 
 ### A seat that reads only legality (`mask_only`)
 
