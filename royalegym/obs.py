@@ -98,7 +98,8 @@ SPELLS AND STATUS EFFECTS
     observation that follows, and 0 at every observation after it. So
     ``own_stunned`` / ``enemy_stunned`` fire for at most one step per Zap, and the
     per-entity ``stun_ticks / 100`` feature reads between 0.01 and 0.10 for that one
-    step. A policy at 500 ms decisions can barely perceive a stun.
+    step. A policy at 500 ms decisions can barely perceive a stun. At decision_ms 250 (5
+    ticks) the same stun shows on one or two observations.
     The features are left as "is stunned NOW", which is what the engine reports and
     what the seat-flip and cell-by-cell tests can check exactly. "Was stunned since
     the last observation" would be the feature a policy could actually use, but it

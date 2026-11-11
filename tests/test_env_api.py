@@ -550,3 +550,12 @@ def test_maskable_ppo_mask_convention():
     assert stacked.dtype == np.bool_
     assert np.array_equal(stacked, obs["action_mask"].astype(bool))
     vec.close()
+
+
+def test_the_gym_envs_render_rate_is_one_frame_per_decision():
+    """render_fps was 2 whatever the cadence; at decision_ms 250 a frame comes 4 times a second."""
+    from royalegym.env import ClashGymEnv
+
+    assert ClashGymEnv(engine=MockEngine()).metadata["render_fps"] == 2
+    assert ClashGymEnv(engine=MockEngine(), decision_ms=250).metadata["render_fps"] == 4
+    assert ClashGymEnv.metadata["render_fps"] == 2  # the class's own stays the default's

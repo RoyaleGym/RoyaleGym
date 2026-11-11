@@ -291,6 +291,8 @@ class ElixirTradeReward(RewardFunction):
 class ElixirLeakPenalty(RewardFunction):
     """-1 per decision step spent sitting at full elixir (regeneration wasted).
 
+    Per DECISION, not per second: at ``decision_ms`` 250 a second at full elixir costs -4,
+    twice the default 500 ms's -2, so compare its weight across cadences per second of game.
     Not zero-sum: both players can leak at once. ``max_milli`` defaults to the
     engine's MAX_MANA via calibration when bound through an env.
     """

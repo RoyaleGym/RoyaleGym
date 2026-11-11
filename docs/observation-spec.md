@@ -113,7 +113,8 @@ A Zap's stun is 10 ticks and a decision is 10 ticks. Measured on the Rust engine
 Zap cast at tick k of a decision leaves `stun_ticks` = k at the **one** observation
 that follows (1, 4, 6, 10 for k = 0, 3, 5, 9) and 0 at every observation after. So
 `own_stunned` / `enemy_stunned` fire for at most one step per Zap, and the entity
-row's `stun_ticks / 100` reads 0.01 to 0.10 for that one step.
+row's `stun_ticks / 100` reads 0.01 to 0.10 for that one step. At `decision_ms` 250 (5
+ticks a decision) the same stun shows on one or two observations.
 
 The features stay as "is stunned **now**". That is what the engine reports, and it is
 what the seat-flip and cell-by-cell tests can check exactly. "Was stunned since the

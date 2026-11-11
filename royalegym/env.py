@@ -109,7 +109,7 @@ EPISODE_STAT_KEYS = (
     "enemy_crowns",
     "own_tower_hp_frac",
     "enemy_tower_hp_frac",
-    "elixir_leak_steps",
+    "elixir_leak_steps",  # decisions, not time: at decision_ms 250 the same leak counts twice
     "elixir_count_exact",
 )
 # Observation keys ``state()`` leaves out: the action mask in either of its shapes.
@@ -917,6 +917,8 @@ class ClashGymEnv(gym.Env[dict[str, np.ndarray], int]):
         if "engine" not in parallel_kwargs:
             warn_engine_not_chosen(ENGINE_REMEDY_ONE_ENV, stacklevel=3)
         self.parallel = ClashParallelEnv(render_mode=render_mode, **parallel_kwargs)
+        # One rendered frame per decision: 2 a second at the default 500 ms, 4 at 250.
+        self.metadata = {**type(self).metadata, "render_fps": 1000 / self.parallel.decision_ms}
         self.agent = agent
         self.other = AGENTS[1 - AGENTS.index(agent)]
         self.opponent: Opponent = opponent or NoopOpponent()
