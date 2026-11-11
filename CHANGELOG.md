@@ -20,6 +20,13 @@ change the observation's shape; each such change is listed here.
   per status bit) and `unit_actions` (charge, ability ticks, the attack phase, facing, a
   tunneller's landing point). Signed columns are [-1, 1] and the Box carries each column's own
   bounds. `entities_dropped` and `spells_dropped` count the rows the last build had no room for.
+- Three vector options for both builders, each off by default and appended after
+  `enemy_queue_5_8`: `own_button_pending` (which own buttons have a press waiting),
+  `own_waiting_plays` (each own play waiting to run: its tap, ticks left and cost) and
+  `enemy_card_cycle` (per card, the plays until it is back in the enemy's hand, from the deduced
+  cycle, and the plays since the enemy last played it). `EntityListObsBuilder` also takes the
+  vector options `SpatialObsBuilder` had (`evolutions`, `evolution_progress`, `card_status`,
+  `button_index`, `enemy_queue`, `elixir_income`).
 - A trace records the engine's command delay (`TraceHeader.command_delay_ticks`, [] in older
   traces), and `verify_trace` says in one line when the verifying engine runs another delay,
   where it listed every hash.

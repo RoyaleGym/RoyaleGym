@@ -179,6 +179,8 @@ LEAK_SCALE = 20.0  # elixir leaked at which ``own_elixir_leaked`` saturates
 PLAY_GAP_TICKS = 600.0  # ticks since own last play at which that feature saturates
 PLAYS_SCALE = 40.0  # enemy plays at which ``enemy_plays`` saturates
 COOLDOWN_SCALE = 600.0  # ticks of an ability's cooldown at which a cooldown field saturates
+WAITING_PLAYS = 2  # own plays waiting to run that ``own_waiting_plays`` holds, soonest first
+WAIT_TICKS_SCALE = 32.0  # ticks left of a waiting play at which its field saturates
 ABILITY_TICKS_SCALE = 200.0  # ticks left in an ability's windup or run at which a plane saturates
 
 
@@ -230,6 +232,9 @@ def vector_layout(
     card_status: bool = False,
     button_slots: int = 0,
     enemy_queue: bool = False,
+    button_pending: int = 0,
+    waiting_plays: bool = False,
+    enemy_card_cycle: bool = False,
 ) -> list[VectorField]:
     """The flat vector, field by field, in order. THE definition of the layout.
 
@@ -262,6 +267,14 @@ def vector_layout(
 
     ``enemy_queue`` (off by default) appends ``enemy_queue_5_8`` after those: the enemy's cycle
     positions 5..8 as a player who watched its plays deduces them (``MatchMemory.enemy_queue``).
+
+    Then three more, each off by default (2026-11-11): ``button_pending``
+    (K, the parser's buttons) appends ``own_button_pending``, which own buttons have a press
+    waiting to run; ``waiting_plays`` appends ``own_waiting_plays``, where and when each own
+    play waiting to run lands (under a command delay); ``enemy_card_cycle`` appends, per card,
+    the plays until it is back in the enemy's hand (from the deduced cycle) and the plays since
+    the enemy last played it. All three are what a player knows: its own commands, and the
+    enemy's plays it watched.
     """
     rev = reveal or Reveal()
     n = num_cards
@@ -356,6 +369,33 @@ def vector_layout(
                 "enemy cycle positions 5-8 one-hot [4 x (n+1)], from its plays; n = not deduced",
             )
         )
+    if button_pending:
+        fields.append(
+            VectorField(
+                "own_button_pending",
+                button_pending,
+                "own ability button k has a press waiting to run [K]",
+            )
+        )
+    if waiting_plays:
+        fields.append(
+            VectorField(
+                "own_waiting_plays",
+                WAITING_PLAYS * 5,
+                f"own plays waiting to run, soonest first [{WAITING_PLAYS} x (present, x_own / "
+                f"width, y_own / height, ticks left / {WAIT_TICKS_SCALE:.0f}, cost / MAX_MANA)]",
+            )
+        )
+    if enemy_card_cycle:
+        fields.append(
+            VectorField(
+                "enemy_card_cycle",
+                2 * n,
+                "per card: plays until back in the enemy's hand / 4 from the deduced cycle (0 in "
+                "hand or not deduced) [n], then (plays since the enemy last played it + 1) / 8, "
+                "1 past the last 8 plays, 0 never played [n]",
+            )
+        )
     if rev.enemy_hand:
         fields.append(
             VectorField(
@@ -392,13 +432,16 @@ def vector_fields(
     card_status: bool = False,
     button_slots: int = 0,
     enemy_queue: bool = False,
+    button_pending: int = 0,
+    waiting_plays: bool = False,
+    enemy_card_cycle: bool = False,
 ) -> list[tuple[str, int]]:
     """``(description, size)`` per field, in order. The suite checks the sizes add up."""
     return [
         (f"{f.key}: {f.doc}", f.size)
         for f in vector_layout(
             num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
-            button_slots, enemy_queue,
+            button_slots, enemy_queue, button_pending, waiting_plays, enemy_card_cycle,
         )
     ]
 
@@ -477,13 +520,16 @@ def vector_offsets(
     card_status: bool = False,
     button_slots: int = 0,
     enemy_queue: bool = False,
+    button_pending: int = 0,
+    waiting_plays: bool = False,
+    enemy_card_cycle: bool = False,
 ) -> dict[str, slice]:
     """``key -> slice`` into the flat vector, so nothing has to count slots by hand."""
     out: dict[str, slice] = {}
     at = 0
     for f in vector_layout(
         num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
-        button_slots, enemy_queue,
+        button_slots, enemy_queue, button_pending, waiting_plays, enemy_card_cycle,
     ):
         out[f.key] = slice(at, at + f.size)
         at += f.size
@@ -1457,6 +1503,9 @@ def _vector_slots(
     card_status: bool = False,
     button_slots: int = 0,
     enemy_queue: bool = False,
+    button_pending: int = 0,
+    waiting_plays: bool = False,
+    enemy_card_cycle: bool = False,
 ) -> tuple[dict[str, slice], int]:
     """``vector_offsets`` and the vector's width, cached and read-only.
 
@@ -1464,7 +1513,8 @@ def _vector_slots(
     definition of it.
     """
     flags = (
-        enemy_last_card, evolutions, evolution_progress, card_status, button_slots, enemy_queue
+        enemy_last_card, evolutions, evolution_progress, card_status, button_slots, enemy_queue,
+        button_pending, waiting_plays, enemy_card_cycle,
     )
     off = vector_offsets(num_cards, reveal, *flags)
     return off, sum(f.size for f in vector_layout(num_cards, reveal, *flags))
@@ -1484,8 +1534,13 @@ def build_vector(
     enemy_forms: EnemyForms | None = None,
     button_slots: int = 0,
     enemy_queue: bool = False,
+    button_pending: int = 0,
+    waiting_plays: bool = False,
+    enemy_card_cycle: bool = False,
+    arena: Arena | None = None,
 ) -> np.ndarray:
     """The flat vector of ``vector_layout``. ``memory`` must already have seen ``state``.
+    ``waiting_plays`` needs ``arena``, for the own-frame taps.
 
     ``card_status`` needs ``enemy_forms``, the seat's ``EnemyForms``, already moved to
     ``state``.
@@ -1498,7 +1553,7 @@ def build_vector(
     num_cards = len(cards)
     off, width = _vector_slots(
         num_cards, reveal, enemy_last_card, evolutions, evolution_progress, card_status,
-        button_slots, enemy_queue,
+        button_slots, enemy_queue, button_pending, waiting_plays, enemy_card_cycle,
     )
     vec = np.zeros(width, dtype=np.float32)
     # Each own slot priced as the engine prices it (a Mirror: its copy plus one), where the
@@ -1536,6 +1591,37 @@ def build_vector(
         queue = vec[off["enemy_queue_5_8"]].reshape(DECK_SIZE - HAND_SIZE, num_cards + 1)
         for row, card in zip(queue, memory.enemy_queue(), strict=True):
             _put_one(row, card, num_cards)
+    if button_pending:
+        flags = vec[off["own_button_pending"]]
+        for row in me.pending:
+            k = int(row[1]) - HAND_SIZE
+            if int(row[0]) == 1 and 0 <= k < button_pending:
+                flags[k] = 1.0
+    if waiting_plays:
+        if arena is None:
+            raise ValueError("own_waiting_plays needs the arena (build_vector(..., arena=))")
+        plays = sorted(
+            (int(r[4]), int(r[1]), int(r[2]), int(r[3]), int(r[5]))
+            for r in me.pending
+            if int(r[0]) == 0
+        )
+        slots = vec[off["own_waiting_plays"]].reshape(WAITING_PLAYS, 5)
+        for slot, (ticks, _card, x, y, cost) in zip(slots, plays[:WAITING_PLAYS], strict=False):
+            ox, oy = to_own(arena, team, x, y)
+            slot[:] = (
+                1.0, ox / arena.width, oy / arena.height,
+                min(1.0, ticks / WAIT_TICKS_SCALE), cost / max_mana,
+            )
+    if enemy_card_cycle:
+        cycle = vec[off["enemy_card_cycle"]].reshape(2, num_cards)
+        for q, card in enumerate(memory.enemy_queue()):
+            if card != EMPTY_CARD:
+                cycle[0, card] = (q + 1) / HAND_SIZE
+        recent = memory.foe_recent
+        for card in np.flatnonzero(memory.foe_seen):
+            cycle[1, card] = 1.0  # seen, but before the last DECK_SIZE plays
+        for i, card in enumerate(recent):  # a later play of a card overwrites an earlier one
+            cycle[1, card] = (len(recent) - i) / DECK_SIZE
     if reveal.enemy_deck:
         deck = vec[off["enemy_deck"]]
         for c in (*foe.hand, foe.next_card):
@@ -1983,6 +2069,11 @@ class ObsBuilder(ABC):
     #: counted ``enemy_elixir`` stays exact against a Collector. Only SpatialObsBuilder's
     #: ``elixir_income`` turns it on.
     elixir_income: bool = False
+    #: Three vector options (2026-11-11), each off by default: which own buttons have a press
+    #: waiting, the own plays waiting to run, and each enemy card's place in its cycle.
+    own_button_pending: bool = False
+    own_waiting_plays: bool = False
+    enemy_card_cycle: bool = False
     #: One ``UnitTrack`` per seat when a builder shows each unit's motion (``unit_velocity``,
     #: ``unit_motion``), else None. Reset, saved and restored with the rest of the memory here.
     _tracks: dict[int, UnitTrack] | None = None
@@ -1991,6 +2082,33 @@ class ObsBuilder(ABC):
     def button_slots(self) -> int:
         """K for the ``button_index`` fields: the parser's buttons when on, else 0."""
         return int(getattr(self, "ability_buttons", 0)) if self.button_index else 0
+
+    @property
+    def button_pending_slots(self) -> int:
+        """K for ``own_button_pending``: the parser's buttons when on, else 0."""
+        return int(getattr(self, "ability_buttons", 0)) if self.own_button_pending else 0
+
+    def _vector_flags(self) -> dict[str, Any]:
+        """The vector options this builder runs, by ``vector_layout``'s keyword names."""
+        return {
+            "enemy_last_card": self.enemy_last_card,
+            "evolutions": self.evolutions,
+            "evolution_progress": self.evolution_progress,
+            "card_status": self.card_status,
+            "button_slots": self.button_slots,
+            "enemy_queue": self.enemy_queue,
+            "button_pending": self.button_pending_slots,
+            "waiting_plays": self.own_waiting_plays,
+            "enemy_card_cycle": self.enemy_card_cycle,
+        }
+
+    def _vector_config(self) -> dict[str, Any]:
+        """The fixed-row flags for ``config()``, each only when on."""
+        return {
+            k: True
+            for k in ("own_button_pending", "own_waiting_plays", "enemy_card_cycle")
+            if getattr(self, k)
+        }
 
     def __init__(
         self, reveal: Reveal | None = None, calibration: Calibration | None = None
@@ -2081,6 +2199,21 @@ class ObsBuilder(ABC):
                 "button_index names each ability button's card by index, and this action parser "
                 "has no ability buttons; build it with TileActionParser(ability_buttons=True)"
             )
+        if self.own_button_pending and not self.ability_buttons:
+            raise ValueError(
+                "own_button_pending says which ability buttons have a press waiting, and this "
+                "action parser has no ability buttons; build it with "
+                "TileActionParser(ability_buttons=True)"
+            )
+        if self.card_status:
+            unstated = [c.name for c in self.cards if c.evo_cycle is None]
+            if unstated:
+                raise ValueError(
+                    "card_status=True counts the enemy's evolution charge with each card's "
+                    "evo_cycle (the catalogue's evo_cycle column, royalesim 0.1.8 on), and this "
+                    f"engine states none for {len(unstated)} cards, e.g. {unstated[:3]}. Use an "
+                    "engine that states it, or leave card_status off."
+                )
         self.vec_size = sum(f.size for f in self.vector_layout())
 
     def _count_income(self, engine: Engine) -> None:
@@ -2296,17 +2429,11 @@ class ObsBuilder(ABC):
 
     def vector_layout(self) -> list[VectorField]:
         """The flat vector's fields, in order, for this builder's ``Reveal``."""
-        return vector_layout(
-            self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
-            self.evolution_progress, self.card_status, self.button_slots, self.enemy_queue,
-        )
+        return vector_layout(self.num_cards, self.reveal, **self._vector_flags())
 
     def vector_offsets(self) -> dict[str, slice]:
         """``key -> slice`` into the flat vector this builder writes."""
-        return vector_offsets(
-            self.num_cards, self.reveal, self.enemy_last_card, self.evolutions,
-            self.evolution_progress, self.card_status, self.button_slots, self.enemy_queue,
-        )
+        return vector_offsets(self.num_cards, self.reveal, **self._vector_flags())
 
     def channel_names(self) -> list[str]:
         """The names of the feature planes / columns this builder writes, in order.
@@ -2409,6 +2536,13 @@ class ObsBuilder(ABC):
             extra["button_slots"] = self.button_slots
         if self.enemy_queue:
             extra["enemy_queue"] = True
+        if self.own_button_pending:
+            extra["button_pending"] = self.button_pending_slots
+        if self.own_waiting_plays:
+            extra["waiting_plays"] = True
+            extra["arena"] = self.arena
+        if self.enemy_card_cycle:
+            extra["enemy_card_cycle"] = True
         return build_vector(
             state, team, self.cards, self.max_mana, self.reveal, memory, **extra
         )
@@ -3412,8 +3546,14 @@ class SpatialObsBuilder(ObsBuilder):
         enemy_queue: bool = False,
         elixir_income: bool = False,
         unit_velocity: bool = False,
+        own_button_pending: bool = False,
+        own_waiting_plays: bool = False,
+        enemy_card_cycle: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
+        self.own_button_pending = bool(own_button_pending)
+        self.own_waiting_plays = bool(own_waiting_plays)
+        self.enemy_card_cycle = bool(enemy_card_cycle)
         self.unit_velocity = bool(unit_velocity)
         # One track per seat (UnitTrack): both seats are built from this builder on each state.
         self._tracks = {t: UnitTrack() for t in TEAMS} if self.unit_velocity else None
@@ -3515,15 +3655,6 @@ class SpatialObsBuilder(ObsBuilder):
 
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
-        if self.card_status:
-            unstated = [c.name for c in self.cards if c.evo_cycle is None]
-            if unstated:
-                raise ValueError(
-                    "card_status=True counts the enemy's evolution charge with each card's "
-                    "evo_cycle (the catalogue's evo_cycle column, royalesim 0.1.8 on), and this "
-                    f"engine states none for {len(unstated)} cards, e.g. {unstated[:3]}. Use an "
-                    "engine that states it, or leave card_status off."
-                )
         a = self.arena
         self.channels = spatial_channels(
             self.reveal,
@@ -3738,6 +3869,7 @@ class SpatialObsBuilder(ObsBuilder):
             out["elixir_income"] = True
         if self.unit_velocity:
             out["unit_velocity"] = True
+        out.update(self._vector_config())
         if self.card_identity:
             out["card_identity"] = True
             names = getattr(self, "card_names", None) or self._pinned_card_names or []
@@ -3945,10 +4077,30 @@ class EntityListObsBuilder(ObsBuilder):
         unit_stats: bool = False,
         unit_status: bool = False,
         unit_actions: bool = False,
+        evolutions: bool = False,
+        evolution_progress: bool = False,
+        card_status: bool = False,
+        button_index: bool = False,
+        enemy_queue: bool = False,
+        elixir_income: bool = False,
+        own_button_pending: bool = False,
+        own_waiting_plays: bool = False,
+        enemy_card_cycle: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
         self.max_entities = max_entities
         self.max_spells = max_spells
+        # The shared vector's options, as SpatialObsBuilder takes them (they change only the
+        # vector here; the spatial builder's evolutions flag adds planes too).
+        self.evolutions = bool(evolutions)
+        self.evolution_progress = bool(evolution_progress)
+        self.card_status = bool(card_status)
+        self.button_index = bool(button_index)
+        self.enemy_queue = bool(enemy_queue)
+        self.elixir_income = bool(elixir_income)
+        self.own_button_pending = bool(own_button_pending)
+        self.own_waiting_plays = bool(own_waiting_plays)
+        self.enemy_card_cycle = bool(enemy_card_cycle)
         self.unit_motion = bool(unit_motion)
         self.unit_stats = bool(unit_stats)
         self.entity_status = bool(unit_status)
@@ -4023,6 +4175,11 @@ class EntityListObsBuilder(ObsBuilder):
         for flag, on in self._flags().items():
             if on:
                 out[flag] = True
+        for flag in ("evolutions", "evolution_progress", "card_status", "button_index",
+                     "enemy_queue", "elixir_income"):
+            if getattr(self, flag):
+                out[flag] = True
+        out.update(self._vector_config())
         return out
 
     def _extra_values(

@@ -523,6 +523,26 @@ many more cards are behind the hand, and the queue reaches that much further bac
 deduced once the elixir count is not exact (`MatchMemory.exact`), since a missed play would shift
 every position. Only the enemy's plays are logged; the own cycle has its own fields.
 
+### Own commands and the enemy's cycle (three options, each off by default)
+
+Both builders take them; each appends after `enemy_queue_5_8`.
+
+* `own_button_pending=True`: `own_button_pending` [K], 1 where own ability button k has a press
+  waiting to run (under a command delay). K is the parser's button count, and a parser without
+  buttons is refused.
+* `own_waiting_plays=True`: `own_waiting_plays` [2 x 5], the own plays waiting to run, soonest
+  first: present, the tap's own-frame x / width and y / height, ticks left / 32, cost / MAX_MANA.
+* `enemy_card_cycle=True`: `enemy_card_cycle` [2 x n]. First, per card, the plays until it is back
+  in the enemy's hand, / 4, from the deduced cycle `enemy_queue_5_8` shows (position 5 is 1 play
+  away). It is 0 for a card in hand, or where the queue is not deduced. Then, per card, (plays
+  since the enemy last played it + 1) / 8, so a card just played reads 1/8. A card played before
+  the last 8 plays reads 1, and one never played reads 0.
+
+All three are what a player knows: its own commands, and the enemy's plays it watched.
+`EntityListObsBuilder` also takes the vector options `SpatialObsBuilder` always had
+(`evolutions`, `evolution_progress`, `card_status`, `button_index`, `enemy_queue`,
+`elixir_income`), and writes the same vector for the same options.
+
 ### The builder is stateful
 
 These features make the builder carry a `MatchMemory` per seat. Two guards keep one
