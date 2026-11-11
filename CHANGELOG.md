@@ -5,7 +5,17 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.29 (2026-11-11)
+
+### Changed
+- royalesim 0.1.51. Some battles play slightly differently, as royalesim 0.1.47 to 0.1.51 bring
+  ten more of the current client's behaviours (the Goblin Machine's rocket, the Fisherman's drag
+  speed, a stunned Electro Giant no longer reflecting, a Phoenix egg's first frames and a
+  Tornado's pull on units touching another among them), but every example on the site prints the
+  same numbers. Game Values and the Environments page are stamped on royalesim 0.1.51.
+- royalelearn 0.5.26 (CUDA-graph rollouts, opponent affinity, a ladder that rolls back to its
+  champion, evaluation on the GPU and in lockstep, each off by default) and royaleimitate 0.2.17
+  (a `champion` reference and `demo_bc`, each at its own precision).
 
 ### Added
 - `SpatialObsBuilder(unit_velocity=True)`: eight planes of how far each unit moved since the

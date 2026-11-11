@@ -49,7 +49,7 @@ def test_every_piece_names_a_minimum_so_an_upgrade_moves_it():
             if _names([req]) & set(PIECES.values()):
                 assert ">=" in req, f"[{extra}] names {req!r} with no minimum version"
     floors = sorted(r for r in extras["all"] if _names([r]) & {"royalesim", "royaleviser"})
-    assert floors == ["royalesim>=0.1.46", "royaleviser[media]>=0.1.2"], floors
+    assert floors == ["royalesim>=0.1.51", "royaleviser[media]>=0.1.2"], floors
 
 
 def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
@@ -69,13 +69,15 @@ def test_the_learner_extras_require_a_royalelearn_that_has_the_learner():
     0.5.17 trains on the processor, saying why, when the graphics card is too old for the
     installed PyTorch (``device="auto"``), 0.5.18 skips a scripted seat's observation
     (``rollout.mask_only_scripted``, which needs royalegym 0.1.21), 0.5.19 trains through a
-    transform of the actor's logits of your own (``ppo.policy_transform``), and 0.5.20 counts a
+    transform of the actor's logits of your own (``ppo.policy_transform``), 0.5.20 counts a
     fraction rounded into a ``uint8`` plane (``health/obs_codec_rounded``) and keeps a plane's
-    fractions with ``rollout.codec_float16_planes``."""
+    fractions with ``rollout.codec_float16_planes``, and 0.5.21 to 0.5.26 add CUDA-graph rollouts
+    (``rollout.cuda_graphs``), opponent affinity, a ladder that rolls back to its champion, and
+    evaluation on the GPU and in lockstep, each off by default."""
     extras = _extras()
     for extra in ("learn", "all"):
         pins = [r for r in extras[extra] if r.startswith("royalelearn")]
-        assert pins == ["royalelearn[torch]>=0.5.20"], f"[{extra}]: {pins}"
+        assert pins == ["royalelearn[torch]>=0.5.26"], f"[{extra}]: {pins}"
 
 
 def test_the_engine_data_comes_from_the_installed_engine(monkeypatch, tmp_path):
@@ -309,9 +311,10 @@ def test_the_imitate_extras_require_record_and_clone():
     writes ``environment.json`` beside a clone, and 0.2.12's ``clone`` prints a line per epoch
     (a long clone no longer looks hung) and stamps old folders' ``actor_digest``, 0.2.13's
     ``ShardReader`` keeps the packed rows after the first epoch (``cache="auto"``), 0.2.14 reads
-    a snapshot reference through royalelearn's ``ppo.policy_transform``, and 0.2.15's
-    ``ShardReader`` warns once per plane when the run's codec stores a part's values rounded."""
+    a snapshot reference through royalelearn's ``ppo.policy_transform``, 0.2.15's
+    ``ShardReader`` warns once per plane when the run's codec stores a part's values rounded, and
+    0.2.16 and 0.2.17 add a ``champion`` reference and ``demo_bc``, each at its own precision."""
     extras = _extras()
     for extra in ("imitate", "all"):
         pins = [r for r in extras[extra] if r.startswith("royaleimitate")]
-        assert pins == ["royaleimitate[replays]>=0.2.15"], f"[{extra}]: {pins}"
+        assert pins == ["royaleimitate[replays]>=0.2.17"], f"[{extra}]: {pins}"
