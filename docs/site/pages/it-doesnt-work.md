@@ -239,8 +239,8 @@ shows how.
 - **The first** means the card data changed. royalesim 0.1.44 changed it, so nothing saved on
   0.1.43 or older loads on 0.1.44 or newer.
 - **The second** means the bank was saved by royalegym 0.1.27 or older, under other engine
-  settings. Such a bank loads only under the settings it was saved under. royalesim 0.1.49,
-  0.1.50 and 0.1.51 each changed settings, so on royalesim 0.1.51 every such bank saved on 0.1.48
+  settings. Such a bank loads only under the settings it was saved under. Every royalesim release
+  from 0.1.49 to 0.1.52 changed settings, so on royalesim 0.1.52 every such bank saved on 0.1.51
   or older is refused.
 - **The third** means the elixir rules changed: how fast the bar fills, its cap and overtime,
   and with `elixir_income` the payouts. The brackets name the ones that differ. Only a bank saved
@@ -248,7 +248,7 @@ shows how.
 
 A bank saved by royalegym 0.1.28 or newer keeps loading after you upgrade royalesim, as long as
 the card data and the elixir rules stay the same: one saved on royalesim 0.1.45 still loads on
-0.1.51.
+0.1.52.
 
 ### `the saved memory never tracked it`
 
