@@ -96,9 +96,9 @@ That is a whole match, re-run 2026-11-13 on engine build `fe509e3154a34f45` with
 table**, which the Install steps below put at `cards.json`. Red took Blue's left princess tower at
 tick 1800 and Blue took none of Red's, so Red won 1-0 when the three minutes ran out at tick 3600.
 
-Measured on the project's desktop, not on a clean runner, with the royalesim 0.1.52 wheel from
-PyPI, built from **RoyaleSim `a83f55c`**. The compiled engine is `engine_binary_sha256`
-`150845d1ca61b179`.
+Measured on the project's desktop, not on a clean runner, with the royalesim 0.1.53 wheel from
+PyPI, built from **RoyaleSim `a849c29`**. The compiled engine is `engine_binary_sha256`
+`47aaf5821546954d`.
 
 **This result has moved eight times.** The first six were each traced to one engine rule the same
 way: switch that one rule back, run this exact program, and get the previous result exactly.
