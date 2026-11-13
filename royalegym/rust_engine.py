@@ -1705,6 +1705,13 @@ SYMMETRIC_ARMS: dict[str, tuple[str, ...]] = {
     # arena's order; the rotation and the corner walk give the two seats rotated lines.
     "formation.LINE_FRAME": ("rotation",),
     "formation.LINE_CENTRE_SEARCH": ("ring_corner_walk",),
+    # A formation's explicit offsets (RoyaleSim 0.1.52): the client's arm reads them in a frame
+    # that is not the rotation of itself for the two seats; owner_frame_negated reads them in
+    # each owner's frame, the same for both. An engine before the key ships nothing to choose.
+    "formation.EXPLICIT_OFFSETS_FRAME": ("owner_frame_negated",),
+    # The Evo Skeleton Barrel's drop (RoyaleSim 0.1.52): the client's arm puts a Red drop at the
+    # table's x as written, not mirrored; owner_frame mirrors it with its owner.
+    "spawner.EVO_BARREL_OFFSET_FRAME": ("owner_frame",),
 }
 
 

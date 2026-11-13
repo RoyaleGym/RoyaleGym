@@ -37,6 +37,9 @@ change the observation's shape; each such change is listed here.
   cycle, and the plays since the enemy last played it). `EntityListObsBuilder` also takes the
   vector options `SpatialObsBuilder` had (`evolutions`, `evolution_progress`, `card_status`,
   `button_index`, `enemy_queue`, `elixir_income`).
+- `SymmetricRustEngine` selects the owner's-frame arm of the two seat-asymmetric keys royalesim
+  0.1.52 adds (`formation.EXPLICIT_OFFSETS_FRAME`, `spawner.EVO_BARREL_OFFSET_FRAME`), so a
+  symmetric engine stays symmetric on them; an engine without the keys is unchanged.
 - A trace records the engine's command delay (`TraceHeader.command_delay_ticks`, [] in older
   traces), and `verify_trace` says in one line when the verifying engine runs another delay,
   where it listed every hash.

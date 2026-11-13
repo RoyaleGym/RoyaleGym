@@ -260,3 +260,20 @@ def test_the_15535_arms_that_break_the_seat_mirror_are_overridden(
     already = {section: {name: {"value": symmetric, "candidates": candidates}}}
     assert key not in symmetric_overrides(already)
     assert key not in symmetric_overrides({section: {}})
+
+
+@needs_core
+@pytest.mark.parametrize(("key", "arm"), [
+    ("formation.EXPLICIT_OFFSETS_FRAME", "owner_frame_negated"),
+    ("spawner.EVO_BARREL_OFFSET_FRAME", "owner_frame"),
+])
+def test_royalesim_0152s_seat_keys_take_their_owner_frame_arm(key, arm):
+    """royalesim 0.1.52 ships two arms that are not seat-symmetric (a formation's explicit
+    offsets; the Evo Skeleton Barrel's drop); a symmetric engine selects the owner's frame. An
+    engine whose ledger lacks the key is left as it is, so this royalegym builds on royalesim
+    0.1.51 and on 0.1.52 alike."""
+    assert SYMMETRIC_ARMS[key] == (arm,)
+    section, name = key.split(".")
+    forged = {section: {name: {"value": "client", "candidates": ["client", arm]}}}
+    assert symmetric_overrides(forged) == {key: arm}
+    assert symmetric_overrides(compiled_ledger()).get(key, arm) == arm
