@@ -91,6 +91,7 @@ from .protocol import (
     BLUE,
     CARD_KINDS,
     DEFAULT_DATA_DIR,
+    ENTITY_EXTRA_FIELDS,
     HAND_SIZE,
     INSTALL_PAGE,
     RED,
@@ -942,6 +943,8 @@ class RustEngine:
         #: verified -- see ``check_field_order``.
         self.field_order_checked = check_field_order(_core)
         self._decode_state = msgspec.json.Decoder(BattleState)
+        # Whether ``state`` asks for the engine's extra unit values (``set_entity_extras``).
+        self._entity_extras = False
         self._reset_called = False
         # Each side's (deck, forms) from the last reset, for an engine whose state does not
         # carry them (before royalesim 0.1.9). None after load_state: that battle's setup was
@@ -994,6 +997,26 @@ class RustEngine:
         royalesim 0.1.17 on). None from an engine that does not say unit types."""
         fn = getattr(self._battle, "unit_types_json", None)
         return None if fn is None else [str(n) for n in json.loads(fn())]
+
+    def buff_kinds(self) -> list[str] | None:
+        """The buff-kind vocabulary: every name an ``EntityState.buffs`` entry can carry under the
+        loaded card table, sorted (``Battle.buff_kinds_json``, royalesim 0.1.53 on). A name can be
+        a '|' group of buff rows the table gives identical values: split it for the rows. None
+        from an engine that does not say."""
+        fn = getattr(self._battle, "buff_kinds_json", None)
+        return None if fn is None else [str(n) for n in json.loads(fn())]
+
+    def set_entity_extras(self, on: bool = True) -> None:
+        """Ask for the engine's extra unit values in every ``state()`` from now on, or stop:
+        ``EntityState`` spawn_ms .. jumping (``protocol.ENTITY_EXTRA_FIELDS``, royalesim 0.1.53
+        on). Off by default, when they read -1, "not said". ``EntityListObsBuilder(
+        unit_extras=True)`` turns it on when it binds. Refuses an engine that has none."""
+        if on and getattr(_core, "ENTITY_EXTRA_FIELDS", None) is None:
+            raise ValueError(
+                "this royalesim sends no extra unit values (ENTITY_EXTRA_FIELDS, royalesim "
+                "0.1.53 on). Upgrade royalesim, or leave unit_extras off."
+            )
+        self._entity_extras = bool(on)
 
     def unit_mana(self) -> dict[str, tuple[int, int, int, int]] | None:
         """What each unit type pays, as the loaded card table says: {unit type name: (one payout,
@@ -1203,7 +1226,9 @@ class RustEngine:
         return out
 
     def state(self) -> BattleState:
-        state = self._decode_state.decode(self._battle.state_json())
+        battle = self._battle
+        raw = battle.state_json(extra=True) if self._entity_extras else battle.state_json()
+        state = self._decode_state.decode(raw)
         known = self._setup_cards
         if known is not None and not state.players[0].deck:
             state = msgspec.structs.replace(state, players=[
@@ -1428,6 +1453,27 @@ def check_field_order(core: Any) -> dict[str, bool]:
                     f"  here:   {ours}"
                 )
         checked[export] = True
+    # The extra unit values trail the engine's OWN entity row (``state_json(extra=True)``), so
+    # they decode into the right fields only where that row ends here too: the engine's
+    # ENTITY_FIELDS then its ENTITY_EXTRA_FIELDS must be a prefix of ours. An engine whose row
+    # grows a column would put every extra one place late.
+    extras = getattr(core, "ENTITY_EXTRA_FIELDS", None)
+    base = getattr(core, "ENTITY_FIELDS", None)
+    if extras is None or base is None:
+        checked["ENTITY_EXTRA_FIELDS"] = False
+        return checked
+    theirs = [str(f) for f in base] + [str(f) for f in extras]
+    ours = list(EntityState.__struct_fields__)
+    for i, name in enumerate(theirs):
+        here = ours[i] if i < len(ours) else "<none>"
+        if name != here:
+            raise RuntimeError(
+                f"the engine's extra unit values would decode column {i}, {name!r}, into "
+                f"{here!r} here. They trail the engine's own entity row, so this royalegym "
+                f"reads them only after exactly its {len(ours) - len(ENTITY_EXTRA_FIELDS)} "
+                f"columns.\n  engine: {theirs}\n  here:   {ours}"
+            )
+    checked["ENTITY_EXTRA_FIELDS"] = True
     return checked
 
 

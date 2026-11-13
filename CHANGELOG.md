@@ -5,6 +5,22 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Added
+- `EntityListObsBuilder(unit_buffs=True)`: up to six buffs per unit, the most time left first.
+  Each slot's id is in a new `entity_buffs` key (uint8 [N, 6], 0 for none), and its time left
+  / 10 s is an appended column. Ids come from the member names of the engine's buff kinds, sorted
+  (`RustEngine.buff_kinds()`, royalesim 0.1.53 on), or from a `buff_names` pin in any order, and
+  `config()` carries the vocabulary. `buffs_dropped` counts the buffs that did not fit.
+- `EntityListObsBuilder(unit_extras=True)`: a spawner's clock and the units left in its wave,
+  the dash state and its ticks, the speed and hit speed a unit's buffs give it, and the river
+  jump, as eight appended columns. The builder asks the engine for these values when it binds
+  (`RustEngine.set_entity_extras`); they are the seven new trailing `EntityState` fields
+  `spawn_ms` ... `jumping`, which read -1 ("not said") when not asked for.
+- Both flags are off by default and append after `unit_actions`. MockEngine says neither and is
+  refused by name.
+
 ## 0.1.29 (2026-11-11)
 
 ### Changed

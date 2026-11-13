@@ -319,7 +319,9 @@ ENTITY = list(EntityState.__struct_fields__)
 
 
 def test_an_engine_that_exports_no_field_list_passes_unchecked_and_says_so():
-    assert check_field_order(core_with()) == {name: False for name, _ in POSITIONAL_LAYOUTS}
+    assert check_field_order(core_with()) == {
+        **{name: False for name, _ in POSITIONAL_LAYOUTS}, "ENTITY_EXTRA_FIELDS": False
+    }
 
 
 def test_the_same_order_is_checked_and_accepted():

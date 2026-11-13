@@ -573,6 +573,33 @@ class EntityState(msgspec.Struct, frozen=True, array_like=True):
     # (the Graveyard's) keeps that row (``obs.SAME_UNIT_ALIASES`` can merge it). Towers carry
     # their own rows. -1: not said (MockEngine, an older engine).
     unit_type: int = -1
+    # THE ENGINE'S EXTRA VALUES (``ENTITY_EXTRA_FIELDS``, royalesim 0.1.53 on), sent only when
+    # asked (``RustEngine.set_entity_extras``), after the engine's own row: so they must stay
+    # right after its last column, which ``check_field_order`` holds. -1 for each: not said
+    # (not asked, MockEngine, an older engine). The engine's own "nothing" is 0, and 100 for
+    # the two percents.
+    # spawn_ms: a spawner's clock in ms (it spawns when the clock reaches 0), on a unit with a
+    # spawner that has finished deploying. spawn_wave_left: the units its wave still has to
+    # put down. dash_state: 0 none, 1 standing before a dash, 2 dashing. dash_ticks: standing,
+    # the ticks until the dash starts; dashing with a fixed dash time (the Mega Knight's
+    # jump), the ticks until its blow lands. speed_pct / hit_speed_pct: the percent the unit's
+    # buffs make its walking speed and its attack clock (a charge is not a buff). jumping: 1
+    # while the unit leaps the river.
+    spawn_ms: int = -1
+    spawn_wave_left: int = -1
+    dash_state: int = -1
+    dash_ticks: int = -1
+    speed_pct: int = -1
+    hit_speed_pct: int = -1
+    jumping: int = -1
+
+
+#: The engine's extra unit values, in the order they trail ``EntityState.unit_type``
+#: (``royalesim.ENTITY_EXTRA_FIELDS``, 0.1.53 on). Off unless asked for.
+ENTITY_EXTRA_FIELDS = (
+    "spawn_ms", "spawn_wave_left", "dash_state", "dash_ticks", "speed_pct", "hit_speed_pct",
+    "jumping",
+)
 
 
 #: ``EntityState.status_flags`` bits. Read them through ``status_of``.

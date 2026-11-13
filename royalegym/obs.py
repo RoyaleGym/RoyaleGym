@@ -131,6 +131,7 @@ from .protocol import (
     ABILITY_BUTTONS,
     DECK_SIZE,
     EMPTY_CARD,
+    ENTITY_EXTRA_FIELDS,
     HAND_SIZE,
     RED,
     STATUS_ABILITY_ACTIVE,
@@ -182,6 +183,11 @@ COOLDOWN_SCALE = 600.0  # ticks of an ability's cooldown at which a cooldown fie
 WAITING_PLAYS = 2  # own plays waiting to run that ``own_waiting_plays`` holds, soonest first
 WAIT_TICKS_SCALE = 32.0  # ticks left of a waiting play at which its field saturates
 ABILITY_TICKS_SCALE = 200.0  # ticks left in an ability's windup or run at which a plane saturates
+BUFF_SLOTS = 6  # buffs per unit an ``EntityListObsBuilder(unit_buffs=True)`` row holds
+BUFF_MS_SCALE = 10_000.0  # a buff's ms left at which its column saturates
+SPAWN_MS_SCALE = 15_000.0  # a spawner's clock (ms) at which ``spawn_clock`` saturates
+SPAWN_WAVE_SCALE = 8.0  # units left in a spawner's wave at which ``spawn_wave_left`` saturates
+DASH_TICKS_SCALE = 20.0  # ticks to a dash or its blow at which ``dash_ticks`` saturates
 
 
 @dataclass(frozen=True)
@@ -3445,6 +3451,36 @@ def unit_ids_digest(names: Sequence[str], aliases: Mapping[str, str] | None) -> 
     )
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
+def buff_vocabulary(
+    kinds: Sequence[str], pinned: Sequence[str] | None = None
+) -> tuple[list[str], dict[str, int]]:
+    """The ``entity_buffs`` vocabulary, and the id each of the engine's buff kinds writes.
+
+    ``kinds``: the engine's ``buff_kinds()``. A kind can be a '|' group of buff rows the card
+    table gives identical values, so the vocabulary holds MEMBERS, one name per buff row: the
+    members sorted, or ``pinned`` (``EntityListObsBuilder(buff_names=...)``), which may hold more
+    names, in any order. A kind's id is 1 + the vocabulary place of whichever of its members
+    comes first there (0 is "no buff"), so a pin stays valid when a later card table groups
+    or splits rows. Refuses, by name, a member the pin lacks and a name pinned twice."""
+    members = sorted({m for kind in kinds for m in kind.split("|")})
+    names = list(pinned) if pinned is not None else members
+    at: dict[str, int] = {}
+    for i, name in enumerate(names):
+        if name in at:
+            raise ValueError(f"buff_names names {name!r} twice; each buff needs one id")
+        at[name] = i
+    missing = [m for m in members if m not in at]
+    if missing:
+        raise ValueError(
+            f"unit_buffs is pinned to {len(names)} buff names, and this engine's buff kinds "
+            f"have {len(missing)} it lacks: {missing[:6]}. They would have no id the "
+            "checkpoint learned. Add them to the pin (append, so no pinned id moves), or use "
+            "the engine's vocabulary."
+        )
+    ids = {kind: 1 + min(at[m] for m in kind.split("|")) for kind in kinds}
+    return names, ids
+
+
 #: The ``spell_ids`` planes, in order (``SpatialObsBuilder(spell_identity=True)``).
 SPELL_ID_PLANES = ("own_at", "enemy_at", "own_aim", "enemy_aim_seen")
 #: The planes ``SpatialObsBuilder(effect_identity=True)`` appends to ``spell_ids``: the same four
@@ -3980,6 +4016,23 @@ ENTITY_EXTRA_COLUMNS: dict[str, tuple[tuple[str, float, float], ...]] = {
         ("dest_dx", -1.0, 1.0),
         ("dest_dy", -1.0, 1.0),
     ),
+    # Each buff slot's ms left / BUFF_MS_SCALE, the most time left first (ties: the lower id);
+    # the slot's id is in the ``entity_buffs`` key at the same place.
+    "unit_buffs": tuple((f"buff_left_{k}", 0.0, 1.0) for k in range(BUFF_SLOTS)),
+    # The engine's extra values (protocol.ENTITY_EXTRA_FIELDS): a spawner's clock / 15 s and the
+    # units its wave still has to put down / 8; the dash state one-hot (standing, dashing) and
+    # its ticks / 20; (speed % - 100) / 100 and (hit speed % - 100) / 100 from buffs, so 0 is
+    # unbuffed and -1 frozen (clipped); 1 while leaping the river.
+    "unit_extras": (
+        ("spawn_clock", 0.0, 1.0),
+        ("spawn_wave_left", 0.0, 1.0),
+        ("dash_standing", 0.0, 1.0),
+        ("dash_dashing", 0.0, 1.0),
+        ("dash_ticks", 0.0, 1.0),
+        ("speed", -1.0, 1.0),
+        ("hit_speed", -1.0, 1.0),
+        ("jumping", 0.0, 1.0),
+    ),
 }
 TARGET_OFFSET_TILES = 10  # target_dx / target_dy saturate here
 DEST_OFFSET_TILES = 20  # dest_dx / dest_dy saturate here
@@ -4032,10 +4085,19 @@ class EntityListObsBuilder(ObsBuilder):
         ``unit_stats``: log_max_hp, shield, has_target, target_dx, target_dy;
         ``unit_status``: one column per status bit (``STATUS_BIT_NAMES``);
         ``unit_actions``: charge, ability_ticks, the attack phase one-hot, facing_x/_y,
-        has_dest, dest_dx/_dy.
-    ``unit_stats``, ``unit_status`` and ``unit_actions`` read columns MockEngine does not
-    report, and refuse an engine whose units say none (status bits -1), rather than write
-    zeros that read as "no target", "no status", "idle".
+        has_dest, dest_dx/_dy;
+        ``unit_buffs``: buff_left_0 .. buff_left_5, each buff slot's time left, the most first;
+        the slots' ids are the ``entity_buffs`` key [N, BUFF_SLOTS] (uint8, 0 for an empty
+        slot), from the vocabulary ``buff_vocabulary`` builds of the engine's ``buff_kinds()``
+        or pinned with ``buff_names``. Buffs past BUFF_SLOTS on a unit are dropped (the least
+        time left), counted in ``buffs_dropped[team]``;
+        ``unit_extras``: spawn_clock, spawn_wave_left, dash_standing, dash_dashing,
+        dash_ticks, speed, hit_speed, jumping, from the engine's extra unit values, which the
+        builder asks the engine for when it binds (``RustEngine.set_entity_extras``).
+    ``unit_stats``, ``unit_status``, ``unit_actions``, ``unit_buffs`` and ``unit_extras`` read
+    values MockEngine does not report, and refuse an engine that says none (status bits -1,
+    no buff kinds, extras -1), rather than write zeros that read as "no target", "no status",
+    "idle", "no buff".
 
     Live spell objects, ``spells`` [max_spells, S] (S = 14 + num_cards), named by
     ``SPELL_FEATURE_NAMES``:
@@ -4086,8 +4148,16 @@ class EntityListObsBuilder(ObsBuilder):
         own_button_pending: bool = False,
         own_waiting_plays: bool = False,
         enemy_card_cycle: bool = False,
+        unit_buffs: bool = False,
+        buff_names: Sequence[str] | None = None,
+        unit_extras: bool = False,
     ) -> None:
         super().__init__(reveal, calibration)
+        if buff_names is not None and not unit_buffs:
+            raise ValueError(
+                "buff_names pins the entity_buffs vocabulary, which only exists with "
+                "unit_buffs=True"
+            )
         self.max_entities = max_entities
         self.max_spells = max_spells
         # The shared vector's options, as SpatialObsBuilder takes them (they change only the
@@ -4105,9 +4175,13 @@ class EntityListObsBuilder(ObsBuilder):
         self.unit_stats = bool(unit_stats)
         self.entity_status = bool(unit_status)
         self.entity_actions = bool(unit_actions)
+        self.unit_buffs = bool(unit_buffs)
+        self._pinned_buff_names = list(buff_names) if buff_names is not None else None
+        self.unit_extras = bool(unit_extras)
         self._tracks = {t: UnitTrack() for t in TEAMS} if self.unit_motion else None
         self.entities_dropped: dict[int, int] = {t: 0 for t in TEAMS}
         self.spells_dropped: dict[int, int] = {t: 0 for t in TEAMS}
+        self.buffs_dropped: dict[int, int] = {t: 0 for t in TEAMS}
 
     def _flags(self) -> dict[str, bool]:
         """Each appended-column flag and whether it is on, in ``ENTITY_EXTRA_COLUMNS`` order."""
@@ -4116,10 +4190,46 @@ class EntityListObsBuilder(ObsBuilder):
             "unit_stats": self.unit_stats,
             "unit_status": self.entity_status,
             "unit_actions": self.entity_actions,
+            "unit_buffs": self.unit_buffs,
+            "unit_extras": self.unit_extras,
+        }
+
+    def _bind_buffs(self, engine: Engine) -> dict[str, Any]:
+        """The ``entity_buffs`` Box, after taking the vocabulary from the engine (or refusing)."""
+        said = getattr(engine, "buff_kinds", None)
+        kinds = said() if callable(said) else None
+        if kinds is None:
+            raise ValueError(
+                f"unit_buffs needs each buff's kind, and {type(engine).__name__} does not say a "
+                "buff vocabulary (RustEngine.buff_kinds(), royalesim 0.1.53 on). Use an engine "
+                "that says it, or leave unit_buffs off."
+            )
+        self.buff_names, self._buff_ids = buff_vocabulary(kinds, self._pinned_buff_names)
+        top = np.iinfo(np.uint8).max
+        if len(self.buff_names) > top:
+            raise ValueError(
+                f"entity_buffs holds ids up to {top}, and the buff vocabulary has "
+                f"{len(self.buff_names)} names"
+            )
+        return {
+            "entity_buffs": spaces.Box(
+                0, len(self.buff_names), shape=(self.max_entities, BUFF_SLOTS), dtype=np.uint8
+            )
         }
 
     def bind(self, engine: Engine, action_parser: ActionParser) -> None:
         super().bind(engine, action_parser)
+        buff_space = self._bind_buffs(engine) if self.unit_buffs else {}
+        if self.unit_extras:
+            ask = getattr(engine, "set_entity_extras", None)
+            if not callable(ask):
+                raise ValueError(
+                    f"unit_extras reads the engine's extra unit values, and "
+                    f"{type(engine).__name__} does not send them (RustEngine."
+                    "set_entity_extras, royalesim 0.1.53 on). Use an engine that sends them, "
+                    "or leave unit_extras off."
+                )
+            ask(True)
         self._extra = [
             column
             for flag, on in self._flags().items()
@@ -4149,6 +4259,7 @@ class EntityListObsBuilder(ObsBuilder):
                     0.0, 1.0, shape=(self.max_spells, self.spell_features), dtype=np.float32
                 ),
                 "vector": spaces.Box(0.0, 1.0, shape=(self.vec_size,), dtype=np.float32),
+                **buff_space,
                 **self._mask_space_entries(),
             }
         )
@@ -4175,6 +4286,11 @@ class EntityListObsBuilder(ObsBuilder):
         for flag, on in self._flags().items():
             if on:
                 out[flag] = True
+        if self.unit_buffs:
+            # The vocabulary bound to (the pin, else the engine's), so a checkpoint pins it.
+            out["buff_names"] = list(
+                getattr(self, "buff_names", None) or self._pinned_buff_names or []
+            )
         for flag in ("evolutions", "evolution_progress", "card_status", "button_index",
                      "enemy_queue", "elixir_income"):
             if getattr(self, flag):
@@ -4206,6 +4322,7 @@ class EntityListObsBuilder(ObsBuilder):
             track.see(state, team, a)
         gap = track.tick - track.prev_tick if track is not None else 0
         out = []
+        dropped = 0
         for e in state.entities:
             ox, oy = to_own(a, team, e.x, e.y)
             v: list[int] = []
@@ -4239,11 +4356,44 @@ class EntityListObsBuilder(ObsBuilder):
                 else:
                     dest = [0, 0, 0]
                 v += [e.charge, max(e.ability_ticks, 0), e.attack_phase, fx, fy, *dest]
+            if flags["unit_buffs"]:
+                slots = []
+                for name, ms in e.buffs:
+                    kind = self._buff_ids.get(name)
+                    if kind is None:
+                        raise ValueError(
+                            f"entity uid {e.uid} carries buff {name!r}, which the engine's "
+                            "buff_kinds() does not list, so it has no entity_buffs id"
+                        )
+                    slots.append((-ms, kind))
+                slots.sort()
+                dropped += max(0, len(slots) - BUFF_SLOTS)
+                slots = slots[:BUFF_SLOTS] + [(0, 0)] * (BUFF_SLOTS - len(slots))
+                v += [kind for _, kind in slots] + [-neg for neg, _ in slots]
+            if flags["unit_extras"]:
+                extra = [getattr(e, f) for f in ENTITY_EXTRA_FIELDS]
+                if min(extra) < 0:
+                    raise ValueError(
+                        f"unit_extras reads the engine's extra unit values, and entity uid "
+                        f"{e.uid} has none ({dict(zip(ENTITY_EXTRA_FIELDS, extra, strict=True))})"
+                        ". The engine was not asked for them, or does not send them."
+                    )
+                if e.dash_state not in (0, 1, 2):
+                    raise ValueError(
+                        f"entity uid {e.uid} has dash_state {e.dash_state}, which the "
+                        "unit_extras columns do not name (0 none, 1 standing, 2 dashing)"
+                    )
+                v += extra
             out.append(tuple(v))
+        if flags["unit_buffs"]:
+            self.buffs_dropped[team] = dropped
         return out
 
-    def _write_extra(self, f: np.ndarray, v: tuple[int, ...]) -> None:
-        """The appended columns of one row from ``_extra_values``'s integers."""
+    def _write_extra(
+        self, f: np.ndarray, v: tuple[int, ...], ids: np.ndarray | None = None
+    ) -> None:
+        """The appended columns of one row from ``_extra_values``'s integers, and its buff ids
+        into ``ids`` (the row's ``entity_buffs`` slots)."""
         a = self.arena
         flags = self._flags()
         i, j = self._extra_at, 0
@@ -4280,6 +4430,23 @@ class EntityListObsBuilder(ObsBuilder):
             f[i + 7] = has
             f[i + 8] = max(-1.0, min(1.0, ddx / span))
             f[i + 9] = max(-1.0, min(1.0, ddy / span))
+            i, j = i + 10, j + 8
+        if flags["unit_buffs"]:
+            if ids is not None:
+                ids[:] = v[j : j + BUFF_SLOTS]
+            for k, ms in enumerate(v[j + BUFF_SLOTS : j + 2 * BUFF_SLOTS]):
+                f[i + k] = min(1.0, max(ms, 0) / BUFF_MS_SCALE)
+            i, j = i + BUFF_SLOTS, j + 2 * BUFF_SLOTS
+        if flags["unit_extras"]:
+            spawn, wave, dash, dash_ticks, speed, hit_speed, jumping = v[j : j + 7]
+            f[i] = min(1.0, spawn / SPAWN_MS_SCALE)
+            f[i + 1] = min(1.0, wave / SPAWN_WAVE_SCALE)
+            if dash:
+                f[i + 1 + dash] = 1
+            f[i + 4] = min(1.0, dash_ticks / DASH_TICKS_SCALE)
+            f[i + 5] = max(-1.0, min(1.0, (speed - 100) / 100))
+            f[i + 6] = max(-1.0, min(1.0, (hit_speed - 100) / 100))
+            f[i + 7] = min(1, jumping)
 
     def observation_space(self) -> spaces.Dict:
         return self._space
@@ -4317,6 +4484,9 @@ class EntityListObsBuilder(ObsBuilder):
         rows.sort(key=entity_row_key)
         self.entities_dropped[team] = max(0, len(rows) - self.max_entities)
         out = np.zeros((self.max_entities, self.features), dtype=np.float32)
+        buff_ids = (
+            np.zeros((self.max_entities, BUFF_SLOTS), dtype=np.uint8) if self.unit_buffs else None
+        )
         for i, (enemy, oy, ox, kind, card, hp, *_, ev, e) in enumerate(rows[: self.max_entities]):
             f = out[i]
             f[0] = 1
@@ -4335,12 +4505,13 @@ class EntityListObsBuilder(ObsBuilder):
             f[17] = float(e.knockback_ticks > 0)
             f[self.BASE_FEATURES + card] = 1
             if self._extra:
-                self._write_extra(f, ev)
+                self._write_extra(f, ev, None if buff_ids is None else buff_ids[i])
         np.clip(out, self._entity_low, self._entity_high, out=out)
         return {
             "entities": out,
             "spells": self._spell_rows(state, team),
             "vector": self._vector(state, team),
+            **({} if buff_ids is None else {"entity_buffs": buff_ids}),
             **self._mask_entries(action_mask),
         }
 

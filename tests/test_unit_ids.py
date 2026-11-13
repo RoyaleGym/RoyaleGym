@@ -200,19 +200,22 @@ def test_the_trace_header_carries_the_vocabulary() -> None:
     assert plain.trace.header.unit_types == []
 
 
-def test_unit_type_is_the_last_entity_column_and_not_said_by_default() -> None:
-    """``unit_type`` trails ``ability_ticks``; a row from an engine before it decodes as -1."""
-    from royalegym.protocol import EntityState
+def test_unit_type_is_the_engines_last_entity_column_and_not_said_by_default() -> None:
+    """``unit_type`` trails ``ability_ticks`` and ends the engine's own row; a row from an engine
+    before it decodes as -1. Only the opt-in extra values (``ENTITY_EXTRA_FIELDS``) follow it."""
+    from royalegym.protocol import ENTITY_EXTRA_FIELDS, EntityState
 
     fields = EntityState.__struct_fields__
-    assert fields[-2:] == ("ability_ticks", "unit_type")
+    at = fields.index("unit_type")
+    assert fields[at - 1 : at + 1] == ("ability_ticks", "unit_type")
+    assert fields[at + 1 :] == ENTITY_EXTRA_FIELDS
     eng = MockEngine()
     eng.reset(1, DefaultStateMutator().build(np.random.default_rng(0), eng.cards()))
     row = msgspec.to_builtins(eng.state().entities[0])
     assert len(row) == len(fields)
-    old = msgspec.convert(row[:-1], EntityState)
+    old = msgspec.convert(row[:at], EntityState)
     assert old.unit_type == -1
-    new = msgspec.convert([*row[:-1], 17], EntityState)
+    new = msgspec.convert([*row[:at], 17], EntityState)
     assert new.unit_type == 17
 
 

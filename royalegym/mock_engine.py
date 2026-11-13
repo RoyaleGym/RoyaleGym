@@ -174,6 +174,14 @@ UNREPORTED_ENTITY_FIELDS: tuple[str, ...] = (
     "dest_y",
     "ability_ticks",
     "unit_type",
+    # The extra unit values (protocol.ENTITY_EXTRA_FIELDS): no spawner clock, dash or buff here.
+    "spawn_ms",
+    "spawn_wave_left",
+    "dash_state",
+    "dash_ticks",
+    "speed_pct",
+    "hit_speed_pct",
+    "jumping",
 )
 
 # CardInfo fields this engine never states: they stay None, "not said". It models no
