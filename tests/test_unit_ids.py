@@ -12,6 +12,7 @@ dealt by the Goblins card and by the Goblin Barrel are one type under two produc
 from __future__ import annotations
 
 import json
+import re
 
 import msgspec
 import numpy as np
@@ -656,6 +657,24 @@ TABLE_EXTRA_UNITS = {
         "BarrelGoblin", "ElectroGiant_EV1", "Giant_EV1", "IceWizardHero", "IceWizardHero_IceCube",
     ],
 }
+#: Unit types a later royalesim adds to a table, by the release that adds them: royalesim 0.1.53
+#: plays the Hero Electro Wizard on the 16.635 table, whose surge is a type of its own.
+TABLE_UNITS_ADDED = {
+    "client160635007_20261103": {(0, 1, 53): ["ElectroWizardHero"]},
+}
+
+
+def _extras(table: str) -> list[str]:
+    """``TABLE_EXTRA_UNITS[table]`` with what the installed royalesim adds, in the engine's order
+    (by name). Each release's names are stated here, never read back from the engine."""
+    import royalesim
+
+    have = tuple(int(part) for part in royalesim.__version__.split(".")[:3])
+    names = list(TABLE_EXTRA_UNITS[table])
+    for since, added in TABLE_UNITS_ADDED.get(table, {}).items():
+        if have >= since:
+            names += added
+    return sorted(names)
 
 
 def _on_table(table: str):
@@ -678,8 +697,8 @@ def test_each_client_table_says_the_unit_types_the_changelog_names(table: str) -
 
     default = RustEngine().unit_types()
     engine = _on_table(table)
-    assert [n for n in engine.unit_types() if n not in default] == TABLE_EXTRA_UNITS[table]
-    pin = [*default, *TABLE_EXTRA_UNITS[table]]
+    assert [n for n in engine.unit_types() if n not in default] == _extras(table)
+    pin = [*default, *_extras(table)]
     env = _pinned_env(engine, pin)
     env.reset(seed=1)
     assert env.obs_builder.config()["unit_names"] == pin
@@ -689,14 +708,17 @@ def test_each_client_table_says_the_unit_types_the_changelog_names(table: str) -
 @pytest.mark.skipif(not core_available(), reason=str(CORE_IMPORT_ERROR))
 def test_on_the_16635_table_the_evo_giant_plays_and_a_pin_without_its_type_is_refused() -> None:
     """royalesim 0.1.44 lets the Giant's evolution be played on the 16.635 table, and its unit
-    type sits among the others by name, so every later engine index moves by one. A pin taken on
-    an earlier table lacks the type and is refused by name until the name is appended."""
+    type sits among the others by name, so every later engine index moves by one (as 0.1.53's
+    ElectroWizardHero does again). A pin taken on an earlier table lacks the types and is refused
+    by name until the names are appended."""
     from royalegym.rust_engine import RustEngine
 
     engine = _on_table("client160635007_20261103")
     giant = next(c for c in engine.cards() if c.name == "Giant")
     assert giant.evo_cycle > 0, giant
     earlier = [*RustEngine().unit_types(), *TABLE_EXTRA_UNITS["client160402017_20261019"]]
-    with pytest.raises(ValueError, match=r"lacks: \['Giant_EV1'\]"):
+    missing = [n for n in _extras("client160635007_20261103") if n not in earlier]
+    assert "Giant_EV1" in missing
+    with pytest.raises(ValueError, match=re.escape(f"lacks: {missing}")):
         _pinned_env(engine, earlier)
-    _pinned_env(engine, [*earlier, "Giant_EV1"]).reset(seed=1)
+    _pinned_env(engine, [*earlier, *missing]).reset(seed=1)
