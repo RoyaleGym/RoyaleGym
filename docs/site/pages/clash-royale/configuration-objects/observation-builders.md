@@ -46,6 +46,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 |---|---|
 | `SpatialObsBuilder(card_identity=True)` | Which card each unit came from, as its own `card_ids` grid, and the last card the opponent played. |
 | `SpatialObsBuilder(evolutions=True)` | Which of your cards are evolved, and where evolved units stand. |
+| `SpatialObsBuilder(evolution_progress=True)` | How far each card in your hand has got toward its next evolved play. Needs `evolutions=True`. |
 | `SpatialObsBuilder(heroes=True)` | Where each side's heroes stand, and which of the opponent's heroes still have their ability to use. Champions don't count as heroes. |
 | `SpatialObsBuilder(spell_identity=True)` | Which card made each live spell object, as its own `spell_ids` grid: a cast spell, or an effect a troop or building left (an evolution's fireworks or bombs, a death bomb). It shows where each one is now and where it lands. Needs `card_identity=True` and `spell_aim_after_ticks`. |
 | `SpatialObsBuilder(unit_status=True)` | Shields, units under a Rage or slowed by cold, and units already locked on a crown tower. |
@@ -56,6 +57,10 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 | `SpatialObsBuilder(enemy_queue=True)` | The opponent's next card and the three after it, in order, worked out from its plays the way a player watching them would. A place it can't know yet reads "not deduced". |
 | `SpatialObsBuilder(button_index=True)` | Each of your ability buttons in the order the actions press them: which card it belongs to, and whether it's ready, used or cooling down. |
 | `SpatialObsBuilder(elixir_income=True)` | The opponent's counted elixir also takes in what the board pays: an Elixir Collector's elixir, and the elixir it pays when it dies, and what an Elixir Golem's pieces pay when they die. Needs royalegym 0.1.26 or newer: `pip install --upgrade "royalegym[all]"`. |
+| `SpatialObsBuilder(unit_velocity=True)` | How far each unit has moved since the bot last looked, in tiles per 5 ticks, as eight more layers: each side's units moving right, left, forward and back. A unit that has just appeared shows no movement yet, and towers show none. With RoyaleLearn, list the eight layers (the last eight of `channel_names()`) in `rollout.codec_float16_planes` so their fractions are kept. Needs royalegym 0.1.29 or newer. |
+| `SpatialObsBuilder(own_button_pending=True)` | Which of your ability buttons has a press waiting to happen, when the environment delays commands (`command_delay_ticks`). Needs an action parser with `ability_buttons=True`, and royalegym 0.1.29 or newer. |
+| `SpatialObsBuilder(own_waiting_plays=True)` | Your own plays still waiting to happen under a command delay, soonest first, up to two: where each lands, how many ticks are left, and what it costs. Needs royalegym 0.1.29 or newer. |
+| `SpatialObsBuilder(enemy_card_cycle=True)` | For each card, how many plays until it's back in the opponent's hand, where their plays so far show it, and how many plays since they last played it. Needs royalegym 0.1.29 or newer. |
 | `SpatialObsBuilder(reveal=Reveal(...))` | Hidden information, such as the opponent's real elixir. For experiments only. |
 
 `Reveal` comes from `royalegym`. Turn on what you want the bot to see:
@@ -64,7 +69,19 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 `obs_builder = SpatialObsBuilder(reveal=Reveal(enemy_elixir=True))`.
 
 `EntityListObsBuilder()` gives a list of units, one row each, instead of a grid. RoyaleLearn
-can't train on it.
+can't train on it. It takes the table's options that add to the vector (`evolutions`,
+`evolution_progress`, `card_status`, `button_index`, `enemy_queue`, `elixir_income`,
+`own_button_pending`, `own_waiting_plays` and `enemy_card_cycle`), and four of its own that
+add columns to each unit's row:
+
+| Option | What each row gains |
+|---|---|
+| `EntityListObsBuilder(unit_motion=True)` | How far the unit has moved since the bot last looked, as `unit_velocity` measures it. |
+| `EntityListObsBuilder(unit_stats=True)` | Its full hitpoints, its shield, and where its target stands. |
+| `EntityListObsBuilder(unit_status=True)` | One column per status flag: under ground, invisible, hidden, evolved, a hero, a Clone copy, an ability winding up or running, charged, and grounded. |
+| `EntityListObsBuilder(unit_actions=True)` | Its charge, its ability timer, which part of its attack it's in, which way it faces, and where a tunneller will come up. |
+
+These need royalegym 0.1.29 or newer.
 
 !!! note "Which builders RoyaleLearn can train"
     RoyaleLearn's trainer reads `SpatialObsBuilder`'s four keys, with any of the options in the

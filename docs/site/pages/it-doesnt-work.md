@@ -239,16 +239,28 @@ shows how.
 - **The first** means the card data changed. royalesim 0.1.44 changed it, so nothing saved on
   0.1.43 or older loads on 0.1.44 or newer.
 - **The second** means the bank was saved by royalegym 0.1.27 or older, under other engine
-  settings. Such a bank loads only under the settings it was saved under, so on royalesim 0.1.48
-  every bank saved on 0.1.44, 0.1.45 or 0.1.46 is refused. One saved on 0.1.47 still loads,
-  because 0.1.48 changed no settings.
+  settings. Such a bank loads only under the settings it was saved under. royalesim 0.1.49,
+  0.1.50 and 0.1.51 each changed settings, so on royalesim 0.1.51 every such bank saved on 0.1.48
+  or older is refused.
 - **The third** means the elixir rules changed: how fast the bar fills, its cap and overtime,
   and with `elixir_income` the payouts. The brackets name the ones that differ. Only a bank saved
   by royalegym 0.1.28 or newer can give it.
 
 A bank saved by royalegym 0.1.28 or newer keeps loading after you upgrade royalesim, as long as
-the card data and the elixir rules stay the same: one saved on royalesim 0.1.45 loads on 0.1.46,
-0.1.47 and 0.1.48.
+the card data and the elixir rules stay the same: one saved on royalesim 0.1.45 still loads on
+0.1.51.
+
+### `the saved memory never tracked it`
+
+```text
+ValueError: this builder shows each unit's motion (unit_velocity or unit_motion), and the saved memory never tracked it: it was saved by a builder without it. Save the snapshot with the builder you train on.
+```
+
+Your observation builder has `unit_velocity=True` (or the entity list's `unit_motion=True`), and
+your bank was saved by a builder without it. Save your starts again with the builder you train
+on, as
+[Starting From a Saved Moment](clash-royale/configuration-objects/state-mutators.md#starting-from-a-saved-moment)
+shows.
 
 ### `TERRITORY_MODEL='enemy_tower_no_deploy_rects_open_bridge'`
 
