@@ -71,7 +71,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 `EntityListObsBuilder()` gives a list of units, one row each, instead of a grid. RoyaleLearn
 can't train on it. It takes the table's options that add to the vector (`evolutions`,
 `evolution_progress`, `card_status`, `button_index`, `enemy_queue`, `elixir_income`,
-`own_button_pending`, `own_waiting_plays` and `enemy_card_cycle`), and four of its own that
+`own_button_pending`, `own_waiting_plays` and `enemy_card_cycle`), and six of its own that
 add columns to each unit's row:
 
 | Option | What each row gains |
@@ -80,8 +80,11 @@ add columns to each unit's row:
 | `EntityListObsBuilder(unit_stats=True)` | Its full hitpoints, its shield, and where its target stands. |
 | `EntityListObsBuilder(unit_status=True)` | One column per status flag: under ground, invisible, hidden, evolved, a hero, a Clone copy, an ability winding up or running, charged, and grounded. |
 | `EntityListObsBuilder(unit_actions=True)` | Its charge, its ability timer, which part of its attack it's in, which way it faces, and where a tunneller will come up. |
+| `EntityListObsBuilder(unit_buffs=True)` | Up to six buffs on the unit, the one with the most time left first, and how long each has left (10 seconds reads 1). Which buff each one is goes in a new `entity_buffs` key, 0 for an empty slot. `buff_names=[...]` sets which id each buff gets. |
+| `EntityListObsBuilder(unit_extras=True)` | Eight more columns: a spawner's clock and how many units its wave still has to put down; whether the unit is standing before a dash or dashing, and the ticks until it goes; how much its buffs speed up or slow its walking and its attacks (0 is normal, -1 frozen); and whether it is leaping the river. |
 
-These need royalegym 0.1.29 or newer.
+`unit_motion`, `unit_stats`, `unit_status` and `unit_actions` need royalegym 0.1.29 or newer, and
+`unit_buffs` and `unit_extras` need 0.1.30 or newer.
 
 !!! note "Which builders RoyaleLearn can train"
     RoyaleLearn's trainer reads `SpatialObsBuilder`'s four keys, with any of the options in the
