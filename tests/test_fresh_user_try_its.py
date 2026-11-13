@@ -103,3 +103,27 @@ def test_an_install_of_another_royalegym_version_is_refused():
     assert "0.1.12" in why
     assert "0.1.14" in why
     assert "0.1.14" in tool.version_check({}, "0.1.14")
+
+
+def test_a_readme_is_read_at_the_installed_tag_unless_a_ref_is_given():
+    """The nightly's first leg builds each sibling from its main, so its installed version is
+    main's, which has no tag until it is released: reading v<version> 404'd and P8 went red after
+    every sibling merge (2026-11-11). That leg names the ref it built from; the release and PyPI
+    legs read the tag of what they installed."""
+    tool = _tool()
+    base = f"https://raw.githubusercontent.com/{tool.ORG}/{tool.REPO['royalelearn']}"
+    assert tool.readme_url("royalelearn", "0.5.25") == f"{base}/v0.5.25/README.md"
+    assert tool.readme_url("royalelearn", "0.5.26", "main") == f"{base}/main/README.md"
+
+
+def test_only_the_leg_that_builds_from_main_reads_the_readmes_at_main():
+    workflow = (TOOL.parents[1] / ".github" / "workflows" / "fresh-user.yml").read_text(
+        encoding="utf-8"
+    )
+    calls = [chunk for chunk in workflow.split("fresh_user_test.py")[1:]]
+    commands = [c.split("--report", 1)[0] for c in calls]
+    assert len(commands) == 3, commands
+    builds_from_main = "@main" in workflow.split("fresh_user_test.py")[0]
+    assert builds_from_main, "the first leg no longer builds the siblings from main"
+    assert "--readme-ref main" in commands[0]
+    assert all("--readme-ref" not in c for c in commands[1:]), commands[1:]

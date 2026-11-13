@@ -88,11 +88,17 @@ def try_it_program(readme: str) -> tuple[str, int] | None:
     return TOTAL_STEPS.subn("total_steps=1", block.group(1))
 
 
-def fetch_readme(package: str, version: str) -> str:
-    """The sibling's README at the tag its installed version was built from (stage_release
-    refuses a tag that is not the version, so v<version> names it)."""
-    url = f"https://raw.githubusercontent.com/{ORG}/{REPO[package]}/v{version}/README.md"
-    with urllib.request.urlopen(url, timeout=60) as page:
+def readme_url(package: str, version: str, ref: str | None = None) -> str:
+    """Where the sibling's README for the installed code is: at the tag its installed version
+    was built from (stage_release refuses a tag that is not the version, so v<version> names
+    it), or at ``ref`` when the run built the sibling from a branch (the nightly's main leg)."""
+    at = ref or f"v{version}"
+    return f"https://raw.githubusercontent.com/{ORG}/{REPO[package]}/{at}/README.md"
+
+
+def fetch_readme(package: str, version: str, ref: str | None = None) -> str:
+    """The sibling's README at ``readme_url``."""
+    with urllib.request.urlopen(readme_url(package, version, ref), timeout=60) as page:
         return page.read().decode("utf-8")
 
 
@@ -266,6 +272,12 @@ def main() -> int:
         "--expect-version",
         metavar="X.Y.Z",
         help="the royalegym version the install must give; any other fails P3",
+    )
+    ap.add_argument(
+        "--readme-ref",
+        metavar="REF",
+        help="read each sibling README (P8) at this ref, for a run that built the siblings "
+        "from it; by default at the tag of the installed version",
     )
     ap.add_argument("--report", help="write the results as JSON here")
     args = ap.parse_args()
@@ -484,14 +496,15 @@ def main() -> int:
             if not version:
                 phase(name, "BLOCKED", f"{package} is not installed")
                 continue
+            at = args.readme_ref or f"v{version}"
             try:
-                readme = fetch_readme(package, version)
+                readme = fetch_readme(package, version, args.readme_ref)
             except OSError as ex:
-                phase(name, "BLOCKED", f"its README at v{version} could not be fetched: {ex}")
+                phase(name, "BLOCKED", f"its README at {at} could not be fetched: {ex}")
                 continue
             found = try_it_program(readme)
             if found is None:
-                phase(name, "FAIL", f"its README at v{version} has no Try it program")
+                phase(name, "FAIL", f"its README at {at} has no Try it program")
                 continue
             program, cuts = found
             folder = work / f"try-{package}"
@@ -501,7 +514,7 @@ def main() -> int:
             phase(
                 name,
                 "PASS" if code == 0 else "FAIL",
-                f"README at v{version}; {cuts} total_steps cut; exit {code}; " + tail(out8, 4),
+                f"README at {at}; {cuts} total_steps cut; exit {code}; " + tail(out8, 4),
                 secs,
             )
         return finish(args, root, 0 if all(r["status"] == "PASS" for r in results) else 1)
