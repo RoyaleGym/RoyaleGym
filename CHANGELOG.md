@@ -5,7 +5,14 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.30 (2026-11-13)
+
+### Changed
+- royalesim 0.1.53. The Hero Electro Wizard plays on the 16.635 card table, which gains the unit
+  type `ElectroWizardHero`. Unit types are numbered in name order, so on that table every type
+  after it moves up one: a `unit_names` pin made there before 0.1.53 lacks it and is refused by
+  name (append it to the pin, so no pinned id moves), and a pin made on another table is
+  unchanged. Every example on the site prints the same numbers.
 
 ### Added
 - `EntityListObsBuilder(unit_buffs=True)`: up to six buffs per unit, the most time left first.
