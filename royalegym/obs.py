@@ -4286,11 +4286,13 @@ class EntityListObsBuilder(ObsBuilder):
         for flag, on in self._flags().items():
             if on:
                 out[flag] = True
-        if self.unit_buffs:
-            # The vocabulary bound to (the pin, else the engine's), so a checkpoint pins it.
-            out["buff_names"] = list(
-                getattr(self, "buff_names", None) or self._pinned_buff_names or []
-            )
+        # The vocabulary bound to (the pin, else the engine's), so a checkpoint pins it. Before
+        # bind an unpinned builder has none, and records none: [] would read as a pin to nothing.
+        names = getattr(self, "buff_names", None)
+        if names is None:
+            names = self._pinned_buff_names
+        if self.unit_buffs and names is not None:
+            out["buff_names"] = list(names)
         for flag in ("evolutions", "evolution_progress", "card_status", "button_index",
                      "enemy_queue", "elixir_income"):
             if getattr(self, flag):

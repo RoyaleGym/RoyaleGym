@@ -166,6 +166,17 @@ def test_a_buff_pin_needs_the_buff_flag():
         EntityListObsBuilder(buff_names=MEMBERS)
 
 
+def test_an_unbound_builders_config_pins_only_what_it_was_given():
+    """Before bind there is no vocabulary to record: an unpinned builder's config must not say
+    "pinned to nothing", which a rebuild would read as a pin and refuse every engine with."""
+    cfg = EntityListObsBuilder(unit_buffs=True).config()
+    assert "buff_names" not in cfg
+    b, _, _ = _bound(unit_buffs=True, buff_names=cfg.get("buff_names"))
+    assert b.config()["buff_names"] == MEMBERS
+    pinned = EntityListObsBuilder(unit_buffs=True, buff_names=["Rage", *MEMBERS[:3], "ZapFreeze"])
+    assert pinned.config()["buff_names"] == ["Rage", *MEMBERS[:3], "ZapFreeze"]
+
+
 # --- the vocabulary ---------------------------------------------------------------------------
 
 
@@ -431,3 +442,30 @@ def test_red_on_the_mirror_sees_the_buffs_and_extras_blue_sees():
         buffed += int(ob["entity_buffs"].any())
     assert bad == [], bad[:5]
     assert buffed > 0, "vacuous: no buff in the battle"
+
+
+@needs_053
+def test_with_every_flag_on_the_buff_and_extra_columns_are_what_they_are_alone():
+    """unit_actions used to be the last block, so nothing read the offsets after it: with every
+    flag on, the buff and extra columns must hold what a builder with only them writes. Rows
+    are compared as a multiset, since the sort key takes every appended value."""
+    flags = dict(unit_motion=True, unit_stats=True, unit_status=True, unit_actions=True)
+    env, states, _ = _played(n=300, **flags)
+    full, parser = env.obs_builder, env.action_parser
+    alone, _, _ = _bound(env.engine, unit_buffs=True, unit_extras=True)
+    names = [n for flag in ("unit_buffs", "unit_extras") for n, _, _ in ENTITY_EXTRA_COLUMNS[flag]]
+
+    def rows(b, s, seat):
+        out = b.build(s, seat, parser.action_mask(s, seat))
+        return sorted(
+            (tuple(round(cols[n], 6) for n in names), tuple(ids))
+            for cols, ids in _troops(b, out)
+        )
+
+    nonzero = 0
+    for s in states:
+        for seat in (BLUE, RED):
+            got, want = rows(full, s, seat), rows(alone, s, seat)
+            assert got == want, (s.tick, seat)
+            nonzero += sum(any(v != 0 for v in c) or any(i) for c, i in want)
+    assert nonzero > 100, f"vacuous: {nonzero} troop rows with a buff or an extra value"
