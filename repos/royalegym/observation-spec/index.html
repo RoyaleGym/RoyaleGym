@@ -4906,7 +4906,7 @@ plus the same <code>vector</code>, <code>action_mask</code> and <code>mask_plane
 <code>ENTITY_FEATURE_NAMES</code> and <code>SPELL_FEATURE_NAMES</code>; the full per-column meaning is in
 the class docstring.</p>
 <h3 id="appended-columns-each-flag-off-by-default">Appended columns (each flag off by default)<a class="headerlink" href="#appended-columns-each-flag-off-by-default" title="Permanent link">&para;</a></h3>
-<p>Four flags append columns after the card one-hot, in this order, so no existing column moves
+<p>Six flags append columns after the card one-hot, in this order, so no existing column moves
 (<code>ENTITY_EXTRA_COLUMNS</code> names each one with its bounds; the <code>entities</code> Box carries every
 column's own bounds, and signed ones are <code>[-1, 1]</code>):</p>
 <table>
@@ -4938,10 +4938,30 @@ column's own bounds, and signed ones are <code>[-1, 1]</code>):</p>
 <td><code>charge</code>, <code>ability_ticks</code>, <code>attack_idle</code>, <code>attack_windup</code>, <code>attack_fire</code>, <code>facing_x</code>, <code>facing_y</code>, <code>has_dest</code>, <code>dest_dx</code>, <code>dest_dy</code></td>
 <td>charge permille / 1000; ability ticks / 200; the attack phase one-hot; facing as an own-frame unit vector; a tunneller's landing point, own-frame offset in tiles / 20</td>
 </tr>
+<tr>
+<td><code>unit_buffs</code></td>
+<td><code>buff_left_0</code> ... <code>buff_left_5</code></td>
+<td>each buff slot's time left / 10 s, the most time left first (ties: the lower id); the slot's id is in the <code>entity_buffs</code> key</td>
+</tr>
+<tr>
+<td><code>unit_extras</code></td>
+<td><code>spawn_clock</code>, <code>spawn_wave_left</code>, <code>dash_standing</code>, <code>dash_dashing</code>, <code>dash_ticks</code>, <code>speed</code>, <code>hit_speed</code>, <code>jumping</code></td>
+<td>a spawner's clock / 15 s and the units its wave still has to put down / 8; the dash state one-hot and the ticks to the dash (or to a Mega Knight's blow) / 20; (speed % - 100) / 100 and (hit speed % - 100) / 100 from buffs, so 0 is unbuffed and -1 frozen; 1 while leaping the river</td>
+</tr>
 </tbody>
 </table>
-<p><code>unit_stats</code>, <code>unit_status</code> and <code>unit_actions</code> read columns MockEngine does not report and refuse
-an engine whose units say none. <code>unit_motion</code> keeps one track per seat (as the velocity planes
+<p><strong><code>entity_buffs [N, 6]</code></strong> (uint8, with <code>unit_buffs</code>): each row's buff ids, in the same row order
+as <code>entities</code>, 0 for an empty slot. An id is 1 + a place in the buff vocabulary: the member names
+of the engine's <code>buff_kinds()</code>, sorted. A kind can be a <code>|</code> group of buff rows the card table gives
+identical values; it writes the id of whichever member comes first. <code>buff_names=[...]</code> pins the
+vocabulary (any order, extra names allowed), and an engine with a member the pin lacks is refused
+by name; the builder's <code>config()</code> carries the vocabulary it bound to, so a checkpoint pins it.
+The engine keeps at most 4 buffs on a unit; past 6, the least time left is dropped and counted in
+<code>buffs_dropped[team]</code>.</p>
+<p><code>unit_extras</code> asks the engine for its extra unit values when the builder binds
+(<code>RustEngine.set_entity_extras</code>, <code>EntityState.spawn_ms</code> ... <code>jumping</code>, royalesim 0.1.53 on).
+<code>unit_stats</code>, <code>unit_status</code>, <code>unit_actions</code>, <code>unit_buffs</code> and <code>unit_extras</code> read values MockEngine
+does not report and refuse an engine that says none. <code>unit_motion</code> keeps one track per seat (as the velocity planes
 do), saved with a snapshot. The sort key takes every appended value, so twins differing only
 there still sort by what is seen. <code>entities_dropped[team]</code> and <code>spells_dropped[team]</code> count the
 rows the last build of that seat had no room for (the default <code>max_entities</code> is 96; a

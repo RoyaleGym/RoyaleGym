@@ -3627,7 +3627,7 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 <p><code>EntityListObsBuilder()</code> gives a list of units, one row each, instead of a grid. RoyaleLearn
 can't train on it. It takes the table's options that add to the vector (<code>evolutions</code>,
 <code>evolution_progress</code>, <code>card_status</code>, <code>button_index</code>, <code>enemy_queue</code>, <code>elixir_income</code>,
-<code>own_button_pending</code>, <code>own_waiting_plays</code> and <code>enemy_card_cycle</code>), and four of its own that
+<code>own_button_pending</code>, <code>own_waiting_plays</code> and <code>enemy_card_cycle</code>), and six of its own that
 add columns to each unit's row:</p>
 <table>
 <thead>
@@ -3653,9 +3653,18 @@ add columns to each unit's row:</p>
 <td><code>EntityListObsBuilder(unit_actions=True)</code></td>
 <td>Its charge, its ability timer, which part of its attack it's in, which way it faces, and where a tunneller will come up.</td>
 </tr>
+<tr>
+<td><code>EntityListObsBuilder(unit_buffs=True)</code></td>
+<td>Up to six buffs on the unit, the one with the most time left first, and how long each has left (10 seconds reads 1). Which buff each one is goes in a new <code>entity_buffs</code> key, 0 for an empty slot. <code>buff_names=[...]</code> sets which id each buff gets.</td>
+</tr>
+<tr>
+<td><code>EntityListObsBuilder(unit_extras=True)</code></td>
+<td>Eight more columns: a spawner's clock and how many units its wave still has to put down; whether the unit is standing before a dash or dashing, and the ticks until it goes; how much its buffs speed up or slow its walking and its attacks (0 is normal, -1 frozen); and whether it is leaping the river.</td>
+</tr>
 </tbody>
 </table>
-<p>These need royalegym 0.1.29 or newer.</p>
+<p><code>unit_motion</code>, <code>unit_stats</code>, <code>unit_status</code> and <code>unit_actions</code> need royalegym 0.1.29 or newer, and
+<code>unit_buffs</code> and <code>unit_extras</code> need 0.1.30 or newer.</p>
 <div class="admonition note">
 <p class="admonition-title">Which builders RoyaleLearn can train</p>
 <p>RoyaleLearn's trainer reads <code>SpatialObsBuilder</code>'s four keys, with any of the options in the

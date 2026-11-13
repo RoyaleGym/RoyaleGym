@@ -3780,6 +3780,13 @@ The crate itself has no Python dependency and builds alone.</p>
   <code>unit_types_json()</code>. That list holds every troop and building unit name in the loaded card table,
   towers included, sorted, so one unit type has one id whichever card made it, and
   <code>unit_types_digest()</code> (FNV-1a 64 of the list's JSON) tells two tables' numberings apart.
+  <code>buffs</code> names each buff on the entity from the same table: <code>buff_kinds_json()</code> lists every name a
+  row can carry, sorted, with <code>buff_kinds_digest()</code> beside it. A name is one buff's row, or the rows
+  the loader merged into one buff because their values are identical, joined by <code>|</code>.
+  <code>state_json(extra=True)</code> appends <code>ENTITY_EXTRA_FIELDS</code> to every entity row (state.rs
+  <code>BattleState::entity_extras</code>, a read): a spawner's clock and wave, the dash state and the ticks to
+  the dash or the Mega Knight's blow, the buff speed percents and the river leap. Opt-in, so a
+  reader that pins <code>ENTITY_FIELDS</code>' length is untouched.
   <code>unit_hitpoints(card_id, level)</code> lists every unit a card puts on the board, as (role, unit name,
   hitpoints) at the level each one takes. The card's own row comes first; the other roles are
   <code>second_summon</code>, <code>spawn</code>, <code>death_spawn</code> and <code>release</code> (<code>royalesim.UNIT_ROLES</code>). So a unit that

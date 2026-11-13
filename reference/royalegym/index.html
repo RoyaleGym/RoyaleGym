@@ -2594,6 +2594,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.buff_vocabulary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;buff_vocabulary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.spell_id_planes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3424,6 +3435,28 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unit_types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.RustEngine.buff_kinds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;buff_kinds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.RustEngine.set_entity_extras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set_entity_extras
       
     </span>
   </a>
@@ -7417,6 +7450,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#royalegym.obs.buff_vocabulary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;buff_vocabulary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#royalegym.obs.spell_id_planes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8247,6 +8291,28 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unit_types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.RustEngine.buff_kinds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;buff_kinds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#royalegym.rust_engine.RustEngine.set_entity_extras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set_entity_extras
       
     </span>
   </a>
@@ -11876,10 +11942,19 @@ Box carries each column's own bounds):
     <code>unit_stats</code>: log_max_hp, shield, has_target, target_dx, target_dy;
     <code>unit_status</code>: one column per status bit (<code>STATUS_BIT_NAMES</code>);
     <code>unit_actions</code>: charge, ability_ticks, the attack phase one-hot, facing_x/_y,
-    has_dest, dest_dx/_dy.
-<code>unit_stats</code>, <code>unit_status</code> and <code>unit_actions</code> read columns MockEngine does not
-report, and refuse an engine whose units say none (status bits -1), rather than write
-zeros that read as "no target", "no status", "idle".</p>
+    has_dest, dest_dx/_dy;
+    <code>unit_buffs</code>: buff_left_0 .. buff_left_5, each buff slot's time left, the most first;
+    the slots' ids are the <code>entity_buffs</code> key [N, BUFF_SLOTS] (uint8, 0 for an empty
+    slot), from the vocabulary <code>buff_vocabulary</code> builds of the engine's <code>buff_kinds()</code>
+    or pinned with <code>buff_names</code>. Buffs past BUFF_SLOTS on a unit are dropped (the least
+    time left), counted in <code>buffs_dropped[team]</code>;
+    <code>unit_extras</code>: spawn_clock, spawn_wave_left, dash_standing, dash_dashing,
+    dash_ticks, speed, hit_speed, jumping, from the engine's extra unit values, which the
+    builder asks the engine for when it binds (<code>RustEngine.set_entity_extras</code>).
+<code>unit_stats</code>, <code>unit_status</code>, <code>unit_actions</code>, <code>unit_buffs</code> and <code>unit_extras</code> read
+values MockEngine does not report, and refuse an engine that says none (status bits -1,
+no buff kinds, extras -1), rather than write zeros that read as "no target", "no status",
+"idle", "no buff".</p>
 <p>Live spell objects, <code>spells</code> [max_spells, S] (S = 14 + num_cards), named by
 <code>SPELL_FEATURE_NAMES</code>:
     0 present, 1 own, 2 enemy, 3..6 motion one-hot (flight, airborne, rolling,
@@ -12553,6 +12628,30 @@ same list, means <code>names</code> is the engine's list itself.</p>
 
         <p>16 hex digits naming the <code>unit_ids</code> vocabulary: the engine's unit names and the aliases
 applied to them. Two observations whose digests differ number their units differently.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="royalegym.obs.buff_vocabulary" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">buff_vocabulary</span><span class="p">(</span><span class="n">kinds</span><span class="p">,</span> <span class="n">pinned</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#royalegym.obs.buff_vocabulary" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The <code>entity_buffs</code> vocabulary, and the id each of the engine's buff kinds writes.</p>
+<p><code>kinds</code>: the engine's <code>buff_kinds()</code>. A kind can be a '|' group of buff rows the card
+table gives identical values, so the vocabulary holds MEMBERS, one name per buff row: the
+members sorted, or <code>pinned</code> (<code>EntityListObsBuilder(buff_names=...)</code>), which may hold more
+names, in any order. A kind's id is 1 + the vocabulary place of whichever of its members
+comes first there (0 is "no buff"), so a pin stays valid when a later card table groups
+or splits rows. Refuses, by name, a member the pin lacks and a name pinned twice.</p>
 
 
     </div>
@@ -15016,6 +15115,48 @@ about game fidelity.</p>
         <p>The unit-type vocabulary <code>EntityState.unit_type</code> indexes: every unit name the
 loaded card table can put on the board, sorted by name (<code>Battle.unit_types_json</code>,
 royalesim 0.1.17 on). None from an engine that does not say unit types.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.rust_engine.RustEngine.buff_kinds" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">buff_kinds</span><span class="p">()</span></code>
+
+<a href="#royalegym.rust_engine.RustEngine.buff_kinds" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The buff-kind vocabulary: every name an <code>EntityState.buffs</code> entry can carry under the
+loaded card table, sorted (<code>Battle.buff_kinds_json</code>, royalesim 0.1.53 on). A name can be
+a '|' group of buff rows the table gives identical values: split it for the rows. None
+from an engine that does not say.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="royalegym.rust_engine.RustEngine.set_entity_extras" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">set_entity_extras</span><span class="p">(</span><span class="n">on</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+<a href="#royalegym.rust_engine.RustEngine.set_entity_extras" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Ask for the engine's extra unit values in every <code>state()</code> from now on, or stop:
+<code>EntityState</code> spawn_ms .. jumping (<code>protocol.ENTITY_EXTRA_FIELDS</code>, royalesim 0.1.53
+on). Off by default, when they read -1, "not said". <code>EntityListObsBuilder(
+unit_extras=True)</code> turns it on when it binds. Refuses an engine that has none.</p>
 
 
     </div>

@@ -4564,15 +4564,15 @@ shows how.</p>
   0.1.43 or older loads on 0.1.44 or newer.</li>
 <li><strong>The second</strong> means the bank was saved by royalegym 0.1.27 or older, under other engine
   settings. Such a bank loads only under the settings it was saved under. Every royalesim release
-  from 0.1.49 to 0.1.52 changed settings, so on royalesim 0.1.52 every such bank saved on 0.1.51
-  or older is refused.</li>
+  from 0.1.49 to 0.1.52 changed settings, so on royalesim 0.1.53 every such bank saved on 0.1.51
+  or older is refused. One saved on 0.1.52 still loads, because 0.1.53 changed no settings.</li>
 <li><strong>The third</strong> means the elixir rules changed: how fast the bar fills, its cap and overtime,
   and with <code>elixir_income</code> the payouts. The brackets name the ones that differ. Only a bank saved
   by royalegym 0.1.28 or newer can give it.</li>
 </ul>
 <p>A bank saved by royalegym 0.1.28 or newer keeps loading after you upgrade royalesim, as long as
 the card data and the elixir rules stay the same: one saved on royalesim 0.1.45 still loads on
-0.1.52.</p>
+0.1.53.</p>
 <h3 id="the-saved-memory-never-tracked-it"><code>the saved memory never tracked it</code><a class="headerlink" href="#the-saved-memory-never-tracked-it" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>ValueError: this builder shows each unit's motion (unit_velocity or unit_motion), and the saved memory never tracked it: it was saved by a builder without it. Save the snapshot with the builder you train on.
 </code></pre></div>

@@ -3533,7 +3533,18 @@ hero's ability are spells too, each under the card that was played.
 Witch's Skeletons report the Witch. <code>unit_type</code> is the unit itself: an index into <code>unit_types_json()</code>, a sorted list of
 unit names. Every Skeleton has the same <code>unit_type</code>, whichever card made it. The list is the same for every Battle
 built on one card table. <code>unit_types_digest()</code> is a short hash of it, so you can tell when a new table changes the
-numbering.</p>
+numbering. <code>buffs</code> lists what is on the unit as <code>[name, milliseconds left]</code> pairs. <code>buff_kinds_json()</code> lists every name
+a unit can carry under the card table, sorted, and <code>buff_kinds_digest()</code> is its short hash. Some names join several of
+the table's buffs with <code>|</code>, where the table gives them identical values, so split a name on <code>|</code> for the buffs in it.</p>
+<p><strong>More per unit.</strong> <code>state_json(extra=True)</code> adds the columns <code>ENTITY_EXTRA_FIELDS</code> names to the end of every unit row.
+Without it the rows are exactly as before. They are:
+- <code>spawn_ms</code> and <code>spawn_wave_left</code>: a spawner's clock in milliseconds and the units its wave still has to put down (0
+  and 0 for a unit that spawns nothing). The spawner fires on the tick that takes the clock to 0 or below.
+- <code>dash_state</code> (0 none, 1 standing before a dash, 2 dashing) and <code>dash_ticks</code>: while standing, the dash starts that many
+  ticks from now; while a Mega Knight dashes, his blow lands that many ticks from now. 0 otherwise.
+- <code>speed_pct</code> and <code>hit_speed_pct</code>: how its buffs change the unit's walking speed and attack speed, in percent (100
+  with no buff, 0 frozen). A charge is not a buff and is in <code>charge</code>.
+- <code>jumping</code>: 1 while the unit leaps over the river.</p>
 <p><strong>Saving.</strong> <code>save()</code> returns bytes, and <code>load(blob)</code> restores them into a Battle with the same cards.</p>
 <p><strong>Play delay.</strong> <code>set_command_delay_ticks(blue, red)</code> makes a play land that many ticks after it is sent, like the
 real client. <code>pending_commands()</code> lists what is waiting.</p>
