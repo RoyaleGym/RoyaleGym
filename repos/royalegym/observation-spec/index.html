@@ -2389,6 +2389,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#unit-velocity-unit_velocity-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit velocity (unit_velocity, off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#what-is-deliberately-not-here" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2544,6 +2555,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#own-commands-and-the-enemys-cycle-three-options-each-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Own commands and the enemy's cycle (three options, each off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-builder-is-stateful" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2589,6 +2611,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="5. EntityListObsBuilder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#appended-columns-each-flag-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appended columns (each flag off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3576,6 +3615,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#unit-velocity-unit_velocity-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit velocity (unit_velocity, off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#what-is-deliberately-not-here" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3731,6 +3781,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#own-commands-and-the-enemys-cycle-three-options-each-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Own commands and the enemy's cycle (three options, each off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#the-builder-is-stateful" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3776,6 +3837,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="5. EntityListObsBuilder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#appended-columns-each-flag-off-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appended columns (each flag off by default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -4045,9 +4123,9 @@ containing their centre in the own frame. Every plane is clipped to <code>[0, 64
 </table>
 <p>One known gap in the "fair" column: a unit invisible to its enemy, such as a Royal Ghost, is
 still shown to the enemy seat. It is counted in <code>enemy_ground_troops</code> (5) and <code>enemy_hp</code> (9)
-where it stands, and the entity-list builder writes it a full row. No builder reads a unit's
-status flags. Hiding or marking such a unit waits on a measurement of what a player sees in the
-real game. It is not fixed.</p>
+where it stands, and the entity-list builder writes it a full row. The status planes
+(<code>unit_status</code>) and the entity rows' <code>unit_status</code> columns mark it invisible; neither hides it.
+Hiding it waits on a measurement of what a player sees in the real game. It is not fixed.</p>
 <p>Channels 0–11 are integer sums converted to float32 exactly once, so no plane can
 depend on the engine's entity list order (see <code>obs.py</code>, NO FLOAT MAY DEPEND ON ENTITY
 LIST ORDER).</p>
@@ -4058,6 +4136,25 @@ the declaration rather than deciding by sampling. <code>own_towers</code> and <c
 constant on any sample in which no tower falls, because a crown tower never moves. A
 consumer that concluded "static" from that would never see a tower destroyed. A test
 asserts exactly that.</p>
+<h3 id="unit-velocity-unit_velocity-off-by-default">Unit velocity (<code>unit_velocity</code>, off by default)<a class="headerlink" href="#unit-velocity-unit_velocity-off-by-default" title="Permanent link">&para;</a></h3>
+<p><code>SpatialObsBuilder(unit_velocity=True)</code> appends eight planes after every other optional block
+(and before the reveal planes): how far each unit moved since this seat's last observation.
+<code>own_dx_plus</code>, <code>enemy_dx_plus</code>, <code>own_dx_minus</code>, <code>enemy_dx_minus</code>, then the
+same four for dy.</p>
+<ul>
+<li><strong>Units.</strong> Tiles per 5 ticks (250 ms), in the seat's own frame: the displacement in subtiles,
+  times 5 over the real tick gap since the seat's last observation, so a Knight reads 0.300 at
+  both 250 and 500 ms decisions. Each axis is clipped to 3 tiles (an underground Miner reaches
+  3.25), rounded to whole thousandths half away from zero, so both seats round alike.</li>
+<li><strong>Sign.</strong> A plane holds no negative value, so each axis splits into <code>_plus</code> and <code>_minus</code>.
+  +y is toward the enemy king for both seats; Red's view of the mirrored battle is Blue's.</li>
+<li><strong>Merge.</strong> The magnitudes of the units on a tile add up: two units moving apart both show.</li>
+<li><strong>Who counts.</strong> Every unit and building the seat saw at its last observation, by uid; a new
+  uid (a deploy, a spawn) has no motion yet, and crown towers are in none of the planes. Spells
+  and projectiles carry no uid and get none: their aim points are planes already.</li>
+</ul>
+<p>Every value is whole thousandths, so it is stored exactly. A learner that stores planes as bytes
+must keep these eight as floats (RoyaleLearn: <code>rollout.codec_float16_planes</code>).</p>
 <h3 id="what-is-deliberately-not-here">What is deliberately not here<a class="headerlink" href="#what-is-deliberately-not-here" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>own_troop_zone</code> and <code>own_building_zone</code> were deleted. The action space is
@@ -4076,7 +4173,8 @@ asserts exactly that.</p>
 Zap cast at tick k of a decision leaves <code>stun_ticks</code> = k at the <strong>one</strong> observation
 that follows (1, 4, 6, 10 for k = 0, 3, 5, 9) and 0 at every observation after. So
 <code>own_stunned</code> / <code>enemy_stunned</code> fire for at most one step per Zap, and the entity
-row's <code>stun_ticks / 100</code> reads 0.01 to 0.10 for that one step.</p>
+row's <code>stun_ticks / 100</code> reads 0.01 to 0.10 for that one step. At <code>decision_ms</code> 250 (5
+ticks a decision) the same stun shows on one or two observations.</p>
 <p>The features stay as "is stunned <strong>now</strong>". That is what the engine reports, and it is
 what the seat-flip and cell-by-cell tests can check exactly. "Was stunned since the
 last observation" is the feature a policy could actually use, but it is a different
@@ -4698,6 +4796,24 @@ those four out of the hand as a set; <code>SpatialObsBuilder(enemy_queue=True)</
 many more cards are behind the hand, and the queue reaches that much further back. Nothing is
 deduced once the elixir count is not exact (<code>MatchMemory.exact</code>), since a missed play would shift
 every position. Only the enemy's plays are logged; the own cycle has its own fields.</p>
+<h3 id="own-commands-and-the-enemys-cycle-three-options-each-off-by-default">Own commands and the enemy's cycle (three options, each off by default)<a class="headerlink" href="#own-commands-and-the-enemys-cycle-three-options-each-off-by-default" title="Permanent link">&para;</a></h3>
+<p>Both builders take them; each appends after <code>enemy_queue_5_8</code>.</p>
+<ul>
+<li><code>own_button_pending=True</code>: <code>own_button_pending</code> [K], 1 where own ability button k has a press
+  waiting to run (under a command delay). K is the parser's button count, and a parser without
+  buttons is refused.</li>
+<li><code>own_waiting_plays=True</code>: <code>own_waiting_plays</code> [2 x 5], the own plays waiting to run, soonest
+  first: present, the tap's own-frame x / width and y / height, ticks left / 32, cost / MAX_MANA.</li>
+<li><code>enemy_card_cycle=True</code>: <code>enemy_card_cycle</code> [2 x n]. First, per card, the plays until it is back
+  in the enemy's hand, / 4, from the deduced cycle <code>enemy_queue_5_8</code> shows (position 5 is 1 play
+  away). It is 0 for a card in hand, or where the queue is not deduced. Then, per card, (plays
+  since the enemy last played it + 1) / 8, so a card just played reads 1/8. A card played before
+  the last 8 plays reads 1, and one never played reads 0.</li>
+</ul>
+<p>All three are what a player knows: its own commands, and the enemy's plays it watched.
+<code>EntityListObsBuilder</code> also takes the vector options <code>SpatialObsBuilder</code> always had
+(<code>evolutions</code>, <code>evolution_progress</code>, <code>card_status</code>, <code>button_index</code>, <code>enemy_queue</code>,
+<code>elixir_income</code>), and writes the same vector for the same options.</p>
 <h3 id="the-builder-is-stateful">The builder is stateful<a class="headerlink" href="#the-builder-is-stateful" title="Permanent link">&para;</a></h3>
 <p>These features make the builder carry a <code>MatchMemory</code> per seat. Two guards keep one
 episode out of the next. <code>ObsBuilder.reset(state)</code>, which the env calls, re-seeds both
@@ -4708,6 +4824,11 @@ build the same state dozens of times.</p>
 <p>Tests replay a seeded episode twice in the same env and require the two observation
 sequences to be identical, with a plant that removes both guards and shows the
 difference.</p>
+<p><code>unit_velocity</code> adds one more memory per seat, a <code>UnitTrack</code>: where the seat saw each unit at
+its last two observations. It keeps the same guards (cleared by <code>reset</code>, forgotten when the tick
+goes back, unchanged by a rebuild of the same tick) and is saved with a snapshot; a builder with
+<code>unit_velocity</code> refuses a snapshot saved without it. It is per seat because the env builds both
+seats from one builder on every state.</p>
 <h3 id="a-seat-that-reads-only-legality-mask_only">A seat that reads only legality (<code>mask_only</code>)<a class="headerlink" href="#a-seat-that-reads-only-legality-mask_only" title="Permanent link">&para;</a></h3>
 <p><code>env.reset(options={"mask_only": ["red"]})</code> skips building the named seats' observations
 for that episode. Each such seat gets <code>ObsBuilder.mask_only(mask)</code>: every key <code>build</code>
@@ -4784,6 +4905,47 @@ any fails this repo's own suite, not only a caller's.</p>
 plus the same <code>vector</code>, <code>action_mask</code> and <code>mask_planes</code>. Column names are in
 <code>ENTITY_FEATURE_NAMES</code> and <code>SPELL_FEATURE_NAMES</code>; the full per-column meaning is in
 the class docstring.</p>
+<h3 id="appended-columns-each-flag-off-by-default">Appended columns (each flag off by default)<a class="headerlink" href="#appended-columns-each-flag-off-by-default" title="Permanent link">&para;</a></h3>
+<p>Four flags append columns after the card one-hot, in this order, so no existing column moves
+(<code>ENTITY_EXTRA_COLUMNS</code> names each one with its bounds; the <code>entities</code> Box carries every
+column's own bounds, and signed ones are <code>[-1, 1]</code>):</p>
+<table>
+<thead>
+<tr>
+<th>flag</th>
+<th>columns</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unit_motion</code></td>
+<td><code>has_prev</code>, <code>dx</code>, <code>dy</code></td>
+<td>motion since the seat's last observation, as the velocity planes measure it (tiles per 5 ticks, each axis clipped to 3), / 3; <code>has_prev</code> 0 for a unit not seen last time</td>
+</tr>
+<tr>
+<td><code>unit_stats</code></td>
+<td><code>log_max_hp</code>, <code>shield</code>, <code>has_target</code>, <code>target_dx</code>, <code>target_dy</code></td>
+<td>ln(1 + max_hp) / 16; shield hp / 1000; the current target's own-frame offset in tiles / 10</td>
+</tr>
+<tr>
+<td><code>unit_status</code></td>
+<td><code>status_underground</code> ... <code>status_grounded</code></td>
+<td>one column per status bit (<code>STATUS_BIT_NAMES</code>)</td>
+</tr>
+<tr>
+<td><code>unit_actions</code></td>
+<td><code>charge</code>, <code>ability_ticks</code>, <code>attack_idle</code>, <code>attack_windup</code>, <code>attack_fire</code>, <code>facing_x</code>, <code>facing_y</code>, <code>has_dest</code>, <code>dest_dx</code>, <code>dest_dy</code></td>
+<td>charge permille / 1000; ability ticks / 200; the attack phase one-hot; facing as an own-frame unit vector; a tunneller's landing point, own-frame offset in tiles / 20</td>
+</tr>
+</tbody>
+</table>
+<p><code>unit_stats</code>, <code>unit_status</code> and <code>unit_actions</code> read columns MockEngine does not report and refuse
+an engine whose units say none. <code>unit_motion</code> keeps one track per seat (as the velocity planes
+do), saved with a snapshot. The sort key takes every appended value, so twins differing only
+there still sort by what is seen. <code>entities_dropped[team]</code> and <code>spells_dropped[team]</code> count the
+rows the last build of that seat had no room for (the default <code>max_entities</code> is 96; a
+crowded board needs about 128).</p>
 <p>Rows are sorted by a key made of <strong>every field the row is built from</strong>, so two rows
 that tie are identical and the order is seat-invariant whatever order the engine
 listed them in.</p>

@@ -3790,8 +3790,7 @@ section carries its own alarm thresholds, which stay out of the identity as the 
 <li><code>init</code> (optional): the actor's starting weights (19.4).</li>
 <li><code>actor_lr_scale</code> (optional, a schedule): multiplies the actor's learning rate (19.5). Absent is 1.</li>
 <li><code>references</code>: named reference policies (19.6). A regulariser names one.</li>
-<li><code>regularisers</code>: <code>reference_kl</code> (19.7), and <code>demo_bc</code> (19.12), which is specified and not built:
-  a config that names it is refused. Each has a <code>name</code> that is unique
+<li><code>regularisers</code>: <code>reference_kl</code> (19.7) and <code>demo_bc</code> (19.12). Each has a <code>name</code> that is unique
   in the list and becomes the metric segment <code>imitation/&lt;name&gt;/...</code>.</li>
 </ul>
 <p>Every schedule is an ordinary <code>ScheduleSpec</code> in env steps, the harness's one clock, so a resume
@@ -3869,8 +3868,23 @@ autocast, and never trained.</p>
   layer widths and activation. At load every field must exist in the run's vector layout with that
   width, or it is refused naming the field. It defines only the play/wait marginal:
   p_ref(no-op) = sigmoid(-z).</li>
+<li><strong><code>champion</code></strong>: the ladder's champion, on another copy of the run's actor, followed from one
+  promotion to the next. At the start of each update the term asks the run for the champion
+  (<code>RunContext.champion</code>, royalelearn 0.5.23) and, when it is not the one held, loads the pool's
+  copy of its weights (float16, as the ladder's opponents play it; <code>RunContext.load_snapshot</code>).
+  A promotion reaches the anchor at the update after the gate that made it, and every epoch of
+  an update reads one policy. Until there is a champion to follow it is <code>start</code>, which names a
+  <code>snapshot</code> reference of the section. The run's first champion is promoted into an empty
+  ladder without a game, so by default it is not followed and <code>start</code> anchors until a champion
+  has won its gate (<code>follow_first: true</code> follows it too). A floor admission never promotes, so
+  it never moves the anchor. It has no folder, so no path and no digest. The coefficient (19.8)
+  is the regulariser's own and does not reset when the champion changes.</li>
 </ul>
-<p>A reference is a function of the observation alone, so it adds no state to a checkpoint.</p>
+<p>A <code>snapshot</code> or <code>champion</code> reference may set <code>autocast_dtype</code> ("bfloat16" or "float32"): its forward
+at that precision with its head at float32, whatever the run's actor runs at. A reference never
+enters the importance ratio. A snapshot's self-test runs before the precision is set.</p>
+<p>A reference is a function of the observation alone, or for a <code>champion</code> of the observation and the
+pool's champion, which the ladder's checkpoint holds; so none adds state to a checkpoint.</p>
 <h3 id="197-the-reference-kl-regulariser">19.7 The reference-KL regulariser<a class="headerlink" href="#197-the-reference-kl-regulariser" title="Permanent link">&para;</a></h3>
 <p>For each regulariser, on each choice row that survives <code>exclude_when</code>:</p>
 <ul>
@@ -4079,6 +4093,33 @@ the rows file's sha256 go into the artifact's <code>meta</code>.</p>
 <p><strong><code>demo_bc</code></strong> is a regulariser: the BC cross-entropy on a batch of demonstration rows, added to the
 actor's loss each minibatch with a scheduled coefficient. Its shards must carry the run's engine
 key; there is no mismatch escape here.</p>
+<div class="highlight"><pre><span></span><code>{"kind": "demo_bc", "name": "demo", "shards": [{"path": "...", "sha256": "&lt;manifest sha256&gt;"}],
+ "coef": {"kind": "constant", "value": 0.2}, "batch_rows": 64, "seed": 0}
+</code></pre></div>
+<ul>
+<li><code>shards</code>: one or more shard directories, each named by the sha256 of its <code>manifest.json</code>. A
+  directory whose manifest has another digest is refused, and so is one replayed on another
+  engine or for another observation. The run identity holds the digests, not the paths.</li>
+<li>Each minibatch draws <code>batch_rows</code> rows from the learning split (never the validation split),
+  from a directory picked with the share of the learning rows it holds, in an order set by
+  <code>seed</code>. The live actor runs on them; the term is <code>coef</code> times the weighted mean NLL of the
+  stored actions under the actor's own masked distribution (as <code>clone</code> trains it, not through
+  <code>ppo.policy_transform</code>). The update scales it by the minibatch's share of its ppo batch, so
+  each optimizer step adds <code>coef</code> times one mean NLL, and an iteration <code>n_epochs</code> x
+  (samples / <code>batch_size</code>) of them.</li>
+<li><code>autocast_dtype</code> ("bfloat16" or "float32", unset by default): the live actor's forward on the
+  demonstration rows at that precision, its head at float32, and only that forward: the policy's
+  own forwards keep the run's precision. The BC loss never enters the importance ratio, so an
+  actor kept at float32 for the ratio guard keeps its exact ratio. The parameters stay float32.</li>
+<li>A run with <code>demo_bc</code> must use <code>determinism.tier: throughput</code>, since a resume draws a new order.
+  A seed below 0 is refused, and so is a shard that yields no learning row in a whole pass.</li>
+<li>Rows are packed again each time a part comes round: nothing is cached beside the shards.</li>
+<li>Metrics: <code>imitation/&lt;name&gt;/lambda</code> (the coefficient), and from each iteration's first epoch
+  <code>demo_nll</code>, <code>demo_top1</code> (the stored action is the actor's most likely) and <code>demo_rows</code>.</li>
+<li>Its state is the number of batches drawn. A resume draws a new order from the same rows, seeded
+  by that number, rather than replaying the interrupted order.</li>
+<li>A zero coefficient leaves the run bit-identical to one without the block.</li>
+</ul>
 <h3 id="1913-export-and-evaluation-l6">19.13 Export and evaluation (L6)<a class="headerlink" href="#1913-export-and-evaluation-l6" title="Permanent link">&para;</a></h3>
 <p>RoyaleLearn's <code>docs/harness-spec.md</code> section 19.13.</p>
 <h3 id="1914-what-stays-out-of-the-public-packages">19.14 What stays out of the public packages<a class="headerlink" href="#1914-what-stays-out-of-the-public-packages" title="Permanent link">&para;</a></h3>

@@ -3260,6 +3260,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0217" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.17
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0216" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.16
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0215" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3472,6 +3494,26 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="0217">0.2.17<a class="headerlink" href="#0217" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>autocast_dtype</code> on a <code>snapshot</code> or <code>champion</code> reference and on <code>demo_bc</code>: the reference's
+  forward, or the live actor's forward on the demonstration rows, at bfloat16 with the head at
+  float32, whatever the run's actor runs at. Neither enters the importance ratio, so an actor kept
+  at float32 for the ratio guard keeps its exact ratio. A snapshot reference's self-test runs
+  before the precision is set; the live actor's own forwards keep the run's precision.</li>
+</ul>
+<h2 id="0216">0.2.16<a class="headerlink" href="#0216" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A <code>champion</code> reference (section 19.6): the ladder's champion, loaded again at the first update
+  after each promotion, and a <code>snapshot</code> reference of the section (<code>start</code>) until a champion has
+  won its gate (the run's first champion, promoted into an empty ladder without a game, is
+  followed only with <code>follow_first: true</code>). A <code>reference_kl</code> regulariser that names it keeps its
+  adaptive coefficient. Needs royalelearn 0.5.23, whose run context names the champion.</li>
+<li><code>demo_bc</code> (section 19.12) is built: a regulariser that adds the BC cross-entropy of the live
+  actor on demonstration rows to each minibatch's actor loss, with a scheduled coefficient. Its
+  shard directories are named by manifest digest and must carry the run's engine key. Before, a
+  config that named it was refused.</li>
+</ul>
 <h2 id="0215">0.2.15<a class="headerlink" href="#0215" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>ShardReader</code> warns, once per plane, when the reading run's codec stores some of a part's

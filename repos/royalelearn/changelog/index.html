@@ -2899,6 +2899,72 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0526" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.26
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0525" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.25
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0524" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.24
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0523" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.23
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0522" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.22
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0521" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.21
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0520" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3623,6 +3689,72 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0526" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.26
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0525" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.25
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0524" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.24
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0523" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.23
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0522" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.22
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0521" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.21
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0520" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3956,6 +4088,122 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="0526">0.5.26<a class="headerlink" href="#0526" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>rollout.eval_lockstep</code>: each evaluation worker plays <code>rollout.eval_games_per_worker</code> of its
+  battles at once, a decision at a time for all of them, with one forward per policy per decision
+  over every battle that policy is playing (<code>EvalActors.act_many</code>). Each battle keeps its own seed,
+  side, frame history and stream, and a scripted anchor acts a battle at a time in seat order, so
+  a gate is the same measurement as before; batched arithmetic can differ from a batch of one in
+  the last bits, so a near-tie sample can come out the other way. With <code>rollout.eval_device</code>
+  "cuda" a gate's decision costs one forward per policy for all of a worker's battles rather than
+  one per battle. Left out of the run identity; unset plays a battle at a time.</li>
+<li>The gate's farm waits for an answer in proportion to the battles a worker plays at once, closes
+  itself when a wait fails, and no longer holds the process at exit when a failed batch left
+  requests unread in its queue.</li>
+</ul>
+<h2 id="0525">0.5.25<a class="headerlink" href="#0525" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>rollout.eval_device: "cuda"</code>: the gate's evaluation workers run their actors on the run's GPU
+  rather than at one CPU thread and a batch of one a decision. The gate is synchronous, so its
+  battles hold the update, and on the processor a gate of a thousand battles with a network of a
+  real run's size held it for hours while the GPU was idle. Off a CUDA run it stays on the CPU and
+  says so; left out of the run identity, so a run can turn it on at a resume.</li>
+<li><code>time/update_critic</code>, <code>time/update_actor</code>, <code>time/update_terms</code>, <code>time/update_backward</code> and
+  <code>time/update_optimizer</code>: where the update's epochs spent their seconds. On CUDA each phase is a
+  pair of events read after the update's one synchronisation, so the split is the device's time
+  and costs no synchronisation of its own. A phase a path does not run is absent: the critic
+  apart from the actor only where <code>ppo.forced_rows</code> skips or the actor is frozen, the terms only
+  with extra actor-loss terms.</li>
+</ul>
+<h2 id="0524">0.5.24<a class="headerlink" href="#0524" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>net.critic_autocast_dtype</code>: the critic's trunk at its own precision (bfloat16, say) and its
+  value head at float32, whatever the actor runs at. The critic never enters the importance
+  ratio, so an actor kept at float32 for the ratio invariant no longer holds the critic, which is
+  most of an update under <code>ppo.forced_rows</code> "critic_only", to float32 as well. Needs
+  <code>net.separate_trunks</code>; left out of both digests, so a run can resume with it changed.</li>
+<li>Under <code>rollout.overlap</code> no CUDA graph is captured on the collection thread. 0.5.23's capture,
+  thread-local and without the device-wide synchronise, still broke the update beside it on a GPU
+  ("operation not permitted when stream is capturing" in the first update's critic pass). Every
+  graph is now captured on the main thread before the update starts: the learner's at each size
+  it has used, for the behaviour actor, and every graph the last overlapped collection found
+  missing, which ran without a graph meanwhile.</li>
+<li><code>ladder.rollback_after</code>: after that many straight gates in which the candidate scored below
+  <code>ladder.rollback_below</code> (0.45 unset) against the champion, the learner goes back to the
+  champion's weights and both optimizers' states, saved beside each candidate before its gate
+  (<code>ladder/learners/</code>). Everything else carries on, and with <code>rollout.overlap</code> the batch collected
+  beside that update is dropped. <code>ladder.stall_after</code>: after that many straight gates without a
+  promotion the run stops and saves itself. Only gates that played count, and a promotion ends
+  both streaks. <code>ladder/rollbacks</code>, <code>ladder/gates_below</code> and <code>ladder/gates_since_promotion</code> report
+  them. A checkpoint written with both off resumes with them on, with the streaks at zero.</li>
+</ul>
+<h2 id="0523">0.5.23<a class="headerlink" href="#0523" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ladder.pfsp_source: "games"</code>: PFSP weighs the pool by the learner's own latest learning games
+  against each member, the last <code>ladder.pfsp_window</code> (200 unset) of them, a draw as a half and a
+  half before any, rather than by the fit's prediction through the snapshot standing in for the
+  learner. The scores are read as each plan is drawn, so an iteration's episodes are all drawn by
+  one set of weights, and the matchmaker's checkpoint keeps the record and the resident set it
+  drew, so a resumed run draws what the run would have. <code>ladder.pfsp_offset</code> adds a constant to
+  every shaped weight before they are normalised; the hard shape at power 2 with both floors at
+  zero and an offset of 0.05 gives (1 - score)^2 + 0.05. Unset, nothing is encoded and nothing
+  changes. The weights are over the resident set: once the drawable pool is larger than
+  <code>ladder.max_resident_opponents</code>, residents are drawn by them first and an episode's opponent
+  among the residents, so for the formula over every member set <code>max_resident_opponents</code> to at
+  least the drawable pool. Under "games" a battle still on the same episode keeps its opponent
+  and seat when a plan is drawn, since the weights move at every plan; and a config that could
+  weigh a member at exactly zero (no offset, both floors zero) is refused.</li>
+<li><code>ladder.admit_refused</code>: a candidate due its gate is always gated, also when a floor admission is
+  due at the same step, and one the gate refuses joins the pool anyway, unpromoted. Without it a
+  due floor admission takes the gate's place, so a floor cadence that is a multiple of the
+  candidate cadence admits every second candidate without a gate. Unset, nothing changes.</li>
+<li>A resumed run takes the fit it had without moving the residency epoch, so it holds the
+  residents the run that never stopped held. It was moved by one at every resume, and the
+  resident set was drawn again from another stream.</li>
+<li><code>rollout.cuda_graphs</code> captures with the graph's own begin and end in thread-local mode, without
+  the device-wide synchronise and emptied allocator cache <code>torch.cuda.graph</code> adds. Under
+  <code>rollout.overlap</code> the capture runs on the collection thread while the update runs, and in the
+  default global mode an allocation the update makes during a capture is an error. With overlap
+  the behaviour snapshot's weights are copied into one actor held across iterations, so the
+  learner's graphs are captured once rather than every iteration.</li>
+<li><code>RunContext.champion()</code> names the ladder's champion now (<code>gated=True</code>: only once a champion has
+  won its gate by playing, <code>LadderPool.gated_champion</code>), and <code>RunContext.load_snapshot(id, actor)</code>
+  loads a pool snapshot's weights into an actor of the run's architecture, so an extension's term
+  can anchor to the champion and follow it from one promotion to the next.</li>
+</ul>
+<h2 id="0522">0.5.22<a class="headerlink" href="#0522" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>rollout.cuda_graphs</code>: each policy's rollout forward is captured as a CUDA graph at the smallest
+  of a few bucketed batch sizes (8 to 512 rows) and replayed, so the host launches one graph
+  rather than a few hundred kernels per forward (<code>learn/graphs.py</code>). The rows are copied into
+  buffers the graph owns and their logits read back out; the padding is real rows the network
+  never mixes in. One graph per policy and size: the learner's (captured again when the overlap's
+  behaviour snapshot changes) and each frozen opponent's, which goes when that opponent is no
+  longer resident. Only the forward is captured, so sampling, decodes and the learner's statistics
+  are as before. Off a CUDA device it is off, and a line says so. Unset, nothing is encoded.</li>
+<li>Tests marked <code>gpu</code> need a CUDA device and are deselected by default (<code>-m gpu</code> runs them).</li>
+</ul>
+<h2 id="0521">0.5.21<a class="headerlink" href="#0521" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>The rollout's inference gathers, decodes and uploads the uniforms of a round's policy rows once,
+  gives each policy's forward its own contiguous part of that batch, and brings every policy's
+  actions, log-probabilities and no-op check home in one copy at the end of the round. It read
+  each policy's answers back as that policy finished, so a round against several frozen opponents
+  waited on the device once per opponent, and the launches of one forward never overlapped the
+  work of the last. The actions and log-probabilities are the same.</p>
+</li>
+<li>
+<p><code>ladder.opponent_affinity</code>: the pool battles of one shard that are on the same episode ordinal
+  meet one opponent, drawn once for them by the same PFSP weights, from a stream of the shard's
+  own (<code>match/worker/{w}/shard/{s}/ordinal/{k}</code>). The inference makes one forward per frozen
+  opponent present in a shard's round, and drawn per battle a dozen pool battles against a large
+  pool make about one each; a shard's battles are an episode or two apart, so with it a round
+  holds one or two. Each episode's opponent is still a draw by the weights, and a battle's seat
+  and its own stream are what they were. Unset, nothing is encoded and nothing changes.</p>
+</li>
+</ul>
 <h2 id="0520">0.5.20<a class="headerlink" href="#0520" title="Permanent link">&para;</a></h2>
 <ul>
 <li>A value that is not a whole number on its way into a <code>uint8</code> plane is stored rounded, and is

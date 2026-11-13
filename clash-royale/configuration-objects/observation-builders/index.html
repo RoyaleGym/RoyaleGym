@@ -3555,6 +3555,10 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 <td>Which of your cards are evolved, and where evolved units stand.</td>
 </tr>
 <tr>
+<td><code>SpatialObsBuilder(evolution_progress=True)</code></td>
+<td>How far each card in your hand has got toward its next evolved play. Needs <code>evolutions=True</code>.</td>
+</tr>
+<tr>
 <td><code>SpatialObsBuilder(heroes=True)</code></td>
 <td>Where each side's heroes stand, and which of the opponent's heroes still have their ability to use. Champions don't count as heroes.</td>
 </tr>
@@ -3595,6 +3599,22 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 <td>The opponent's counted elixir also takes in what the board pays: an Elixir Collector's elixir, and the elixir it pays when it dies, and what an Elixir Golem's pieces pay when they die. Needs royalegym 0.1.26 or newer: <code>pip install --upgrade "royalegym[all]"</code>.</td>
 </tr>
 <tr>
+<td><code>SpatialObsBuilder(unit_velocity=True)</code></td>
+<td>How far each unit has moved since the bot last looked, in tiles per 5 ticks, as eight more layers: each side's units moving right, left, forward and back. A unit that has just appeared shows no movement yet, and towers show none. With RoyaleLearn, list the eight layers (the last eight of <code>channel_names()</code>) in <code>rollout.codec_float16_planes</code> so their fractions are kept. Needs royalegym 0.1.29 or newer.</td>
+</tr>
+<tr>
+<td><code>SpatialObsBuilder(own_button_pending=True)</code></td>
+<td>Which of your ability buttons has a press waiting to happen, when the environment delays commands (<code>command_delay_ticks</code>). Needs an action parser with <code>ability_buttons=True</code>, and royalegym 0.1.29 or newer.</td>
+</tr>
+<tr>
+<td><code>SpatialObsBuilder(own_waiting_plays=True)</code></td>
+<td>Your own plays still waiting to happen under a command delay, soonest first, up to two: where each lands, how many ticks are left, and what it costs. Needs royalegym 0.1.29 or newer.</td>
+</tr>
+<tr>
+<td><code>SpatialObsBuilder(enemy_card_cycle=True)</code></td>
+<td>For each card, how many plays until it's back in the opponent's hand, where their plays so far show it, and how many plays since they last played it. Needs royalegym 0.1.29 or newer.</td>
+</tr>
+<tr>
 <td><code>SpatialObsBuilder(reveal=Reveal(...))</code></td>
 <td>Hidden information, such as the opponent's real elixir. For experiments only.</td>
 </tr>
@@ -3605,7 +3625,37 @@ inputs. A bot trained that way expects them, so it can't play a fair battle afte
 <code>enemy_deck</code> and <code>enemy_spell_aim</code>. For example,
 <code>obs_builder = SpatialObsBuilder(reveal=Reveal(enemy_elixir=True))</code>.</p>
 <p><code>EntityListObsBuilder()</code> gives a list of units, one row each, instead of a grid. RoyaleLearn
-can't train on it.</p>
+can't train on it. It takes the table's options that add to the vector (<code>evolutions</code>,
+<code>evolution_progress</code>, <code>card_status</code>, <code>button_index</code>, <code>enemy_queue</code>, <code>elixir_income</code>,
+<code>own_button_pending</code>, <code>own_waiting_plays</code> and <code>enemy_card_cycle</code>), and four of its own that
+add columns to each unit's row:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What each row gains</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EntityListObsBuilder(unit_motion=True)</code></td>
+<td>How far the unit has moved since the bot last looked, as <code>unit_velocity</code> measures it.</td>
+</tr>
+<tr>
+<td><code>EntityListObsBuilder(unit_stats=True)</code></td>
+<td>Its full hitpoints, its shield, and where its target stands.</td>
+</tr>
+<tr>
+<td><code>EntityListObsBuilder(unit_status=True)</code></td>
+<td>One column per status flag: under ground, invisible, hidden, evolved, a hero, a Clone copy, an ability winding up or running, charged, and grounded.</td>
+</tr>
+<tr>
+<td><code>EntityListObsBuilder(unit_actions=True)</code></td>
+<td>Its charge, its ability timer, which part of its attack it's in, which way it faces, and where a tunneller will come up.</td>
+</tr>
+</tbody>
+</table>
+<p>These need royalegym 0.1.29 or newer.</p>
 <div class="admonition note">
 <p class="admonition-title">Which builders RoyaleLearn can train</p>
 <p>RoyaleLearn's trainer reads <code>SpatialObsBuilder</code>'s four keys, with any of the options in the

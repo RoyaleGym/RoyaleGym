@@ -6867,6 +6867,12 @@ harness exists to remove.</p>
 <td>lag-1 collection under the update, at the cost of a second buffer (623 MB at 95 cards). Refused under <code>determinism.tier</code> run_exact; no profile sets it</td>
 </tr>
 <tr>
+<td><code>cuda_graphs</code></td>
+<td>unset</td>
+<td></td>
+<td>true: each policy's rollout forward is captured as a CUDA graph at the smallest bucketed batch size that holds its rows (8 to 512) and replayed (<code>learn/graphs.py</code>): one launch instead of a few hundred kernels per forward. The rows go into buffers the graph owns, padded with real rows the network never mixes in, and their logits come back out; only the forward is captured, so sampling, decodes and statistics are as before. A graph holds its actor: the learner's is captured again when the behaviour snapshot changes, and a frozen opponent's goes when it is no longer resident. Off a CUDA device it is off, and a line says so</td>
+</tr>
+<tr>
 <td><code>eval_workers</code></td>
 <td>2</td>
 <td>processes</td>
@@ -6877,6 +6883,18 @@ harness exists to remove.</p>
 <td>24</td>
 <td>battles</td>
 <td></td>
+</tr>
+<tr>
+<td><code>eval_device</code></td>
+<td>unset</td>
+<td></td>
+<td>where the evaluation workers (<code>eval_workers</code> above 1) run their actors: "cpu" (unset) at one thread and a batch of one per decision, or "cuda" on the run's own GPU, which the synchronous gate otherwise leaves idle while the update waits for it. Off a CUDA run it is "cpu" and a line says so. Left out of the run identity</td>
+</tr>
+<tr>
+<td><code>eval_lockstep</code></td>
+<td>unset</td>
+<td></td>
+<td>true: each evaluation worker plays <code>eval_games_per_worker</code> of its battles at once, a decision at a time for all of them, with one forward per policy per decision over every battle that policy is in. Each battle keeps its own seed, side, frame history and stream, and the scripted anchors act a battle at a time in seat order, so a gate is the same measurement; a batched forward can differ from a batch of one in the last bits, so a near-tie sample can come out the other way. Left out of the run identity</td>
 </tr>
 <tr>
 <td><strong><code>net</code></strong> (<code>ArchSpec</code>)</td>
@@ -6967,6 +6985,12 @@ harness exists to remove.</p>
 <td><code>"bfloat16"</code></td>
 <td></td>
 <td>Ampere bf16 tensor cores; bf16 keeps fp32's exponent range so <code>finfo.min</code> masking is safe and no <code>GradScaler</code> is needed</td>
+</tr>
+<tr>
+<td><code>critic_autocast_dtype</code></td>
+<td>unset</td>
+<td></td>
+<td>the critic's trunk at this dtype and its value head at float32, whatever <code>autocast_dtype</code> the actor runs at. The critic never enters the importance ratio, so a run that keeps its actor at float32 for the ratio invariant can train its critic, most of an update under <code>ppo.forced_rows</code> "critic_only", on the bfloat16 path. Needs <code>separate_trunks</code>. Left out of <code>arch_digest</code> and <code>actor_digest</code>: a precision, not a shape, so a run resumes with it changed</td>
 </tr>
 <tr>
 <td><code>device</code></td>
@@ -7243,6 +7267,54 @@ harness exists to remove.</p>
 <td><code>"stochastic"</code></td>
 <td></td>
 <td>how a frozen pool or seed opponent picks its action in TRAINING battles: <code>"stochastic"</code> samples (every run before this field), <code>"argmax"</code> takes the mode, and <code>"plugin:&lt;module&gt;:&lt;function&gt;"</code> calls a function of your own with the rows' masked log-probabilities, mask and observation vector, which returns one legal action per row (<code>royalelearn/learn/decode.py</code>). The learner's seats always sample. Training battles are not rated, so it is not in the ladder context</td>
+</tr>
+<tr>
+<td><code>opponent_affinity</code></td>
+<td>unset</td>
+<td></td>
+<td>true: the pool battles of one shard that are on the same episode ordinal meet one opponent, drawn once for them by the same PFSP weights from <code>match/worker/{w}/shard/{s}/ordinal/{k}</code>. The inference makes one forward per frozen opponent in a shard's round, so a round of a dozen pool battles against a large pool goes from about one forward per battle to one or two. Each episode's opponent is still a draw by the weights; a battle's seat and its own stream are what they were, and an episode keeps its opponent across an iteration boundary because the draw is addressed by the ordinal</td>
+</tr>
+<tr>
+<td><code>pfsp_source</code></td>
+<td>unset</td>
+<td></td>
+<td>where PFSP reads the learner's score against a pool member: <code>"fit"</code> (what unset means) predicts it from the fitted ratings through the snapshot standing in for the learner; <code>"games"</code> reads the learner's own latest learning games against that member, the last <code>pfsp_window</code>, a win 1, a draw 0.5 and a loss 0, and 0.5 before any. The scores are read as each iteration's plan is drawn, so an iteration's episodes are all drawn by one set of weights. Under <code>"games"</code> the matchmaker's checkpoint keeps the record and the resident set, which are no longer a function of the pool, and <code>ladder/pfsp_effective</code> is 1 when a member's weight read a game. The weights are over the resident set (<code>max_resident_opponents</code>): residents are drawn by them first, then each episode's opponent among the residents, so the formula holds over every member only when the resident limit is at least the drawable pool. A battle still on the same episode keeps its opponent and seat when a plan is drawn. With no <code>pfsp_offset</code> and both floors 0 a member could weigh exactly zero, and that config is refused</td>
+</tr>
+<tr>
+<td><code>pfsp_window</code></td>
+<td>unset</td>
+<td>games</td>
+<td>per pool member, under <code>pfsp_source</code> <code>"games"</code> only; unset is 200</td>
+</tr>
+<tr>
+<td><code>pfsp_offset</code></td>
+<td>unset</td>
+<td></td>
+<td>added to every member's shaped weight before the weights are normalised, so a member the learner always beats is still drawn; unset adds nothing. With <code>pfsp_weighting</code> <code>"hard"</code>, <code>pfsp_power</code> 2, <code>pfsp_uniform_floor</code> and <code>weight_floor_scale</code> 0 and this at 0.05, a member's weight is (1 - score)^2 + 0.05</td>
+</tr>
+<tr>
+<td><code>admit_refused</code></td>
+<td>unset</td>
+<td></td>
+<td>true: a candidate due its gate is always gated, also when a floor admission falls due at the same step (unset, the floor takes the gate's place there, so with the floor cadence a multiple of the candidate's, every second candidate is admitted ungated), and a candidate the gate refuses joins the pool anyway, unpromoted, as a floor admission does. Every candidate is measured against the champion and the pool keeps the recent snapshots whatever the gates decide; with it, the floor cadence can be set past the run's end</td>
+</tr>
+<tr>
+<td><code>rollback_after</code></td>
+<td>unset</td>
+<td>gates</td>
+<td>after this many straight gates in which the candidate scored below <code>rollback_below</code> against the champion, the learner goes back to the champion's: its weights and both optimizers' moments, saved beside each candidate before its gate (<code>ladder/learners/</code>) and kept for the last <code>checkpoint.keep</code> champions. The clocks, counters, coefficients, return scaler, freeze and pool carry on, and with <code>rollout.overlap</code> the batch collected beside that update is dropped. Only gates that played count: a floor admission, the first champion (promoted into an empty ladder without a game) and a candidate that is the champion again move neither streak, and a promotion ends both. A champion promoted before the rule was on has no saved learner, and a rollback to it is skipped and said so. Unset or 0 is off; <code>ladder/rollbacks</code> and <code>ladder/gates_below</code> report it</td>
+</tr>
+<tr>
+<td><code>rollback_below</code></td>
+<td>unset</td>
+<td>score</td>
+<td>the score against the champion below which a gate counts toward <code>rollback_after</code>; unset is 0.45</td>
+</tr>
+<tr>
+<td><code>stall_after</code></td>
+<td>unset</td>
+<td>gates</td>
+<td>after this many straight played gates without a promotion the run stops, prints why and saves a checkpoint. Unset or 0 is off; <code>ladder/gates_since_promotion</code> reports it</td>
 </tr>
 <tr>
 <td><code>refit_every_iterations</code></td>

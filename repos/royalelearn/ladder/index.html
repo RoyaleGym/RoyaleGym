@@ -2758,6 +2758,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#going-back-to-the-champion-and-stopping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Going back to the champion, and stopping
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3581,6 +3592,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#going-back-to-the-champion-and-stopping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Going back to the champion, and stopping
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3904,6 +3926,22 @@ the bot that a gate admitted. That copy can be up to one snapshot cadence behind
 uniformly. Before the first snapshot has been rated, the draw is still uniform. Each metrics row
 says which happened: <code>ladder/pfsp_effective</code> is 1 when the draw used a rating and 0 when it fell
 back to uniform, and <code>ladder/pfsp_learner_step</code> is the env step of the snapshot that stood in.</p>
+<p><code>ladder.pfsp_source: "games"</code> weighs by the live bot's own record instead: its last 200 learning
+games against each member (<code>pfsp_window</code>), a win 1, a draw a half and a loss 0, and a half for a
+member it has not played. Nothing stands in and nothing lags a snapshot cadence; the record is
+read as each iteration's plan is drawn. <code>pfsp_offset</code> adds a constant to every weight before
+they are normalised, so with the hard shape at power 2, both floors at zero and the offset at
+0.05 a member's weight is (1 - score)^2 + 0.05. The weights pick the loaded opponents first
+(<code>max_resident_opponents</code> of them) and then each game's opponent among those, so to have every
+member drawn by its own weight, set <code>max_resident_opponents</code> to at least the size of the pool.</p>
+<h3 id="going-back-to-the-champion-and-stopping">Going back to the champion, and stopping<a class="headerlink" href="#going-back-to-the-champion-and-stopping" title="Permanent link">&para;</a></h3>
+<p>Two settings, both off unless set. <code>rollback_after: 2</code> sends the bot back to the champion when
+two gates in a row go badly: each candidate scoring under 45% (<code>rollback_below</code>) against the
+champion. "Back" means the champion's own weights and optimizer state, saved when the champion
+was a candidate, so training restarts from the best bot so far rather than from the one that has
+been getting worse. The step counters and everything else carry on. <code>stall_after: 10</code> stops the
+run after ten gates in a row without a promotion, and saves it first. Floor admissions are not
+gates for either rule, and a promotion resets both counts.</p>
 <p>You can see the weighting in one command. The last argument is the stand-in's rating:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python -c "from royalelearn.config import LadderConfig; from royalelearn.api.ladder import RatingTable; from royalelearn.ladder.matchmaker import MixMatchmaker; m=MixMatchmaker(1,LadderConfig()); t=RatingTable(rating={'snap:v0':0.0,'snap:v1':200.0,'snap:v2':400.0,'snap:v3':-200.0},se={},anchor='scripted:noop',draw_nu=None,n_games={},transitivity_residual=0.0,converged=True,iterations=3); print(m.weights(('snap:v0','snap:v1','snap:v2','snap:v3'),t,'hard',t.rating['snap:v0']))"
 </code></pre></div>

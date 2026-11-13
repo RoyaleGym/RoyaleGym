@@ -3768,7 +3768,12 @@ nothing, so you write only the hooks you use. There are no others.</p>
 </tbody>
 </table>
 <p><code>ctx</code> is a <code>RunContext</code>. It carries the config, the environment description, the device, the live
-model, whether the run is resuming, and helpers for building a spare actor and unpacking rows.</p>
+model, whether the run is resuming, and helpers for building a spare actor and unpacking rows.
+<code>ctx.champion()</code> names the ladder's champion now (None before the first promotion;
+<code>ctx.champion(gated=True)</code> names it only once a champion has won its gate by playing, since the
+run's first is promoted into an empty ladder without a game), and
+<code>ctx.load_snapshot(snapshot_id, actor)</code> loads a pool snapshot's weights, as the pool stores them,
+into an actor <code>ctx.build_actor</code> built. A term that anchors to the champion calls both in <code>begin</code>.</p>
 <p>A run that holds the actor still gets two extra alarms, <code>actor_handoff</code> and <code>critic_unready</code>.
 <a href="../running/">running.md</a> section 3.6 describes them. The extension that sets the schedule adds
 them with <code>freeze_alarms</code> and chooses their thresholds.</p>
