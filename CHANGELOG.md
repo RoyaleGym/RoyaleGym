@@ -5,6 +5,17 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Changed
+- The action mask follows `placement.BUILDING_TERRITORY` (royalesim 0.1.54). Under
+  `enemy_tower_no_deploy_rects`, royalesim 0.1.54's default, a building may be tapped in the
+  enemy's pocket once that lane's princess tower has fallen: its tap is judged as a troop's, with
+  the river band closed, and the engine judges where its box lands, as for every building. Under
+  `own_half` (an engine without the key, and the 15.535.29 client's arms) a building stays on its
+  own half. `DeployRules.building_territory` says which. MockEngine keeps buildings on their own
+  half, having no box to judge, and says so.
+
 ## 0.1.30 (2026-11-13)
 
 ### Changed

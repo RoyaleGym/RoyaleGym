@@ -1057,6 +1057,16 @@ OPEN_BRIDGE = "enemy_tower_no_deploy_rects_open_bridge"
 TERRITORY_MODELS = (CLOSED_RIVER_BAND, OPEN_BRIDGE)
 #: What an engine does with a building tap whose point is legal but whose box does not fit.
 ILLEGAL_BUILDING_TAP = ("refuse", "relocate_first_fitting_ring")
+#: placement.BUILDING_TERRITORY arms (royalesim 0.1.54). Under the first a building goes on its
+#: own half only. Under the second (clients 16.402 and 16.635) a building's tap takes the troops'
+#: rule with the river band closed, whatever arena.TERRITORY_MODEL says: the point must lie off
+#: the river band and outside every alive enemy crown tower's NoDeploySize rect, so an opened
+#: pocket past the far bank takes one once that lane's princess has fallen. The engine also
+#: refuses or moves a BOX that overlaps an alive enemy rect (arena.rs box_zone_rects); the mask
+#: asks the engine where a building lands (``GridActionParser.buildable``), as for every box rule.
+OWN_HALF_BUILDINGS = "own_half"
+BUILDINGS_IN_TROOP_RECTS = "enemy_tower_no_deploy_rects"
+BUILDING_TERRITORY = (OWN_HALF_BUILDINGS, BUILDINGS_IN_TROOP_RECTS)
 #: placement.ILLEGAL_TROOP_TAP arms (RoyaleSim 0.1.29). Under the clamp the engine accepts a TROOP
 #: card (by kind) tapped out of its territory, moving the tap back along its tile column to the
 #: first legal tile; the mask keeps refusing such taps (``action.mask_disagreements``).
@@ -1208,8 +1218,11 @@ class DeployRules(msgspec.Struct, frozen=True):
         and the water decide, so a fallen lane's bridge takes a troop while a standing
         princess's rect, which reaches the far bank, still closes its own (the replays'
         bridge plays, and taps measured on client 16.402, 2026-10-07).
-    Buildings
-        Own half only, even after a princess falls. UNSOURCED, unchanged.
+    building_territory
+        placement.BUILDING_TERRITORY (``BUILDING_TERRITORY``): "own_half", a building on its
+        own half only, even after a princess falls; or "enemy_tower_no_deploy_rects", its tap
+        judged by the troop rule above with the river band closed, so a fallen princess's
+        pocket takes a building (measured on client 16.635, royalesim 0.1.54).
     footprint_model
         calibration.json collision.BUILDING_FOOTPRINT_MODEL. Only
         "collision_radius_circle" is implemented; anything else raises so a
@@ -1270,6 +1283,9 @@ class DeployRules(msgspec.Struct, frozen=True):
     # for it offers every play of the tiebreak while the engine refuses them all GAME_OVER.
     # Trailing and defaulted to "", the rule of an engine that states none: no freeze.
     overtime_tiebreak: str = ""
+    # placement.BUILDING_TERRITORY (``BUILDING_TERRITORY``): where a building's tap may go.
+    # Trailing and defaulted to "own_half", the rule of an engine without the key.
+    building_territory: str = OWN_HALF_BUILDINGS
 
     @classmethod
     def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
@@ -1323,6 +1339,7 @@ class DeployRules(msgspec.Struct, frozen=True):
         bottle_taps = arm("LIVE_BOTTLE_TAPS", LIVE_BOTTLE_TAPS, "not_blocked")
         troop_tap = arm("ILLEGAL_TROOP_TAP", ILLEGAL_TROOP_TAP, "refuse")
         enemy_buildings = arm("ENEMY_BUILDING_TAPS", ENEMY_BUILDING_TAPS, "ignored")
+        building_territory = arm("BUILDING_TERRITORY", BUILDING_TERRITORY, OWN_HALF_BUILDINGS)
         try:
             spell_tap = str(calibration.value("spells.ILLEGAL_SPELL_TAP"))
         except KeyError:
@@ -1378,6 +1395,7 @@ class DeployRules(msgspec.Struct, frozen=True):
             spell_as_deploy_taps=spell_taps,
             live_bottle_taps=bottle_taps,
             overtime_tiebreak=tiebreak,
+            building_territory=building_territory,
         )
 
     @property
@@ -1385,6 +1403,12 @@ class DeployRules(msgspec.Struct, frozen=True):
         """Whether no troop may stand on any half-row of the river band (the territory model
         before royalesim 0.1.21); under ``OPEN_BRIDGE`` the rects and the water decide."""
         return self.territory_model == CLOSED_RIVER_BAND
+
+    @property
+    def buildings_take_troop_rects(self) -> bool:
+        """Whether a building's tap is judged by the alive enemy rects, the river band closed
+        (placement.BUILDING_TERRITORY = enemy_tower_no_deploy_rects), not by the own half."""
+        return self.building_territory == BUILDINGS_IN_TROOP_RECTS
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:
         """The closed NoDeploySize rect of a crown tower in ``slot`` centred at (cx, cy)."""

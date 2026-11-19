@@ -156,7 +156,8 @@ The design rationale for each family lives with the code:
 `(tx, ty)` (one of 18 x 32), in the acting player's own frame, so one policy head plays both
 seats. Legality is a property of the *pair* (card, tile). Elixir is per card. Territory
 depends on the card's placement type (spells anywhere, a Goblin Barrel anywhere but water, a
-Log where a troop may go but over buildings, buildings never into the enemy pocket).
+Log where a troop may go but over buildings, a building into an enemy pocket only under
+placement.BUILDING_TERRITORY = enemy_tower_no_deploy_rects, royalesim 0.1.54's default).
 Footprints depend on the card's radius. A joint space is the only shape in which a mask can
 say "Giant here, Fireball not". A per-dimension mask, as sb3-contrib's MaskablePPO applies
 one to a `MultiDiscrete`, can only mask the marginals, and would happily sample "Knight on

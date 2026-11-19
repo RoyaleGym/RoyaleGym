@@ -62,6 +62,7 @@ from .protocol import (
     DECK_SIZE,
     EMPTY_CARD,
     HAND_SIZE,
+    OWN_HALF_BUILDINGS,
     RED,
     TEAMS,
     Arena,
@@ -461,6 +462,9 @@ class MockEngine:
             # And it refuses a tap out of its territory, troop or spell: no clamp.
             illegal_troop_tap="refuse",
             illegal_spell_tap="refuse",
+            # A building goes on its own half: it has no box to judge against the enemy rects
+            # (the compiled engine's placement.BUILDING_TERRITORY rects arm judges its box too).
+            building_territory=OWN_HALF_BUILDINGS,
         )
         g = load_globals_csv()
 

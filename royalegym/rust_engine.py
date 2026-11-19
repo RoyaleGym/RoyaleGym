@@ -209,6 +209,9 @@ OVERRIDE_FOLLOWED = frozenset(
         "placement.ILLEGAL_TROOP_TAP",
         "spells.ILLEGAL_SPELL_TAP",
         "placement.ENEMY_BUILDING_TAPS",
+        # Both arms: the tap's rule in the mask, the box the engine's
+        # (tests/test_building_territory.py).
+        "placement.BUILDING_TERRITORY",
     }
 )
 

@@ -67,7 +67,7 @@ import numpy as np
 import pytest
 from gymnasium import spaces
 
-from _arms import mock_arms, pinned, refusing
+from _arms import mock_arms, mock_buildings, pinned, refusing
 from _lockout import lockout_ticks
 from royalegym import mock_engine as mock_engine_module
 from royalegym import rust_engine as rust_engine_module
@@ -146,8 +146,9 @@ LOCKOUT = lockout_ticks()
 
 @pytest.fixture(scope="module")
 def rust() -> RustEngine:
-    """The engine MockEngine is compared with: its clamps off, as the Mock's (``refusing``)."""
-    return RustEngine(card_names=SHARED, calibration_overrides=refusing())
+    """The engine MockEngine is compared with: its clamps off, as the Mock's (``refusing``),
+    and its buildings on their own half, as the Mock's (``mock_buildings``)."""
+    return RustEngine(card_names=SHARED, calibration_overrides={**refusing(), **mock_buildings()})
 
 
 @pytest.fixture(scope="module")
@@ -222,7 +223,11 @@ def test_territory_is_one_set_of_numbers(rust):
     """
     import royalesim
 
-    rules = DeployRules.load(default_calibration())
+    # The ledger, with the one arm this engine is pinned to (MockEngine's buildings).
+    cal = default_calibration()
+    for key, value in mock_buildings().items():
+        cal = cal.with_override(key, value)
+    rules = DeployRules.load(cal)
     assert rust.rules() == rules
     assert rules.territory_model == royalesim.TERRITORY_MODEL
     assert default_calibration().value("arena.TERRITORY_MODEL") == rules.territory_model

@@ -45,6 +45,8 @@ MOCK_FIELDS: dict[str, str] = {
     # Nor clamps a tap out of its territory ("refuse", whatever its ledger ships).
     "placement.ILLEGAL_TROOP_TAP": "illegal_troop_tap",
     "spells.ILLEGAL_SPELL_TAP": "illegal_spell_tap",
+    # And keeps a building on its own half (it has no box to judge against the enemy rects).
+    "placement.BUILDING_TERRITORY": "building_territory",
 }
 
 
@@ -90,3 +92,11 @@ CLAMPS_OFF: dict[str, str] = {
 def refusing() -> dict[str, str]:
     """The ``calibration_overrides`` that turn a plain RustEngine's clamps off (``CLAMPS_OFF``)."""
     return pinned(CLAMPS_OFF)
+
+
+def mock_buildings() -> dict[str, str]:
+    """The ``calibration_overrides`` that keep a plain RustEngine's buildings where MockEngine's
+    go: on their own half (placement.BUILDING_TERRITORY = own_half; MockEngine has no box to
+    judge against the enemy rects)."""
+    key = "placement.BUILDING_TERRITORY"
+    return pinned({key: mock_arms()[key]})

@@ -151,6 +151,10 @@ class PlacementOracle:
         # refusing it. Then nothing on the board can make a building tap illegal, so the
         # bodies already standing are not a rule for buildings at all.
         self.buildings_relocate = rules.illegal_building_tap == "relocate_first_fitting_ring"
+        # placement.BUILDING_TERRITORY: under "enemy_tower_no_deploy_rects" a building's TAP takes
+        # the troops' rule, the river band closed (``cell_grid``) and the alive enemy rects a
+        # point rule (``_rect_rule``). Its BOX is the engine's to judge (``buildable``).
+        self.building_rects = rules.buildings_take_troop_rects
         grid = np.asarray(arena.grid, dtype=np.int64)  # [hy, hx]
         self.water = (grid & BIT_WATER) != 0
         self.nodeploy = (grid & BIT_NO_DEPLOY) != 0
@@ -431,7 +435,9 @@ class PlacementOracle:
         deploy_rule``): SPELL no cell rule; SPELL_NOT_ON_WATER water only (no
         no-deploy, no territory: the king block is a legal Goblin Barrel target);
         TROOP and ROLLING water, no-deploy and the river band; BUILDING water,
-        no-deploy and own half; TUNNEL water only, as SPELL_NOT_ON_WATER (the
+        no-deploy and own half, or under placement.BUILDING_TERRITORY =
+        enemy_tower_no_deploy_rects the river band, closed under both territory models,
+        with the enemy rects as its point rule; TUNNEL water only, as SPELL_NOT_ON_WATER (the
         no-deploy strips and the enemy half are its ground). A MIRROR has no grid of its
         own: it is placed as the card it copies, which is what to ask with.
         """
@@ -448,7 +454,9 @@ class PlacementOracle:
             not_water: np.ndarray = ~self.water
             return not_water
         if placement == Placement.BUILDING:
-            terr = self.own_half[team]
+            # The engine's building rule closes the band even under the open-bridge model
+            # (state.rs deploy_rule: EnemyTowerRects { open_bridge: false }).
+            terr = ~self.river_band if self.building_rects else self.own_half[team]
         elif self.rules.river_band_closed_to_troops:
             terr = ~self.river_band
         else:
@@ -459,6 +467,14 @@ class PlacementOracle:
         nodeploy = self.troop_nodeploy if troop else self.nodeploy
         legal: np.ndarray = terr & ~self.water & ~nodeploy
         return legal
+
+    def _rect_rule(self, placement: int) -> bool:
+        """Whether the alive enemy towers' rects are a point rule for ``placement``: a troop's,
+        a rolling spell's, and a building's under placement.BUILDING_TERRITORY =
+        enemy_tower_no_deploy_rects."""
+        return placement in (Placement.TROOP, Placement.ROLLING) or (
+            placement == Placement.BUILDING and self.building_rects
+        )
 
     def enemy_rects(self, state: BattleState, team: int) -> list[tuple[int, int, int, int]]:
         """The rects a ``team`` troop may not be placed in: every ALIVE enemy crown tower's."""
@@ -525,7 +541,8 @@ class PlacementOracle:
 
         Ignores elixir and hand. A point must lie strictly inside the arena, every
         half-cell it touches must pass ``cell_grid``, and it must pass the point
-        rules (enemy tower rects for troops and rolling spells, footprints).
+        rules (enemy tower rects for troops, rolling spells and, under the rects arm of
+        placement.BUILDING_TERRITORY, buildings; footprints).
         """
         a = self.arena
         px = np.asarray(px, dtype=np.int64)
@@ -533,7 +550,7 @@ class PlacementOracle:
         inside = (px > 0) & (px < a.width) & (py > 0) & (py < a.height)
         cells = self.cell_grid(state, team, card.placement, self._troop_laws(card))
         ok: np.ndarray = inside & self._touches_only(cells, px, py)
-        if card.placement in (Placement.TROOP, Placement.ROLLING):
+        if self._rect_rule(card.placement):
             for x0, y0, x1, y1 in self.enemy_rects(state, team):
                 ok &= ~((px >= x0) & (px <= x1) & (py >= y0) & (py <= y1))
         if self.king_half_open and self._troop_laws(card):
@@ -600,11 +617,7 @@ class PlacementOracle:
             Placement.SPELL_NOT_ON_WATER,
         ):
             return None
-        rects = (
-            tuple(self.enemy_rects(state, team))
-            if placement in (Placement.TROOP, Placement.ROLLING)
-            else ()
-        )
+        rects = tuple(self.enemy_rects(state, team)) if self._rect_rule(placement) else ()
         if self._bodies_block(placement):
             extra = card.radius if placement == Placement.BUILDING else 0
             blockers = self._blockers(state)
@@ -671,7 +684,7 @@ class PlacementOracle:
             return ok  # no point rule applies to either (cell_grid)
         px, py = self.points(pitch_div)
         xs, ys = px[0], py[:, 0]
-        if card.placement in (Placement.TROOP, Placement.ROLLING):
+        if self._rect_rule(card.placement):
             for x0, y0, x1, y1 in self.enemy_rects(state, team):
                 iny = (ys >= y0) & (ys <= y1)
                 inx = (xs >= x0) & (xs <= x1)

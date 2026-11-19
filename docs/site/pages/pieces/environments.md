@@ -172,8 +172,8 @@ Your bot is told exactly which moves are legal before it picks one. Every observ
 tile it is not allowed to deploy on.
 
 Legality is a property of the **pair**, the card and the tile together. Elixir depends on the
-card. Where you may place depends on the card too: spells go anywhere, buildings never go into
-the enemy pocket, troops need your own territory. A mask that could only say "this card" or "that
+card. Where you may place depends on the card too: spells go anywhere, while troops and buildings
+need your own side, plus the enemy's side of a lane once its princess tower has fallen. A mask that could only say "this card" or "that
 tile" separately would happily suggest putting a Knight on the enemy king. This one cannot.
 
 What it covers: elixir, territory, water, the river band, the bodies of enemy buildings, and the
