@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0154-2026-11-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.54 (2026-11-19)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0153-2026-11-13" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3909,6 +3920,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0154-2026-11-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.54 (2026-11-19)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0153-2026-11-13" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4530,6 +4552,70 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0154-2026-11-19">0.1.54 (2026-11-19)<a class="headerlink" href="#0154-2026-11-19" title="Permanent link">&para;</a></h2>
+<ul>
+<li>27 more settings default to the current client's behaviour, each measured against its recorded battles (19 of the
+  settings are new, marked new):</li>
+<li>A Mighty Miner switching lanes pushes the units he surfaces on with his first underground step
+    (<code>movement.LANE_SWITCH_FIRST_STEP_CONTACT</code>, new).</li>
+<li>A Rune Giant picks a friend walking into reach on the same tick, measured after everyone has moved
+    (<code>enchant.PICK_REACH</code>).</li>
+<li>Troops planning a route while a death bomb (Bomb Tower, Giant Skeleton, Balloon) is fusing walk round it
+    (<code>pathfinding.DEATH_BOMB_OBSTACLE</code>).</li>
+<li>A unit knocked by a Bowler boulder on the boulder's first tick moves on that tick (<code>knockback.CREATION_HIT_KNOCK</code>,
+    new).</li>
+<li>Lightning and the other strikes pick a troop whose edge is within their radius plus 170, on the strike tick and the
+    next, and reach a building by its square footprint, strictly inside the radius (<code>spells.STRIKE_REACH</code>).</li>
+<li>Units holding the Boss Bandit let her go one tick later (<code>status.WARP_BACK_CLOAK</code>).</li>
+<li>The Hero Ice Wizard's ability waits for an enemy slowed by his own shots; his deploy chill no longer counts
+    (<code>status.ICE_FIND_MARKS</code>, new).</li>
+<li>A unit let go by a Hero Ice Wizard's cube resumes its attack one tick later (<code>status.ICE_RELEASE_ATTACK</code>, new), and
+    picks its next target one tick later (<code>status.ICE_RELEASE_TARGET</code>, new).</li>
+<li>A unit whose shot finishes a Hero Ice Wizard's cube pauses before its next target, as after any kill
+    (<code>combat.CUBE_LOSS_WAIT</code>, new).</li>
+<li>A shot in flight at a unit that goes underground (a Mighty Miner switching lanes) is lost; a splash shot still
+    bursts where it was aimed (<code>hide.TUNNEL_SHOT</code>, new).</li>
+<li>A troop's splash reaches a crown tower by the tower's square (<code>combat.TROOP_SPLASH_CROWN_REACH</code>, new).</li>
+<li>A building can be placed in the pocket a fallen princess tower opens, as a troop can, as long as its footprint
+    stays clear of the standing towers' zones (<code>placement.BUILDING_TERRITORY</code>).</li>
+<li>A flier pulled to the ground by Vines collides as a ground unit while it is held (<code>movement.GROUNDED_FLIER_BODY</code>,
+    new).</li>
+<li>A hog from a Goblin Curse steers round its dying parent on its first step, whatever killed the parent
+    (<code>status.BUFF_DEATH_SPAWN_FIRST_UPDATE</code>).</li>
+<li>The Barbarian Barrel's Barbarian appears at the end of the roll and takes its first push there, over water too
+    (<code>spells.ROLL_RELEASE_WATER_POINT</code>).</li>
+<li>Graveyard Skeletons and Evo Skeleton Barrel Skeletons are born facing forward (<code>spawner.AREA_SPAWN_FACING</code>, new).</li>
+<li>An Evo Cannon bomb lands before units attack, so a unit it kills does not get its hit off on that tick
+    (<code>spells.BARRAGE_LANDING_PHASE</code>, new).</li>
+<li>An Evo Skeleton Barrel destroyed before its first drop drops both of its containers
+    (<code>spawner.EVO_BARREL_EXTRA_AT_DEATH</code>, new).</li>
+<li>A Ram Rider's rider attacks at the Ram's pace: a slow or Rage on the Ram changes the rider's attack speed too
+    (<code>rider.MOUNT_BUFFS_ON_CLOCK</code>, new).</li>
+<li>The Executioner's axe flies at his attack speed: slower when he is slowed, faster under Rage
+    (<code>combat.PINGPONG_CLOCK</code>, new).</li>
+<li>An Evo Goblin Drill knocked past a health line by a hit goes under one tick later; its own drain still takes it
+    under at once (<code>hide.DRILL_LINE_TEST</code>, new).</li>
+<li>A troop stunned on the tick its target dies serves the pause after a kill; a tower or building in the same spot
+    keeps its attack timing (<code>status.STUN_CLEARS_TARGET</code>).</li>
+<li>The Evo Witch's skeleton waves speed up under Rage and slow under chills, freezes and stuns
+    (<code>spawner.EVO_WITCH_WAVE_SPAWN_SPEED</code>, new).</li>
+<li>Building-targeting troops notice a Cannon Cart's broken cannon one tick later (<code>transform.BECAME_BUILDING_TARGET</code>,
+    new).</li>
+<li>Units released onto the river (Furnace spirits, Battle Ram Barbarians, Goblin Curse goblins) stand on the water and
+    walk off it (<code>spawner.RELEASE_WATER_POINT</code>, new).</li>
+<li>The Mega Knight's pause before a jump scales with his attack speed: Rage shortens it, slows lengthen it
+    (<code>combat.DASH_STAND_CLOCK</code>, new).</li>
+<li>New settings <code>hide.DRILL_DIG_POINT</code> and <code>spawner.DEATH_SPAWN_BIRTH_TARGET</code>: where an Evo Goblin Drill digs, and what a
+  unit born from a death spawn targets first. The defaults are unchanged.</li>
+<li>New values that are not the default: <code>placement.ILLEGAL_TROOP_TAP</code> gains <code>"client16635_nearest_legal_tile"</code>, the
+  current client's move of an illegal troop tap to the nearest legal tile (the default still refuses; between equally
+  near tiles it treats the two sides differently); <code>combat.GUARD_KNOCKED_CHARGE</code> gains
+  <code>"client16635_lands_after_ladder"</code>, <code>status.STUN_CLEARS_TARGET</code> gains <code>"client16635_kill_before_late_clear"</code> and
+  <code>enchant.STUN_AT_PICK</code> gains <code>"client16635_cooldown_pauses_held_less_one"</code>.</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and <code>replay_parity</code>
+  keep the older client's values for its battles. A battle saved by 0.1.53 loads on 0.1.54: the new settings read their
+  old values from a save that lacks them.</li>
+</ul>
 <h2 id="0153-2026-11-13">0.1.53 (2026-11-13)<a class="headerlink" href="#0153-2026-11-13" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The Hero Electro Wizard plays on the current client's card table (<code>cards.CARD_TABLE = "client160635007_20261103"</code>).

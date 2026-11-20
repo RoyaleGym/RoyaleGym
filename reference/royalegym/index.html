@@ -12766,9 +12766,10 @@ orders visible content by hidden data.</p>
       "Giant is legal here but Fireball is not" exactly. Legality is a property of
       the PAIR: elixir is per card, territory depends on placement type (spells go
       anywhere, a Goblin Barrel anywhere but water, a Log only where a troop may go
-      but over buildings, buildings never into the pocket, a Miner anywhere on land
-      but not on a building, a Mirror wherever the card it copies may go), footprints
-      depend on card radius.
+      but over buildings, a building into an opened pocket only under
+      placement.BUILDING_TERRITORY = enemy_tower_no_deploy_rects, a Miner anywhere on
+      land but not on a building, a Mirror wherever the card it copies may go),
+      footprints depend on card radius.
       sb3-contrib MaskablePPO applies a MultiDiscrete mask per dimension
       independently, so a MultiDiscrete([5, 18, 32]) head could only mask the
       marginals and would happily sample "Knight on the enemy king". An
@@ -13012,7 +13013,9 @@ applied in <code>legal_points</code>.</p>
 deploy_rule</code>): SPELL no cell rule; SPELL_NOT_ON_WATER water only (no
 no-deploy, no territory: the king block is a legal Goblin Barrel target);
 TROOP and ROLLING water, no-deploy and the river band; BUILDING water,
-no-deploy and own half; TUNNEL water only, as SPELL_NOT_ON_WATER (the
+no-deploy and own half, or under placement.BUILDING_TERRITORY =
+enemy_tower_no_deploy_rects the river band, closed under both territory models,
+with the enemy rects as its point rule; TUNNEL water only, as SPELL_NOT_ON_WATER (the
 no-deploy strips and the enemy half are its ground). A MIRROR has no grid of its
 own: it is placed as the card it copies, which is what to ask with.</p>
 
@@ -13078,7 +13081,8 @@ tower's body is OUT_OF_TERRITORY. The two clamps (<code>clamped_tap</code>) move
         <p>Legality of placing <code>card</code> at engine-frame points (px, py), any shape.</p>
 <p>Ignores elixir and hand. A point must lie strictly inside the arena, every
 half-cell it touches must pass <code>cell_grid</code>, and it must pass the point
-rules (enemy tower rects for troops and rolling spells, footprints).</p>
+rules (enemy tower rects for troops, rolling spells and, under the rects arm of
+placement.BUILDING_TERRITORY, buildings; footprints).</p>
 
 
     </div>

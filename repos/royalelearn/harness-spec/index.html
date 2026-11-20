@@ -6897,6 +6897,12 @@ harness exists to remove.</p>
 <td>true: each evaluation worker plays <code>eval_games_per_worker</code> of its battles at once, a decision at a time for all of them, with one forward per policy per decision over every battle that policy is in. Each battle keeps its own seed, side, frame history and stream, and the scripted anchors act a battle at a time in seat order, so a gate is the same measurement; a batched forward can differ from a batch of one in the last bits, so a near-tie sample can come out the other way. Left out of the run identity</td>
 </tr>
 <tr>
+<td><code>learner_gpus</code></td>
+<td>unset</td>
+<td>GPUs</td>
+<td>how many GPUs of this machine the update runs on; unset is 1. Above one the coordinator spawns a helper process per further GPU itself (no torchrun: the launch line is the same, a Slurm job asks for <code>--gres=gpu:N</code> on one node). Rank 0 keeps the collection, the critic's pass, GAE, the ladder, the checkpoints and both optimizers. Every trainable cell belongs to one rank for the iteration, each rank trains its cells of every batch in minibatches of <code>ppo.minibatch_size</code> weighted by their share of the whole batch, the gradients are summed onto rank 0, which clips and steps, and the parameters are broadcast back (<code>learn/ddp.py</code>). The update's diagnostics, the ratio invariant and the terms' measurements are rank 0's, a sample of one minibatch in N. On a debug iteration rank 0 gathers each helper's first minibatch again and compares. A helper that fails stops the update with its traceback. Left out of the run identity, so a run resumes on a different number; refused under <code>determinism.tier</code> run_exact</td>
+</tr>
+<tr>
 <td><strong><code>net</code></strong> (<code>ArchSpec</code>)</td>
 <td></td>
 <td></td>
