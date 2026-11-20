@@ -5,9 +5,15 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
-## Unreleased
+## 0.1.31 (2026-11-20)
 
 ### Changed
+- royalesim 0.1.54, which changes engine settings and lets a building into an opened pocket
+  (below). The one-seat battle on the Environments page now ends 2-1 in 610 steps, and every
+  other example on the site prints the same numbers. A snapshot bank saved by royalegym 0.1.27 or
+  older loads only under the settings it was saved under, so one saved on royalesim 0.1.53 is
+  refused on 0.1.54; a bank saved by royalegym 0.1.28 or newer still loads, as the card data and
+  the elixir rules did not change.
 - The action mask follows `placement.BUILDING_TERRITORY` (royalesim 0.1.54). Under
   `enemy_tower_no_deploy_rects`, royalesim 0.1.54's default, a building may be tapped in the
   enemy's pocket once that lane's princess tower has fallen: its tap is judged as a troop's, with
