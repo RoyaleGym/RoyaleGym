@@ -48,7 +48,7 @@ import numpy as np
 import pytest
 from _pytest.outcomes import Skipped
 
-from _arms import refusing
+from _arms import mock_buildings, refusing
 from royalegym import ClashParallelEnv, rust_engine
 from royalegym.mock_engine import MockEngine
 from royalegym.protocol import (
@@ -125,10 +125,15 @@ SCENARIO_TOWER_TAPS = "closed_block"
 def make_engine(kind: str):
     """The scenarios were written for the arms they run: SCENARIO_TOWER_TAPS, and both clamps
     off, as MockEngine runs them (``refusing``): a scripted tap past the line is refused there,
-    where a plain RustEngine moves it (``rust_engine.GYM_ARMS``) and plays another battle."""
+    where a plain RustEngine moves it (``rust_engine.GYM_ARMS``) and plays another battle. And
+    buildings on their own half, as MockEngine's (``mock_buildings``): under royalesim 0.1.54's
+    placement.BUILDING_TERRITORY a fallen princess's pocket takes the scripted Cannon too, which
+    redraws every later play. Measured on 0.1.54 (2026-11-19): in that other battle a Red-leads
+    Knight is pushed a whole tile while it deploys, and the depth read off the board misses."""
     if kind != "rust":
         return MockEngine()
     over = dict(refusing())
+    over.update(mock_buildings())
     ledger = json.loads(rust_engine._core.EMBEDDED_CALIBRATION_JSON)
     entry = ledger["placement"].get("TROOP_TOWER_TAPS")
     if entry is not None and entry["value"] != SCENARIO_TOWER_TAPS:

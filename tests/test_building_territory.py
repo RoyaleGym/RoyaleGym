@@ -201,18 +201,22 @@ def test_one_oracle_across_tower_states_serves_each_its_own_grid():
 # --- the engine ---------------------------------------------------------------------------------
 
 
-def _ledger_has_key() -> bool:
+def _engine_reads_the_key() -> bool:
+    """royalesim 0.1.54 on: the first core that reads placement.BUILDING_TERRITORY. The key is in
+    0.1.53's ledger already, unread, so an override there changes the mask and not the core."""
     if not core_available():
         return False
+    import royalesim
     from _arms import shipped_placement
 
-    return "BUILDING_TERRITORY" in shipped_placement()
+    have = tuple(int(p) for p in royalesim.__version__.split(".")[:3])
+    return have >= (0, 1, 54) and "BUILDING_TERRITORY" in shipped_placement()
 
 
 needs_key = pytest.mark.skipif(
-    not _ledger_has_key(),
+    not _engine_reads_the_key(),
     reason=str(CORE_IMPORT_ERROR) if not core_available() else
-    "SKIPPED, NOT PASSED: this engine's ledger has no placement.BUILDING_TERRITORY "
+    "SKIPPED, NOT PASSED: this royalesim does not read placement.BUILDING_TERRITORY "
     "(royalesim 0.1.54 on)",
 )
 
