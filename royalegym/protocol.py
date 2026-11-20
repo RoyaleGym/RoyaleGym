@@ -239,9 +239,13 @@ class Placement(enum.IntEnum):
                                           TROOP_TOWER_TAPS, LIVE_BOTTLE_TAPS), so an own
                                           body does not refuse it; the own king's
                                           no-deploy block still does (see ``DeployRules``)
-    BUILDING  spells_buildings.csv        own half only (never the opened ground), not
-                                          water, not no-deploy, footprint may not
-                                          overlap a building
+    BUILDING  spells_buildings.csv        own half only under
+                                          placement.BUILDING_TERRITORY = own_half; under
+                                          enemy_tower_no_deploy_rects the tap takes the
+                                          TROOP rule with the river band closed, so an
+                                          opened pocket takes it. Not water, not
+                                          no-deploy, footprint may not overlap a building
+                                          (the engine judges the box: ``DeployRules``)
     SPELL     spells_other.csv            anywhere strictly inside the arena
     ROLLING   spells_other.csv with       like TROOP but ignores building footprints
               SpellAsDeploy=true          (Log also ships CanPlaceOnBuildings=TRUE)

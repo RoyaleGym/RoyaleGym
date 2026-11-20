@@ -12,9 +12,10 @@ WHY THIS AND NOT THE ALTERNATIVES
       "Giant is legal here but Fireball is not" exactly. Legality is a property of
       the PAIR: elixir is per card, territory depends on placement type (spells go
       anywhere, a Goblin Barrel anywhere but water, a Log only where a troop may go
-      but over buildings, buildings never into the pocket, a Miner anywhere on land
-      but not on a building, a Mirror wherever the card it copies may go), footprints
-      depend on card radius.
+      but over buildings, a building into an opened pocket only under
+      placement.BUILDING_TERRITORY = enemy_tower_no_deploy_rects, a Miner anywhere on
+      land but not on a building, a Mirror wherever the card it copies may go),
+      footprints depend on card radius.
       sb3-contrib MaskablePPO applies a MultiDiscrete mask per dimension
       independently, so a MultiDiscrete([5, 18, 32]) head could only mask the
       marginals and would happily sample "Knight on the enemy king". An
