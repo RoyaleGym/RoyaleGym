@@ -66,7 +66,7 @@ Archer 247
 ```
 
 Spells can go anywhere, so they have all 576 tiles. Troops and buildings fit only on your own
-half. RoyaleLearn always picks from the legal moves, so you only need the mask if you write
+half, plus the pocket a fallen enemy princess tower opens on their side. RoyaleLearn always picks from the legal moves, so you only need the mask if you write
 your own bot or trainer.
 
 ## Ability Buttons
