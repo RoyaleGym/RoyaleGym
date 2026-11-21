@@ -5,6 +5,19 @@ and the version follows [Semantic Versioning](https://semver.org/). Until 1.0, a
 change the observation's shape; each such change is listed here.
 
 
+## Unreleased
+
+### Added
+- The action mask follows `placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS` (royalesim 0.1.55). Under
+  `client16635_can_place_on_buildings` the Log, the Barbarian Barrel and the Royal Delivery may be
+  tapped on no-deploy ground (their own king tower's block, the back-row strips), while water,
+  the river band and every standing enemy tower's no-deploy area still refuse them, and the spell
+  clamp judges their taps the same way. Under `refuse`, royalesim 0.1.55's default and the rule of
+  an engine without the key, no card goes there. The Heal and every troop keep the test.
+  `DeployRules.spell_as_deploy_no_deploy_cells` says which; `RustEngine(calibration_overrides=...)`
+  follows an override of it instead of leaving the mask on the other arm. MockEngine refuses
+  no-deploy ground to every card, and says so.
+
 ## 0.1.31 (2026-11-20)
 
 ### Changed

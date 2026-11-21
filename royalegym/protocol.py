@@ -248,7 +248,10 @@ class Placement(enum.IntEnum):
                                           (the engine judges the box: ``DeployRules``)
     SPELL     spells_other.csv            anywhere strictly inside the arena
     ROLLING   spells_other.csv with       like TROOP but ignores building footprints
-              SpellAsDeploy=true          (Log also ships CanPlaceOnBuildings=TRUE)
+              SpellAsDeploy=true          (Log also ships CanPlaceOnBuildings=TRUE); under
+                                          placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS =
+                                          client16635_can_place_on_buildings not the
+                                          no-deploy test either (``DeployRules``)
     SPELL_NOT_ON_WATER                    anywhere strictly inside the arena EXCEPT where
               spells_other.csv, a spell   the TROOP water test refuses (the point touches
               whose projectile spawns     a WATER half-cell, closed cells). No territory,
@@ -1071,6 +1074,15 @@ ILLEGAL_BUILDING_TAP = ("refuse", "relocate_first_fitting_ring")
 OWN_HALF_BUILDINGS = "own_half"
 BUILDINGS_IN_TROOP_RECTS = "enemy_tower_no_deploy_rects"
 BUILDING_TERRITORY = (OWN_HALF_BUILDINGS, BUILDINGS_IN_TROOP_RECTS)
+#: placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS arms (royalesim 0.1.55). Under the first a tap that
+#: touches a NO_DEPLOY cell is refused for every card. Under the second (client 16.635) a ROLLING
+#: card, placement code 3 (a spell placed as a deploy that may stand on buildings: the Log, the
+#: Barbarian Barrel, the Royal Delivery and their hero forms), skips that test; out of the arena,
+#: water and its territory (the river band, the alive enemy crown towers' rects) still refuse it.
+#: The Heal, a spell with a troop's placement, and every troop keep the test.
+NO_DEPLOY_REFUSED = "refuse"
+ROLLING_SKIPS_NO_DEPLOY = "client16635_can_place_on_buildings"
+SPELL_AS_DEPLOY_NO_DEPLOY_CELLS = (NO_DEPLOY_REFUSED, ROLLING_SKIPS_NO_DEPLOY)
 #: placement.ILLEGAL_TROOP_TAP arms (RoyaleSim 0.1.29). Under the clamp the engine accepts a TROOP
 #: card (by kind) tapped out of its territory, moving the tap back along its tile column to the
 #: first legal tile; the mask keeps refusing such taps (``action.mask_disagreements``).
@@ -1227,6 +1239,12 @@ class DeployRules(msgspec.Struct, frozen=True):
         own half only, even after a princess falls; or "enemy_tower_no_deploy_rects", its tap
         judged by the troop rule above with the river band closed, so a fallen princess's
         pocket takes a building (measured on client 16.635, royalesim 0.1.54).
+    spell_as_deploy_no_deploy_cells
+        placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS (``SPELL_AS_DEPLOY_NO_DEPLOY_CELLS``):
+        "refuse", no card's tap may touch a NO_DEPLOY cell; or
+        "client16635_can_place_on_buildings", a ROLLING card's tap skips that test (the
+        Log, the Barbarian Barrel and the Royal Delivery onto their own king's block or the
+        back-row strips), its territory and the water still judged (royalesim 0.1.55).
     footprint_model
         calibration.json collision.BUILDING_FOOTPRINT_MODEL. Only
         "collision_radius_circle" is implemented; anything else raises so a
@@ -1290,6 +1308,10 @@ class DeployRules(msgspec.Struct, frozen=True):
     # placement.BUILDING_TERRITORY (``BUILDING_TERRITORY``): where a building's tap may go.
     # Trailing and defaulted to "own_half", the rule of an engine without the key.
     building_territory: str = OWN_HALF_BUILDINGS
+    # placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS (``SPELL_AS_DEPLOY_NO_DEPLOY_CELLS``): whether a
+    # rolling spell's tap may touch a NO_DEPLOY cell. Trailing and defaulted to "refuse", the
+    # rule of an engine without the key.
+    spell_as_deploy_no_deploy_cells: str = NO_DEPLOY_REFUSED
 
     @classmethod
     def load(cls, calibration: Calibration, cards_path: Path | None = None) -> DeployRules:
@@ -1344,6 +1366,9 @@ class DeployRules(msgspec.Struct, frozen=True):
         troop_tap = arm("ILLEGAL_TROOP_TAP", ILLEGAL_TROOP_TAP, "refuse")
         enemy_buildings = arm("ENEMY_BUILDING_TAPS", ENEMY_BUILDING_TAPS, "ignored")
         building_territory = arm("BUILDING_TERRITORY", BUILDING_TERRITORY, OWN_HALF_BUILDINGS)
+        spell_no_deploy = arm(
+            "SPELL_AS_DEPLOY_NO_DEPLOY_CELLS", SPELL_AS_DEPLOY_NO_DEPLOY_CELLS, NO_DEPLOY_REFUSED
+        )
         try:
             spell_tap = str(calibration.value("spells.ILLEGAL_SPELL_TAP"))
         except KeyError:
@@ -1400,6 +1425,7 @@ class DeployRules(msgspec.Struct, frozen=True):
             live_bottle_taps=bottle_taps,
             overtime_tiebreak=tiebreak,
             building_territory=building_territory,
+            spell_as_deploy_no_deploy_cells=spell_no_deploy,
         )
 
     @property
@@ -1413,6 +1439,12 @@ class DeployRules(msgspec.Struct, frozen=True):
         """Whether a building's tap is judged by the alive enemy rects, the river band closed
         (placement.BUILDING_TERRITORY = enemy_tower_no_deploy_rects), not by the own half."""
         return self.building_territory == BUILDINGS_IN_TROOP_RECTS
+
+    @property
+    def rolling_skips_no_deploy(self) -> bool:
+        """Whether a ROLLING card's tap skips the NO_DEPLOY test
+        (placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS = client16635_can_place_on_buildings)."""
+        return self.spell_as_deploy_no_deploy_cells == ROLLING_SKIPS_NO_DEPLOY
 
     def no_deploy_rect(self, slot: int, cx: int, cy: int) -> Rect:
         """The closed NoDeploySize rect of a crown tower in ``slot`` centred at (cx, cy)."""

@@ -212,6 +212,9 @@ OVERRIDE_FOLLOWED = frozenset(
         # Both arms: the tap's rule in the mask, the box the engine's
         # (tests/test_building_territory.py).
         "placement.BUILDING_TERRITORY",
+        # Both arms: the cell rule and the spell clamp's zone verdict for a ROLLING card
+        # (tests/test_spell_no_deploy_cells.py).
+        "placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS",
     }
 )
 

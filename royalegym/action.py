@@ -12,7 +12,9 @@ WHY THIS AND NOT THE ALTERNATIVES
       "Giant is legal here but Fireball is not" exactly. Legality is a property of
       the PAIR: elixir is per card, territory depends on placement type (spells go
       anywhere, a Goblin Barrel anywhere but water, a Log only where a troop may go
-      but over buildings, a building into an opened pocket only under
+      but over buildings (and onto no-deploy ground only under
+      placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS = client16635_can_place_on_buildings),
+      a building into an opened pocket only under
       placement.BUILDING_TERRITORY = enemy_tower_no_deploy_rects, a Miner anywhere on
       land but not on a building, a Mirror wherever the card it copies may go),
       footprints depend on card radius.
@@ -435,7 +437,9 @@ class PlacementOracle:
         Per placement (the Rust core's ``Arena::deploy_zone`` by ``state.rs
         deploy_rule``): SPELL no cell rule; SPELL_NOT_ON_WATER water only (no
         no-deploy, no territory: the king block is a legal Goblin Barrel target);
-        TROOP and ROLLING water, no-deploy and the river band; BUILDING water,
+        TROOP and ROLLING water, no-deploy and the river band (ROLLING not no-deploy under
+        placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS = client16635_can_place_on_buildings,
+        ``_no_deploy_rule``); BUILDING water,
         no-deploy and own half, or under placement.BUILDING_TERRITORY =
         enemy_tower_no_deploy_rects the river band, closed under both territory models,
         with the enemy rects as its point rule; TUNNEL water only, as SPELL_NOT_ON_WATER (the
@@ -464,10 +468,20 @@ class PlacementOracle:
             # The open-bridge model: the band has no rule of its own; the water test
             # below and the enemy rects (a point rule, legal_points) decide.
             terr = np.ones((a.hy, a.hx), dtype=bool)
+        if not self._no_deploy_rule(placement):
+            open_ground: np.ndarray = terr & ~self.water
+            return open_ground
         troop = placement == Placement.TROOP and troop_laws
         nodeploy = self.troop_nodeploy if troop else self.nodeploy
         legal: np.ndarray = terr & ~self.water & ~nodeploy
         return legal
+
+    def _no_deploy_rule(self, placement: int) -> bool:
+        """Whether a tap touching a NO_DEPLOY cell is refused for ``placement``: always, but for a
+        ROLLING card under placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS =
+        client16635_can_place_on_buildings (arena.rs deploy_zone_cells_open). Read from the rules
+        each call, and in ``grid_key``, so an oracle whose rules are swapped keeps no stale grid."""
+        return not (placement == Placement.ROLLING and self.rules.rolling_skips_no_deploy)
 
     def _rect_rule(self, placement: int) -> bool:
         """Whether the alive enemy towers' rects are a point rule for ``placement``: a troop's,
@@ -504,11 +518,13 @@ class PlacementOracle:
         px: np.ndarray,
         py: np.ndarray,
         troop_laws: bool = True,
+        no_deploy: bool = True,
     ) -> np.ndarray:
         """What the core's zone check says of a tap at each point in TROOP territory, as
         ``DeployStatus`` codes, the first failing check winning (Arena::deploy_zone):
         OUT_OF_ARENA; WATER, any touched cell; NO_DEPLOY, any touched cell, with the king
-        blocks half-open for a card under the troop laws (``_troop_laws``) when that arm runs;
+        blocks half-open for a card under the troop laws (``_troop_laws``) when that arm runs,
+        and not at all with ``no_deploy`` False (a rolling spell's, ``_no_deploy_rule``);
         OUT_OF_TERRITORY, the river band under the closed model or an alive enemy tower's
         rect; else OK. For a troop and for a spell judged in troop territory (the Log, the
         Heal: ``troop_laws`` False). The footprints come after it, so a tap on an enemy
@@ -524,12 +540,13 @@ class PlacementOracle:
         for x0, y0, x1, y1 in self.enemy_rects(state, team):
             outside |= (px >= x0) & (px <= x1) & (py >= y0) & (py <= y1)
         verdict[outside] = int(DeployStatus.OUT_OF_TERRITORY)
-        nodeploy = self.troop_nodeploy if troop_laws else self.nodeploy
-        blocked = ~self._touches_only(~nodeploy, px, py)
-        if troop_laws and self.king_half_open:
-            for x0, y0, x1, y1 in self.arena.king_blocks:
-                blocked |= (px >= x0) & (px < x1) & (py >= y0) & (py < y1)
-        verdict[blocked] = int(DeployStatus.NO_DEPLOY)
+        if no_deploy:
+            nodeploy = self.troop_nodeploy if troop_laws else self.nodeploy
+            blocked = ~self._touches_only(~nodeploy, px, py)
+            if troop_laws and self.king_half_open:
+                for x0, y0, x1, y1 in self.arena.king_blocks:
+                    blocked |= (px >= x0) & (px < x1) & (py >= y0) & (py < y1)
+            verdict[blocked] = int(DeployStatus.NO_DEPLOY)
         verdict[~self._touches_only(~self.water, px, py)] = int(DeployStatus.WATER)
         inside = (px > 0) & (px < a.width) & (py > 0) & (py < a.height)
         verdict[~inside] = int(DeployStatus.OUT_OF_ARENA)
@@ -632,7 +649,8 @@ class PlacementOracle:
             else ()
         )
         return (
-            int(placement), team, pitch_div, extra, rects, blockers, self._troop_laws(card), bottles
+            int(placement), team, pitch_div, extra, rects, blockers, self._troop_laws(card),
+            bottles, self._no_deploy_rule(placement),
         )
 
     def point_grid(
@@ -1309,4 +1327,7 @@ def clamped_tap(
     else:
         return False
     point = np.asarray([cmd.x]), np.asarray([cmd.y])
-    return int(oracle.zone_verdict(state, team, *point, troop_laws=laws)[0]) in moved
+    verdict = oracle.zone_verdict(
+        state, team, *point, troop_laws=laws, no_deploy=oracle._no_deploy_rule(card.placement)
+    )
+    return int(verdict[0]) in moved

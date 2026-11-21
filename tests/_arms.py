@@ -47,6 +47,7 @@ MOCK_FIELDS: dict[str, str] = {
     "spells.ILLEGAL_SPELL_TAP": "illegal_spell_tap",
     # And keeps a building on its own half (it has no box to judge against the enemy rects).
     "placement.BUILDING_TERRITORY": "building_territory",
+    "placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS": "spell_as_deploy_no_deploy_cells",
 }
 
 
@@ -94,9 +95,15 @@ def refusing() -> dict[str, str]:
     return pinned(CLAMPS_OFF)
 
 
-def mock_buildings() -> dict[str, str]:
-    """The ``calibration_overrides`` that keep a plain RustEngine's buildings where MockEngine's
-    go: on their own half (placement.BUILDING_TERRITORY = own_half; MockEngine has no box to
-    judge against the enemy rects)."""
-    key = "placement.BUILDING_TERRITORY"
-    return pinned({key: mock_arms()[key]})
+#: The zone keys whose arm MockEngine states apart from the compiled engine's default.
+MOCK_ZONE_KEYS = ("placement.BUILDING_TERRITORY", "placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS")
+
+
+def mock_zones() -> dict[str, str]:
+    """The ``calibration_overrides`` that keep a plain RustEngine's taps where MockEngine's go:
+    buildings on their own half (placement.BUILDING_TERRITORY = own_half; MockEngine has no box to
+    judge against the enemy rects), and no card on NO_DEPLOY ground
+    (placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS = refuse; MockEngine's zone refuses it to every
+    card). A key the engine already runs at MockEngine's arm is left out (``pinned``)."""
+    arms = mock_arms()
+    return pinned({key: arms[key] for key in MOCK_ZONE_KEYS})
