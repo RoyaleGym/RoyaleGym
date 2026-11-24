@@ -2225,6 +2225,39 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0157-2026-11-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.57 (2026-11-23)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0156-2026-11-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.56 (2026-11-23)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0155-2026-11-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.55 (2026-11-19)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0154-2026-11-19" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3920,6 +3953,39 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0157-2026-11-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.57 (2026-11-23)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0156-2026-11-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.56 (2026-11-23)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0155-2026-11-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.55 (2026-11-19)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0154-2026-11-19" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4552,6 +4618,108 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0157-2026-11-23">0.1.57 (2026-11-23)<a class="headerlink" href="#0157-2026-11-23" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Saved battles from earlier versions do not load.</strong> A Goblin Drill building's card gains three fields, so the card
+  data's fingerprint changes, and a battle or bank saved by 0.1.56 or earlier is refused at load as saved against other
+  card data. Save again on 0.1.57.</li>
+<li>10 more settings default to the current client's behaviour, each measured against its recorded battles (6 of the
+  settings are new, marked new):</li>
+<li>A unit frozen by a Hero Ice Wizard's cube still steers around the cube while it is held, so it walks off at the
+    client's angle when the cube lets it go (<code>collision.HELD_UNIT_AVOIDANCE</code>).</li>
+<li>A hero ability pressed while its hero is frozen in a Hero Ice Wizard's cube starts one tick after the cube lets go
+    (<code>status.ICE_RELEASE_PRESS</code>, new).</li>
+<li>A hero Barbarian Barrel's re-rolled Barbarian neither pushes nor is pushed by other units while it rides its log,
+    until the tick after it lands (<code>collision.REROLL_RIDE_BODY</code>, new).</li>
+<li>Units attacking a re-rolling Barbarian keep it through the log's first tick and let it go on the next
+    (<code>spells.REROLL_HIDE_WINDOW</code>).</li>
+<li>A Skeleton Barrel's (and an Evo Skeleton Barrel's) skeletons burst out slightly pushed off nearby units, as one of
+    the skeletons would be (<code>spawner.CONTAINER_BURST_PUSH</code>).</li>
+<li>A Bandit or Boss Bandit whose dash target dies stops its dash half a step sooner when the goal is less than a step
+    away (<code>combat.DASH_TARGET_DEATH</code>).</li>
+<li>A Hero Valkyrie whose spin chain ends takes one more step toward her last target before she stands
+    (<code>combat.SPIN_REACH_STEP</code>, new).</li>
+<li>A Hero Balloon's thrown Skeleton Trooper is pushed off the unit it lands on, on the tick it lands
+    (<code>spawner.THROWN_UNIT_FIRST_UPDATE</code>, new).</li>
+<li>A Hero Balloon throw's landing blow strikes two ticks after the trooper lands (<code>combat.THROW_LANDING_BLOW</code>, new).</li>
+<li>A Goblin Drill building turns to face its targets (it never hits), and the Goblins from its death face the way it
+    last faced (<code>spawner.FIXED_RING_FACING</code>, new).</li>
+<li>One new setting whose default is unchanged: <code>status.DEFLECT_TRIGGER_TICK</code> (default <code>"whole_ticks"</code>, also
+  <code>"client16635_last_partial_tick"</code>).</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and <code>replay_parity</code>
+  keep the older client's values for its battles.</li>
+</ul>
+<h2 id="0156-2026-11-23">0.1.56 (2026-11-23)<a class="headerlink" href="#0156-2026-11-23" title="Permanent link">&para;</a></h2>
+<ul>
+<li>15 more settings default to the current client's behaviour, each measured against its recorded battles (13 of the
+  settings are new, marked new):</li>
+<li>A Mega Knight caught mid-stand by a stun, a freeze or a Hero Ice Wizard's cube keeps the time he had already stood,
+    and jumps that much sooner once he can act again (<code>combat.DASH_STAND_STUN_HOLD</code>, new).</li>
+<li>A Mega Knight frozen or stunned in mid-jump finishes the jump and lands his blow; the hold takes effect where he
+    lands (<code>combat.DASH_STUN</code>, new).</li>
+<li>A Bowler's boulder that hits on the tick it is thrown moves every unit it hits on that same tick, including units
+    placed before the Bowler (<code>knockback.CREATION_HIT_KNOCK</code>).</li>
+<li>That first knockback step turns the way the hit unit was already steering around others
+    (<code>knockback.CREATION_STEP_OFFSET</code>, new).</li>
+<li>A Hero Electro Wizard's surge sends its second bolt to the enemy it last reached, not to whichever enemy is nearest
+    at that moment (<code>combat.SURGE_SECOND_BOLT</code>, new).</li>
+<li>Units attacking an Evo Goblin Drill's building let go of it as it goes underground (<code>hide.DRILL_UNDER_HELD</code>, new).</li>
+<li>Units that target only buildings keep attacking a building through its hide, whatever their reach
+    (<code>hide.HELD_THROUGH_HIDE</code>).</li>
+<li>A Tornado pulls a Hero Ice Wizard's cube along with everything else it pulls (<code>status.ICE_CUBE_ATTRACT</code>, new).</li>
+<li>A unit let go by a Hero Ice Wizard's cube walks on along the route it had before it was frozen; one with no route
+    stands still (<code>status.ICE_RELEASE_WALK</code>, new).</li>
+<li>A Hero Valkyrie's spin can begin on, and chain to, buildings and crown towers as well as troops
+    (<code>combat.SPIN_TARGETS</code>, new).</li>
+<li>When a Hero Valkyrie's spin has reached every enemy in its circle, it waits and begins again on the next enemy that
+    comes into the circle (<code>combat.SPIN_CHAIN_END</code>, new).</li>
+<li>A Hero Valkyrie's spin strikes from where she stood at the start of the tick, its first blow a tick after the spin
+    begins (<code>combat.SPIN_BLOWS</code>, new).</li>
+<li>When an attacker finds several members of a Skeleton Barrel ring at nearly the same distance, it picks the one with
+    the higher ring index (<code>targeting.CONTAINER_RING_RANK</code>, new).</li>
+<li>Skeleton Barrel ring members that would slide out past an arena side edge stop 250 inside it
+    (<code>spawner.CONTAINER_SLIDE_END</code>, new).</li>
+<li>A hero Barbarian Barrel's re-roll log hits the units it lands on during its first tick
+    (<code>spells.REROLL_LOG_FIRST_HIT</code>, new).</li>
+<li>Two new values that are not defaults: <code>spells.REROLL_HIDE_WINDOW</code> <code>"client16635_holders_let_go_next_tick"</code> and
+  <code>status.ICE_RELEASE_WALK</code> <code>"client16635_route_kept_fliers_too"</code>.</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and <code>replay_parity</code>
+  keep the older client's values for its battles. A battle saved by 0.1.55 loads on 0.1.56: the new settings read their
+  old values from a save that lacks them.</li>
+</ul>
+<h2 id="0155-2026-11-19">0.1.55 (2026-11-19)<a class="headerlink" href="#0155-2026-11-19" title="Permanent link">&para;</a></h2>
+<ul>
+<li>12 more settings default to the current client's behaviour, each measured against its recorded battles (10 of the
+  settings are new, marked new):</li>
+<li>A spell landing beside the King's Tower reaches it by the tower's own square, which is wider than a princess
+    tower's (<code>spells.CROWN_SQUARE_HALF_SIDE</code>, new).</li>
+<li>A Phoenix egg disappears on the tick after its Phoenix hatches (<code>spawner.DESTROY_AT_LIMIT</code>, new).</li>
+<li>A Phoenix reborn from its egg deploys for its own deploy time before it moves
+    (<code>spawner.SPAWN_CHARACTER_WITH_DEPLOY</code>, new).</li>
+<li>A Mighty Miner switching lanes goes underground on the tick he starts the switch, so a hit landing on that tick
+    misses him (<code>hide.LANE_SWITCH_UNDER_TICK</code>, new).</li>
+<li>A Mighty Miner keeps his target while he tunnels to the other lane and does not start an attack underground
+    (<code>targeting.LANE_SWITCH_TARGET</code>, new).</li>
+<li>A Hero Ice Wizard's ability looks only for enemies slowed by his own shots, not by another Hero Ice Wizard's
+    (<code>status.ICE_FIND_OWN_MARK</code>, new).</li>
+<li>A Hero Ice Wizard's cube fired by a kill appears one tick sooner (<code>spawner.ICE_KILL_CUBE_TICK</code>, new).</li>
+<li>A Hero Ice Wizard who dies as his ability fires (on the tick it finds its target, or the next) still drops the
+    cube, on the tick he dies; if he dies a few ticks later, no cube comes (<code>spawner.ICE_CUBE_HERO_DEATH</code>, new).</li>
+<li>The Hero Wizard's lift starts pulling one tick sooner, two ticks after his shot hits
+    (<code>status.SHOT_AREA_ATTRACT_ONSET</code>, new).</li>
+<li>An Evo Goblin Drill placed on the ring just round an enemy princess tower moves along that ring each time it digs
+    (<code>hide.DRILL_DIG_POINT</code>).</li>
+<li>Golemites and Lava Pups pick their own target as soon as they appear, looking from where their parent died
+    (<code>spawner.DEATH_SPAWN_BIRTH_TARGET</code>).</li>
+<li>Golemites and Lava Pups can change target while they are still sliding out from their parent's death
+    (<code>spawner.DEATH_SLIDE_TARGET</code>, new).</li>
+<li>New setting <code>placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS</code>: whether the Log, the Barbarian Barrel, the Royal Delivery and
+  their hero forms may be placed on no-deploy cells. The default is unchanged (<code>"refuse"</code>);
+  <code>"client16635_can_place_on_buildings"</code> is the current client's rule.</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and <code>replay_parity</code>
+  keep the older client's values for its battles. A battle saved by 0.1.54 loads on 0.1.55: the new settings read their
+  old values from a save that lacks them.</li>
+</ul>
 <h2 id="0154-2026-11-19">0.1.54 (2026-11-19)<a class="headerlink" href="#0154-2026-11-19" title="Permanent link">&para;</a></h2>
 <ul>
 <li>27 more settings default to the current client's behaviour, each measured against its recorded battles (19 of the

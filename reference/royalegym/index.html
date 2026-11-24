@@ -12766,7 +12766,9 @@ orders visible content by hidden data.</p>
       "Giant is legal here but Fireball is not" exactly. Legality is a property of
       the PAIR: elixir is per card, territory depends on placement type (spells go
       anywhere, a Goblin Barrel anywhere but water, a Log only where a troop may go
-      but over buildings, a building into an opened pocket only under
+      but over buildings (and onto no-deploy ground only under
+      placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS = client16635_can_place_on_buildings),
+      a building into an opened pocket only under
       placement.BUILDING_TERRITORY = enemy_tower_no_deploy_rects, a Miner anywhere on
       land but not on a building, a Mirror wherever the card it copies may go),
       footprints depend on card radius.
@@ -13012,7 +13014,9 @@ applied in <code>legal_points</code>.</p>
 <p>Per placement (the Rust core's <code>Arena::deploy_zone</code> by <code>state.rs
 deploy_rule</code>): SPELL no cell rule; SPELL_NOT_ON_WATER water only (no
 no-deploy, no territory: the king block is a legal Goblin Barrel target);
-TROOP and ROLLING water, no-deploy and the river band; BUILDING water,
+TROOP and ROLLING water, no-deploy and the river band (ROLLING not no-deploy under
+placement.SPELL_AS_DEPLOY_NO_DEPLOY_CELLS = client16635_can_place_on_buildings,
+<code>_no_deploy_rule</code>); BUILDING water,
 no-deploy and own half, or under placement.BUILDING_TERRITORY =
 enemy_tower_no_deploy_rects the river band, closed under both territory models,
 with the enemy rects as its point rule; TUNNEL water only, as SPELL_NOT_ON_WATER (the
@@ -13046,7 +13050,7 @@ own: it is placed as the card it copies, which is what to ask with.</p>
 
 
 <h4 id="royalegym.action.PlacementOracle.zone_verdict" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">zone_verdict</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">px</span><span class="p">,</span> <span class="n">py</span><span class="p">,</span> <span class="n">troop_laws</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">zone_verdict</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">team</span><span class="p">,</span> <span class="n">px</span><span class="p">,</span> <span class="n">py</span><span class="p">,</span> <span class="n">troop_laws</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">no_deploy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
 <a href="#royalegym.action.PlacementOracle.zone_verdict" class="headerlink" title="Permanent link">&para;</a></h4>
 
@@ -13056,7 +13060,8 @@ own: it is placed as the card it copies, which is what to ask with.</p>
         <p>What the core's zone check says of a tap at each point in TROOP territory, as
 <code>DeployStatus</code> codes, the first failing check winning (Arena::deploy_zone):
 OUT_OF_ARENA; WATER, any touched cell; NO_DEPLOY, any touched cell, with the king
-blocks half-open for a card under the troop laws (<code>_troop_laws</code>) when that arm runs;
+blocks half-open for a card under the troop laws (<code>_troop_laws</code>) when that arm runs,
+and not at all with <code>no_deploy</code> False (a rolling spell's, <code>_no_deploy_rule</code>);
 OUT_OF_TERRITORY, the river band under the closed model or an alive enemy tower's
 rect; else OK. For a troop and for a spell judged in troop territory (the Log, the
 Heal: <code>troop_laws</code> False). The footprints come after it, so a tap on an enemy
