@@ -236,19 +236,19 @@ can't carry on from. The fix is the same for all three. Run the code that saved 
 [Starting From a Saved Moment](clash-royale/configuration-objects/state-mutators.md#starting-from-a-saved-moment)
 shows how.
 
-- **The first** means the card data changed. royalesim 0.1.44 changed it, so nothing saved on
-  0.1.43 or older loads on 0.1.44 or newer.
+- **The first** means the card data changed. royalesim 0.1.44 changed it, and 0.1.57 changed it
+  again, so nothing saved on 0.1.56 or older loads on 0.1.57 or newer, whichever royalegym saved
+  it. A battle saved with `save_state()` is refused the same way.
 - **The second** means the bank was saved by royalegym 0.1.27 or older, under other engine
-  settings. Such a bank loads only under the settings it was saved under. royalesim 0.1.54
-  changed settings again, so on royalesim 0.1.54 every such bank saved on 0.1.53 or older is
-  refused.
+  settings. Such a bank loads only under the settings it was saved under, and most royalesim
+  releases change some, so save it again after you upgrade.
 - **The third** means the elixir rules changed: how fast the bar fills, its cap and overtime,
   and with `elixir_income` the payouts. The brackets name the ones that differ. Only a bank saved
   by royalegym 0.1.28 or newer can give it.
 
 A bank saved by royalegym 0.1.28 or newer keeps loading after you upgrade royalesim, as long as
-the card data and the elixir rules stay the same: one saved on royalesim 0.1.45 still loads on
-0.1.54.
+the card data and the elixir rules stay the same: one saved on royalesim 0.1.45 still loaded on
+0.1.54. royalesim 0.1.57 changed the card data, so save your banks again on it.
 
 ### `the saved memory never tracked it`
 
