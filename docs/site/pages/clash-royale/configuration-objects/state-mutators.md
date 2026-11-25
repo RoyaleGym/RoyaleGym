@@ -124,7 +124,9 @@ after that many ticks). `SnapshotStateMutator(bank, weights={...}, seat="blue")`
 the bank by tag and by seat. The [API reference](../../reference/royalegym.md) has every argument.
 
 A bank saved by royalegym 0.1.28 or newer keeps loading after you upgrade royalesim, unless the
-card data or the elixir rules changed. A bank saved by an older royalegym loads only under the
+card data or the elixir rules changed. It still plays by the engine settings it was saved with,
+though: a bank saved on royalesim 0.1.57 loads on 0.1.58 but plays 0.1.58's new rules the old
+way. Save your starts again to get a new release's behaviour. A bank saved by an older royalegym loads only under the
 engine settings it was saved under, and a new royalesim release usually changes them, so save
 your starts again after you upgrade. If a bank is refused,
 [It Doesn't Work](../../it-doesnt-work.md#snapshot-was-saved-against-different-card-data-the-memory-was-saved-under-another-calibration-or-the-memorys-counts-ran-on-other-elixir-laws)
