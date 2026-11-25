@@ -3616,7 +3616,9 @@ would with the same moves. That's a way to practise one situation over and over.
 after that many ticks). <code>SnapshotStateMutator(bank, weights={...}, seat="blue")</code> then draws from
 the bank by tag and by seat. The <a href="../../../reference/royalegym/">API reference</a> has every argument.</p>
 <p>A bank saved by royalegym 0.1.28 or newer keeps loading after you upgrade royalesim, unless the
-card data or the elixir rules changed. A bank saved by an older royalegym loads only under the
+card data or the elixir rules changed. It still plays by the engine settings it was saved with,
+though: a bank saved on royalesim 0.1.57 loads on 0.1.58 but plays 0.1.58's new rules the old
+way. Save your starts again to get a new release's behaviour. A bank saved by an older royalegym loads only under the
 engine settings it was saved under, and a new royalesim release usually changes them, so save
 your starts again after you upgrade. If a bank is refused,
 <a href="../../../it-doesnt-work/#snapshot-was-saved-against-different-card-data-the-memory-was-saved-under-another-calibration-or-the-memorys-counts-ran-on-other-elixir-laws">It Doesn't Work</a>

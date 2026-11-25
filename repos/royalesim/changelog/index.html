@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0158-2026-11-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.58 (2026-11-25)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0157-2026-11-23" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3953,6 +3964,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0158-2026-11-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.58 (2026-11-25)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0157-2026-11-23" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4618,6 +4640,34 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0158-2026-11-25">0.1.58 (2026-11-25)<a class="headerlink" href="#0158-2026-11-25" title="Permanent link">&para;</a></h2>
+<ul>
+<li>4 more settings default to the current client's behaviour, each measured against its recorded battles (3 of the
+  settings are new, marked new):</li>
+<li>With one enemy princess tower down, a troop from the standing tower's lane walks to that tower when it is nearer
+    than the enemy king, and to the king otherwise. A troop from the fallen tower's lane still walks to the king
+    (<code>targeting.FALLEN_LANE_TOWER_PICK</code>, new value <code>"client16635_king_distance"</code>). Thanks to Kazox61, whose lane work
+    in PR #3 led to this rule and whose five client tracks are now its tests.</li>
+<li>A pulling area such as a Tornado moves only the units its update saw on the tick before. A unit just placed, the
+    Barbarian a Barbarian Barrel releases and a Bats member still waiting to deploy are first pulled a tick or two
+    later (<code>status.ATTRACT_VICTIM_ONSET</code>, new).</li>
+<li>A unit that spawns others on a timer, under a slow such as an Ice Wizard's shot or an Ice Golem's death, counts
+    down at the slowed rate from the tick the slow lands, a slow that lands on a release tick included, and at its own
+    rate again from the tick the slow runs out (<code>spawner.SPAWN_SPEED_READ</code>, new).</li>
+<li>A Hero Bowler's siege lasts one tick past its buffs: on that tick it still swings at the siege's rate, and it walks
+    from the next (<code>combat.SIEGE_END_TICK</code>, new).</li>
+<li>5 new settings whose defaults are unchanged: <code>combat.DEFLECT_RETURN_TOWER_SHARE</code> (default <code>"whole"</code>, also
+  <code>"client16635_tower_quarter"</code>), <code>rider.OFFSET_FACING</code> (default <code>"tick_start"</code>, also <code>"client16635_after_attack"</code>),
+  <code>spawner.ICE_RELEASE_SPAWNER</code> and <code>status.ICE_RELEASE_LOAD_TIMER</code> (default <code>"runs"</code>, also
+  <code>"client16635_held_next_tick"</code>), and <code>spells.REROLL_HOLD_END</code> (default <code>"held_to_landing"</code>, also
+  <code>"client16635_cast_end_wait"</code> and <code>"client16635_cast_end_clock"</code>).</li>
+<li>One new value that is not a default: <code>combat.SPIN_REACH_STEP</code> <code>"client16635_one_more_chase_step"</code>.</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and <code>replay_parity</code>
+  keep the older client's values for its battles.</li>
+<li>A battle or bank saved by 0.1.57 loads on 0.1.58, but it keeps the settings it was saved with, so it plays the four
+  changes above the old way. The new settings read their old values from a save that lacks them. Save banks again on
+  0.1.58 to get the new behaviour.</li>
+</ul>
 <h2 id="0157-2026-11-23">0.1.57 (2026-11-23)<a class="headerlink" href="#0157-2026-11-23" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Saved battles from earlier versions do not load.</strong> A Goblin Drill building's card gains three fields, so the card
