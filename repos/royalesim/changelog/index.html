@@ -2225,6 +2225,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0159-2026-11-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.59 (2026-11-25)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0158-2026-11-25" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3964,6 +3975,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0159-2026-11-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.59 (2026-11-25)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0158-2026-11-25" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4640,6 +4662,28 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>The battle logic changes often, as it is measured against the real game. This file lists changes to how you install
 and call the engine. Logic changes are listed by release in the <a href="https://github.com/RoyaleGym/RoyaleSim/releases">GitHub Releases</a>.</p>
+<h2 id="0159-2026-11-25">0.1.59 (2026-11-25)<a class="headerlink" href="#0159-2026-11-25" title="Permanent link">&para;</a></h2>
+<ul>
+<li>3 more settings default to the current client's behaviour, each measured against its recorded battles (2 of the
+  settings are new, marked new):</li>
+<li>A Void's strikes and a Vines' catch reach a crown tower by its crown square, strictly inside the radius, as an
+    ordinary spell's impact does (<code>spells.SELECTOR_REACH</code>, new value <code>"client16635_crown_square_strict"</code>).</li>
+<li>The walking Furnace's shot, and its evolution's, starts 2000 out toward its target, past the target when it stands
+    nearer, keeps the aim it was fired with, and on landing hits its target wherever the target then stands
+    (<code>combat.DIRECT_NON_HOMING_SHOT</code>, new).</li>
+<li>A Monk's deflect catches a shot on the tick its point, at its flight height, comes strictly inside his 1500 (a
+    princess tower's arrow, an Ice Wizard's or a Cannon's shot), or on its arrival. A splash shot is caught too and
+    lands on him alone, and the caught shot goes back from where it was caught (<code>combat.DEFLECT_CATCH</code>, new).</li>
+<li>One new setting whose default is unchanged: <code>combat.CHAIN_HOP_REACH</code> (default <code>"inclusive"</code>, also
+  <code>"client16635_strict"</code>).</li>
+<li>A tower level far past the game's levels is refused with an error. A level of about 366 or more in
+  <code>reset(tower_levels=...)</code> used to abort the process.</li>
+<li>Each older behaviour stays available as that setting's old value, and <code>client_arms("15.535.29")</code> and <code>replay_parity</code>
+  keep the older client's values for its battles.</li>
+<li>A battle or bank saved by 0.1.58 loads on 0.1.59, but it keeps the settings it was saved with, so it plays the three
+  changes above the old way. The new settings read their old values from a save that lacks them. Save banks again on
+  0.1.59 to get the new behaviour.</li>
+</ul>
 <h2 id="0158-2026-11-25">0.1.58 (2026-11-25)<a class="headerlink" href="#0158-2026-11-25" title="Permanent link">&para;</a></h2>
 <ul>
 <li>4 more settings default to the current client's behaviour, each measured against its recorded battles (3 of the
